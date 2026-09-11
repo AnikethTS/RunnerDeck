@@ -103,7 +103,7 @@ if ($action === 'stop_all') {
     if (!$force) {
         try {
             $busyNames = [];
-            foreach (GithubClient::listOrgRunners() as $name => $info) {
+            foreach (GithubClient::listRunners() as $name => $info) {
                 if ($info['busy']) {
                     $busyNames[] = $name;
                 }

@@ -12,7 +12,7 @@ final class Dashboard
         $ghError = null;
         if ($health->orgAccessOk) {
             try {
-                $ghRunners = GithubClient::listOrgRunners();
+                $ghRunners = GithubClient::listRunners();
             } catch (RuntimeException $e) {
                 $ghError = $e->getMessage();
             }
@@ -41,7 +41,7 @@ final class Dashboard
     public static function isBusy(string $agentName): array
     {
         try {
-            $runners = GithubClient::listOrgRunners();
+            $runners = GithubClient::listRunners();
         } catch (RuntimeException $e) {
             return [false, false, $e->getMessage()];
         }

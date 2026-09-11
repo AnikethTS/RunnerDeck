@@ -7,6 +7,7 @@ require __DIR__ . '/../src/bootstrap.php';
 $snapshot = Dashboard::snapshot(5);
 $csrfToken = Csrf::token();
 $hasLogo = is_file(__DIR__ . '/assets/logo.png');
+$accountLabel = Config::scope() === 'user' ? 'personal account' : Config::org();
 ?>
 <!doctype html>
 <html lang="en">
@@ -23,7 +24,7 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
     <?php endif; ?>
     <h1>RunnerDeck</h1>
     <span class="org-tag">
-      <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
+      <?= htmlspecialchars($accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
     </span>
   </header>
 

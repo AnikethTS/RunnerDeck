@@ -35,6 +35,12 @@ final class GithubClient
         }
     }
 
+    /** 'orgs/{org}' or 'user', depending on Config::scope() — the common prefix for every runners API call */
+    private static function accountBase(): string
+    {
+        return Config::scope() === 'user' ? 'user' : 'orgs/' . Config::org();
+    }
+
     public static function authStatus(): GithubAuthStatus
     {
         self::ensureGhEnv();
@@ -45,9 +51,10 @@ final class GithubClient
             return new GithubAuthStatus(false, false, $message);
         }
 
-        $probe = Shell::exec([$gh, 'api', 'orgs/' . Config::org() . '/actions/runners'], 15);
+        $probe = Shell::exec([$gh, 'api', self::accountBase() . '/actions/runners'], 15);
         if ($probe['code'] !== 0) {
-            $message = 'Logged in, but cannot read org runners: ' . trim($probe['stderr']);
+            $scopeLabel = Config::scope() === 'user' ? 'your personal account\'s' : 'org';
+            $message = "Logged in, but cannot read {$scopeLabel} runners: " . trim($probe['stderr']);
             return new GithubAuthStatus(true, false, $message);
         }
 
@@ -58,10 +65,10 @@ final class GithubClient
      * @return array<string, array{status: string, busy: bool, labels: string[]}> keyed by runner name
      * @throws RuntimeException if the gh call fails
      */
-    public static function listOrgRunners(): array
+    public static function listRunners(): array
     {
         self::ensureGhEnv();
-        $result = Shell::exec([Config::ghBinary(), 'api', 'orgs/' . Config::org() . '/actions/runners'], 15);
+        $result = Shell::exec([Config::ghBinary(), 'api', self::accountBase() . '/actions/runners'], 15);
         if ($result['code'] !== 0) {
             throw new RuntimeException('gh api call failed: ' . trim($result['stderr']));
         }
@@ -88,7 +95,7 @@ final class GithubClient
         $result = Shell::exec(
             [
                 Config::ghBinary(), 'api', '-X', 'POST',
-                'orgs/' . Config::org() . '/actions/runners/registration-token',
+                self::accountBase() . '/actions/runners/registration-token',
                 '-q', '.token',
             ],
             15
@@ -105,7 +112,7 @@ final class GithubClient
     {
         self::ensureGhEnv();
         $result = Shell::exec(
-            [Config::ghBinary(), 'api', 'orgs/' . Config::org() . '/actions/runners/downloads'],
+            [Config::ghBinary(), 'api', self::accountBase() . '/actions/runners/downloads'],
             15
         );
         if ($result['code'] !== 0) {
@@ -116,5 +123,18 @@ final class GithubClient
             throw new RuntimeException('gh api returned unexpected output for runner downloads');
         }
         return $decoded;
+    }
+
+    /** The authenticated gh CLI user's login — needed as config.sh's --url owner for personal-account runners. */
+    public static function authenticatedLogin(): string
+    {
+        self::ensureGhEnv();
+        $result = Shell::exec([Config::ghBinary(), 'api', 'user', '-q', '.login'], 10);
+        $login = trim($result['stdout']);
+        if ($result['code'] !== 0 || $login === '') {
+            $error = trim($result['stderr']);
+            throw new RuntimeException("failed to resolve the authenticated GitHub username: {$error}");
+        }
+        return $login;
     }
 }
