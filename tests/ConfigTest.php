@@ -12,7 +12,7 @@ final class ConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
-        foreach (['RUNNER_DASHBOARD_ORG', 'RUNNER_DASHBOARD_LABEL', 'RUNNER_DASHBOARD_POOL_DIR'] as $key) {
+        foreach (['RUNNERDECK_ORG', 'RUNNERDECK_LABEL', 'RUNNERDECK_POOL_DIR'] as $key) {
             putenv($key);
         }
     }
@@ -27,27 +27,27 @@ final class ConfigTest extends TestCase
     #[RunInSeparateProcess]
     public function testOrgReturnsEnvValue(): void
     {
-        putenv('RUNNER_DASHBOARD_ORG=my-org');
+        putenv('RUNNERDECK_ORG=my-org');
         $this->assertSame('my-org', \Config::org());
     }
 
     #[RunInSeparateProcess]
     public function testLabelDefaultsWhenUnset(): void
     {
-        $this->assertSame('self-hosted-dashboard', \Config::label());
+        $this->assertSame('self-hosted-runnerdeck', \Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testLabelReturnsEnvValue(): void
     {
-        putenv('RUNNER_DASHBOARD_LABEL=custom-label');
+        putenv('RUNNERDECK_LABEL=custom-label');
         $this->assertSame('custom-label', \Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testPoolDirStripsTrailingSlash(): void
     {
-        putenv('RUNNER_DASHBOARD_POOL_DIR=/tmp/runners/');
+        putenv('RUNNERDECK_POOL_DIR=/tmp/runners/');
         $this->assertSame('/tmp/runners', \Config::poolDir());
     }
 

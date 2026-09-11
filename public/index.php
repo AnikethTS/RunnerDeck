@@ -13,7 +13,7 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Runner Dashboard</title>
+  <title>RunnerDeck</title>
   <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
 </head>
 <body>
@@ -21,7 +21,7 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
     <?php if ($hasLogo) : ?>
       <img src="assets/logo.png" alt="Logo" class="logo" />
     <?php endif; ?>
-    <h1>Runner Dashboard</h1>
+    <h1>RunnerDeck</h1>
     <span class="org-tag">
       <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
     </span>

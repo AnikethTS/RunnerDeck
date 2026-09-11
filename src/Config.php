@@ -32,21 +32,21 @@ final class Config
 
     public static function org(): string
     {
-        $org = getenv('RUNNER_DASHBOARD_ORG');
+        $org = getenv('RUNNERDECK_ORG');
         if (!$org) {
-            throw new RuntimeException('RUNNER_DASHBOARD_ORG is not set — see README');
+            throw new RuntimeException('RUNNERDECK_ORG is not set — see README');
         }
         return $org;
     }
 
     public static function label(): string
     {
-        return getenv('RUNNER_DASHBOARD_LABEL') ?: 'self-hosted-dashboard';
+        return getenv('RUNNERDECK_LABEL') ?: 'self-hosted-runnerdeck';
     }
 
     public static function poolDir(): string
     {
-        $override = getenv('RUNNER_DASHBOARD_POOL_DIR');
+        $override = getenv('RUNNERDECK_POOL_DIR');
         if ($override) {
             return rtrim($override, '/');
         }
@@ -60,7 +60,7 @@ final class Config
             return $resolved;
         }
 
-        $override = getenv('RUNNER_DASHBOARD_GH_BIN');
+        $override = getenv('RUNNERDECK_GH_BIN');
         if ($override && is_executable($override)) {
             return $resolved = $override;
         }
