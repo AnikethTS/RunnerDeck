@@ -8,6 +8,7 @@
     <file>src</file>
     <file>public</file>
     <file>tests</file>
+    <file>bin</file>
     <exclude-pattern>vendor/*</exclude-pattern>
 
     <rule ref="PSR12"/>

@@ -4,6 +4,14 @@ All notable changes to RunnerDeck are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versioning
 follows [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `bin/doctor.php`, a preflight check for PHP version/extensions, `bash`/
+  `curl`/`tar`, `gh` install and auth status, GitHub API access for the
+  configured scope, and pool/storage directory permissions.
+
 ## [1.0.0] - 2026-09-11
 
 First tagged release. Everything below had already shipped to `main`
