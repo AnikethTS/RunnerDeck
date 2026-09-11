@@ -14,6 +14,7 @@ final class RunnerInfo
         public readonly array $logTail,
         public readonly ?float $cpuPercent = null,
         public readonly ?int $rssKb = null,
+        public readonly ?int $uptimeSeconds = null,
     ) {
     }
 
@@ -28,6 +29,7 @@ final class RunnerInfo
             'log_tail' => $this->logTail,
             'cpu_percent' => $this->cpuPercent,
             'rss_kb' => $this->rssKb,
+            'uptime_seconds' => $this->uptimeSeconds,
         ];
     }
 }
@@ -115,6 +117,7 @@ final class RunnerPool
             logTail: self::tailLog("$dir/runner.log", $logLines),
             cpuPercent: $stats['cpu_percent'] ?? null,
             rssKb: $stats['rss_kb'] ?? null,
+            uptimeSeconds: $stats['uptime_seconds'] ?? null,
         );
     }
 
@@ -138,7 +141,10 @@ final class RunnerPool
         return $hasBase ? 'runner-' . ($maxNum + 1) : 'runner-base';
     }
 
-    /** @return array<int, array{cpu_percent: float, rss_kb: int}> pid => live usage, cached briefly */
+    /**
+     * @return array<int, array{cpu_percent: float, rss_kb: int, uptime_seconds: int}>
+     * pid => live usage, cached briefly
+     */
     public static function allProcessStats(): array
     {
         static $cache = null;
@@ -147,16 +153,20 @@ final class RunnerPool
             return $cache;
         }
 
-        $result = Shell::exec(['ps', '-eo', 'pid=,%cpu=,rss='], 5);
+        $result = Shell::exec(['ps', '-eo', 'pid=,%cpu=,rss=,etimes='], 5);
         $map = [];
         if ($result['code'] === 0) {
             foreach (explode("\n", $result['stdout']) as $line) {
                 $parts = preg_split('/\s+/', trim($line));
-                if (count($parts) !== 3) {
+                if (count($parts) !== 4) {
                     continue;
                 }
-                [$pid, $cpu, $rss] = $parts;
-                $map[(int) $pid] = ['cpu_percent' => (float) $cpu, 'rss_kb' => (int) $rss];
+                [$pid, $cpu, $rss, $etimes] = $parts;
+                $map[(int) $pid] = [
+                    'cpu_percent' => (float) $cpu,
+                    'rss_kb' => (int) $rss,
+                    'uptime_seconds' => (int) $etimes,
+                ];
             }
         }
 

@@ -119,6 +119,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>
+        <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
         <span class="spacer"></span>
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>
@@ -148,7 +149,10 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
       <div class="modal-content">
         <div class="modal-header">
           <h2 id="log-modal-title">Log</h2>
-          <button id="log-modal-close" class="btn">Close</button>
+          <div class="modal-header-actions">
+            <a id="log-modal-download" class="btn btn-sm" href="#" download>Download</a>
+            <button id="log-modal-close" class="btn">Close</button>
+          </div>
         </div>
         <pre id="log-modal-body" class="log-view"></pre>
       </div>

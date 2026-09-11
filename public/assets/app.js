@@ -125,11 +125,32 @@
     return badge('stopped', 'critical');
   }
 
+  function formatUptime(seconds) {
+    if (seconds == null) return null;
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    if (hours < 24) return `${hours}h ${remMins}m`;
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return `${days}d ${remHours}h`;
+  }
+
   function resourceUsage(runner) {
     if (!runner.local_running || runner.cpu_percent == null || runner.rss_kb == null) return '';
     const mb = (runner.rss_kb / 1024).toFixed(0);
     const bar = miniBar(runner.cpu_percent);
-    return `<span class="resource-usage">${bar}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB</span>`;
+    const uptime = formatUptime(runner.uptime_seconds);
+    const uptimeText = uptime ? ` &middot; up ${uptime}` : '';
+    return `<span class="resource-usage">${bar}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB${uptimeText}</span>`;
+  }
+
+  function filteredRunners(runners) {
+    const q = (document.getElementById('runner-filter').value || '').trim().toLowerCase();
+    if (!q) return runners;
+    return runners.filter((r) => r.id.toLowerCase().includes(q) || r.agent_name.toLowerCase().includes(q));
   }
 
   function sortValue(runner, key) {
@@ -225,10 +246,14 @@
     }
 
     renderStats(snapshot);
-    rowsEl.innerHTML = sortRunners(snapshot.runners).map(rowHtml).join('');
+    rowsEl.innerHTML = sortRunners(filteredRunners(snapshot.runners)).map(rowHtml).join('');
     updateSortIndicators();
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
   }
+
+  document.getElementById('runner-filter').addEventListener('input', () => {
+    if (lastSnapshot) render(lastSnapshot);
+  });
 
   document.querySelectorAll('th.sortable').forEach((th) => {
     th.addEventListener('click', () => {
@@ -417,6 +442,7 @@
     const modal = document.getElementById('log-modal');
     const body = document.getElementById('log-modal-body');
     document.getElementById('log-modal-title').textContent = `${runnerId} — live log`;
+    document.getElementById('log-modal-download').href = `download_log.php?runner=${encodeURIComponent(runnerId)}`;
     body.textContent = 'Loading…';
     modal.hidden = false;
 
