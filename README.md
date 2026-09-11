@@ -197,7 +197,7 @@ runnerdeck/
     index.php       server-rendered dashboard page
     api.php         JSON API (status, start/stop/restart, pool resize)
     log_stream.php  Server-Sent Events log tailing
-    assets/         app.js, style.css, optional logo.png
+    assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
   src/
     bootstrap.php        single load point required by every public/*.php
     Config.php           env-based configuration
@@ -246,7 +246,7 @@ any more than it needs `vendor/`:
 
 ```bash
 npm install       # pulls in eslint, stylelint, Playwright (dev-only)
-npm run lint:js   # eslint on public/assets/app.js
+npm run lint:js   # eslint on public/assets/app.js and public/assets/js/
 npm run lint:css  # stylelint on public/assets/style.css
 npm run e2e       # Playwright — see e2e/dashboard.spec.js
 ```

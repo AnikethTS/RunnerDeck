@@ -31,6 +31,11 @@ follows [SemVer](https://semver.org/).
 
 - The CPU/RAM history SQLite file now lives at `storage/db/history.sqlite`
   instead of directly under `storage/`, alongside `settings.json`.
+- `public/assets/app.js` (826 lines, one IIFE) is now split into ES
+  modules under `public/assets/js/` (api, utils, reliability, table,
+  history-chart, stats, modals), with `app.js` as the entry point.
+  No build step involved — browsers load ES modules natively. Purely
+  structural; no behavior change.
 
 ### Fixed
 

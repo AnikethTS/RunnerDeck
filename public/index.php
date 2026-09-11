@@ -286,6 +286,6 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
     window.__NEEDS_SETUP__ = <?= json_encode($needsSetup) ?>;
     window.__CURRENT_SETTINGS__ = <?= json_encode($currentSettings) ?>;
   </script>
-  <script src="assets/app.js?v=<?= filemtime(__DIR__ . '/assets/app.js') ?>" defer></script>
+  <script type="module" src="assets/app.js?v=<?= filemtime(__DIR__ . '/assets/app.js') ?>"></script>
 </body>
 </html>

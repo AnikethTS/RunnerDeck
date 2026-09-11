@@ -4,7 +4,7 @@
   "description": "Dev-only tooling for RunnerDeck (lint, E2E tests) — never a runtime dependency of the app itself.",
   "type": "module",
   "scripts": {
-    "lint:js": "eslint public/assets/app.js",
+    "lint:js": "eslint public/assets/app.js public/assets/js",
     "lint:css": "stylelint public/assets/style.css",
     "e2e": "playwright test"
   },
