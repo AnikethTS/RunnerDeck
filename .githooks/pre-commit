@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Pre-commit checks: PHP syntax, PSR-12 formatting (phpcs), static analysis
+# (phpstan), and the test suite — the same checks CI runs, caught locally
+# before the commit lands. Installed via `composer install` (see
+# composer.json's post-install-cmd) or manually:
+#   git config core.hooksPath .githooks
+set -euo pipefail
+
+if [ ! -f vendor/autoload.php ]; then
+    echo "pre-commit: dev tooling not installed (run 'composer install') — skipping checks" >&2
+    exit 0
+fi
+
+staged_php="$(git diff --cached --name-only --diff-filter=ACM -- '*.php' || true)"
+if [ -n "$staged_php" ]; then
+    echo "pre-commit: php -l"
+    while IFS= read -r f; do
+        php -l "$f" >/dev/null
+    done <<< "$staged_php"
+fi
+
+echo "pre-commit: phpcs (PSR-12)"
+composer run cs
+
+echo "pre-commit: phpstan"
+composer run stan
+
+echo "pre-commit: phpunit"
+composer run test

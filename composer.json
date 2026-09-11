@@ -23,7 +23,10 @@
         "test": "phpunit",
         "stan": "phpstan analyse",
         "cs": "phpcs",
-        "cs-fix": "phpcbf"
+        "cs-fix": "phpcbf",
+        "hooks-install": "git config core.hooksPath .githooks",
+        "post-install-cmd": "@hooks-install",
+        "post-update-cmd": "@hooks-install"
     },
     "config": {
         "sort-packages": true,

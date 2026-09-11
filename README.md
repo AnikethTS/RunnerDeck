@@ -129,6 +129,7 @@ dashboard/
     Dashboard.php         merges local + GitHub state into one snapshot
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
+  .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           optional process-supervision examples (systemd, launchd)
   run.sh            Linux/macOS entry point
   run.ps1           Windows entry point (forwards into WSL2)
@@ -147,6 +148,13 @@ composer run stan          # phpstan (level 5)
 composer run cs            # phpcs, PSR-12
 composer run cs-fix        # phpcbf, auto-fixes what it can
 ```
+
+`composer install` also points git at `.githooks/` (a plain shell
+pre-commit hook, no Node/Husky involved), so every commit runs `phpcs`,
+`phpstan`, and the test suite before it's allowed through. If you already
+had `vendor/` installed before this hook existed, wire it up once with
+`composer run hooks-install`. A commit made without dev tooling installed
+skips the checks with a warning rather than blocking you.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on Linux and macOS for every push/PR. `.github/workflows/release.yml`
