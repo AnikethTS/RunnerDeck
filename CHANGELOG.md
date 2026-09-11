@@ -36,6 +36,14 @@ follows [SemVer](https://semver.org/).
   history-chart, stats, modals), with `app.js` as the entry point.
   No build step involved — browsers load ES modules natively. Purely
   structural; no behavior change.
+- `Dashboard::snapshot()` was hitting GitHub's runners API twice per
+  poll — once as an access probe inside `GithubClient::authStatus()`
+  whose result was thrown away, once for real in `listRunners()`.
+  Removed the redundant call (`GithubClient::checkLogin()` now covers
+  the login check; `listRunners()` doubles as the access check).
+  `authStatus()` still exists, probe included, for `bin/doctor.php`'s
+  one-shot use. The auto-refresh interval also dropped from 12s to 5s,
+  safe now that each poll costs about half the GitHub API calls it did.
 
 ### Fixed
 

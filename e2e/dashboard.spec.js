@@ -34,7 +34,7 @@ function fixtureSnapshot(runners) {
   const running = runners.filter((r) => r.local_running);
   return {
     generated_at: Math.floor(Date.now() / 1000),
-    health: { logged_in: false, org_access_ok: false, message: 'not logged in', gh_list_error: null },
+    health: { logged_in: false, org_access_ok: false, message: 'not logged in' },
     runners,
     stats: {
       total: runners.length,

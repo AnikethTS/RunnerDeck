@@ -41,17 +41,33 @@ final class GithubClient
         return Config::scope() === 'repo' ? 'repos/' . Config::repo() : 'orgs/' . Config::org();
     }
 
-    public static function authStatus(): GithubAuthStatus
+    /** @return array{logged_in: bool, message: string} just `gh auth status` — no API call */
+    public static function checkLogin(): array
     {
         self::ensureGhEnv();
-        $gh = Config::ghBinary();
-        $login = Shell::exec([$gh, 'auth', 'status'], 10);
+        $login = Shell::exec([Config::ghBinary(), 'auth', 'status'], 10);
         if ($login['code'] !== 0) {
             $message = trim($login['stderr'] ?: $login['stdout']) ?: 'gh auth status failed';
-            return new GithubAuthStatus(false, false, $message);
+            return ['logged_in' => false, 'message' => $message];
+        }
+        return ['logged_in' => true, 'message' => 'OK'];
+    }
+
+    /**
+     * A standalone login + org/repo-access health check for one-shot callers
+     * (bin/doctor.php). Dashboard::snapshot() does NOT use this — it already
+     * calls listRunners() on every poll, so probing access here first would
+     * mean hitting the same API endpoint twice per poll for no reason.
+     */
+    public static function authStatus(): GithubAuthStatus
+    {
+        $login = self::checkLogin();
+        if (!$login['logged_in']) {
+            return new GithubAuthStatus(false, false, $login['message']);
         }
 
-        $probe = Shell::exec([$gh, 'api', self::accountBase() . '/actions/runners'], 15);
+        self::ensureGhEnv();
+        $probe = Shell::exec([Config::ghBinary(), 'api', self::accountBase() . '/actions/runners'], 15);
         if ($probe['code'] !== 0) {
             $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
             $message = "Logged in, but cannot read {$scopeLabel} runners: " . trim($probe['stderr']);
