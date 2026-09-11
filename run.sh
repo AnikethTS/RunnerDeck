@@ -15,5 +15,5 @@ fi
 
 export PHP_CLI_SERVER_WORKERS=4
 
-echo "Runner Dashboard on http://127.0.0.1:${PORT} (localhost only)"
+echo "RunnerDeck on http://127.0.0.1:${PORT} (localhost only)"
 exec php -S 127.0.0.1:"${PORT}" -t "$DIR/public"

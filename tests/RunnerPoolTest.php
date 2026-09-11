@@ -17,13 +17,13 @@ final class RunnerPoolTest extends TestCase
         mkdir($this->poolDir . '/runner-base', 0755, true);
         mkdir($this->poolDir . '/runner-2', 0755, true);
         mkdir($this->poolDir . '/not-a-runner-dir', 0755, true);
-        putenv('RUNNER_DASHBOARD_POOL_DIR=' . $this->poolDir);
+        putenv('RUNNERDECK_POOL_DIR=' . $this->poolDir);
     }
 
     protected function tearDown(): void
     {
-        putenv('RUNNER_DASHBOARD_POOL_DIR');
-        putenv('RUNNER_DASHBOARD_LABEL');
+        putenv('RUNNERDECK_POOL_DIR');
+        putenv('RUNNERDECK_LABEL');
         exec('rm -rf ' . escapeshellarg($this->poolDir));
     }
 
@@ -52,14 +52,14 @@ final class RunnerPoolTest extends TestCase
     #[RunInSeparateProcess]
     public function testAgentNameForBaseUsesBareLabel(): void
     {
-        putenv('RUNNER_DASHBOARD_LABEL=my-label');
+        putenv('RUNNERDECK_LABEL=my-label');
         $this->assertSame('my-label', \RunnerPool::agentNameFor('runner-base'));
     }
 
     #[RunInSeparateProcess]
     public function testAgentNameForNumberedSuffixesTheLabel(): void
     {
-        putenv('RUNNER_DASHBOARD_LABEL=my-label');
+        putenv('RUNNERDECK_LABEL=my-label');
         $this->assertSame('my-label-2', \RunnerPool::agentNameFor('runner-2'));
     }
 

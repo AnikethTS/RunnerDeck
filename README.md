@@ -1,4 +1,6 @@
-# Runner Dashboard
+<img src=".github/logo.png" alt="RunnerDeck logo" width="96" />
+
+# RunnerDeck
 
 [![CI](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml)
 
@@ -17,7 +19,7 @@ Self-hosted runners are cheap to run many of on one machine, but tedious to
 operate: is `runner-7` actually alive, or did its process die three hours ago
 while GitHub still shows it "busy"? Which of these logs has the failure? Did
 that last "Start All" click actually work, or did it just pile up a second
-copy on top of the first? This dashboard exists to make those questions fast
+copy on top of the first? RunnerDeck exists to make those questions fast
 to answer, and to make starting/stopping a fleet of runners a button instead
 of a script incantation.
 
@@ -71,7 +73,7 @@ of a script incantation.
 
    ```bash
    cp .env.example .env
-   $EDITOR .env   # set RUNNER_DASHBOARD_ORG at minimum
+   $EDITOR .env   # set RUNNERDECK_ORG at minimum
    ```
 
 2. **Run it:**
@@ -101,10 +103,10 @@ win if both are set):
 
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
-| `RUNNER_DASHBOARD_ORG` | yes | — | GitHub org the runners belong to |
-| `RUNNER_DASHBOARD_LABEL` | no | `self-hosted-dashboard` | Shared label across the pool; also `runner-base`'s own registered name |
-| `RUNNER_DASHBOARD_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
-| `RUNNER_DASHBOARD_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
+| `RUNNERDECK_ORG` | yes | — | GitHub org the runners belong to |
+| `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name |
+| `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
+| `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.
@@ -112,7 +114,7 @@ it's gitignored and entirely optional, the dashboard works fine without one.
 ## Directory layout
 
 ```
-dashboard/
+runnerdeck/
   public/
     index.php       server-rendered dashboard page
     api.php         JSON API (status, start/stop/restart, pool resize)

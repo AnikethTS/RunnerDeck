@@ -1,5 +1,5 @@
 {
-    "name": "anikethts/runner-dashboard",
+    "name": "anikethts/runnerdeck",
     "description": "Local-only web UI for managing a pool of self-hosted GitHub Actions runners on a single machine.",
     "type": "project",
     "license": "MIT",

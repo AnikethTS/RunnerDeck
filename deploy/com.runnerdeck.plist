@@ -1,18 +1,18 @@
-<!-- Optional: process supervision for the dashboard itself (macOS launchd
+<!-- Optional: process supervision for RunnerDeck itself (macOS launchd
      user agent). Not required — `./run.sh` works fine run by hand — this is
-     only useful if you want the dashboard to survive a logout/reboot.
+     only useful if you want it to survive a logout/reboot.
 
      Install:
-       cp deploy/com.runnerdashboard.plist ~/Library/LaunchAgents/
+       cp deploy/com.runnerdeck.plist ~/Library/LaunchAgents/
        # edit the two /absolute/path/to placeholders below
-       launchctl load ~/Library/LaunchAgents/com.runnerdashboard.plist
+       launchctl load ~/Library/LaunchAgents/com.runnerdeck.plist
 -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.runnerdashboard</string>
+    <string>com.runnerdeck</string>
     <key>ProgramArguments</key>
     <array>
         <string>/absolute/path/to/Github-Actions-SelfHost/run.sh</string>
@@ -25,8 +25,8 @@
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>/tmp/runner-dashboard.out.log</string>
+    <string>/tmp/runnerdeck.out.log</string>
     <key>StandardErrorPath</key>
-    <string>/tmp/runner-dashboard.err.log</string>
+    <string>/tmp/runnerdeck.err.log</string>
 </dict>
 </plist>

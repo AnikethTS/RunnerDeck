@@ -18,7 +18,7 @@ jobs:
       - name: Build release archive
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          STAGE_DIR="$(mktemp -d)/runner-dashboard-${VERSION}"
+          STAGE_DIR="$(mktemp -d)/runnerdeck-${VERSION}"
           mkdir -p "$STAGE_DIR"
           rsync -a \
             --exclude='.git' \
@@ -28,13 +28,13 @@ jobs:
             --exclude='runners' \
             --exclude='*.log' \
             ./ "$STAGE_DIR/"
-          (cd "$(dirname "$STAGE_DIR")" && zip -qr "${GITHUB_WORKSPACE}/runner-dashboard-${VERSION}.zip" "$(basename "$STAGE_DIR")")
+          (cd "$(dirname "$STAGE_DIR")" && zip -qr "${GITHUB_WORKSPACE}/runnerdeck-${VERSION}.zip" "$(basename "$STAGE_DIR")")
 
       - name: Publish GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${GITHUB_REF_NAME}" \
-            "runner-dashboard-${GITHUB_REF_NAME}.zip" \
+            "runnerdeck-${GITHUB_REF_NAME}.zip" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes
