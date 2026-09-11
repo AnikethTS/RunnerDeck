@@ -3,6 +3,7 @@
 # RunnerDeck
 
 [![CI](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/AnikethTS/RunnerDeck)](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 
 A small, local-only web UI for managing a pool of self-hosted GitHub Actions
 runners on a single machine: see their GitHub-reported status (online/offline,

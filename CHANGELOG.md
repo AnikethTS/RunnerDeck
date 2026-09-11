@@ -1,0 +1,32 @@
+# Changelog
+
+All notable changes to RunnerDeck are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versioning
+follows [SemVer](https://semver.org/).
+
+## [1.0.0] - 2026-09-11
+
+First tagged release. Everything below had already shipped to `main`
+incrementally; this tag marks the point where RunnerDeck is considered
+stable enough to depend on a specific version of.
+
+### Added
+
+- Runner lifecycle management: add, rename, and delete runners from the UI,
+  individually or in bulk (checkbox multi-select with bulk start/stop/delete).
+- Live status for each runner: GitHub-reported state (online/offline,
+  busy/idle) side by side with the actual local process state, live
+  CPU/RAM/uptime, and a rolling one-hour history chart backed by a local
+  SQLite file.
+- A row is flagged when local and GitHub-reported status disagree for
+  several consecutive polls, and an optional auto-restart can bring a
+  crashed runner back up on its own, with backoff.
+- Live log tailing per runner, a filter box for the runner table, and a
+  full log download separate from the tail.
+- Org-scoped or single-repo-scoped runner management, configurable from an
+  in-UI first-run setup screen and a Settings dialog — no `.env` file
+  required to get started.
+- Cross-platform: native on Linux and macOS, Windows via WSL2, CI-tested
+  down to Alpine/musl.
+- CSRF-protected API, SHA-pinned GitHub Actions, and Dependabot for both
+  Composer and Actions dependencies.
