@@ -1,5 +1,7 @@
 # Runner Dashboard
 
+[![CI](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml)
+
 A small, local-only web UI for managing a pool of self-hosted GitHub Actions
 runners on a single machine: see their GitHub-reported status (online/offline,
 busy/idle), see whether the local process is actually running, tail their
@@ -39,14 +41,24 @@ of a script incantation.
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
 
+## Platform support
+
+| Platform | Support | Notes |
+|---|---|---|
+| Linux | Native | Primary target. Process liveness uses `/proc`. |
+| macOS | Native | Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
+| Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there. There is no native-Windows code path: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, and PHP does not ship those extensions on Windows. |
+
 ## Prerequisites
 
 - **PHP CLI 8.1+** with the `posix` extension (process liveness checks) and
   `pcntl` (signal constants). Both are standard in most distro `php-cli`
-  packages.
-  - Debian/Ubuntu: `apt install php-cli`
+  packages. On Windows, install these inside WSL2, not on the Windows side.
+  - Debian/Ubuntu (incl. WSL2): `apt install php-cli`
   - Fedora: `dnf install php-cli php-process`
   - macOS (Homebrew): `brew install php`
+  - Windows: `wsl --install`, then follow the Debian/Ubuntu instructions
+    inside the WSL2 shell.
 - **[`gh`](https://cli.github.com/)**, authenticated (`gh auth login`) as a
   user with **admin access to the GitHub org** you're registering runners
   under — org-level runner registration and the runners API both require it.
@@ -67,6 +79,14 @@ of a script incantation.
    ```bash
    ./run.sh          # binds 127.0.0.1:8090
    ./run.sh 9000     # or pick your own port
+   ```
+
+   On Windows, run this from PowerShell instead (see [Platform
+   support](#platform-support)):
+
+   ```powershell
+   .\run.ps1
+   .\run.ps1 -Port 9000
    ```
 
    Open `http://127.0.0.1:8090/` and click **Start All** (or set a **Pool
@@ -99,15 +119,38 @@ dashboard/
     log_stream.php  Server-Sent Events log tailing
     assets/         app.js, style.css, optional logo.png
   src/
-    Config.php          env-based configuration
-    RunnerPool.php       discovers runner dirs, checks process liveness
-    GithubClient.php     shells out to `gh`
-    Provisioner.php      downloads, installs, and registers a runner
-    ProcessControl.php   start/stop/restart, individual and pool-wide
-    Dashboard.php        merges local + GitHub state into one snapshot
-    Shell.php            timeout-guarded subprocess helper
-  run.sh
+    bootstrap.php        single load point required by every public/*.php
+    Config.php           env-based configuration
+    Csrf.php              session-bound CSRF token minting/verification
+    RunnerPool.php        discovers runner dirs, checks process liveness
+    GithubClient.php      shells out to `gh`
+    Provisioner.php       downloads, installs, and registers a runner
+    ProcessControl.php    start/stop/restart, individual and pool-wide
+    Dashboard.php         merges local + GitHub state into one snapshot
+    Shell.php             timeout-guarded subprocess helper
+  tests/            PHPUnit unit tests for the pure-logic pieces above
+  deploy/           optional process-supervision examples (systemd, launchd)
+  run.sh            Linux/macOS entry point
+  run.ps1           Windows entry point (forwards into WSL2)
 ```
+
+## Development
+
+Running the app itself needs nothing but PHP — `./run.sh` works with a bare
+checkout, no build step, no `composer install`. Composer is only used for
+**dev tooling** (tests, static analysis, lint):
+
+```bash
+composer install          # pulls in phpunit, phpstan, phpcs (dev-only)
+composer run test          # PHPUnit
+composer run stan          # phpstan (level 5)
+composer run cs            # phpcs, PSR-12
+composer run cs-fix        # phpcbf, auto-fixes what it can
+```
+
+CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
+on Linux and macOS for every push/PR. `.github/workflows/release.yml`
+publishes a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed.
 
 ## Safety notes
 
@@ -121,6 +164,12 @@ interface beyond loopback. It also downloads and executes GitHub's official
 runner package on first use of each runner slot — the same binary GitHub's
 own setup page would have you download by hand, checksum-verified before
 extraction.
+
+All state-changing API calls (`start`, `stop`, `restart`, `start_all`,
+`stop_all`, `resize`) require a session-bound CSRF token minted by
+`index.php` and sent back by `assets/app.js` — this stops a malicious page
+open in another tab from silently driving the dashboard, but it is not a
+substitute for keeping this off any network beyond loopback.
 
 ## License
 

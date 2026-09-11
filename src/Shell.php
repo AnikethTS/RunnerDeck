@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 final class Shell
 {
     public static function exec(array $cmd, int $timeoutSec = 20, ?string $cwd = null): array

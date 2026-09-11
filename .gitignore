@@ -9,3 +9,8 @@ public/assets/logo.png
 *.swp
 .idea/
 .vscode/
+
+# Dev tooling (composer install regenerates this; see README)
+/vendor/
+.phpunit.result.cache
+.phpunit.cache/

@@ -1,13 +1,8 @@
 <?php
 
-require __DIR__ . '/../src/Config.php';
-Config::bootstrapEnv();
-require __DIR__ . '/../src/Shell.php';
-require __DIR__ . '/../src/RunnerPool.php';
-require __DIR__ . '/../src/GithubClient.php';
-require __DIR__ . '/../src/Provisioner.php';
-require __DIR__ . '/../src/ProcessControl.php';
-require __DIR__ . '/../src/Dashboard.php';
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
 
 header('Content-Type: application/json');
 
@@ -62,6 +57,10 @@ if ($action === 'log' && $method === 'GET') {
 
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
+}
+
+if (!Csrf::verifyRequest()) {
+    respond(['ok' => false, 'message' => 'missing or invalid CSRF token — reload the page and try again'], 403);
 }
 
 $force = (($_POST['force'] ?? $_GET['force'] ?? '0') === '1');

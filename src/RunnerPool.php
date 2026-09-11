@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 final class RunnerInfo
 {
     public function __construct(
@@ -113,6 +115,16 @@ final class RunnerPool
             return $cache;
         }
 
+        $map = PHP_OS_FAMILY === 'Darwin' ? self::liveListenersByDirDarwin() : self::liveListenersByDirLinux();
+
+        $cache = $map;
+        $cachedAt = microtime(true);
+        return $map;
+    }
+
+    /** @return array<string, int> runner dir => pid, via /proc (Linux only) */
+    private static function liveListenersByDirLinux(): array
+    {
         $map = [];
         foreach (glob('/proc/[0-9]*', GLOB_ONLYDIR) ?: [] as $procDir) {
             $exe = @readlink("$procDir/exe");
@@ -121,9 +133,39 @@ final class RunnerPool
                 $map[dirname($exe, 2)] = $pid;
             }
         }
+        return $map;
+    }
 
-        $cache = $map;
-        $cachedAt = microtime(true);
+    /**
+     * @return array<string, int> runner dir => pid, via `ps` + `lsof` (macOS
+     * has no /proc; Runner.Listener is invoked with a relative path, so its
+     * cwd — which is the runner dir itself — is the only reliable handle).
+     */
+    private static function liveListenersByDirDarwin(): array
+    {
+        $ps = Shell::exec(['ps', '-awwxo', 'pid=,command='], 5);
+        if ($ps['code'] !== 0) {
+            return [];
+        }
+
+        $map = [];
+        foreach (explode("\n", $ps['stdout']) as $line) {
+            $line = trim($line);
+            if ($line === '' || !preg_match('/^(\d+)\s+(.*Runner\.Listener.*)$/', $line, $m)) {
+                continue;
+            }
+            $pid = (int) $m[1];
+            $lsof = Shell::exec(['lsof', '-p', (string) $pid, '-a', '-d', 'cwd', '-Fn'], 5);
+            if ($lsof['code'] !== 0) {
+                continue;
+            }
+            foreach (explode("\n", $lsof['stdout']) as $lsofLine) {
+                if (str_starts_with($lsofLine, 'n') && strlen($lsofLine) > 1) {
+                    $map[substr($lsofLine, 1)] = $pid;
+                    break;
+                }
+            }
+        }
         return $map;
     }
 
@@ -140,11 +182,22 @@ final class RunnerPool
         if (!posix_kill($pid, 0)) {
             return [false, $pid];
         }
-        $cmdline = @file_get_contents("/proc/$pid/cmdline");
-        if ($cmdline !== false && stripos($cmdline, 'Runner.Listener') === false) {
+        $cmd = self::processCommand($pid);
+        if ($cmd !== null && stripos($cmd, 'Runner.Listener') === false) {
             return [false, $pid];
         }
         return [true, $pid];
+    }
+
+    /** Best-effort command line for a pid, so a reused pid isn't mistaken for a live runner. */
+    private static function processCommand(int $pid): ?string
+    {
+        if (PHP_OS_FAMILY === 'Darwin') {
+            $result = Shell::exec(['ps', '-p', (string) $pid, '-o', 'command='], 3);
+            return $result['code'] === 0 && trim($result['stdout']) !== '' ? trim($result['stdout']) : null;
+        }
+        $cmdline = @file_get_contents("/proc/$pid/cmdline");
+        return $cmdline !== false ? $cmdline : null;
     }
 
     public static function tailLog(string $path, int $lines): array

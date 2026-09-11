@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Downloads the official runner package for this OS/arch, verifies its
 // checksum, extracts it, and registers it with a fresh org token.
 final class Provisioner
