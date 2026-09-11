@@ -73,7 +73,6 @@ body {
   color: #fff;
   font-size: 14px;
 }
-.banner.warn { background: var(--status-warning); color: var(--text-primary); }
 
 main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 

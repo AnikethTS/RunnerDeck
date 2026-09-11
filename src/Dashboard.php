@@ -6,15 +6,20 @@ final class Dashboard
 {
     public static function snapshot(int $logLines = 15): array
     {
-        $health = GithubClient::authStatus();
+        $login = GithubClient::checkLogin();
 
         $ghRunners = [];
-        $ghError = null;
-        if ($health->orgAccessOk) {
+        $orgAccessOk = false;
+        $message = $login['message'];
+
+        if ($login['logged_in']) {
             try {
                 $ghRunners = GithubClient::listRunners();
+                $orgAccessOk = true;
+                $message = 'OK';
             } catch (RuntimeException $e) {
-                $ghError = $e->getMessage();
+                $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
+                $message = "Logged in, but cannot read {$scopeLabel} runners: " . $e->getMessage();
             }
         }
 
@@ -35,7 +40,11 @@ final class Dashboard
 
         return [
             'generated_at' => time(),
-            'health' => array_merge($health->toArray(), ['gh_list_error' => $ghError]),
+            'health' => [
+                'logged_in' => $login['logged_in'],
+                'org_access_ok' => $orgAccessOk,
+                'message' => $message,
+            ],
             'runners' => $runners,
             'stats' => $stats,
             'system' => SystemStats::snapshot(),

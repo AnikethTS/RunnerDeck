@@ -10,7 +10,7 @@ import {
   wireScopeToggle, submitSettingsForm, confirmModal, openLogViewer, openRenameModal, initModals,
 } from './js/modals.js';
 
-const POLL_MS = 12000;
+const POLL_MS = 5000;
 
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
@@ -28,10 +28,6 @@ function initDashboard() {
       bannerEl.textContent = !h.logged_in
         ? `gh CLI is not authenticated: ${h.message}`
         : `gh CLI is logged in but cannot read runners: ${h.message}`;
-    } else if (h.gh_list_error) {
-      bannerEl.hidden = false;
-      bannerEl.className = 'banner warn';
-      bannerEl.textContent = `Could not load GitHub runner status: ${h.gh_list_error}`;
     } else {
       bannerEl.hidden = true;
     }
