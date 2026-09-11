@@ -1,13 +1,8 @@
 <?php
 
-require __DIR__ . '/../src/Config.php';
-Config::bootstrapEnv();
-require __DIR__ . '/../src/Shell.php';
-require __DIR__ . '/../src/RunnerPool.php';
-require __DIR__ . '/../src/GithubClient.php';
-require __DIR__ . '/../src/Provisioner.php';
-require __DIR__ . '/../src/ProcessControl.php';
-require __DIR__ . '/../src/Dashboard.php';
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
 
 header('Content-Type: application/json');
 
@@ -34,10 +29,18 @@ function checkNotBusy(string $agentName, bool $force): ?array
     }
     [$known, $busy, $error] = Dashboard::isBusy($agentName);
     if (!$known) {
-        return ['ok' => false, 'busy_unknown' => true, 'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override."];
+        return [
+            'ok' => false,
+            'busy_unknown' => true,
+            'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override.",
+        ];
     }
     if ($busy) {
-        return ['ok' => false, 'busy' => true, 'message' => "{$agentName} is currently running a job. Pass force=1 to stop anyway."];
+        return [
+            'ok' => false,
+            'busy' => true,
+            'message' => "{$agentName} is currently running a job. Pass force=1 to stop anyway.",
+        ];
     }
     return null;
 }
@@ -62,6 +65,10 @@ if ($action === 'log' && $method === 'GET') {
 
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
+}
+
+if (!Csrf::verifyRequest()) {
+    respond(['ok' => false, 'message' => 'missing or invalid CSRF token — reload the page and try again'], 403);
 }
 
 $force = (($_POST['force'] ?? $_GET['force'] ?? '0') === '1');
@@ -102,18 +109,20 @@ if ($action === 'stop_all') {
                 }
             }
             if ($busyNames) {
+                $names = implode(', ', $busyNames);
                 respond([
                     'ok' => false,
                     'busy' => true,
                     'busy_runners' => $busyNames,
-                    'message' => 'Busy runners would be interrupted: ' . implode(', ', $busyNames) . '. Pass force=1 to stop anyway.',
+                    'message' => "Busy runners would be interrupted: {$names}. Pass force=1 to stop anyway.",
                 ], 409);
             }
         } catch (RuntimeException $e) {
+            $error = $e->getMessage();
             respond([
                 'ok' => false,
                 'busy_unknown' => true,
-                'message' => "Could not verify job status via GitHub API ({$e->getMessage()}). Pass force=1 to override.",
+                'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override.",
             ], 409);
         }
     }

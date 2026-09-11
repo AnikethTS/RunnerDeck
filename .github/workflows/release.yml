@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build release archive
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          STAGE_DIR="$(mktemp -d)/runner-dashboard-${VERSION}"
+          mkdir -p "$STAGE_DIR"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='vendor' \
+            --exclude='runners' \
+            --exclude='*.log' \
+            ./ "$STAGE_DIR/"
+          (cd "$(dirname "$STAGE_DIR")" && zip -qr "${GITHUB_WORKSPACE}/runner-dashboard-${VERSION}.zip" "$(basename "$STAGE_DIR")")
+
+      - name: Publish GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            "runner-dashboard-${GITHUB_REF_NAME}.zip" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes

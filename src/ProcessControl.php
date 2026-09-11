@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 final class ProcessControl
 {
+    // /dev/fd works the same way on Linux and macOS (on Linux it's a symlink
+    // to /proc/self/fd); /proc itself does not exist on macOS.
     private const CLOSE_FDS_PREFIX =
-        'for fd in /proc/self/fd/*; do n=${fd##*/}; [ "$n" -gt 2 ] 2>/dev/null && eval "exec $n<&-" 2>/dev/null; done; ';
+        'for fd in /dev/fd/*; do n=${fd##*/}; [ "$n" -gt 2 ] 2>/dev/null && eval "exec $n<&-" 2>/dev/null; done; ';
 
     public static function startIndividual(RunnerInfo $r): array
     {

@@ -1,0 +1,25 @@
+# Optional: process supervision for the dashboard itself (Linux, systemd
+# user unit). Not required — `./run.sh` works fine run by hand — this is
+# only useful if you want the dashboard to survive a logout/reboot.
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/runner-dashboard.service ~/.config/systemd/user/
+#   # edit WorkingDirectory below to your checkout path
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now runner-dashboard
+#   loginctl enable-linger "$USER"   # keep it running after logout
+
+[Unit]
+Description=Runner Dashboard (self-hosted GitHub Actions runner pool UI)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Github-Actions-SelfHost
+ExecStart=%h/Github-Actions-SelfHost/run.sh 8090
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,15 +1,11 @@
 <?php
 
-require __DIR__ . '/../src/Config.php';
-Config::bootstrapEnv();
-require __DIR__ . '/../src/Shell.php';
-require __DIR__ . '/../src/RunnerPool.php';
-require __DIR__ . '/../src/GithubClient.php';
-require __DIR__ . '/../src/Provisioner.php';
-require __DIR__ . '/../src/ProcessControl.php';
-require __DIR__ . '/../src/Dashboard.php';
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
 
 $snapshot = Dashboard::snapshot(5);
+$csrfToken = Csrf::token();
 $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 ?>
 <!doctype html>
@@ -22,11 +18,13 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 </head>
 <body>
   <header class="topbar">
-    <?php if ($hasLogo): ?>
+    <?php if ($hasLogo) : ?>
       <img src="assets/logo.png" alt="Logo" class="logo" />
     <?php endif; ?>
     <h1>Runner Dashboard</h1>
-    <span class="org-tag"><?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?></span>
+    <span class="org-tag">
+      <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
+    </span>
   </header>
 
   <div id="health-banner" class="banner" hidden></div>
@@ -81,6 +79,7 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 
   <script>
     window.__SNAPSHOT__ = <?= json_encode($snapshot) ?>;
+    window.__CSRF__ = <?= json_encode($csrfToken) ?>;
   </script>
   <script src="assets/app.js?v=<?= filemtime(__DIR__ . '/assets/app.js') ?>" defer></script>
 </body>

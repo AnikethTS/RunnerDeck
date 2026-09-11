@@ -1,0 +1,35 @@
+{
+    "name": "anikethts/runner-dashboard",
+    "description": "Local-only web UI for managing a pool of self-hosted GitHub Actions runners on a single machine.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "ext-posix": "*",
+        "ext-pcntl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^1.11",
+        "squizlabs/php_codesniffer": "^3.10"
+    },
+    "autoload-dev": {
+        "classmap": [
+            "src/"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit",
+        "stan": "phpstan analyse",
+        "cs": "phpcs",
+        "cs-fix": "phpcbf",
+        "hooks-install": "git config core.hooksPath .githooks",
+        "post-install-cmd": "@hooks-install",
+        "post-update-cmd": "@hooks-install"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}

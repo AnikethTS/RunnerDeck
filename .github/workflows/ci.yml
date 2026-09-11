@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-static-analysis:
+    name: Lint & static analysis (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: posix, pcntl, json
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: PHP syntax check
+        run: |
+          find src public tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: phpcs (PSR-12)
+        run: composer run cs
+
+      - name: phpstan
+        run: composer run stan
+
+  test:
+    name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.php }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        php: ["8.1", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: posix, pcntl, json
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run test suite
+        run: composer run test
+
+  smoke-test:
+    name: Boot smoke test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: posix, pcntl, json
+          coverage: none
+
+      - name: Boot the dashboard and hit the status endpoint
+        env:
+          RUNNER_DASHBOARD_ORG: smoke-test-org
+        run: |
+          php -S 127.0.0.1:8090 -t public &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:8090/api.php?action=status" -o response.json; then
+              break
+            fi
+            sleep 0.5
+          done
+          kill "$SERVER_PID" 2>/dev/null || true
+
+          echo "--- response ---"
+          cat response.json
+          echo
+
+          php -r '
+            $data = json_decode(file_get_contents("response.json"), true);
+            if (!is_array($data) || !array_key_exists("health", $data) || !array_key_exists("runners", $data)) {
+              fwrite(STDERR, "unexpected response shape\n");
+              exit(1);
+            }
+            echo "smoke test OK\n";
+          '

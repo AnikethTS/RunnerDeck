@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Downloads the official runner package for this OS/arch, verifies its
 // checksum, extracts it, and registers it with a fresh org token.
 final class Provisioner
@@ -78,7 +80,8 @@ final class Provisioner
         ], 60, $dir);
 
         if ($config['code'] !== 0) {
-            return ['ok' => false, 'message' => "config.sh failed for {$name}: " . trim($config['stderr'] . "\n" . $config['stdout'])];
+            $output = trim($config['stderr'] . "\n" . $config['stdout']);
+            return ['ok' => false, 'message' => "config.sh failed for {$name}: {$output}"];
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];
@@ -105,7 +108,7 @@ final class Provisioner
         }
 
         foreach (GithubClient::listRunnerDownloads() as $d) {
-            if (($d['os'] ?? null) === $os && ($d['architecture'] ?? null) === $arch) {
+            if ($d['os'] === $os && $d['architecture'] === $arch) {
                 return $d;
             }
         }

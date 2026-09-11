@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 final class Config
 {
     public static function bootstrapEnv(): void
@@ -63,12 +65,13 @@ final class Config
             return $resolved = $override;
         }
 
-        foreach ([
+        $candidates = [
             getenv('HOME') . '/.local/bin/gh',
             '/usr/local/bin/gh',
             '/usr/bin/gh',
             '/opt/homebrew/bin/gh',
-        ] as $path) {
+        ];
+        foreach ($candidates as $path) {
             if (is_executable($path)) {
                 return $resolved = $path;
             }

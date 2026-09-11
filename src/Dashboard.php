@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 final class Dashboard
 {
     public static function snapshot(int $logLines = 15): array
