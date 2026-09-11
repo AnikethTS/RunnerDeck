@@ -170,8 +170,12 @@ had `vendor/` installed before this hook existed, wire it up once with
 skips the checks with a warning rather than blocking you.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-on Linux and macOS for every push/PR. `.github/workflows/release.yml`
-publishes a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed.
+on Linux and macOS for every push/PR, with the default `GITHUB_TOKEN`
+restricted to read-only and third-party actions pinned to commit SHAs
+rather than mutable version tags. `.github/workflows/release.yml` publishes
+a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed. Dependabot
+(`.github/dependabot.yml`) keeps both the dev-tooling Composer dependencies
+and the pinned Actions SHAs current on a weekly schedule.
 
 Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) — it covers PR
 expectations and the project's policy on AI-assisted contributions.
