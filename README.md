@@ -68,6 +68,12 @@ of a script incantation.
   the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID or registered name, and
   each runner's log can be **downloaded in full**, not just tailed.
+- Two **System CPU/RAM** stat cards show whole-machine usage (all
+  processes, not just runners) — useful for telling "my runners are the
+  load" apart from "something else on this box is." Reuses the same `ps`
+  scan the per-runner stats already do, plus one cached `nproc`/`sysctl`
+  call for core count and total RAM; degrades to `—` rather than guessing
+  if those aren't available.
 - If a runner's local process state and its GitHub-reported state
   **disagree for several polls in a row**, the row is flagged — a one-off
   mismatch during a status transition is normal and ignored, a persistent
@@ -199,6 +205,7 @@ runnerdeck/
     History.php            best-effort CPU/RAM history in storage/db/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
     RunnerPool.php        discovers runner dirs, checks process liveness
+    SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
     Provisioner.php       downloads, installs, and registers a runner
     ProcessControl.php    start/stop/restart, individual and pool-wide

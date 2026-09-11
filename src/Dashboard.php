@@ -38,6 +38,7 @@ final class Dashboard
             'health' => array_merge($health->toArray(), ['gh_list_error' => $ghError]),
             'runners' => $runners,
             'stats' => $stats,
+            'system' => SystemStats::snapshot(),
         ];
     }
 

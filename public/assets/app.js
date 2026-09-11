@@ -269,6 +269,33 @@
     const mb = s.total_rss_kb != null ? (s.total_rss_kb / 1024).toFixed(0) : null;
     document.getElementById('stat-mem').textContent = mb != null ? `${mb} MB` : '—';
     document.getElementById('stat-mem-sub').textContent = s.running ? `across ${s.running} running` : 'no runners active';
+
+    renderLoadStat(snapshot.system);
+  }
+
+  function loadClass(percent) {
+    if (percent == null) return '';
+    if (percent > 85) return 'stat-critical';
+    if (percent > 60) return 'stat-warning';
+    return '';
+  }
+
+  function renderLoadStat(sys) {
+    if (!sys) return;
+
+    const cpuEl = document.getElementById('stat-sys-cpu');
+    cpuEl.textContent = sys.cpu_percent != null ? `${sys.cpu_percent.toFixed(1)}%` : '—';
+    cpuEl.className = `stat-value ${loadClass(sys.cpu_percent)}`;
+    document.getElementById('stat-sys-cpu-sub').textContent = `${sys.cpu_cores} core${sys.cpu_cores === 1 ? '' : 's'}, whole machine`;
+
+    const memEl = document.getElementById('stat-sys-mem');
+    memEl.textContent = sys.mem_percent != null ? `${sys.mem_percent.toFixed(0)}%` : '—';
+    memEl.className = `stat-value ${loadClass(sys.mem_percent)}`;
+    const usedMb = (sys.mem_used_kb / 1024).toFixed(0);
+    const totalMb = sys.mem_total_kb != null ? (sys.mem_total_kb / 1024).toFixed(0) : null;
+    document.getElementById('stat-sys-mem-sub').textContent = totalMb != null
+      ? `${usedMb} of ${totalMb} MB`
+      : `${usedMb} MB used, total unknown`;
   }
 
   function rowHtml(runner) {
