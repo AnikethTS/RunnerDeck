@@ -92,6 +92,14 @@
   const lastUpdatedEl = document.getElementById('last-updated');
 
   let activeStream = null;
+  let lastSnapshot = null;
+  const sortState = { key: null, dir: 1 };
+
+  function miniBar(percent) {
+    const pct = Math.max(0, Math.min(100, percent));
+    const cls = percent > 80 ? 'mini-bar-critical' : percent > 50 ? 'mini-bar-warn' : '';
+    return `<span class="mini-bar"><span class="mini-bar-fill ${cls}" style="width:${pct}%"></span></span>`;
+  }
 
   function badge(text, cls) {
     return `<span class="badge badge-${cls}">${escapeHtml(text)}</span>`;
@@ -114,7 +122,57 @@
   function resourceUsage(runner) {
     if (!runner.local_running || runner.cpu_percent == null || runner.rss_kb == null) return '';
     const mb = (runner.rss_kb / 1024).toFixed(0);
-    return `<span class="resource-usage">${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB</span>`;
+    const bar = miniBar(runner.cpu_percent);
+    return `<span class="resource-usage">${bar}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB</span>`;
+  }
+
+  function sortValue(runner, key) {
+    if (key === 'id') return runner.id;
+    if (key === 'status') return runner.github ? (runner.github.busy ? 2 : runner.github.status === 'online' ? 1 : 0) : -1;
+    if (key === 'cpu') return runner.cpu_percent ?? -1;
+    return '';
+  }
+
+  function sortRunners(runners) {
+    if (!sortState.key) return runners;
+    const { key, dir } = sortState;
+    return [...runners].sort((a, b) => {
+      const av = sortValue(a, key);
+      const bv = sortValue(b, key);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }
+
+  function updateSortIndicators() {
+    document.querySelectorAll('th.sortable .sort-caret').forEach((el) => {
+      el.textContent = '';
+    });
+    if (sortState.key) {
+      const caret = document.querySelector(`th.sortable[data-sort="${sortState.key}"] .sort-caret`);
+      if (caret) caret.textContent = sortState.dir === 1 ? ' ▲' : ' ▼';
+    }
+  }
+
+  function renderStats(snapshot) {
+    const s = snapshot.stats;
+    document.getElementById('stat-active').textContent = String(s.running);
+    document.getElementById('stat-active-sub').textContent = `of ${s.total} configured`;
+
+    const h = snapshot.health;
+    const connected = h.logged_in && h.org_access_ok;
+    const githubEl = document.getElementById('stat-github');
+    githubEl.textContent = connected ? 'Connected' : 'Issue';
+    githubEl.className = `stat-value ${connected ? 'stat-good' : 'stat-critical'}`;
+    document.getElementById('stat-github-sub').textContent = connected ? 'org/repo reachable' : h.message;
+
+    document.getElementById('stat-cpu').textContent = s.avg_cpu_percent != null ? `${s.avg_cpu_percent.toFixed(1)}%` : '—';
+    document.getElementById('stat-cpu-sub').textContent = s.running ? `across ${s.running} running` : 'no runners active';
+
+    const mb = s.total_rss_kb != null ? (s.total_rss_kb / 1024).toFixed(0) : null;
+    document.getElementById('stat-mem').textContent = mb != null ? `${mb} MB` : '—';
+    document.getElementById('stat-mem-sub').textContent = s.running ? `across ${s.running} running` : 'no runners active';
   }
 
   function rowHtml(runner) {
@@ -143,6 +201,7 @@
   }
 
   function render(snapshot) {
+    lastSnapshot = snapshot;
     const h = snapshot.health;
     if (!h.logged_in || !h.org_access_ok) {
       bannerEl.hidden = false;
@@ -158,9 +217,20 @@
       bannerEl.hidden = true;
     }
 
-    rowsEl.innerHTML = snapshot.runners.map(rowHtml).join('');
+    renderStats(snapshot);
+    rowsEl.innerHTML = sortRunners(snapshot.runners).map(rowHtml).join('');
+    updateSortIndicators();
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
   }
+
+  document.querySelectorAll('th.sortable').forEach((th) => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      sortState.dir = sortState.key === key ? sortState.dir * -1 : 1;
+      sortState.key = key;
+      if (lastSnapshot) render(lastSnapshot);
+    });
+  });
 
   async function fetchStatus() {
     const res = await fetch('api.php?action=status&lines=5');
