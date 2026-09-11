@@ -44,6 +44,11 @@ follows [SemVer](https://semver.org/).
   `authStatus()` still exists, probe included, for `bin/doctor.php`'s
   one-shot use. The auto-refresh interval also dropped from 12s to 5s,
   safe now that each poll costs about half the GitHub API calls it did.
+- The System CPU/RAM stat cards now poll independently every 2s via a
+  new `action=system` endpoint, instead of waiting on the main 5s
+  runner/GitHub poll — they're pure local `ps`/`nproc`/`/proc` reads
+  with no GitHub API cost, so there's no reason to cap them at the
+  same interval as data that does.
 
 ### Fixed
 

@@ -71,9 +71,11 @@ of a script incantation.
 - Two **System CPU/RAM** stat cards show whole-machine usage (all
   processes, not just runners) — useful for telling "my runners are the
   load" apart from "something else on this box is." Reuses the same `ps`
-  scan the per-runner stats already do, plus one cached `nproc`/`sysctl`
-  call for core count and total RAM; degrades to `—` rather than guessing
-  if those aren't available.
+  scan the per-runner stats already do, plus `nproc`/`sysctl` for core
+  count and total RAM; degrades to `—` rather than guessing if those
+  aren't available. These are pure local reads with no GitHub API cost,
+  so they poll independently on a faster 2s cadence rather than waiting
+  on the main 5s runner/GitHub poll.
 - If a runner's local process state and its GitHub-reported state
   **disagree for several polls in a row**, the row is flagged — a one-off
   mismatch during a status transition is normal and ignored, a persistent
