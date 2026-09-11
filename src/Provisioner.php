@@ -63,6 +63,7 @@ final class Provisioner
         }
 
         try {
+            $registrationUrl = self::registrationUrl();
             $token = GithubClient::registrationToken();
         } catch (RuntimeException $e) {
             return ['ok' => false, 'message' => $e->getMessage()];
@@ -70,7 +71,7 @@ final class Provisioner
 
         $config = Shell::exec([
             './config.sh',
-            '--url', 'https://github.com/' . Config::org(),
+            '--url', $registrationUrl,
             '--token', $token,
             '--name', $name,
             '--labels', Config::label(),
@@ -85,6 +86,13 @@ final class Provisioner
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];
+    }
+
+    /** @throws RuntimeException if the personal-account username can't be resolved */
+    private static function registrationUrl(): string
+    {
+        $owner = Config::scope() === 'user' ? GithubClient::authenticatedLogin() : Config::org();
+        return 'https://github.com/' . $owner;
     }
 
     /** @throws RuntimeException if this OS/arch has no matching official package */

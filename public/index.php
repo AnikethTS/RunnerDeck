@@ -23,7 +23,11 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
     <?php endif; ?>
     <h1>RunnerDeck</h1>
     <span class="org-tag">
-      <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
+      <?php if (Config::scope() === 'user') : ?>
+        personal account &middot; label: <?= htmlspecialchars(Config::label()) ?>
+      <?php else : ?>
+        <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
+      <?php endif; ?>
     </span>
   </header>
 

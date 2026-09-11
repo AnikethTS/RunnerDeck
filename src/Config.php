@@ -39,6 +39,16 @@ final class Config
         return $org;
     }
 
+    /** @return 'org'|'user' whether runners are managed at the org or personal-account level */
+    public static function scope(): string
+    {
+        $scope = getenv('RUNNERDECK_SCOPE') ?: 'org';
+        if ($scope !== 'org' && $scope !== 'user') {
+            throw new RuntimeException("RUNNERDECK_SCOPE must be 'org' or 'user', got '{$scope}'");
+        }
+        return $scope;
+    }
+
     public static function label(): string
     {
         return getenv('RUNNERDECK_LABEL') ?: 'self-hosted-runnerdeck';

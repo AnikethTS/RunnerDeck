@@ -12,7 +12,7 @@ final class ConfigTest extends TestCase
 {
     protected function tearDown(): void
     {
-        foreach (['RUNNERDECK_ORG', 'RUNNERDECK_LABEL', 'RUNNERDECK_POOL_DIR'] as $key) {
+        foreach (['RUNNERDECK_ORG', 'RUNNERDECK_LABEL', 'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE'] as $key) {
             putenv($key);
         }
     }
@@ -56,5 +56,26 @@ final class ConfigTest extends TestCase
     {
         $expected = dirname(__DIR__, 2) . '/runners';
         $this->assertSame($expected, \Config::poolDir());
+    }
+
+    #[RunInSeparateProcess]
+    public function testScopeDefaultsToOrg(): void
+    {
+        $this->assertSame('org', \Config::scope());
+    }
+
+    #[RunInSeparateProcess]
+    public function testScopeAcceptsUser(): void
+    {
+        putenv('RUNNERDECK_SCOPE=user');
+        $this->assertSame('user', \Config::scope());
+    }
+
+    #[RunInSeparateProcess]
+    public function testScopeRejectsInvalidValue(): void
+    {
+        putenv('RUNNERDECK_SCOPE=repo');
+        $this->expectException(RuntimeException::class);
+        \Config::scope();
     }
 }
