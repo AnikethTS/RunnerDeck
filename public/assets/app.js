@@ -113,6 +113,12 @@
     return parts.join(' ');
   }
 
+  function githubLabels(gh) {
+    if (!gh || !gh.labels || !gh.labels.length) return '';
+    const chips = gh.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('');
+    return `<div class="label-chips">${chips}</div>`;
+  }
+
   function localBadge(runner) {
     if (!runner.configured) return badge('not configured', 'muted');
     if (runner.local_running) return badge(`running (pid ${runner.pid})`, 'good');
@@ -183,7 +189,7 @@
           <span class="runner-name">${escapeHtml(runner.id)}</span>
           <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
         </td>
-        <td>${githubBadges(runner.github)}</td>
+        <td>${githubBadges(runner.github)}${githubLabels(runner.github)}</td>
         <td>${localBadge(runner)}${resourceUsage(runner)}</td>
         <td>
           <pre class="log-preview">${escapeHtml(logPreview)}</pre>

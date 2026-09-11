@@ -239,6 +239,16 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 .badge-critical { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 14%, transparent); }
 .badge-muted { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
 
+.label-chips { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
+.label-chip {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--page-plane);
+  border: 1px solid var(--gridline);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .log-preview {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
   font-size: 11px;
