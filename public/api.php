@@ -29,10 +29,18 @@ function checkNotBusy(string $agentName, bool $force): ?array
     }
     [$known, $busy, $error] = Dashboard::isBusy($agentName);
     if (!$known) {
-        return ['ok' => false, 'busy_unknown' => true, 'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override."];
+        return [
+            'ok' => false,
+            'busy_unknown' => true,
+            'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override.",
+        ];
     }
     if ($busy) {
-        return ['ok' => false, 'busy' => true, 'message' => "{$agentName} is currently running a job. Pass force=1 to stop anyway."];
+        return [
+            'ok' => false,
+            'busy' => true,
+            'message' => "{$agentName} is currently running a job. Pass force=1 to stop anyway.",
+        ];
     }
     return null;
 }
@@ -101,18 +109,20 @@ if ($action === 'stop_all') {
                 }
             }
             if ($busyNames) {
+                $names = implode(', ', $busyNames);
                 respond([
                     'ok' => false,
                     'busy' => true,
                     'busy_runners' => $busyNames,
-                    'message' => 'Busy runners would be interrupted: ' . implode(', ', $busyNames) . '. Pass force=1 to stop anyway.',
+                    'message' => "Busy runners would be interrupted: {$names}. Pass force=1 to stop anyway.",
                 ], 409);
             }
         } catch (RuntimeException $e) {
+            $error = $e->getMessage();
             respond([
                 'ok' => false,
                 'busy_unknown' => true,
-                'message' => "Could not verify job status via GitHub API ({$e->getMessage()}). Pass force=1 to override.",
+                'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override.",
             ], 409);
         }
     }

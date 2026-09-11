@@ -80,7 +80,8 @@ final class Provisioner
         ], 60, $dir);
 
         if ($config['code'] !== 0) {
-            return ['ok' => false, 'message' => "config.sh failed for {$name}: " . trim($config['stderr'] . "\n" . $config['stdout'])];
+            $output = trim($config['stderr'] . "\n" . $config['stdout']);
+            return ['ok' => false, 'message' => "config.sh failed for {$name}: {$output}"];
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];

@@ -44,8 +44,12 @@ final class RunnerPool
             }
         }
         usort($ids, function (string $a, string $b) {
-            if ($a === 'runner-base') return -1;
-            if ($b === 'runner-base') return 1;
+            if ($a === 'runner-base') {
+                return -1;
+            }
+            if ($b === 'runner-base') {
+                return 1;
+            }
             return (int) substr($a, 7) <=> (int) substr($b, 7);
         });
 

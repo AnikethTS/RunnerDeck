@@ -4,9 +4,26 @@
     <arg name="basepath" value="."/>
     <arg name="colors"/>
     <arg value="p"/>
+    <arg name="extensions" value="php"/>
     <file>src</file>
     <file>public</file>
     <file>tests</file>
     <exclude-pattern>vendor/*</exclude-pattern>
+
     <rule ref="PSR12"/>
+
+    <!-- This project deliberately uses the global namespace (no framework,
+         no autoloader dependency) and front-controller scripts that mix
+         declarations with side effects by design; small companion classes
+         (e.g. GithubAuthStatus alongside GithubClient) are kept in one file
+         on purpose. Formatting rules still apply everywhere else. -->
+    <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR1.Classes.ClassDeclaration.MultipleClasses">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR1.Files.SideEffects">
+        <severity>0</severity>
+    </rule>
 </ruleset>

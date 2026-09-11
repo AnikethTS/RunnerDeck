@@ -41,12 +41,14 @@ final class GithubClient
         $gh = Config::ghBinary();
         $login = Shell::exec([$gh, 'auth', 'status'], 10);
         if ($login['code'] !== 0) {
-            return new GithubAuthStatus(false, false, trim($login['stderr'] ?: $login['stdout']) ?: 'gh auth status failed');
+            $message = trim($login['stderr'] ?: $login['stdout']) ?: 'gh auth status failed';
+            return new GithubAuthStatus(false, false, $message);
         }
 
         $probe = Shell::exec([$gh, 'api', 'orgs/' . Config::org() . '/actions/runners'], 15);
         if ($probe['code'] !== 0) {
-            return new GithubAuthStatus(true, false, 'Logged in, but cannot read org runners: ' . trim($probe['stderr']));
+            $message = 'Logged in, but cannot read org runners: ' . trim($probe['stderr']);
+            return new GithubAuthStatus(true, false, $message);
         }
 
         return new GithubAuthStatus(true, true, 'OK');
@@ -84,7 +86,11 @@ final class GithubClient
     {
         self::ensureGhEnv();
         $result = Shell::exec(
-            [Config::ghBinary(), 'api', '-X', 'POST', 'orgs/' . Config::org() . '/actions/runners/registration-token', '-q', '.token'],
+            [
+                Config::ghBinary(), 'api', '-X', 'POST',
+                'orgs/' . Config::org() . '/actions/runners/registration-token',
+                '-q', '.token',
+            ],
             15
         );
         $token = trim($result['stdout']);

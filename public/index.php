@@ -18,11 +18,13 @@ $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 </head>
 <body>
   <header class="topbar">
-    <?php if ($hasLogo): ?>
+    <?php if ($hasLogo) : ?>
       <img src="assets/logo.png" alt="Logo" class="logo" />
     <?php endif; ?>
     <h1>Runner Dashboard</h1>
-    <span class="org-tag"><?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?></span>
+    <span class="org-tag">
+      <?= htmlspecialchars(Config::org()) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
+    </span>
   </header>
 
   <div id="health-banner" class="banner" hidden></div>

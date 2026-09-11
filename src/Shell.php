@@ -20,6 +20,7 @@ final class Shell
         $stderr = '';
         $start = microtime(true);
         $timedOut = false;
+        $exitCode = null;
 
         while (true) {
             $stdout .= stream_get_contents($pipes[1]);
@@ -27,6 +28,12 @@ final class Shell
 
             $status = proc_get_status($proc);
             if (!$status['running']) {
+                // proc_get_status() only reports the real exit code the
+                // first time it's called after the process ends; capture
+                // it here rather than relying on proc_close()'s return
+                // value below, which can come back -1 once that status has
+                // already been collected once.
+                $exitCode = $status['exitcode'];
                 break;
             }
             if (microtime(true) - $start > $timeoutSec) {
@@ -43,7 +50,8 @@ final class Shell
         $stderr .= stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
-        $code = proc_close($proc);
+        $closeCode = proc_close($proc);
+        $code = $exitCode ?? $closeCode;
 
         if ($timedOut) {
             $stderr .= "\n[timed out after {$timeoutSec}s, process killed]";
