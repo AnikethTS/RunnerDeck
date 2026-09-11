@@ -59,12 +59,14 @@ of a script incantation.
   does the same deregistration and then permanently removes the runner's
   local directory (binaries, config, logs) — always confirmed separately
   from the busy check, since there's no undo.
-- Each running runner's **CPU%/RAM** is shown live (`ps`-based, cross-platform,
-  read-only — nothing is capped or throttled), with a rolling one-hour
-  pool-wide history chart backed by a small local SQLite file
-  (`storage/history.sqlite`). This is best-effort: if the `pdo_sqlite`
+- Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
+  cross-platform, read-only — nothing is capped or throttled), with a
+  rolling one-hour pool-wide history chart backed by a small local SQLite
+  file (`storage/history.sqlite`). This is best-effort: if the `pdo_sqlite`
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
+- A **filter box** narrows the table by runner ID or registered name, and
+  each runner's log can be **downloaded in full**, not just tailed.
 
 ## Platform support
 

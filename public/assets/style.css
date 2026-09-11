@@ -123,6 +123,16 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 .toolbar .spacer { flex: 1; }
 .muted { color: var(--text-muted); font-size: 13px; }
 
+.filter-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 13px;
+  width: 180px;
+}
+
 .btn {
   border: 1px solid var(--border);
   background: var(--surface-1);
@@ -288,6 +298,7 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 .modal-content-small { width: min(420px, 92vw); }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .modal-header h2 { font-size: 15px; margin: 0; }
+.modal-header-actions { display: flex; gap: 8px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
 .log-view {
