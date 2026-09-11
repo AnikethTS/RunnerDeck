@@ -11,6 +11,9 @@ follows [SemVer](https://semver.org/).
 - `bin/doctor.php`, a preflight check for PHP version/extensions, `bash`/
   `curl`/`tar`, `gh` install and auth status, GitHub API access for the
   configured scope, and pool/storage directory permissions.
+- CI security hardening: `composer audit` in the lint job, a Semgrep static
+  analysis pass (`p/security-audit` + `p/php`), and a Dependency Review
+  check on PRs. Enabled Dependabot security updates on the repo.
 
 ## [1.0.0] - 2026-09-11
 

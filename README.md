@@ -223,6 +223,7 @@ composer run test          # PHPUnit
 composer run stan          # phpstan (level 5)
 composer run cs            # phpcs, PSR-12
 composer run cs-fix        # phpcbf, auto-fixes what it can
+composer audit             # known CVEs in dependencies
 ```
 
 `composer install` also points git at `.githooks/` (a plain shell
@@ -241,6 +242,14 @@ mutable version tags. `.github/workflows/release.yml` publishes
 a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed. Dependabot
 (`.github/dependabot.yml`) keeps both the dev-tooling Composer dependencies
 and the pinned Actions SHAs current on a weekly schedule.
+
+Security checks beyond linting: `.github/workflows/semgrep.yml` runs a
+static analysis pass (`p/security-audit` + `p/php` rulesets) on every
+push/PR; `.github/workflows/dependency-review.yml` blocks a PR that
+introduces a known-vulnerable or newly license-incompatible dependency;
+GitHub secret scanning + push protection and Dependabot security updates
+are both enabled on the repo itself (not something in this codebase to
+configure, but worth knowing they're on).
 
 Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) — it covers PR
 expectations and the project's policy on AI-assisted contributions.
