@@ -142,6 +142,14 @@ if ($action === 'add_runner') {
     respond(ProcessControl::addRunner($name !== '' ? $name : null));
 }
 
+if ($action === 'delete_runner') {
+    $r = requireRunner($_POST['runner'] ?? '');
+    if ($blocked = checkNotBusy($r->agentName, $force)) {
+        respond($blocked, 409);
+    }
+    respond(ProcessControl::deleteRunner($r));
+}
+
 if ($action === 'start_all') {
     $count = max(1, min(30, (int) ($_POST['count'] ?? 10)));
     respond(ProcessControl::startAll($count));

@@ -195,6 +195,7 @@
             <button class="btn btn-sm btn-critical" data-action="stop" ${runner.local_running ? '' : 'disabled'}>Stop</button>
             <button class="btn btn-sm" data-action="restart">Restart</button>
             <button class="btn btn-sm" data-action="rename">Rename</button>
+            <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
           </div>
         </td>
       </tr>`;
@@ -338,6 +339,21 @@
       setLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…');
       try {
         await runWithBusyGuard(action, { runner });
+      } finally {
+        clearLoading(btn);
+      }
+      return;
+    }
+    if (action === 'delete') {
+      const name = tr.dataset.agentName || runner;
+      const sure = await confirmModal(
+        `Permanently delete ${runner} (${name})? This deregisters it from GitHub and deletes its local files, `
+        + 'including logs. This cannot be undone.',
+      );
+      if (!sure) return;
+      setLoading(btn, 'Deleting…');
+      try {
+        await runWithBusyGuard('delete_runner', { runner });
       } finally {
         clearLoading(btn);
       }

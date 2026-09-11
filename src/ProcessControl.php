@@ -109,6 +109,46 @@ final class ProcessControl
      */
     public static function renameRunner(RunnerInfo $r, string $newName): array
     {
+        $deregister = self::stopAndDeregister($r);
+        if (!$deregister['ok']) {
+            return $deregister;
+        }
+
+        $fresh = new RunnerInfo(
+            id: $r->id,
+            dir: $r->dir,
+            configured: false,
+            agentName: $r->agentName,
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
+        return self::startIndividual($fresh, $newName);
+    }
+
+    /**
+     * Stops the runner, deregisters it from GitHub, and permanently deletes
+     * its local directory (binaries, config, logs — everything). There is
+     * no undo. Interrupts any in-progress job.
+     */
+    public static function deleteRunner(RunnerInfo $r): array
+    {
+        $deregister = self::stopAndDeregister($r);
+        if (!$deregister['ok']) {
+            return $deregister;
+        }
+
+        $result = Shell::exec(['rm', '-rf', $r->dir], 15);
+        if ($result['code'] !== 0) {
+            return ['ok' => false, 'message' => "failed to delete {$r->id}'s files: " . trim($result['stderr'])];
+        }
+
+        return ['ok' => true, 'message' => "{$r->id} deleted"];
+    }
+
+    /** Stops the runner and, if it was configured, deregisters it from GitHub and clears local registration files. */
+    private static function stopAndDeregister(RunnerInfo $r): array
+    {
         $stop = self::stopIndividual($r);
         if (!$stop['ok']) {
             return $stop;
@@ -128,16 +168,7 @@ final class ProcessControl
 
         usleep(300000);
 
-        $fresh = new RunnerInfo(
-            id: $r->id,
-            dir: $r->dir,
-            configured: false,
-            agentName: $r->agentName,
-            localRunning: false,
-            pid: null,
-            logTail: [],
-        );
-        return self::startIndividual($fresh, $newName);
+        return ['ok' => true, 'message' => "{$r->agentName} deregistered"];
     }
 
     private static function infoFor(string $id): RunnerInfo
