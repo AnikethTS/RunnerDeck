@@ -24,7 +24,12 @@ final class UpdateCheck
         $tag = is_array($data) ? (string) ($data['tag_name'] ?? '') : '';
         $latest = ltrim($tag, 'v');
         if ($latest === '') {
-            return ['current' => $current, 'latest' => null, 'update_available' => false, 'error' => 'unexpected response from GitHub'];
+            return [
+                'current' => $current,
+                'latest' => null,
+                'update_available' => false,
+                'error' => 'unexpected response from GitHub',
+            ];
         }
 
         return [
