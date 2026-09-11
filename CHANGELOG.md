@@ -19,6 +19,11 @@ follows [SemVer](https://semver.org/).
   covering first-run setup, the filter box, sorting, bulk-select, and the
   status-mismatch flag against a real browser and a real PHP backend.
 
+### Changed
+
+- The CPU/RAM history SQLite file now lives at `storage/db/history.sqlite`
+  instead of directly under `storage/`, alongside `settings.json`.
+
 ### Fixed
 
 - `api.php?action=status` would hard-crash instead of returning a clean
