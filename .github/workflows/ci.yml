@@ -42,11 +42,8 @@ jobs:
         run: composer run stan
 
   test:
-    # Full PHP-version x OS matrix only on the primary platforms — that
-    # cross-product is what caught a real PHP-8.1-only proc_close() bug.
-    # The two extra OS pins below test one PHP version each: OS-version
-    # risk and PHP-version risk are largely independent axes, so the full
-    # cross-product there wouldn't buy much for double the job count.
+    # Full PHP x OS matrix on the primary platforms only (this caught a
+    # real PHP-8.1-only bug); the extra OS pins below test one PHP version.
     name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.php }})
     runs-on: ${{ matrix.os }}
     strategy:

@@ -42,6 +42,12 @@ of a script incantation.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
+- **Add Runner** allocates the next free slot and lets you give it its own
+  GitHub-registered name. **Rename** stops a runner, deregisters it from
+  GitHub, and re-registers it fresh under the new name — same busy-flag
+  confirmation as Stop, since it interrupts any in-progress job.
+- Each running runner's **CPU%/RAM** is shown live (`ps`-based, cross-platform,
+  read-only — nothing is capped or throttled).
 
 ## Platform support
 

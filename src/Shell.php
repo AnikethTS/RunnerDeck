@@ -28,11 +28,9 @@ final class Shell
 
             $status = proc_get_status($proc);
             if (!$status['running']) {
-                // proc_get_status() only reports the real exit code the
-                // first time it's called after the process ends; capture
-                // it here rather than relying on proc_close()'s return
-                // value below, which can come back -1 once that status has
-                // already been collected once.
+                // proc_get_status() only reports the real exit code on the
+                // first call after the process ends; proc_close() below can
+                // return -1 if that status was already collected here.
                 $exitCode = $status['exitcode'];
                 break;
             }

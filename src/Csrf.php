@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-// Session-bound CSRF token: minted once per browser session by index.php,
-// required on every state-changing (POST) api.php request. This app has no
-// login of its own — the session cookie is the only thing standing between
-// "this request came from the dashboard's own page" and "this request came
-// from a malicious page the operator happened to have open in another tab."
+// No login exists in this app; the session-bound token is the only defense
+// against a forged request from another page.
 final class Csrf
 {
     private const SESSION_KEY = 'csrf_token';

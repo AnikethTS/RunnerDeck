@@ -62,7 +62,7 @@ final class GithubClient
     }
 
     /**
-     * @return array<string, array{status: string, busy: bool, labels: string[]}> keyed by runner name
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}> keyed by runner name
      * @throws RuntimeException if the gh call fails
      */
     public static function listRunners(): array
@@ -81,12 +81,26 @@ final class GithubClient
         $runners = [];
         foreach ($decoded['runners'] ?? [] as $r) {
             $runners[$r['name']] = [
+                'id' => (int) $r['id'],
                 'status' => $r['status'],
                 'busy' => (bool) $r['busy'],
                 'labels' => array_map(static fn($l) => $l['name'], $r['labels'] ?? []),
             ];
         }
         return $runners;
+    }
+
+    /** @throws RuntimeException if the gh call fails */
+    public static function deleteRunner(int $id): void
+    {
+        self::ensureGhEnv();
+        $result = Shell::exec(
+            [Config::ghBinary(), 'api', '-X', 'DELETE', self::accountBase() . "/actions/runners/{$id}"],
+            15
+        );
+        if ($result['code'] !== 0) {
+            throw new RuntimeException('failed to deregister runner: ' . trim($result['stderr']));
+        }
     }
 
     public static function registrationToken(): string

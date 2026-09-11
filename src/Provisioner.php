@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-// Downloads the official runner package for this OS/arch, verifies its
-// checksum, extracts it, and registers it with a fresh org token.
 final class Provisioner
 {
     public static function ensureInstalled(string $dir): array
@@ -86,6 +84,14 @@ final class Provisioner
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];
+    }
+
+    /** Removes local registration artifacts so ensureConfigured() treats this slot as fresh again. */
+    public static function deregister(string $dir): void
+    {
+        foreach (['.runner', '.credentials', '.credentials_rsaparams'] as $file) {
+            @unlink("$dir/$file");
+        }
     }
 
     private static function registrationUrl(): string

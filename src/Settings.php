@@ -2,11 +2,7 @@
 
 declare(strict_types=1);
 
-// Persists the handful of settings the UI lets you configure (scope, org,
-// repo, label) to a small local JSON file, so first-run setup and the
-// Settings modal don't require hand-editing .env. Real environment
-// variables (including ones from .env) still win over this — see
-// Config::bootstrapEnv() — so ops/systemd deployments aren't affected.
+// Real env vars and .env still win over this; see Config::bootstrapEnv().
 final class Settings
 {
     private const KEYS = ['RUNNERDECK_SCOPE', 'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL'];
