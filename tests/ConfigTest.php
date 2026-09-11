@@ -12,7 +12,7 @@ final class ConfigTest extends TestCase
 {
     private const ENV_KEYS = [
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
-        'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE',
+        'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
     ];
 
     protected function tearDown(): void
@@ -96,5 +96,25 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_REPO=AnikethTS/RunnerDeck');
         $this->assertSame('AnikethTS/RunnerDeck', \Config::repo());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCheckUpdatesEnabledDefaultsToFalse(): void
+    {
+        $this->assertFalse(\Config::checkUpdatesEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCheckUpdatesEnabledTrueWhenSetTo1(): void
+    {
+        putenv('RUNNERDECK_CHECK_UPDATES=1');
+        $this->assertTrue(\Config::checkUpdatesEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testVersionReadsFromVersionFile(): void
+    {
+        $expected = trim((string) file_get_contents(dirname(__DIR__) . '/VERSION'));
+        $this->assertSame($expected, \Config::version());
     }
 }

@@ -65,7 +65,25 @@ body {
   border-radius: 999px;
   padding: 3px 9px;
 }
+.version-tag { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .org-tag { margin-left: auto; color: var(--text-muted); font-size: 13px; }
+
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--status-good);
+  background: color-mix(in srgb, var(--status-good) 14%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  text-decoration: none;
+}
+.update-badge:hover { text-decoration: underline; }
+.update-badge[hidden] {
+  display: none;
+}
 
 .banner {
   padding: 10px 20px;
@@ -144,7 +162,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   width: 180px;
 }
 
-.auto-restart-label {
+.checkbox-label {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -152,7 +170,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   color: var(--text-secondary);
   cursor: pointer;
 }
-.auto-restart-label input { cursor: pointer; }
+.checkbox-label input { cursor: pointer; }
 
 .row-flag { margin-top: 4px; }
 

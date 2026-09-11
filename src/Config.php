@@ -82,6 +82,21 @@ final class Config
         return getenv('RUNNERDECK_LABEL') ?: 'self-hosted-runnerdeck';
     }
 
+    public static function checkUpdatesEnabled(): bool
+    {
+        return getenv('RUNNERDECK_CHECK_UPDATES') === '1';
+    }
+
+    public static function version(): string
+    {
+        static $version = null;
+        if ($version !== null) {
+            return $version;
+        }
+        $raw = @file_get_contents(dirname(__DIR__) . '/VERSION');
+        return $version = $raw !== false ? trim($raw) : '0.0.0';
+    }
+
     public static function poolDir(): string
     {
         $override = getenv('RUNNERDECK_POOL_DIR');

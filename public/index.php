@@ -18,6 +18,7 @@ $currentSettings = [
     'org' => (string) getenv('RUNNERDECK_ORG'),
     'repo' => (string) getenv('RUNNERDECK_REPO'),
     'label' => Config::label(),
+    'checkUpdates' => Config::checkUpdatesEnabled(),
 ];
 
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
@@ -41,6 +42,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
     <?php endif; ?>
     <h1>RunnerDeck</h1>
     <span class="edition-tag">Community</span>
+    <span class="version-tag">v<?= htmlspecialchars(Config::version()) ?></span>
+    <a id="update-available" class="update-badge" href="https://github.com/AnikethTS/RunnerDeck/releases/latest"
+       target="_blank" rel="noopener noreferrer" hidden></a>
     <?php if (!$needsSetup) : ?>
       <span class="org-tag">
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
@@ -134,7 +138,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
-        <label class="auto-restart-label">
+        <label class="checkbox-label">
           <input type="checkbox" id="auto-restart-toggle" />
           Auto-restart crashed runners
         </label>
@@ -220,6 +224,11 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
           <label for="settings-label">Runner label (optional)</label>
           <input type="text" id="settings-label" name="label" placeholder="self-hosted-runnerdeck" />
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="settings-check-updates" name="check_updates" value="1" />
+            Check GitHub for new RunnerDeck releases
+          </label>
 
           <div class="modal-actions">
             <button type="button" id="settings-cancel" class="btn">Cancel</button>

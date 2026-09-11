@@ -90,6 +90,15 @@ function initDashboard() {
     if (data.ok) renderLoadStat(data.system);
   }
 
+  async function checkForUpdates() {
+    const res = await fetch('api.php?action=check_updates');
+    const data = await res.json();
+    if (!data.ok || !data.update_available) return;
+    const badge = document.getElementById('update-available');
+    badge.textContent = `Update available: v${data.latest}`;
+    badge.hidden = false;
+  }
+
   async function runWithBusyGuard(action, params) {
     let { status, data } = await post(action, params);
     if (status === 409) {
@@ -276,6 +285,7 @@ function initDashboard() {
   });
 
   initModals(fetchStatus);
+  checkForUpdates();
 
   if (window.__SNAPSHOT__) {
     render(window.__SNAPSHOT__);
