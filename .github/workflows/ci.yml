@@ -82,7 +82,7 @@ jobs:
 
       - name: Boot the dashboard and hit the status endpoint
         env:
-          RUNNER_DASHBOARD_ORG: smoke-test-org
+          RUNNERDECK_ORG: smoke-test-org
         run: |
           php -S 127.0.0.1:8090 -t public &
           SERVER_PID=$!

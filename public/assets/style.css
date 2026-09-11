@@ -6,11 +6,11 @@
   --text-muted: #898781;
   --gridline: #e1e0d9;
   --border: rgba(11, 11, 11, 0.10);
-  --brand: #2a78d6;
-  --brand-hover: #1c5cab;
+  --brand: #8a7038;
+  --brand-hover: #6e5a2c;
 
   --status-good: #0ca30c;
-  --status-warning: #fab219;
+  --status-warning: #d9932a;
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
 }
@@ -24,11 +24,11 @@
     --text-muted: #898781;
     --gridline: #2c2c2a;
     --border: rgba(255, 255, 255, 0.10);
-    --brand: #3987e5;
-    --brand-hover: #86b6ef;
+    --brand: #c7a35c;
+    --brand-hover: #dbbb80;
 
     --status-good: #0ca30c;
-    --status-warning: #fab219;
+    --status-warning: #d9932a;
     --status-serious: #ec835a;
     --status-critical: #d03b3b;
   }

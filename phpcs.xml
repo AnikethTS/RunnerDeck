@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="RunnerDashboard">
-    <description>Coding standard for Runner Dashboard</description>
+<ruleset name="RunnerDeck">
+    <description>Coding standard for RunnerDeck</description>
     <arg name="basepath" value="."/>
     <arg name="colors"/>
     <arg value="p"/>
