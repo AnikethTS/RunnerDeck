@@ -29,6 +29,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RunnerDeck</title>
+  <?php if ($hasLogo) : ?>
+    <link rel="icon" href="assets/logo.png" />
+  <?php endif; ?>
   <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
 </head>
 <body>
