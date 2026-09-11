@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-12
+
 ### Added
 
 - `bin/doctor.php`, a preflight check for PHP version/extensions, `bash`/
