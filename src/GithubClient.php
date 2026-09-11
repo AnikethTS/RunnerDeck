@@ -107,7 +107,15 @@ final class GithubClient
         return $token;
     }
 
-    /** @return array<int, array{os: string, architecture: string, download_url: string, filename: string, sha256_checksum?: string}> */
+    /**
+     * @return array<int, array{
+     *     os: string,
+     *     architecture: string,
+     *     download_url: string,
+     *     filename: string,
+     *     sha256_checksum?: string
+     * }>
+     */
     public static function listRunnerDownloads(): array
     {
         self::ensureGhEnv();

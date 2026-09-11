@@ -59,9 +59,11 @@ $accountLabel = Config::scope() === 'user' ? 'personal account' : Config::org();
   </main>
 
   <footer class="footer">
-    <a href="https://github.com/AnikethTS/RunnerDeck" target="_blank" rel="noopener noreferrer">RunnerDeck on GitHub</a>
+    <a href="https://github.com/AnikethTS/RunnerDeck"
+       target="_blank" rel="noopener noreferrer">RunnerDeck on GitHub</a>
     <span class="footer-sep">&middot;</span>
-    <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+    <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/LICENSE"
+       target="_blank" rel="noopener noreferrer">MIT License</a>
   </footer>
 
   <div id="log-modal" class="modal" hidden>
