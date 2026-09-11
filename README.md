@@ -173,6 +173,9 @@ CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on Linux and macOS for every push/PR. `.github/workflows/release.yml`
 publishes a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed.
 
+Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) — it covers PR
+expectations and the project's policy on AI-assisted contributions.
+
 ## Safety notes
 
 This is built for a **single-user, single-machine, localhost-only** setup —
