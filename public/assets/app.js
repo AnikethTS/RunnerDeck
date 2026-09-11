@@ -383,7 +383,11 @@
     fetchHistory();
   }
 
-  function renderChart(svg, values, min, max) {
+  function renderChart(svg, values, min, max, unavailable) {
+    if (unavailable) {
+      svg.innerHTML = '<text x="8" y="34" font-size="10" fill="currentColor" opacity="0.5">unavailable — php-pdo_sqlite not installed</text>';
+      return;
+    }
     if (values.length < 2) {
       svg.innerHTML = '<text x="8" y="34" font-size="10" fill="currentColor" opacity="0.5">collecting data…</text>';
       return;
@@ -406,9 +410,10 @@
     const memChart = document.getElementById('chart-mem');
     if (!cpuChart || !memChart) return;
 
-    renderChart(cpuChart, data.samples.map((s) => s.avg_cpu), 0, 100);
+    const unavailable = data.available === false;
+    renderChart(cpuChart, data.samples.map((s) => s.avg_cpu), 0, 100, unavailable);
     const memValues = data.samples.map((s) => s.total_rss_kb / 1024);
-    renderChart(memChart, memValues, 0, Math.max(10, ...memValues));
+    renderChart(memChart, memValues, 0, Math.max(10, ...memValues), unavailable);
   }
 
   let confirmOpen = false;
