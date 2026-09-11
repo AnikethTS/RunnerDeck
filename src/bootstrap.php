@@ -8,6 +8,7 @@ require __DIR__ . '/Config.php';
 Config::bootstrapEnv();
 require __DIR__ . '/Shell.php';
 require __DIR__ . '/RunnerPool.php';
+require __DIR__ . '/SystemStats.php';
 require __DIR__ . '/GithubClient.php';
 require __DIR__ . '/Provisioner.php';
 require __DIR__ . '/ProcessControl.php';

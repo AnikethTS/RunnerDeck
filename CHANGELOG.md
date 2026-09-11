@@ -23,6 +23,9 @@ follows [SemVer](https://semver.org/).
   the "RunnerDeck on http://..." startup line.
 - The history chart now says so when `pdo_sqlite` isn't installed,
   instead of showing "collecting data…" forever with no explanation.
+- Two new stat cards, **System CPU** and **System RAM**, showing
+  whole-machine usage (`src/SystemStats.php`) alongside the existing
+  per-runner stats.
 
 ### Changed
 

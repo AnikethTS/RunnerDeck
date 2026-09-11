@@ -107,6 +107,16 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
           <span class="stat-value" id="stat-mem">—</span>
           <span class="stat-sub" id="stat-mem-sub">—</span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">System CPU</span>
+          <span class="stat-value" id="stat-sys-cpu">—</span>
+          <span class="stat-sub" id="stat-sys-cpu-sub">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">System RAM</span>
+          <span class="stat-value" id="stat-sys-mem">—</span>
+          <span class="stat-sub" id="stat-sys-mem-sub">—</span>
+        </div>
       </div>
 
       <div class="history-grid">
