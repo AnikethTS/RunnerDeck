@@ -1,6 +1,9 @@
 # Local secrets/config — copy .env.example instead
 .env
 
+# UI-saved settings (scope/org/repo/label) — see src/Settings.php
+/storage/
+
 # Custom branding — drop your own logo.png here, it's optional at runtime
 public/assets/logo.png
 

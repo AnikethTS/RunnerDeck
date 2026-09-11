@@ -10,9 +10,14 @@ use RuntimeException;
 
 final class ConfigTest extends TestCase
 {
+    private const ENV_KEYS = [
+        'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
+        'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE',
+    ];
+
     protected function tearDown(): void
     {
-        foreach (['RUNNERDECK_ORG', 'RUNNERDECK_LABEL', 'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE'] as $key) {
+        foreach (self::ENV_KEYS as $key) {
             putenv($key);
         }
     }
@@ -65,17 +70,31 @@ final class ConfigTest extends TestCase
     }
 
     #[RunInSeparateProcess]
-    public function testScopeAcceptsUser(): void
+    public function testScopeAcceptsRepo(): void
     {
-        putenv('RUNNERDECK_SCOPE=user');
-        $this->assertSame('user', \Config::scope());
+        putenv('RUNNERDECK_SCOPE=repo');
+        $this->assertSame('repo', \Config::scope());
     }
 
     #[RunInSeparateProcess]
     public function testScopeRejectsInvalidValue(): void
     {
-        putenv('RUNNERDECK_SCOPE=repo');
+        putenv('RUNNERDECK_SCOPE=user');
         $this->expectException(RuntimeException::class);
         \Config::scope();
+    }
+
+    #[RunInSeparateProcess]
+    public function testRepoThrowsWhenUnset(): void
+    {
+        $this->expectException(RuntimeException::class);
+        \Config::repo();
+    }
+
+    #[RunInSeparateProcess]
+    public function testRepoReturnsEnvValue(): void
+    {
+        putenv('RUNNERDECK_REPO=AnikethTS/RunnerDeck');
+        $this->assertSame('AnikethTS/RunnerDeck', \Config::repo());
     }
 }

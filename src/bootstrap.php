@@ -5,6 +5,7 @@ declare(strict_types=1);
 // Single load point for all entry points (public/*.php) so adding a class
 // means editing this file once instead of every entry point in sync.
 
+require __DIR__ . '/Settings.php';
 require __DIR__ . '/Config.php';
 Config::bootstrapEnv();
 require __DIR__ . '/Shell.php';

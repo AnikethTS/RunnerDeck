@@ -62,31 +62,21 @@ of a script incantation.
   - Windows: `wsl --install`, then follow the Debian/Ubuntu instructions
     inside the WSL2 shell.
 - **[`gh`](https://cli.github.com/)**, authenticated (`gh auth login`), with
-  access matching the scope you pick (see `RUNNERDECK_SCOPE` below):
+  access matching the scope you pick (see `RUNNERDECK_SCOPE` below). GitHub's
+  API has no concept of a personal-account-level runner — it's org or repo:
   - **Org scope** (default) — you need **admin access to the GitHub org**
     you're registering runners under, and a token with the `admin:org`
     scope: `gh auth refresh -h github.com -s admin:org`.
-  - **Personal account scope** — no org needed, runners register under your
-    own account. If `gh` reports it can't read your runners, it'll print
-    the exact scope to request (e.g. `gh auth refresh -h github.com -s
-    manage_runners:user`) — run that command and retry.
+  - **Repo scope** — no org needed, runners are scoped to (and only run
+    jobs from) one repo you're an admin of, which you are by default for
+    repos you own. Needs the `repo` scope, which `gh auth login`'s default
+    scopes already include — nothing extra to request in the common case.
 - `curl` and `tar` (or `unzip` on Windows) for downloading and extracting
   the runner package — both are standard on Linux/macOS.
 
 ## First-time setup
 
-1. **Copy the env file and fill it in:**
-
-   ```bash
-   cp .env.example .env
-   $EDITOR .env   # set RUNNERDECK_SCOPE, and RUNNERDECK_ORG if scope=org
-   ```
-
-   Leave `RUNNERDECK_SCOPE=org` (the default) and set `RUNNERDECK_ORG` for
-   org-managed runners, or set `RUNNERDECK_SCOPE=user` to manage runners
-   under your own personal GitHub account instead — no org required.
-
-2. **Run it:**
+1. **Run it** — no `.env` required to get started:
 
    ```bash
    ./run.sh          # binds 127.0.0.1:8090
@@ -101,20 +91,34 @@ of a script incantation.
    .\run.ps1 -Port 9000
    ```
 
-   Open `http://127.0.0.1:8090/` and click **Start All** (or set a **Pool
-   size** and **Apply**). Everything — downloading the runner binaries,
-   registering with GitHub, and launching the processes — happens from
-   there. No manual runner setup required.
+2. **Open `http://127.0.0.1:8090/`.** If nothing's configured yet, you'll
+   land on a setup screen: pick org scope (needs a GitHub org you admin) or
+   repo scope (needs a repo you own), fill in the org or `owner/repo`, and
+   save — no restart needed. Change it later anytime from the **Settings**
+   button in the header. This is saved to a small local, gitignored file
+   (`storage/settings.json`), not `.env`.
+
+3. Click **Start All** (or set a **Pool size** and **Apply**). Everything —
+   downloading the runner binaries, registering with GitHub, and launching
+   the processes — happens from there. No manual runner setup required.
+
+Prefer config files over the UI (e.g. for a scripted/systemd deployment)?
+Copy `.env.example` to `.env` and fill it in instead — real environment
+variables win over `.env`, which wins over anything saved through the UI,
+so this is always available as an override.
 
 ## Configuration
 
-All via `.env` (see `.env.example`) or real environment variables (env vars
-win if both are set):
+Three layers, highest priority first: **real environment variables** (e.g.
+a systemd unit's `Environment=`) → **`.env`** (see `.env.example`) →
+**settings saved through the UI** (`storage/settings.json`). You only need
+one of these — most people will just use the in-app setup screen:
 
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
-| `RUNNERDECK_SCOPE` | no | `org` | `org` to manage org-level runners, or `user` to manage runners under your own personal account instead |
+| `RUNNERDECK_SCOPE` | no | `org` | `org` to manage org-level runners, or `repo` to scope runners to a single repo instead |
 | `RUNNERDECK_ORG` | only if `scope=org` | — | GitHub org the runners belong to |
+| `RUNNERDECK_REPO` | only if `scope=repo` | — | `owner/repo` the runners belong to |
 | `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name |
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
@@ -134,6 +138,7 @@ runnerdeck/
   src/
     bootstrap.php        single load point required by every public/*.php
     Config.php           env-based configuration
+    Settings.php          reads/writes storage/settings.json (UI setup/Settings)
     Csrf.php              session-bound CSRF token minting/verification
     RunnerPool.php        discovers runner dirs, checks process liveness
     GithubClient.php      shells out to `gh`
@@ -185,10 +190,11 @@ expectations and the project's policy on AI-assisted contributions.
 This is built for a **single-user, single-machine, localhost-only** setup —
 `run.sh` binds `127.0.0.1` deliberately and that should not be changed. The
 backend shells out to `gh` with whatever scope your login token has (real
-admin access to your org's runners in org scope, or to your own account's
-runners in personal-account scope), and it can start and stop real
-processes on the machine it runs on. Don't put this behind a reverse proxy or expose the port on any network
-interface beyond loopback. It also downloads and executes GitHub's official
+admin access to your org's runners in org scope, or to that one repo's
+runners in repo scope), and it can start and stop real processes on the
+machine it runs on. Don't put this behind a reverse proxy or expose the
+port on any network interface beyond loopback. It also downloads and
+executes GitHub's official
 runner package on first use of each runner slot — the same binary GitHub's
 own setup page would have you download by hand, checksum-verified before
 extraction.
