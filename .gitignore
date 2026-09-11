@@ -17,3 +17,9 @@ public/assets/logo.png
 /vendor/
 .phpunit.result.cache
 .phpunit.cache/
+
+# Dev tooling (npm install regenerates this; see README)
+/node_modules/
+/playwright-report/
+/test-results/
+package-lock.json

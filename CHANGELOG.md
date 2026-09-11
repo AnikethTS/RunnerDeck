@@ -14,6 +14,16 @@ follows [SemVer](https://semver.org/).
 - CI security hardening: `composer audit` in the lint job, a Semgrep static
   analysis pass (`p/security-audit` + `p/php`), and a Dependency Review
   check on PRs. Enabled Dependabot security updates on the repo.
+- JS/CSS dev tooling (`package.json`, dev-only, same as Composer): eslint
+  and stylelint, plus a Playwright E2E suite (`e2e/dashboard.spec.js`)
+  covering first-run setup, the filter box, sorting, bulk-select, and the
+  status-mismatch flag against a real browser and a real PHP backend.
+
+### Fixed
+
+- `api.php?action=status` would hard-crash instead of returning a clean
+  JSON error if `gh` was authenticated but RunnerDeck itself wasn't
+  configured yet — found while building the E2E harness.
 
 ## [1.0.0] - 2026-09-11
 

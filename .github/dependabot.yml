@@ -8,6 +8,13 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
 
+  # Also dev tooling only (eslint, stylelint, Playwright) — same reasoning.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
   # Keeps actions/checkout, shivammathur/setup-php, etc. pinned to current
   # commit SHAs (see ci.yml/release.yml) rather than drifting unnoticed.
   - package-ecosystem: github-actions

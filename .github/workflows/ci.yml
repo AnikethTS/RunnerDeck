@@ -44,6 +44,19 @@ jobs:
       - name: phpstan
         run: composer run stan
 
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Install JS dev tooling
+        run: npm install
+
+      - name: eslint
+        run: npm run lint:js
+
+      - name: stylelint
+        run: npm run lint:css
+
   test:
     # Full PHP x OS matrix on the primary platforms only (this caught a
     # real PHP-8.1-only bug); the extra OS pins below test one PHP version.
@@ -117,6 +130,44 @@ jobs:
             }
             echo "smoke test OK\n";
           '
+
+  e2e-test:
+    # Drives the real public/index.php + app.js + api.php in a real browser
+    # (via playwright.config.js's webServer, php -S). GitHub itself is never
+    # contacted — gh isn't installed/authenticated here, so GithubClient
+    # degrades to health.logged_in === false same as a fresh machine, and
+    # the runner-data-dependent tests mock `action=status` at the network
+    # level. See e2e/dashboard.spec.js for what that does and doesn't cover.
+    name: E2E tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: "8.3"
+          extensions: posix, pcntl, json, pdo_sqlite
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+
+      - name: Install JS dev tooling
+        run: npm install
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run e2e
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
 
   alpine-smoke-test:
     # Real coverage for the one concrete Linux-distro risk this project has:
