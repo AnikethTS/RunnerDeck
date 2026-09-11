@@ -21,9 +21,16 @@ while (ob_get_level() > 0) {
     ob_end_flush();
 }
 
+// $id is whitelisted above via isKnownId()'s ^runner-(base|[0-9]+)$ regex
+// plus a directory-existence check — not attacker-controlled by this point.
+// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
 $logFile = RunnerPool::dirFor($id) . '/runner.log';
 
 foreach (RunnerPool::tailLog($logFile, 50) as $line) {
+    // SSE data, read via textContent in app.js (never innerHTML) — HTML-
+    // escaping here would corrupt the log text for a client that doesn't
+    // decode entities.
+    // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
     echo 'data: ' . strtr($line, ["\r" => '', "\n" => '']) . "\n\n";
 }
 echo "\n";
@@ -46,6 +53,8 @@ while (!connection_aborted() && time() < $deadline) {
             if ($line === '') {
                 continue;
             }
+            // Same SSE/textContent reasoning as the initial tail loop above.
+            // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
             echo 'data: ' . strtr($line, ["\r" => '']) . "\n\n";
         }
     } elseif ($size < $lastSize) {
