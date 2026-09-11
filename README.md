@@ -45,7 +45,10 @@ of a script incantation.
 - **Add Runner** allocates the next free slot and lets you give it its own
   GitHub-registered name. **Rename** stops a runner, deregisters it from
   GitHub, and re-registers it fresh under the new name — same busy-flag
-  confirmation as Stop, since it interrupts any in-progress job.
+  confirmation as Stop, since it interrupts any in-progress job. **Delete**
+  does the same deregistration and then permanently removes the runner's
+  local directory (binaries, config, logs) — always confirmed separately
+  from the busy check, since there's no undo.
 - Each running runner's **CPU%/RAM** is shown live (`ps`-based, cross-platform,
   read-only — nothing is capped or throttled), with a rolling one-hour
   pool-wide history chart backed by a small local SQLite file
