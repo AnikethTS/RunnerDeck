@@ -120,6 +120,10 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
+        <label class="auto-restart-label">
+          <input type="checkbox" id="auto-restart-toggle" />
+          Auto-restart crashed runners
+        </label>
         <span class="spacer"></span>
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>

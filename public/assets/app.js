@@ -95,6 +95,73 @@
   let lastSnapshot = null;
   const sortState = { key: null, dir: 1 };
 
+  const MISMATCH_THRESHOLD = 3;
+  const mismatchStreaks = {};
+
+  const CRASH_MAX_ATTEMPTS = 3;
+  const CRASH_HEALTHY_RESET_MS = 2 * 60 * 1000;
+  const crashState = {};
+  const explicitlyStopped = new Set();
+
+  function isMismatched(runner) {
+    if (!runner.github) return false;
+    return (runner.github.status === 'online') !== runner.local_running;
+  }
+
+  function updateMismatchStreaks(runners) {
+    runners.forEach((r) => {
+      mismatchStreaks[r.id] = isMismatched(r) ? (mismatchStreaks[r.id] || 0) + 1 : 0;
+    });
+  }
+
+  function mismatchWarning(runner) {
+    if ((mismatchStreaks[runner.id] || 0) < MISMATCH_THRESHOLD) return '';
+    return `<div class="row-flag">${badge('local/GitHub status disagree', 'warning')}</div>`;
+  }
+
+  function autoRestartEnabled() {
+    return document.getElementById('auto-restart-toggle').checked;
+  }
+
+  function trackCrashesAndMaybeRestart(runners) {
+    const autoRestart = autoRestartEnabled();
+    runners.forEach((r) => {
+      const state = crashState[r.id] || (crashState[r.id] = {
+        wasRunning: false, attempts: 0, healthySince: 0, flagged: false,
+      });
+
+      if (r.local_running) {
+        if (!state.healthySince) state.healthySince = Date.now();
+        if (Date.now() - state.healthySince > CRASH_HEALTHY_RESET_MS) {
+          state.attempts = 0;
+          state.flagged = false;
+        }
+      } else {
+        state.healthySince = 0;
+      }
+
+      const crashed = state.wasRunning && !r.local_running && r.configured && !explicitlyStopped.has(r.id);
+      if (crashed) {
+        if (autoRestart && state.attempts < CRASH_MAX_ATTEMPTS) {
+          state.attempts += 1;
+          post('start', { runner: r.id }).catch(() => {});
+        } else {
+          state.flagged = true;
+        }
+      }
+
+      explicitlyStopped.delete(r.id);
+      state.wasRunning = r.local_running;
+    });
+  }
+
+  function crashWarning(runner) {
+    const state = crashState[runner.id];
+    if (!state || !state.flagged) return '';
+    const label = autoRestartEnabled() ? 'crash-looping, auto-restart paused' : 'crashed unexpectedly';
+    return `<div class="row-flag">${badge(label, 'critical')}</div>`;
+  }
+
   function miniBar(percent) {
     const pct = Math.max(0, Math.min(100, percent));
     const cls = percent > 80 ? 'mini-bar-critical' : percent > 50 ? 'mini-bar-warn' : '';
@@ -210,8 +277,8 @@
           <span class="runner-name">${escapeHtml(runner.id)}</span>
           <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
         </td>
-        <td>${githubBadges(runner.github)}${githubLabels(runner.github)}</td>
-        <td>${localBadge(runner)}${resourceUsage(runner)}</td>
+        <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${mismatchWarning(runner)}</td>
+        <td>${localBadge(runner)}${resourceUsage(runner)}${crashWarning(runner)}</td>
         <td>
           <pre class="log-preview">${escapeHtml(logPreview)}</pre>
           <button class="log-link" data-action="view-log">View live log &rarr;</button>
@@ -246,6 +313,8 @@
     }
 
     renderStats(snapshot);
+    updateMismatchStreaks(snapshot.runners);
+    trackCrashesAndMaybeRestart(snapshot.runners);
     rowsEl.innerHTML = sortRunners(filteredRunners(snapshot.runners)).map(rowHtml).join('');
     updateSortIndicators();
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
@@ -254,6 +323,22 @@
   document.getElementById('runner-filter').addEventListener('input', () => {
     if (lastSnapshot) render(lastSnapshot);
   });
+
+  (() => {
+    const toggle = document.getElementById('auto-restart-toggle');
+    try {
+      toggle.checked = localStorage.getItem('runnerdeck-auto-restart') === '1';
+    } catch {
+      toggle.checked = false;
+    }
+    toggle.addEventListener('change', () => {
+      try {
+        localStorage.setItem('runnerdeck-auto-restart', toggle.checked ? '1' : '0');
+      } catch {
+        // storage unavailable; toggle still works for this session
+      }
+    });
+  })();
 
   document.querySelectorAll('th.sortable').forEach((th) => {
     th.addEventListener('click', () => {
@@ -367,6 +452,7 @@
       return;
     }
     if (action === 'stop' || action === 'restart') {
+      explicitlyStopped.add(runner);
       setLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…');
       try {
         await runWithBusyGuard(action, { runner });
@@ -382,6 +468,7 @@
         + 'including logs. This cannot be undone.',
       );
       if (!sure) return;
+      explicitlyStopped.add(runner);
       setLoading(btn, 'Deleting…');
       try {
         await runWithBusyGuard('delete_runner', { runner });
@@ -416,6 +503,7 @@
 
   document.getElementById('btn-stop-all').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
+    if (lastSnapshot) lastSnapshot.runners.forEach((r) => explicitlyStopped.add(r.id));
     setLoading(btn, 'Stopping All…');
     try {
       await runWithBusyGuard('stop_all', {});

@@ -67,6 +67,16 @@ of a script incantation.
   the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID or registered name, and
   each runner's log can be **downloaded in full**, not just tailed.
+- If a runner's local process state and its GitHub-reported state
+  **disagree for several polls in a row**, the row is flagged — a one-off
+  mismatch during a status transition is normal and ignored, a persistent
+  one usually means the process died without GitHub finding out yet (or
+  vice versa).
+- An optional **auto-restart** toggle brings a runner back up if its
+  process dies without you having stopped it yourself. It backs off after
+  a few failed attempts in a row (crash-looping is flagged, not retried
+  forever) and resets once the runner has stayed healthy for a couple of
+  minutes.
 
 ## Platform support
 
