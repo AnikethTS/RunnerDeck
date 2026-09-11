@@ -167,6 +167,10 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   border-radius: 8px;
 }
 .bulk-actions-bar .spacer { flex: 1; }
+/* author display:flex above beats the UA [hidden] default, same as .modal[hidden] below */
+.bulk-actions-bar[hidden] {
+  display: none;
+}
 
 .select-col { width: 32px; }
 .runner-table td.select-col, .runner-table th.select-col { padding-right: 0; }
