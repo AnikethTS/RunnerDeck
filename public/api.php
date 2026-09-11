@@ -120,7 +120,7 @@ if ($action === 'log' && $method === 'GET') {
 }
 
 if ($action === 'history' && $method === 'GET') {
-    respond(['ok' => true, 'samples' => History::recent()]);
+    respond(['ok' => true, 'available' => History::isAvailable(), 'samples' => History::recent()]);
 }
 
 if ($method !== 'POST') {

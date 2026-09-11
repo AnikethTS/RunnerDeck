@@ -21,6 +21,8 @@ follows [SemVer](https://semver.org/).
 - `run.sh` now prints the history DB's resolved path, whether
   `pdo_sqlite` is available, and whether it's writable, right alongside
   the "RunnerDeck on http://..." startup line.
+- The history chart now says so when `pdo_sqlite` isn't installed,
+  instead of showing "collecting data…" forever with no explanation.
 
 ### Changed
 
