@@ -108,7 +108,7 @@ final class Provisioner
         }
 
         foreach (GithubClient::listRunnerDownloads() as $d) {
-            if (($d['os'] ?? null) === $os && ($d['architecture'] ?? null) === $arch) {
+            if ($d['os'] === $os && $d['architecture'] === $arch) {
                 return $d;
             }
         }
