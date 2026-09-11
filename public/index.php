@@ -37,6 +37,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
       <img src="assets/logo.png" alt="Logo" class="logo" />
     <?php endif; ?>
     <h1>RunnerDeck</h1>
+    <span class="edition-tag">Community</span>
     <?php if (!$needsSetup) : ?>
       <span class="org-tag">
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
