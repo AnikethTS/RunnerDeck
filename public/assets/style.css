@@ -96,6 +96,23 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+.history-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.history-card {
+  background: var(--surface-1);
+  border: 1px solid var(--gridline);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.history-chart { width: 100%; height: 60px; color: var(--brand); display: block; margin-top: 8px; }
+@media (max-width: 720px) {
+  .history-grid { grid-template-columns: 1fr; }
+}
+
 .toolbar {
   display: flex;
   align-items: center;

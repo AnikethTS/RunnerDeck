@@ -63,6 +63,10 @@ if ($action === 'log' && $method === 'GET') {
     respond(['ok' => true, 'lines' => $tail]);
 }
 
+if ($action === 'history' && $method === 'GET') {
+    respond(['ok' => true, 'samples' => History::recent()]);
+}
+
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
 }

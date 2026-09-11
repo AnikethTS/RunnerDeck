@@ -105,6 +105,17 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         </div>
       </div>
 
+      <div class="history-grid">
+        <div class="history-card">
+          <span class="stat-label">CPU % &middot; last hour</span>
+          <svg id="chart-cpu" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="history-card">
+          <span class="stat-label">Memory MB &middot; last hour</span>
+          <svg id="chart-mem" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/Settings.php';
+require __DIR__ . '/History.php';
 require __DIR__ . '/Config.php';
 Config::bootstrapEnv();
 require __DIR__ . '/Shell.php';
