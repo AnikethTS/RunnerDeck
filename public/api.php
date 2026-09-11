@@ -123,6 +123,10 @@ if ($action === 'history' && $method === 'GET') {
     respond(['ok' => true, 'available' => History::isAvailable(), 'samples' => History::recent()]);
 }
 
+if ($action === 'system' && $method === 'GET') {
+    respond(['ok' => true, 'system' => SystemStats::snapshot()]);
+}
+
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
 }

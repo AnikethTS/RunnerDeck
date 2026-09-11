@@ -5,12 +5,13 @@ import {
   sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, rowHtml, updateBulkActionsBar,
 } from './js/table.js';
 import { fetchHistory } from './js/history-chart.js';
-import { renderStats } from './js/stats.js';
+import { renderStats, renderLoadStat } from './js/stats.js';
 import {
   wireScopeToggle, submitSettingsForm, confirmModal, openLogViewer, openRenameModal, initModals,
 } from './js/modals.js';
 
 const POLL_MS = 5000;
+const SYSTEM_POLL_MS = 2000;
 
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
@@ -81,6 +82,12 @@ function initDashboard() {
     const res = await fetch('api.php?action=status&lines=5');
     render(await res.json());
     fetchHistory();
+  }
+
+  async function fetchSystemStats() {
+    const res = await fetch('api.php?action=system');
+    const data = await res.json();
+    if (data.ok) renderLoadStat(data.system);
   }
 
   async function runWithBusyGuard(action, params) {
@@ -277,6 +284,7 @@ function initDashboard() {
     fetchStatus();
   }
   setInterval(fetchStatus, POLL_MS);
+  setInterval(fetchSystemStats, SYSTEM_POLL_MS);
 }
 
 if (window.__NEEDS_SETUP__) {

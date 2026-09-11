@@ -5,7 +5,7 @@ function loadClass(percent) {
   return '';
 }
 
-function renderLoadStat(sys) {
+export function renderLoadStat(sys) {
   if (!sys) return;
 
   const cpuEl = document.getElementById('stat-sys-cpu');
