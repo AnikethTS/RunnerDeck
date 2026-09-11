@@ -54,6 +54,17 @@ body {
 
 .topbar .logo { height: 28px; }
 .topbar h1 { font-size: 18px; margin: 0; font-weight: 600; }
+.edition-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
 .org-tag { margin-left: auto; color: var(--text-muted); font-size: 13px; }
 
 .banner {
