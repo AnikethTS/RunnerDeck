@@ -13,6 +13,16 @@ without hand-editing pidfiles or SSHing in to run `ps aux | grep`.
 Plain PHP, no framework, no build step, no Composer dependencies. A bit of
 vanilla JS for auto-refresh and live log tailing. That's it.
 
+## Screenshots
+
+| Dashboard | Running |
+|---|---|
+| ![Dashboard overview](.github/screenshots/dashboard.png) | ![A runner active, with live CPU/RAM](.github/screenshots/running.png) |
+
+| Add runner | Settings |
+|---|---|
+| ![Add runner dialog](.github/screenshots/add-runner.png) | ![Scope/org/repo settings dialog](.github/screenshots/settings.png) |
+
 ## Why this exists
 
 Self-hosted runners are cheap to run many of on one machine, but tedious to
