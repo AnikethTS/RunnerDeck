@@ -11,12 +11,10 @@ permissions:
 
 jobs:
   lint-and-static-analysis:
-    name: Lint & static analysis (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macos-latest, macos-13]
+    # phpcs/phpstan output is OS-independent (pure text/AST analysis), so
+    # this runs once rather than across the whole platform matrix below.
+    name: Lint & static analysis
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -44,13 +42,23 @@ jobs:
         run: composer run stan
 
   test:
+    # Full PHP-version x OS matrix only on the primary platforms — that
+    # cross-product is what caught a real PHP-8.1-only proc_close() bug.
+    # The two extra OS pins below test one PHP version each: OS-version
+    # risk and PHP-version risk are largely independent axes, so the full
+    # cross-product there wouldn't buy much for double the job count.
     name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.php }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macos-latest, macos-13]
-        php: ["8.1", "8.3"]
+        include:
+          - { os: ubuntu-latest, php: "8.1" }
+          - { os: ubuntu-latest, php: "8.3" }
+          - { os: macos-latest, php: "8.1" }
+          - { os: macos-latest, php: "8.3" }
+          - { os: ubuntu-22.04, php: "8.3" }
+          - { os: macos-13, php: "8.3" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
