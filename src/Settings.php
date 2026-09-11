@@ -5,7 +5,9 @@ declare(strict_types=1);
 // Real env vars and .env still win over this; see Config::bootstrapEnv().
 final class Settings
 {
-    private const KEYS = ['RUNNERDECK_SCOPE', 'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL'];
+    private const KEYS = [
+        'RUNNERDECK_SCOPE', 'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL', 'RUNNERDECK_CHECK_UPDATES',
+    ];
 
     private static function path(): string
     {

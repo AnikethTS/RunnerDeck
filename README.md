@@ -89,6 +89,12 @@ of a script incantation.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.
+- An optional **update check** (off by default — enable it in Settings)
+  compares this install's `VERSION` file against the latest GitHub Release
+  and shows a small badge in the header if a newer one exists. It's the
+  only thing in RunnerDeck that calls out to a repo other than the one
+  you're managing runners for, which is why it's opt-in rather than on
+  by default.
 
 ## Platform support
 
@@ -187,6 +193,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name |
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
+| `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.
@@ -209,6 +216,7 @@ runnerdeck/
     RunnerPool.php        discovers runner dirs, checks process liveness
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
+    UpdateCheck.php        opt-in check against this project's own GitHub Releases
     Provisioner.php       downloads, installs, and registers a runner
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Dashboard.php         merges local + GitHub state into one snapshot
@@ -265,7 +273,10 @@ dedicated Alpine (musl) container for every push/PR — see [Platform
 support](#platform-support) — with the default `GITHUB_TOKEN` restricted
 to read-only and third-party actions pinned to commit SHAs rather than
 mutable version tags. `.github/workflows/release.yml` publishes
-a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed. Dependabot
+a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed — bump the
+root `VERSION` file to match in the same commit, before tagging; it's
+what the optional in-app update check (below) compares against.
+Dependabot
 (`.github/dependabot.yml`) keeps the dev-tooling Composer and npm
 dependencies and the pinned Actions SHAs current on a weekly schedule.
 

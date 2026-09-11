@@ -127,6 +127,13 @@ if ($action === 'system' && $method === 'GET') {
     respond(['ok' => true, 'system' => SystemStats::snapshot()]);
 }
 
+if ($action === 'check_updates' && $method === 'GET') {
+    if (!Config::checkUpdatesEnabled()) {
+        respond(['ok' => false, 'message' => 'update checks are disabled'], 403);
+    }
+    respond(['ok' => true] + UpdateCheck::check());
+}
+
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
 }
@@ -157,6 +164,7 @@ if ($action === 'save_settings') {
         'RUNNERDECK_ORG' => $scope === 'org' ? $org : '',
         'RUNNERDECK_REPO' => $scope === 'repo' ? $repo : '',
         'RUNNERDECK_LABEL' => $label,
+        'RUNNERDECK_CHECK_UPDATES' => ($_POST['check_updates'] ?? '') === '1' ? '1' : '',
     ]);
 
     respond(['ok' => true, 'message' => 'settings saved']);

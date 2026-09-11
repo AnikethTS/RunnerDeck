@@ -25,6 +25,7 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_REPO');
         putenv('RUNNERDECK_LABEL');
+        putenv('RUNNERDECK_CHECK_UPDATES');
         @unlink($this->settingsFile);
         @rmdir(dirname($this->settingsFile));
     }
@@ -93,6 +94,16 @@ final class SettingsTest extends TestCase
 
         $this->assertSame('repo', getenv('RUNNERDECK_SCOPE'));
         $this->assertSame('owner/repo', getenv('RUNNERDECK_REPO'));
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveThenLoadRoundTripsCheckUpdates(): void
+    {
+        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org', 'RUNNERDECK_CHECK_UPDATES' => '1']);
+
+        $loaded = \Settings::load();
+
+        $this->assertSame('1', $loaded['RUNNERDECK_CHECK_UPDATES']);
     }
 
     #[RunInSeparateProcess]

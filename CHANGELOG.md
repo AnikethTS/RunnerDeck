@@ -26,6 +26,10 @@ follows [SemVer](https://semver.org/).
 - Two new stat cards, **System CPU** and **System RAM**, showing
   whole-machine usage (`src/SystemStats.php`) alongside the existing
   per-runner stats.
+- An opt-in **update check** (`RUNNERDECK_CHECK_UPDATES`, off by
+  default): compares this install's `VERSION` file against this
+  project's latest GitHub Release and shows a header badge if a newer
+  one exists. Toggle it from Settings. `src/UpdateCheck.php`.
 
 ### Changed
 
