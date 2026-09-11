@@ -47,7 +47,11 @@ of a script incantation.
   GitHub, and re-registers it fresh under the new name — same busy-flag
   confirmation as Stop, since it interrupts any in-progress job.
 - Each running runner's **CPU%/RAM** is shown live (`ps`-based, cross-platform,
-  read-only — nothing is capped or throttled).
+  read-only — nothing is capped or throttled), with a rolling one-hour
+  pool-wide history chart backed by a small local SQLite file
+  (`storage/history.sqlite`). This is best-effort: if the `pdo_sqlite`
+  PHP extension isn't installed, the rest of the dashboard works exactly
+  the same, you just don't get the chart.
 
 ## Platform support
 
@@ -70,6 +74,9 @@ shipped." Be specific about what that means before assuming an old box works:
   - macOS (Homebrew): `brew install php`
   - Windows: `wsl --install`, then follow the Debian/Ubuntu instructions
     inside the WSL2 shell.
+- **Optional:** the `pdo_sqlite` extension, for the CPU/RAM history chart
+  (`apt install php-sqlite3` / `dnf install php-pdo` / bundled with
+  Homebrew's `php`). Nothing else in the dashboard depends on it.
 - **[`gh`](https://cli.github.com/)**, authenticated (`gh auth login`), with
   access matching the scope you pick (see `RUNNERDECK_SCOPE` below). GitHub's
   API has no concept of a personal-account-level runner — it's org or repo:
@@ -148,6 +155,7 @@ runnerdeck/
     bootstrap.php        single load point required by every public/*.php
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
+    History.php            best-effort CPU/RAM history in storage/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
     RunnerPool.php        discovers runner dirs, checks process liveness
     GithubClient.php      shells out to `gh`

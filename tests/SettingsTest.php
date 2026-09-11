@@ -6,6 +6,7 @@ namespace Tests;
 
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class SettingsTest extends TestCase
 {
@@ -92,5 +93,14 @@ final class SettingsTest extends TestCase
 
         $this->assertSame('repo', getenv('RUNNERDECK_SCOPE'));
         $this->assertSame('owner/repo', getenv('RUNNERDECK_REPO'));
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveThrowsWhenPathIsUnwritable(): void
+    {
+        putenv('RUNNERDECK_SETTINGS_FILE=/nonexistent-root-only-path/settings.json');
+
+        $this->expectException(RuntimeException::class);
+        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
     }
 }

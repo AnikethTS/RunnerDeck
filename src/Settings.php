@@ -61,7 +61,7 @@ final class Settings
         }
 
         $dir = dirname(self::path());
-        if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) {
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             throw new RuntimeException("failed to create {$dir}");
         }
 

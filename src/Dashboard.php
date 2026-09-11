@@ -30,16 +30,19 @@ final class Dashboard
             $runners[] = $row;
         }
 
+        $stats = self::computeStats($runners);
+        History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
+
         return [
             'generated_at' => time(),
             'health' => array_merge($health->toArray(), ['gh_list_error' => $ghError]),
             'runners' => $runners,
-            'stats' => self::computeStats($runners),
+            'stats' => $stats,
         ];
     }
 
     /** @param array<int, array<string, mixed>> $runners */
-    private static function computeStats(array $runners): array
+    public static function computeStats(array $runners): array
     {
         $running = array_values(array_filter($runners, static fn($r) => $r['local_running']));
         $notNull = static fn($v) => $v !== null;
