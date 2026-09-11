@@ -145,6 +145,21 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
 .row-flag { margin-top: 4px; }
 
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--gridline);
+  border-radius: 8px;
+}
+.bulk-actions-bar .spacer { flex: 1; }
+
+.select-col { width: 32px; }
+.runner-table td.select-col, .runner-table th.select-col { padding-right: 0; }
+
 .btn {
   border: 1px solid var(--border);
   background: var(--surface-1);

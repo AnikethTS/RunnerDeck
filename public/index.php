@@ -135,9 +135,19 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         </form>
       </div>
 
+      <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
+        <span id="bulk-actions-count" class="muted"></span>
+        <span class="spacer"></span>
+        <button id="btn-bulk-start" class="btn btn-sm btn-good">Start</button>
+        <button id="btn-bulk-stop" class="btn btn-sm btn-critical">Stop</button>
+        <button id="btn-bulk-delete" class="btn btn-sm btn-critical">Delete</button>
+        <button id="btn-bulk-clear" class="btn btn-sm">Clear</button>
+      </div>
+
       <table class="runner-table">
         <thead>
           <tr>
+            <th class="select-col"><input type="checkbox" id="select-all-runners" /></th>
             <th class="sortable" data-sort="id">Runner<span class="sort-caret"></span></th>
             <th class="sortable" data-sort="status">GitHub<span class="sort-caret"></span></th>
             <th class="sortable" data-sort="cpu">Local process<span class="sort-caret"></span></th>

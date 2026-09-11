@@ -209,4 +209,37 @@ final class ProcessControl
     {
         return self::startAll($count);
     }
+
+    /** @param RunnerInfo[] $runners */
+    public static function bulkStart(array $runners): array
+    {
+        $messages = [];
+        foreach ($runners as $r) {
+            $messages[] = self::startIndividual($r)['message'];
+        }
+        return ['ok' => true, 'message' => implode("\n", $messages)];
+    }
+
+    /** @param RunnerInfo[] $runners */
+    public static function bulkStop(array $runners): array
+    {
+        $messages = [];
+        foreach ($runners as $r) {
+            $messages[] = self::stopIndividual($r)['message'];
+        }
+        return ['ok' => true, 'message' => implode("\n", $messages)];
+    }
+
+    /** @param RunnerInfo[] $runners */
+    public static function bulkDelete(array $runners): array
+    {
+        $messages = [];
+        $ok = true;
+        foreach ($runners as $r) {
+            $result = self::deleteRunner($r);
+            $messages[] = $result['message'];
+            $ok = $ok && $result['ok'];
+        }
+        return ['ok' => $ok, 'message' => implode("\n", $messages)];
+    }
 }
