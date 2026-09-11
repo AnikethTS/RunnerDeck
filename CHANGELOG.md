@@ -18,6 +18,9 @@ follows [SemVer](https://semver.org/).
   and stylelint, plus a Playwright E2E suite (`e2e/dashboard.spec.js`)
   covering first-run setup, the filter box, sorting, bulk-select, and the
   status-mismatch flag against a real browser and a real PHP backend.
+- `run.sh` now prints the history DB's resolved path, whether
+  `pdo_sqlite` is available, and whether it's writable, right alongside
+  the "RunnerDeck on http://..." startup line.
 
 ### Changed
 
