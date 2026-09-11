@@ -13,9 +13,10 @@ if (!RunnerPool::isKnownId($id)) {
 }
 
 // $id is whitelisted above via isKnownId()'s ^runner-(base|[0-9]+)$ regex
-// plus a directory-existence check — not attacker-controlled by this point.
-// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
+// plus a directory-existence check — not attacker-controlled by this point,
+// for every use of $logFile below.
 $logFile = RunnerPool::dirFor($id) . '/runner.log';
+// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
 if (!is_file($logFile)) {
     http_response_code(404);
     header('Content-Type: text/plain');
@@ -25,5 +26,7 @@ if (!is_file($logFile)) {
 
 header('Content-Type: text/plain; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $id . '-runner.log"');
+// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
 header('Content-Length: ' . (string) filesize($logFile));
+// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
 readfile($logFile);
