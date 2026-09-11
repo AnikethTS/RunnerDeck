@@ -51,7 +51,7 @@ shipped." Be specific about what that means before assuming an old box works:
 | Platform | Support | Notes |
 |---|---|---|
 | Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. CI tests `ubuntu-latest` and `ubuntu-22.04` on glibc, plus a dedicated Alpine (musl) smoke test — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
-| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest` and `macos-13`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
+| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest` and `macos-14`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
 | Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there, so it inherits the Linux support above (WSL2 *is* a real Linux kernel). Requires **Windows 10 build 2004 (May 2020 update, 19041) or later, or Windows 11** — that's WSL2's own minimum, not something this project adds. There is no native-Windows code path and no WSL1 fallback: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, PHP does not ship those extensions on Windows, and WSL1 has no real Linux kernel for `/proc` to work the way this app expects. |
 
 ## Prerequisites
@@ -178,7 +178,7 @@ had `vendor/` installed before this hook existed, wire it up once with
 skips the checks with a warning rather than blocking you.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-13`, and a
+across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, and a
 dedicated Alpine (musl) container for every push/PR — see [Platform
 support](#platform-support) — with the default `GITHUB_TOKEN` restricted
 to read-only and third-party actions pinned to commit SHAs rather than
