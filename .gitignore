@@ -1,0 +1,11 @@
+# Local secrets/config — copy .env.example instead
+.env
+
+# Custom branding — drop your own logo.png here, it's optional at runtime
+public/assets/logo.png
+
+# Editor/OS cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
