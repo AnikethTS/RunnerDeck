@@ -16,4 +16,13 @@ fi
 export PHP_CLI_SERVER_WORKERS=4
 
 echo "RunnerDeck on http://127.0.0.1:${PORT} (localhost only)"
+php -r '
+    $dir = $argv[1];
+    $file = getenv("RUNNERDECK_HISTORY_FILE") ?: "$dir/storage/db/history.sqlite";
+    $parent = dirname($file);
+    $writable = is_dir($parent) ? is_writable($parent) : is_writable(dirname($parent));
+    $ext = extension_loaded("pdo_sqlite") ? "pdo_sqlite available" : "pdo_sqlite MISSING, history chart disabled";
+    $state = is_file($file) ? "existing" : "not yet created";
+    fwrite(STDOUT, "History DB: {$file} ({$ext}, {$state}, " . ($writable ? "writable" : "NOT WRITABLE") . ")\n");
+' -- "$DIR"
 exec php -S 127.0.0.1:"${PORT}" -t "$DIR/public"
