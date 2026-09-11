@@ -233,6 +233,23 @@ had `vendor/` installed before this hook existed, wire it up once with
 `composer run hooks-install`. A commit made without dev tooling installed
 skips the checks with a warning rather than blocking you.
 
+The JS/CSS side has its own dev-only tooling, the same "never a runtime
+dependency" deal as Composer above — `run.sh` doesn't need `node_modules/`
+any more than it needs `vendor/`:
+
+```bash
+npm install       # pulls in eslint, stylelint, Playwright (dev-only)
+npm run lint:js   # eslint on public/assets/app.js
+npm run lint:css  # stylelint on public/assets/style.css
+npm run e2e       # Playwright — see e2e/dashboard.spec.js
+```
+
+`npm run e2e` boots a real `php -S` server and drives the real dashboard in
+a real (headless) browser — see the comment at the top of
+`e2e/dashboard.spec.js` for exactly what is and isn't real in there (GitHub
+itself is never contacted; runner data for the richer UI tests is supplied
+by mocking `action=status` responses).
+
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, and a
 dedicated Alpine (musl) container for every push/PR — see [Platform
@@ -240,8 +257,8 @@ support](#platform-support) — with the default `GITHUB_TOKEN` restricted
 to read-only and third-party actions pinned to commit SHAs rather than
 mutable version tags. `.github/workflows/release.yml` publishes
 a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed. Dependabot
-(`.github/dependabot.yml`) keeps both the dev-tooling Composer dependencies
-and the pinned Actions SHAs current on a weekly schedule.
+(`.github/dependabot.yml`) keeps the dev-tooling Composer and npm
+dependencies and the pinned Actions SHAs current on a weekly schedule.
 
 Security checks beyond linting: `.github/workflows/semgrep.yml` runs a
 static analysis pass (`p/security-audit` + `p/php` rulesets) on every

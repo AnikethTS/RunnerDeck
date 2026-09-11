@@ -1,0 +1,18 @@
+{
+  "name": "runnerdeck-dev-tooling",
+  "private": true,
+  "description": "Dev-only tooling for RunnerDeck (lint, E2E tests) — never a runtime dependency of the app itself.",
+  "type": "module",
+  "scripts": {
+    "lint:js": "eslint public/assets/app.js",
+    "lint:css": "stylelint public/assets/style.css",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^10.10.0",
+    "stylelint": "^17.15.0",
+    "stylelint-config-standard": "^40.0.0"
+  }
+}

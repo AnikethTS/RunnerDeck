@@ -445,7 +445,7 @@
     if (status === 409) {
       const proceed = await confirmModal(data.message);
       if (!proceed) return;
-      ({ status, data } = await post(action, { ...params, force: '1' }));
+      ({ data } = await post(action, { ...params, force: '1' }));
     }
     if (!data.ok) {
       alert(data.message || `${action} failed`);

@@ -102,6 +102,9 @@ $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($action === 'status' && $method === 'GET') {
+    if (!Config::isConfigured()) {
+        respond(['ok' => false, 'message' => 'RunnerDeck is not configured yet'], 409);
+    }
     $lines = max(0, min(500, (int) ($_GET['lines'] ?? 15)));
     respond(Dashboard::snapshot($lines));
 }

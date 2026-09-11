@@ -5,7 +5,7 @@
   --text-secondary: #52514e;
   --text-muted: #898781;
   --gridline: #e1e0d9;
-  --border: rgba(11, 11, 11, 0.10);
+  --border: rgb(11 11 11 / 10%);
   --brand: #8a7038;
   --brand-hover: #6e5a2c;
 
@@ -19,11 +19,11 @@
   :root {
     --surface-1: #1a1a19;
     --page-plane: #0d0d0d;
-    --text-primary: #ffffff;
+    --text-primary: #fff;
     --text-secondary: #c3c2b7;
     --text-muted: #898781;
     --gridline: #2c2c2a;
-    --border: rgba(255, 255, 255, 0.10);
+    --border: rgb(255 255 255 / 10%);
     --brand: #c7a35c;
     --brand-hover: #dbbb80;
 
@@ -103,7 +103,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .stat-value.stat-good { color: var(--status-good); }
 .stat-value.stat-critical { color: var(--status-critical); }
 .stat-sub { color: var(--text-muted); font-size: 12px; }
-@media (max-width: 720px) {
+@media (width <= 720px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -120,7 +120,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   padding: 14px 16px;
 }
 .history-chart { width: 100%; height: 60px; color: var(--brand); display: block; margin-top: 8px; }
-@media (max-width: 720px) {
+@media (width <= 720px) {
   .history-grid { grid-template-columns: 1fr; }
 }
 
@@ -167,6 +167,10 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   border-radius: 8px;
 }
 .bulk-actions-bar .spacer { flex: 1; }
+/* author display:flex above beats the UA [hidden] default, same as .modal[hidden] below */
+.bulk-actions-bar[hidden] {
+  display: none;
+}
 
 .select-col { width: 32px; }
 .runner-table td.select-col, .runner-table th.select-col { padding-right: 0; }
@@ -199,7 +203,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   width: 12px;
   height: 12px;
   margin-top: -6px;
-  border: 2px solid currentColor;
+  border: 2px solid currentcolor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: btn-spin 0.6s linear infinite;
@@ -280,7 +284,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 .badge-good { color: var(--status-good); background: color-mix(in srgb, var(--status-good) 14%, transparent); }
 .badge-warning { color: var(--status-warning); background: color-mix(in srgb, var(--status-warning) 18%, transparent); }
@@ -304,7 +308,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   white-space: pre-wrap;
   max-height: 4.5em;
   overflow: hidden;
-  margin: 0 0 4px 0;
+  margin: 0 0 4px;
 }
 .log-link { font-size: 12px; color: var(--brand); cursor: pointer; background: none; border: none; padding: 0; }
 
@@ -313,7 +317,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
