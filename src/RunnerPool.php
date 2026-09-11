@@ -12,6 +12,8 @@ final class RunnerInfo
         public readonly bool $localRunning,
         public readonly ?int $pid,
         public readonly array $logTail,
+        public readonly ?float $cpuPercent = null,
+        public readonly ?int $rssKb = null,
     ) {
     }
 
@@ -24,6 +26,8 @@ final class RunnerInfo
             'local_running' => $this->localRunning,
             'pid' => $this->pid,
             'log_tail' => $this->logTail,
+            'cpu_percent' => $this->cpuPercent,
+            'rss_kb' => $this->rssKb,
         ];
     }
 }
@@ -99,6 +103,8 @@ final class RunnerPool
             }
         }
 
+        $stats = ($running && $pid !== null) ? (self::allProcessStats()[$pid] ?? null) : null;
+
         return new RunnerInfo(
             id: $id,
             dir: $dir,
@@ -107,7 +113,56 @@ final class RunnerPool
             localRunning: $running,
             pid: $pid,
             logTail: self::tailLog("$dir/runner.log", $logLines),
+            cpuPercent: $stats['cpu_percent'] ?? null,
+            rssKb: $stats['rss_kb'] ?? null,
         );
+    }
+
+    /** @return string the next unused runner-base|runner-N slot, in allocation order */
+    public static function nextAvailableId(): string
+    {
+        $poolDir = Config::poolDir();
+        $maxNum = 0;
+        $hasBase = false;
+        foreach (glob("$poolDir/runner-*", GLOB_ONLYDIR) ?: [] as $path) {
+            $id = basename($path);
+            if (!preg_match(self::ID_PATTERN, $id)) {
+                continue;
+            }
+            if ($id === 'runner-base') {
+                $hasBase = true;
+            } else {
+                $maxNum = max($maxNum, (int) substr($id, 7));
+            }
+        }
+        return $hasBase ? 'runner-' . ($maxNum + 1) : 'runner-base';
+    }
+
+    /** @return array<int, array{cpu_percent: float, rss_kb: int}> pid => live usage, cached briefly */
+    public static function allProcessStats(): array
+    {
+        static $cache = null;
+        static $cachedAt = 0;
+        if ($cache !== null && (microtime(true) - $cachedAt) < 2.0) {
+            return $cache;
+        }
+
+        $result = Shell::exec(['ps', '-eo', 'pid=,%cpu=,rss='], 5);
+        $map = [];
+        if ($result['code'] === 0) {
+            foreach (explode("\n", $result['stdout']) as $line) {
+                $parts = preg_split('/\s+/', trim($line));
+                if (count($parts) !== 3) {
+                    continue;
+                }
+                [$pid, $cpu, $rss] = $parts;
+                $map[(int) $pid] = ['cpu_percent' => (float) $cpu, 'rss_kb' => (int) $rss];
+            }
+        }
+
+        $cache = $map;
+        $cachedAt = microtime(true);
+        return $map;
     }
 
     /** @return array<string, int> runner dir => pid, independent of any pidfile */

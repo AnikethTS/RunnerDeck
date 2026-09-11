@@ -91,6 +91,30 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 .btn-critical { border-color: var(--status-critical); color: var(--status-critical); }
 .btn-sm { padding: 3px 8px; font-size: 12px; }
 
+.btn-loading {
+  position: relative;
+  padding-left: 26px;
+  cursor: default;
+}
+.btn-loading::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+}
+.btn-sm.btn-loading { padding-left: 22px; }
+.btn-sm.btn-loading::before { left: 7px; width: 10px; height: 10px; margin-top: -5px; }
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
 .pool-form { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .pool-form input {
   width: 60px;
@@ -128,6 +152,7 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
 .runner-name { font-weight: 600; font-variant-numeric: tabular-nums; }
 .agent-name { color: var(--text-muted); font-size: 12px; display: block; }
+.resource-usage { color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px; }
 
 .badge {
   display: inline-flex;

@@ -86,6 +86,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>
         <span class="spacer"></span>
+        <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>
         <button id="btn-stop-all" class="btn btn-critical">Stop All</button>
         <form id="pool-size-form" class="pool-form">
@@ -159,6 +160,47 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <button type="submit" class="btn btn-good">Save</button>
           </div>
           <p id="settings-error" class="setup-error" hidden></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="add-runner-modal" class="modal" hidden>
+      <div class="modal-content modal-content-small">
+        <div class="modal-header">
+          <h2>Add runner</h2>
+          <button id="add-runner-modal-close" class="btn">Close</button>
+        </div>
+        <form id="add-runner-form" class="settings-form">
+          <label for="add-runner-name">Name (optional)</label>
+          <input type="text" id="add-runner-name" name="name" placeholder="leave blank to auto-name" />
+          <div class="modal-actions">
+            <button type="button" id="add-runner-cancel" class="btn">Cancel</button>
+            <button type="submit" class="btn btn-good">Add</button>
+          </div>
+          <p id="add-runner-error" class="setup-error" hidden></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="rename-modal" class="modal" hidden>
+      <div class="modal-content modal-content-small">
+        <div class="modal-header">
+          <h2>Rename runner</h2>
+          <button id="rename-modal-close" class="btn">Close</button>
+        </div>
+        <p class="muted">
+          Renaming stops the runner, deregisters it from GitHub under its old
+          name, then re-registers and starts it under the new name.
+        </p>
+        <form id="rename-form" class="settings-form">
+          <input type="hidden" id="rename-runner-id" name="runner" />
+          <label for="rename-name">New name</label>
+          <input type="text" id="rename-name" name="name" required />
+          <div class="modal-actions">
+            <button type="button" id="rename-cancel" class="btn">Cancel</button>
+            <button type="submit" class="btn btn-good">Rename</button>
+          </div>
+          <p id="rename-error" class="setup-error" hidden></p>
         </form>
       </div>
     </div>

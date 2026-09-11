@@ -121,6 +121,23 @@ if ($action === 'restart') {
     respond(ProcessControl::restartIndividual($r));
 }
 
+if ($action === 'rename') {
+    $r = requireRunner($_POST['runner'] ?? '');
+    $newName = trim((string) ($_POST['name'] ?? ''));
+    if ($newName === '') {
+        respond(['ok' => false, 'message' => 'name is required'], 422);
+    }
+    if ($blocked = checkNotBusy($r->agentName, $force)) {
+        respond($blocked, 409);
+    }
+    respond(ProcessControl::renameRunner($r, $newName));
+}
+
+if ($action === 'add_runner') {
+    $name = trim((string) ($_POST['name'] ?? ''));
+    respond(ProcessControl::addRunner($name !== '' ? $name : null));
+}
+
 if ($action === 'start_all') {
     $count = max(1, min(30, (int) ($_POST['count'] ?? 10)));
     respond(ProcessControl::startAll($count));

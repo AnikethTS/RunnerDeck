@@ -12,8 +12,6 @@ final class Config
         }
         $done = true;
 
-        // UI-saved settings (storage/settings.json) take priority over
-        // .env, but never override a real ambient env var; see Settings.
         Settings::applyToEnv();
 
         $envFile = dirname(__DIR__) . '/.env';

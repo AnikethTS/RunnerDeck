@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 final class ProcessControl
 {
-    // /dev/fd works the same way on Linux and macOS (on Linux it's a symlink
-    // to /proc/self/fd); /proc itself does not exist on macOS.
+    // /proc doesn't exist on macOS; /dev/fd works on both (a symlink to
+    // /proc/self/fd on Linux).
     private const CLOSE_FDS_PREFIX =
         'for fd in /dev/fd/*; do n=${fd##*/}; [ "$n" -gt 2 ] 2>/dev/null && eval "exec $n<&-" 2>/dev/null; done; ';
 
-    public static function startIndividual(RunnerInfo $r): array
+    public static function startIndividual(RunnerInfo $r, ?string $desiredName = null): array
     {
         if (!$r->configured) {
-            $configure = Provisioner::ensureConfigured($r->dir, $r->agentName);
+            $configure = Provisioner::ensureConfigured($r->dir, $desiredName ?? $r->agentName);
             if (!$configure['ok']) {
                 return $configure;
             }
@@ -82,6 +82,62 @@ final class ProcessControl
             logTail: [],
         );
         return self::startIndividual($fresh);
+    }
+
+    /** Allocates the next free slot and installs/configures/starts it under an optional custom name. */
+    public static function addRunner(?string $name): array
+    {
+        $id = RunnerPool::nextAvailableId();
+        $info = new RunnerInfo(
+            id: $id,
+            dir: RunnerPool::dirFor($id),
+            configured: false,
+            agentName: RunnerPool::agentNameFor($id),
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
+        $result = self::startIndividual($info, $name);
+        $result['id'] = $id;
+        return $result;
+    }
+
+    /**
+     * Stops the runner, deregisters it from GitHub if it was already
+     * configured (so the old name is freed up), then reconfigures and
+     * starts it fresh under the new name. Interrupts any in-progress job.
+     */
+    public static function renameRunner(RunnerInfo $r, string $newName): array
+    {
+        $stop = self::stopIndividual($r);
+        if (!$stop['ok']) {
+            return $stop;
+        }
+
+        if ($r->configured) {
+            try {
+                $ghId = GithubClient::listRunners()[$r->agentName]['id'] ?? null;
+                if ($ghId !== null) {
+                    GithubClient::deleteRunner($ghId);
+                }
+            } catch (RuntimeException $e) {
+                return ['ok' => false, 'message' => "failed to deregister {$r->agentName}: " . $e->getMessage()];
+            }
+            Provisioner::deregister($r->dir);
+        }
+
+        usleep(300000);
+
+        $fresh = new RunnerInfo(
+            id: $r->id,
+            dir: $r->dir,
+            configured: false,
+            agentName: $r->agentName,
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
+        return self::startIndividual($fresh, $newName);
     }
 
     private static function infoFor(string $id): RunnerInfo

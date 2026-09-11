@@ -93,4 +93,19 @@ final class RunnerPoolTest extends TestCase
 
         $this->assertSame([], \RunnerPool::tailLog($path, 0));
     }
+
+    #[RunInSeparateProcess]
+    public function testNextAvailableIdFillsBaseFirst(): void
+    {
+        rmdir($this->poolDir . '/runner-base');
+        rmdir($this->poolDir . '/runner-2');
+        rmdir($this->poolDir . '/not-a-runner-dir');
+        $this->assertSame('runner-base', \RunnerPool::nextAvailableId());
+    }
+
+    #[RunInSeparateProcess]
+    public function testNextAvailableIdContinuesAfterHighestNumber(): void
+    {
+        $this->assertSame('runner-3', \RunnerPool::nextAvailableId());
+    }
 }
