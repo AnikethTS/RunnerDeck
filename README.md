@@ -119,6 +119,18 @@ shipped." Be specific about what that means before assuming an old box works:
 - `curl` and `tar` (or `unzip` on Windows) for downloading and extracting
   the runner package — both are standard on Linux/macOS.
 
+Not sure if your machine meets all of the above? Run:
+
+```bash
+php bin/doctor.php
+```
+
+It checks the PHP version and extensions, `bash`/`curl`/`tar`, whether `gh`
+is installed and authenticated, whether the configured scope can actually
+read runners, and whether the pool and storage directories are writable —
+and exits non-zero if anything required is missing, so it's safe to use in
+a setup script too.
+
 ## First-time setup
 
 1. **Run it** — no `.env` required to get started:
