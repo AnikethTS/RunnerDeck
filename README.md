@@ -63,7 +63,7 @@ of a script incantation.
 - Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
   cross-platform, read-only — nothing is capped or throttled), with a
   rolling one-hour pool-wide history chart backed by a small local SQLite
-  file (`storage/history.sqlite`). This is best-effort: if the `pdo_sqlite`
+  file (`storage/db/history.sqlite`). This is best-effort: if the `pdo_sqlite`
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID or registered name, and
@@ -196,7 +196,7 @@ runnerdeck/
     bootstrap.php        single load point required by every public/*.php
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
-    History.php            best-effort CPU/RAM history in storage/history.sqlite
+    History.php            best-effort CPU/RAM history in storage/db/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
     RunnerPool.php        discovers runner dirs, checks process liveness
     GithubClient.php      shells out to `gh`
