@@ -45,6 +45,59 @@ function checkNotBusy(string $agentName, bool $force): ?array
     return null;
 }
 
+/** @return RunnerInfo[] keyed by id, from the comma-separated `runners` POST field */
+function requireRunners(): array
+{
+    $raw = (string) ($_POST['runners'] ?? '');
+    $ids = array_values(array_filter(array_map('trim', explode(',', $raw)), fn ($id) => $id !== ''));
+    if (!$ids) {
+        respond(['ok' => false, 'message' => 'no runners selected'], 422);
+    }
+
+    $unknown = array_filter($ids, fn ($id) => !RunnerPool::isKnownId($id));
+    if ($unknown) {
+        respond(['ok' => false, 'message' => 'unknown runner(s): ' . implode(', ', $unknown)], 404);
+    }
+
+    $all = RunnerPool::discover(0);
+    return array_map(fn ($id) => $all[$id], $ids);
+}
+
+/** @param RunnerInfo[] $runners Fetches GitHub's busy state once for the whole selection, not per runner. */
+function checkNoneBusy(array $runners, bool $force): ?array
+{
+    if ($force) {
+        return null;
+    }
+
+    try {
+        $ghRunners = GithubClient::listRunners();
+    } catch (RuntimeException $e) {
+        return [
+            'ok' => false,
+            'busy_unknown' => true,
+            'message' => "Could not verify job status via GitHub API ({$e->getMessage()}). Pass force=1 to override.",
+        ];
+    }
+
+    $busyNames = [];
+    foreach ($runners as $r) {
+        if ($ghRunners[$r->agentName]['busy'] ?? false) {
+            $busyNames[] = $r->agentName;
+        }
+    }
+    if ($busyNames) {
+        $names = implode(', ', $busyNames);
+        return [
+            'ok' => false,
+            'busy' => true,
+            'busy_runners' => $busyNames,
+            'message' => "Busy runners would be interrupted: {$names}. Pass force=1 to stop anyway.",
+        ];
+    }
+    return null;
+}
+
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -156,33 +209,30 @@ if ($action === 'start_all') {
 }
 
 if ($action === 'stop_all') {
-    if (!$force) {
-        try {
-            $busyNames = [];
-            foreach (GithubClient::listRunners() as $name => $info) {
-                if ($info['busy']) {
-                    $busyNames[] = $name;
-                }
-            }
-            if ($busyNames) {
-                $names = implode(', ', $busyNames);
-                respond([
-                    'ok' => false,
-                    'busy' => true,
-                    'busy_runners' => $busyNames,
-                    'message' => "Busy runners would be interrupted: {$names}. Pass force=1 to stop anyway.",
-                ], 409);
-            }
-        } catch (RuntimeException $e) {
-            $error = $e->getMessage();
-            respond([
-                'ok' => false,
-                'busy_unknown' => true,
-                'message' => "Could not verify job status via GitHub API ({$error}). Pass force=1 to override.",
-            ], 409);
-        }
+    if ($blocked = checkNoneBusy(RunnerPool::discover(0), $force)) {
+        respond($blocked, 409);
     }
     respond(ProcessControl::stopAll());
+}
+
+if ($action === 'bulk_start') {
+    respond(ProcessControl::bulkStart(requireRunners()));
+}
+
+if ($action === 'bulk_stop') {
+    $runners = requireRunners();
+    if ($blocked = checkNoneBusy($runners, $force)) {
+        respond($blocked, 409);
+    }
+    respond(ProcessControl::bulkStop($runners));
+}
+
+if ($action === 'bulk_delete') {
+    $runners = requireRunners();
+    if ($blocked = checkNoneBusy($runners, $force)) {
+        respond($blocked, 409);
+    }
+    respond(ProcessControl::bulkDelete($runners));
 }
 
 if ($action === 'resize') {

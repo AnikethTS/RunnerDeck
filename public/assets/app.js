@@ -103,6 +103,8 @@
   const crashState = {};
   const explicitlyStopped = new Set();
 
+  const selectedRunners = new Set();
+
   function isMismatched(runner) {
     if (!runner.github) return false;
     return (runner.github.status === 'online') !== runner.local_running;
@@ -271,8 +273,12 @@
 
   function rowHtml(runner) {
     const logPreview = (runner.log_tail || []).join('\n') || '(no log yet)';
+    const checked = selectedRunners.has(runner.id) ? 'checked' : '';
     return `
       <tr data-runner="${runner.id}" data-agent-name="${escapeHtml(runner.agent_name)}">
+        <td class="select-col">
+          <input type="checkbox" class="row-select" data-runner="${runner.id}" ${checked} />
+        </td>
         <td>
           <span class="runner-name">${escapeHtml(runner.id)}</span>
           <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
@@ -315,9 +321,31 @@
     renderStats(snapshot);
     updateMismatchStreaks(snapshot.runners);
     trackCrashesAndMaybeRestart(snapshot.runners);
-    rowsEl.innerHTML = sortRunners(filteredRunners(snapshot.runners)).map(rowHtml).join('');
+
+    const liveIds = new Set(snapshot.runners.map((r) => r.id));
+    [...selectedRunners].forEach((id) => {
+      if (!liveIds.has(id)) selectedRunners.delete(id);
+    });
+
+    const visible = sortRunners(filteredRunners(snapshot.runners));
+    rowsEl.innerHTML = visible.map(rowHtml).join('');
     updateSortIndicators();
+    updateBulkActionsBar(visible);
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
+  }
+
+  function updateBulkActionsBar(visibleRunners) {
+    const bar = document.getElementById('bulk-actions-bar');
+    const count = selectedRunners.size;
+    bar.hidden = count === 0;
+    if (count > 0) {
+      document.getElementById('bulk-actions-count').textContent = `${count} selected`;
+    }
+
+    const selectAll = document.getElementById('select-all-runners');
+    const visibleIds = visibleRunners.map((r) => r.id);
+    selectAll.checked = visibleIds.length > 0 && visibleIds.every((id) => selectedRunners.has(id));
+    selectAll.indeterminate = !selectAll.checked && visibleIds.some((id) => selectedRunners.has(id));
   }
 
   document.getElementById('runner-filter').addEventListener('input', () => {
@@ -507,6 +535,77 @@
     setLoading(btn, 'Stopping All…');
     try {
       await runWithBusyGuard('stop_all', {});
+    } finally {
+      clearLoading(btn);
+    }
+  });
+
+  rowsEl.addEventListener('change', (e) => {
+    const checkbox = e.target.closest('input.row-select');
+    if (!checkbox) return;
+    const id = checkbox.dataset.runner;
+    if (checkbox.checked) {
+      selectedRunners.add(id);
+    } else {
+      selectedRunners.delete(id);
+    }
+    if (lastSnapshot) updateBulkActionsBar(sortRunners(filteredRunners(lastSnapshot.runners)));
+  });
+
+  document.getElementById('select-all-runners').addEventListener('change', (e) => {
+    if (!lastSnapshot) return;
+    const visible = sortRunners(filteredRunners(lastSnapshot.runners));
+    if (e.target.checked) {
+      visible.forEach((r) => selectedRunners.add(r.id));
+    } else {
+      visible.forEach((r) => selectedRunners.delete(r.id));
+    }
+    render(lastSnapshot);
+  });
+
+  document.getElementById('btn-bulk-clear').addEventListener('click', () => {
+    selectedRunners.clear();
+    if (lastSnapshot) render(lastSnapshot);
+  });
+
+  document.getElementById('btn-bulk-start').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const runners = [...selectedRunners].join(',');
+    setLoading(btn, 'Starting…');
+    try {
+      const { data } = await post('bulk_start', { runners });
+      if (!data.ok) alert(data.message);
+      await fetchStatus();
+    } finally {
+      clearLoading(btn);
+    }
+  });
+
+  document.getElementById('btn-bulk-stop').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    selectedRunners.forEach((id) => explicitlyStopped.add(id));
+    setLoading(btn, 'Stopping…');
+    try {
+      await runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') });
+    } finally {
+      clearLoading(btn);
+    }
+  });
+
+  document.getElementById('btn-bulk-delete').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const count = selectedRunners.size;
+    const sure = await confirmModal(
+      `Permanently delete ${count} runner${count === 1 ? '' : 's'}? This deregisters `
+      + 'each from GitHub and deletes its local files, including logs. This cannot be undone.',
+    );
+    if (!sure) return;
+    selectedRunners.forEach((id) => explicitlyStopped.add(id));
+    const runners = [...selectedRunners].join(',');
+    setLoading(btn, 'Deleting…');
+    try {
+      await runWithBusyGuard('bulk_delete', { runners });
+      selectedRunners.clear();
     } finally {
       clearLoading(btn);
     }

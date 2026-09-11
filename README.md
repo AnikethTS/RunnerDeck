@@ -77,6 +77,9 @@ of a script incantation.
   a few failed attempts in a row (crash-looping is flagged, not retried
   forever) and resets once the runner has stayed healthy for a couple of
   minutes.
+- Runners can be **selected in bulk** (checkboxes, with a "select all" for
+  the current filter) and started, stopped, or deleted together — the busy
+  check for Stop/Delete is done once for the whole selection, not per runner.
 
 ## Platform support
 
