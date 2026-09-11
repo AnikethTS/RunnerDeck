@@ -64,7 +64,7 @@ body {
 }
 .banner.warn { background: var(--status-warning); color: var(--text-primary); }
 
-main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 
 .stat-grid {
   display: grid;
