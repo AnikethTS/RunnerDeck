@@ -71,6 +71,33 @@ if (!Csrf::verifyRequest()) {
     respond(['ok' => false, 'message' => 'missing or invalid CSRF token — reload the page and try again'], 403);
 }
 
+if ($action === 'save_settings') {
+    $scope = $_POST['scope'] ?? '';
+    if ($scope !== 'org' && $scope !== 'repo') {
+        respond(['ok' => false, 'message' => "scope must be 'org' or 'repo'"], 422);
+    }
+
+    $org = trim((string) ($_POST['org'] ?? ''));
+    $repo = trim((string) ($_POST['repo'] ?? ''));
+    $label = trim((string) ($_POST['label'] ?? ''));
+
+    if ($scope === 'org' && $org === '') {
+        respond(['ok' => false, 'message' => 'org is required for org scope'], 422);
+    }
+    if ($scope === 'repo' && !str_contains($repo, '/')) {
+        respond(['ok' => false, 'message' => "repo must be in 'owner/repo' format"], 422);
+    }
+
+    Settings::save([
+        'RUNNERDECK_SCOPE' => $scope,
+        'RUNNERDECK_ORG' => $scope === 'org' ? $org : '',
+        'RUNNERDECK_REPO' => $scope === 'repo' ? $repo : '',
+        'RUNNERDECK_LABEL' => $label,
+    ]);
+
+    respond(['ok' => true, 'message' => 'settings saved']);
+}
+
 $force = (($_POST['force'] ?? $_GET['force'] ?? '0') === '1');
 
 if ($action === 'start') {

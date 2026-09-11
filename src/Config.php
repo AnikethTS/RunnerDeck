@@ -12,6 +12,10 @@ final class Config
         }
         $done = true;
 
+        // UI-saved settings (storage/settings.json) take priority over
+        // .env, but never override a real ambient env var; see Settings.
+        Settings::applyToEnv();
+
         $envFile = dirname(__DIR__) . '/.env';
         if (!is_file($envFile)) {
             return;
@@ -39,14 +43,40 @@ final class Config
         return $org;
     }
 
-    /** @return 'org'|'user' whether runners are managed at the org or personal-account level */
+    /** @return string "owner/repo" — only used when scope() is 'repo' */
+    public static function repo(): string
+    {
+        $repo = getenv('RUNNERDECK_REPO');
+        if (!$repo) {
+            throw new RuntimeException('RUNNERDECK_REPO is not set — see README');
+        }
+        return $repo;
+    }
+
+    /**
+     * @return 'org'|'repo' whether runners are managed at the org or
+     * single-repo level. There is no such thing as a personal-account-level
+     * self-hosted runner in GitHub's API — 'repo' is the real alternative
+     * for anyone who isn't an org admin.
+     */
     public static function scope(): string
     {
         $scope = getenv('RUNNERDECK_SCOPE') ?: 'org';
-        if ($scope !== 'org' && $scope !== 'user') {
-            throw new RuntimeException("RUNNERDECK_SCOPE must be 'org' or 'user', got '{$scope}'");
+        if ($scope !== 'org' && $scope !== 'repo') {
+            throw new RuntimeException("RUNNERDECK_SCOPE must be 'org' or 'repo', got '{$scope}'");
         }
         return $scope;
+    }
+
+    /** True once the active scope's required identifier (org or repo) is actually set — never throws. */
+    public static function isConfigured(): bool
+    {
+        try {
+            $scope = self::scope();
+        } catch (RuntimeException) {
+            return false;
+        }
+        return $scope === 'repo' ? (bool) getenv('RUNNERDECK_REPO') : (bool) getenv('RUNNERDECK_ORG');
     }
 
     public static function label(): string

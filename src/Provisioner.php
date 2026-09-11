@@ -88,10 +88,9 @@ final class Provisioner
         return ['ok' => true, 'message' => "{$name} configured"];
     }
 
-    /** @throws RuntimeException if the personal-account username can't be resolved */
     private static function registrationUrl(): string
     {
-        $owner = Config::scope() === 'user' ? GithubClient::authenticatedLogin() : Config::org();
+        $owner = Config::scope() === 'repo' ? Config::repo() : Config::org();
         return 'https://github.com/' . $owner;
     }
 

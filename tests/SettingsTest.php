@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests;
+
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\TestCase;
+
+final class SettingsTest extends TestCase
+{
+    private string $settingsFile;
+
+    protected function setUp(): void
+    {
+        $this->settingsFile = sys_get_temp_dir() . '/runnerdeck-settings-test-' . uniqid() . '/settings.json';
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->settingsFile);
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_REPO');
+        putenv('RUNNERDECK_LABEL');
+        @unlink($this->settingsFile);
+        @rmdir(dirname($this->settingsFile));
+    }
+
+    #[RunInSeparateProcess]
+    public function testLoadReturnsEmptyArrayWhenFileMissing(): void
+    {
+        $this->assertSame([], \Settings::load());
+    }
+
+    #[RunInSeparateProcess]
+    public function testIsConfiguredFalseWhenUnset(): void
+    {
+        $this->assertFalse(\Settings::isConfigured());
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveThenLoadRoundTrips(): void
+    {
+        \Settings::save([
+            'RUNNERDECK_SCOPE' => 'repo',
+            'RUNNERDECK_REPO' => 'AnikethTS/RunnerDeck',
+            'RUNNERDECK_ORG' => '',
+            'RUNNERDECK_LABEL' => 'my-label',
+        ]);
+
+        $loaded = \Settings::load();
+
+        $this->assertSame('repo', $loaded['RUNNERDECK_SCOPE']);
+        $this->assertSame('AnikethTS/RunnerDeck', $loaded['RUNNERDECK_REPO']);
+        $this->assertSame('my-label', $loaded['RUNNERDECK_LABEL']);
+        $this->assertArrayNotHasKey('RUNNERDECK_ORG', $loaded, 'empty values should be dropped, not saved as blanks');
+    }
+
+    #[RunInSeparateProcess]
+    public function testIsConfiguredTrueAfterSavingOrgScope(): void
+    {
+        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
+        $this->assertTrue(\Settings::isConfigured());
+    }
+
+    #[RunInSeparateProcess]
+    public function testIsConfiguredFalseWhenRepoScopeMissingRepo(): void
+    {
+        \Settings::save(['RUNNERDECK_SCOPE' => 'repo']);
+        $this->assertFalse(\Settings::isConfigured());
+    }
+
+    #[RunInSeparateProcess]
+    public function testApplyToEnvDoesNotOverrideRealEnvVar(): void
+    {
+        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'from-settings-file']);
+        putenv('RUNNERDECK_ORG=from-real-env');
+
+        \Settings::applyToEnv();
+
+        $this->assertSame('from-real-env', getenv('RUNNERDECK_ORG'));
+    }
+
+    #[RunInSeparateProcess]
+    public function testApplyToEnvSetsUnsetKeysFromSavedSettings(): void
+    {
+        \Settings::save(['RUNNERDECK_SCOPE' => 'repo', 'RUNNERDECK_REPO' => 'owner/repo']);
+
+        \Settings::applyToEnv();
+
+        $this->assertSame('repo', getenv('RUNNERDECK_SCOPE'));
+        $this->assertSame('owner/repo', getenv('RUNNERDECK_REPO'));
+    }
+}
