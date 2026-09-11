@@ -82,6 +82,29 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
     <div id="health-banner" class="banner" hidden></div>
 
     <main>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Active Runners</span>
+          <span class="stat-value" id="stat-active">—</span>
+          <span class="stat-sub" id="stat-active-sub">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">GitHub API</span>
+          <span class="stat-value" id="stat-github">—</span>
+          <span class="stat-sub" id="stat-github-sub">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Avg CPU</span>
+          <span class="stat-value" id="stat-cpu">—</span>
+          <span class="stat-sub" id="stat-cpu-sub">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Memory</span>
+          <span class="stat-value" id="stat-mem">—</span>
+          <span class="stat-sub" id="stat-mem-sub">—</span>
+        </div>
+      </div>
+
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
         <span id="last-updated" class="muted"></span>
@@ -99,9 +122,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
       <table class="runner-table">
         <thead>
           <tr>
-            <th>Runner</th>
-            <th>GitHub</th>
-            <th>Local process</th>
+            <th class="sortable" data-sort="id">Runner<span class="sort-caret"></span></th>
+            <th class="sortable" data-sort="status">GitHub<span class="sort-caret"></span></th>
+            <th class="sortable" data-sort="cpu">Local process<span class="sort-caret"></span></th>
             <th>Recent log</th>
             <th></th>
           </tr>
