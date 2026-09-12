@@ -30,6 +30,17 @@ follows [SemVer](https://semver.org/).
 - `API.md`: a full reference for `api.php`'s actions plus the two
   standalone log endpoints, including how to get a CSRF token from a
   script instead of a browser session (`action=csrf_token`).
+- A `Dockerfile` and `docker-compose.yml`, as an alternative to the
+  PHP-CLI/WSL2 path — see the README's [Docker](README.md#docker) section.
+  Runner pool/settings/history relocate to a mounted `/data` volume; the
+  container binds `0.0.0.0` internally (only there — every other install
+  still binds `127.0.0.1`) with the host-side port mapping pinned to
+  `127.0.0.1:8090:8090` to stay loopback-only end to end. Runner jobs that
+  need their own `docker` command need DinD or a mounted socket, neither
+  of which this image sets up. Podman works as a drop-in (`podman compose
+  up --build`) — the volume mounts carry a `:z` SELinux relabel option for
+  rootless Podman on SELinux-enforcing distros; Docker ignores it
+  elsewhere.
 
 ## [1.1.0] - 2026-09-12
 

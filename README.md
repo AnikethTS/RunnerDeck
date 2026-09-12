@@ -111,6 +111,7 @@ shipped." Be specific about what that means before assuming an old box works:
 | Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. CI tests `ubuntu-latest` and `ubuntu-22.04` on glibc, plus a dedicated Alpine (musl) smoke test — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
 | macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest` and `macos-14`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
 | Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there, so it inherits the Linux support above (WSL2 *is* a real Linux kernel). Requires **Windows 10 build 2004 (May 2020 update, 19041) or later, or Windows 11** — that's WSL2's own minimum, not something this project adds. There is no native-Windows code path and no WSL1 fallback: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, PHP does not ship those extensions on Windows, and WSL1 has no real Linux kernel for `/proc` to work the way this app expects. |
+| Docker | Alternative to native/WSL2 | `docker compose up --build` — see [Docker](#docker) below. Bypasses the PHP/WSL2 prerequisites entirely; the container is Linux regardless of host OS. Runner jobs that need a `docker` command of their own (build/run steps) need Docker-in-Docker or a mounted host socket, neither of which this image sets up — see the Docker section for why. |
 
 ## Prerequisites
 
@@ -183,6 +184,53 @@ Copy `.env.example` to `.env` and fill it in instead — real environment
 variables win over `.env`, which wins over anything saved through the UI,
 so this is always available as an override.
 
+## Docker
+
+An alternative to the [WSL2 path](#platform-support) on Windows, or just a
+self-contained way to run RunnerDeck without installing PHP directly:
+
+```bash
+docker compose up --build
+```
+
+This builds from the included `Dockerfile` (PHP 8.3 on Alpine, with `gh`
+installed and checksum-verified) and starts the container per
+`docker-compose.yml`:
+
+- **`./data`** is mounted to `/data` inside the container and holds
+  everything RunnerDeck would otherwise put in `<repo>/../runners` and
+  `storage/` — the runner pool, `settings.json`, and the history database.
+  Delete it to reset RunnerDeck to a blank state.
+- **`~/.config/gh`** is mounted read-only so the container reuses `gh` auth
+  already set up on the host — run `gh auth login` on the host first. Drop
+  that volume line and run `docker compose exec runnerdeck gh auth login`
+  once instead if you'd rather authenticate inside the container.
+- Edit the `environment:` block in `docker-compose.yml` for your org/repo
+  scope — same variables as [Configuration](#configuration) below.
+- The container binds `0.0.0.0` internally so Docker's port mapping can
+  reach it (a container bound to `127.0.0.1` is unreachable through `-p`
+  mapping) — every other install still binds `127.0.0.1` exactly as
+  before. `docker-compose.yml`'s port mapping is pinned to
+  `127.0.0.1:8090:8090` on the host side so the container stays
+  loopback-only end to end, matching [Safety notes](#safety-notes) below;
+  don't widen that mapping unless you specifically intend to expose this
+  beyond your own machine.
+
+**Runner jobs that need Docker of their own** (a workflow with `docker
+build`/`docker run` steps) won't work out of the box: the runner processes
+this container spawns run inside that same container, and this image
+doesn't set up Docker-in-Docker or mount the host's Docker socket. Add
+either yourself if you need it — this is the same tradeoff every
+self-hosted-runner-in-Docker setup has to make, not something specific to
+RunnerDeck.
+
+**Podman** works too — `podman compose up --build` (or `podman-compose`)
+consumes the same `Dockerfile`/`docker-compose.yml` as-is. The volume
+mounts carry a `:z` SELinux relabel option for this, needed on
+SELinux-enforcing distros (e.g. Fedora) for a rootless Podman container to
+actually be able to read/write them; Docker just ignores it where SELinux
+isn't in play.
+
 ## Configuration
 
 Three layers, highest priority first: **real environment variables** (e.g.
@@ -248,6 +296,8 @@ runnerdeck/
   deploy/           optional process-supervision examples (systemd, launchd)
   run.sh            Linux/macOS entry point
   run.ps1           Windows entry point (forwards into WSL2)
+  Dockerfile        alternative container entry point (see Docker, above)
+  docker-compose.yml
 ```
 
 ## Development
@@ -290,9 +340,11 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, and a
-dedicated Alpine (musl) container for every push/PR — see [Platform
-support](#platform-support) — with the default `GITHUB_TOKEN` restricted
+across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, a
+dedicated Alpine (musl) container, and the [Docker image](#docker) itself
+(`docker build` + boot + hit `action=status` through the real port mapping)
+for every push/PR — see [Platform support](#platform-support) — with the
+default `GITHUB_TOKEN` restricted
 to read-only and third-party actions pinned to commit SHAs rather than
 mutable version tags. `.github/workflows/release.yml` publishes
 a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed — bump the
@@ -317,12 +369,17 @@ expectations and the project's policy on AI-assisted contributions.
 
 This is built for a **single-user, single-machine, localhost-only** setup —
 `run.sh` binds `127.0.0.1` deliberately and that should not be changed. The
-backend shells out to `gh` with whatever scope your login token has (real
-admin access to your org's runners in org scope, or to that one repo's
-runners in repo scope), and it can start and stop real processes on the
-machine it runs on. Don't put this behind a reverse proxy or expose the
-port on any network interface beyond loopback. It also downloads and
-executes GitHub's official
+one exception is the [Docker image](#docker), which binds `0.0.0.0` *inside*
+its own container — required for Docker's port mapping to reach it at all —
+and relies on that port mapping, pinned to `127.0.0.1:8090:8090` in the
+included `docker-compose.yml`, to stay loopback-only from the host's point
+of view instead. Don't widen that mapping, same as you wouldn't change
+`run.sh`'s bind address. The backend shells out to `gh` with whatever scope
+your login token has (real admin access to your org's runners in org scope,
+or to that one repo's runners in repo scope), and it can start and stop real
+processes on the machine it runs on. Don't put this behind a reverse proxy
+or expose the port on any network interface beyond loopback. It also
+downloads and executes GitHub's official
 runner package on first use of each runner slot — the same binary GitHub's
 own setup page would have you download by hand, checksum-verified before
 extraction.

@@ -1,0 +1,14 @@
+services:
+  runnerdeck:
+    build: .
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - ./data:/data:z
+      - ~/.config/gh:/root/.config/gh:ro,z
+    environment:
+      RUNNERDECK_SCOPE: org
+      RUNNERDECK_ORG: your-org-name
+      # RUNNERDECK_SCOPE: repo
+      # RUNNERDECK_REPO: your-username/your-repo
+    restart: unless-stopped

@@ -224,3 +224,49 @@ jobs:
             }
             echo "smoke test OK\n";
           '
+
+  docker-smoke-test:
+    # Proves the Dockerfile/docker-compose.yml in the README's Docker section
+    # actually build and boot, and that the 127.0.0.1-in-container ->
+    # 0.0.0.0-in-container -> port-mapping chain really reaches the app.
+    name: Boot smoke test (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      - name: Build the image
+        run: docker build -t runnerdeck:ci .
+
+      - name: Run the container and hit the status endpoint
+        run: |
+          docker run -d --name runnerdeck-ci \
+            -p 127.0.0.1:8090:8090 \
+            -e RUNNERDECK_ORG=smoke-test-org \
+            runnerdeck:ci
+
+          for i in $(seq 1 20); do
+            if curl -fsS "http://127.0.0.1:8090/api.php?action=status" -o response.json; then
+              break
+            fi
+            sleep 0.5
+          done
+          docker logs runnerdeck-ci
+          docker rm -f runnerdeck-ci >/dev/null
+
+          echo "--- response ---"
+          cat response.json
+          echo
+
+          php -r '
+            $data = json_decode(file_get_contents("response.json"), true);
+            if (!is_array($data) || !array_key_exists("health", $data) || !array_key_exists("runners", $data)) {
+              fwrite(STDERR, "unexpected response shape\n");
+              exit(1);
+            }
+            echo "smoke test OK\n";
+          '

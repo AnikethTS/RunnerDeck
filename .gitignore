@@ -4,6 +4,9 @@
 # UI-saved settings (scope/org/repo/label) — see src/Settings.php
 /storage/
 
+# docker-compose's bind-mounted runner pool/settings/history volume
+/data/
+
 # Custom branding — drop your own logo.png here, it's optional at runtime
 public/assets/logo.png
 
