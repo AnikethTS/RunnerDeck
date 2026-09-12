@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Binds to 127.0.0.1 only — never expose this beyond localhost.
+# RUNNERDECK_BIND_HOST overrides that; only Dockerfile sets it, to 0.0.0.0.
 set -euo pipefail
 
 PORT="${1:-8090}"
+HOST="${RUNNERDECK_BIND_HOST:-127.0.0.1}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if ! command -v php >/dev/null 2>&1; then
@@ -15,7 +17,11 @@ fi
 
 export PHP_CLI_SERVER_WORKERS=4
 
-echo "RunnerDeck on http://127.0.0.1:${PORT} (localhost only)"
+if [ "$HOST" = "127.0.0.1" ]; then
+    echo "RunnerDeck on http://${HOST}:${PORT} (localhost only)"
+else
+    echo "RunnerDeck on http://${HOST}:${PORT}"
+fi
 php -r '
     $dir = $argv[1];
     $file = getenv("RUNNERDECK_HISTORY_FILE") ?: "$dir/storage/db/history.sqlite";
@@ -25,4 +31,4 @@ php -r '
     $state = is_file($file) ? "existing" : "not yet created";
     fwrite(STDOUT, "History DB: {$file} ({$ext}, {$state}, " . ($writable ? "writable" : "NOT WRITABLE") . ")\n");
 ' -- "$DIR"
-exec php -S 127.0.0.1:"${PORT}" -t "$DIR/public"
+exec php -S "${HOST}:${PORT}" -t "$DIR/public"
