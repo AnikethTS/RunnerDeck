@@ -67,6 +67,10 @@ while (($line = fgets($fh)) !== false) {
     if ($to !== null && $lastTs !== null && $lastTs > $to) {
         continue;
     }
+    // Served as text/plain with Content-Disposition: attachment (see
+    // above) — never rendered as HTML, so htmlentities() here would just
+    // corrupt the downloaded file's content.
+    // nosemgrep: php.lang.security.injection.echoed-request.echoed-request
     echo $line;
 }
 fclose($fh);
