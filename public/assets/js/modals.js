@@ -35,6 +35,7 @@ export async function submitSettingsForm(errorEl, scopeSelect, orgInput, repoInp
 
 let confirmOpen = false;
 let activeStream = null;
+let currentLogRunnerId = null;
 
 export function closeLogViewer() {
   document.getElementById('log-modal').hidden = true;
@@ -44,11 +45,24 @@ export function closeLogViewer() {
   }
 }
 
+function updateLogDownloadHref() {
+  if (!currentLogRunnerId) return;
+  const params = new URLSearchParams({ runner: currentLogRunnerId });
+  const fromValue = document.getElementById('log-range-from').value;
+  const toValue = document.getElementById('log-range-to').value;
+  if (fromValue) params.set('from', String(Math.floor(new Date(fromValue).getTime() / 1000)));
+  if (toValue) params.set('to', String(Math.floor(new Date(toValue).getTime() / 1000)));
+  document.getElementById('log-modal-download').href = `download_log.php?${params}`;
+}
+
 export function openLogViewer(runnerId) {
   const modal = document.getElementById('log-modal');
   const body = document.getElementById('log-modal-body');
+  currentLogRunnerId = runnerId;
   document.getElementById('log-modal-title').textContent = `${runnerId} — live log`;
-  document.getElementById('log-modal-download').href = `download_log.php?runner=${encodeURIComponent(runnerId)}`;
+  document.getElementById('log-range-from').value = '';
+  document.getElementById('log-range-to').value = '';
+  updateLogDownloadHref();
   body.textContent = 'Loading…';
   modal.hidden = false;
 
@@ -110,6 +124,8 @@ export function initModals(fetchStatus) {
   document.getElementById('log-modal').addEventListener('click', (e) => {
     if (e.target.id === 'log-modal') closeLogViewer();
   });
+  document.getElementById('log-range-from').addEventListener('input', updateLogDownloadHref);
+  document.getElementById('log-range-to').addEventListener('input', updateLogDownloadHref);
 
   const settingsModal = document.getElementById('settings-modal');
   const settingsScope = document.getElementById('settings-scope');

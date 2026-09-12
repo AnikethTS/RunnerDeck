@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The log download can now be narrowed to a time range (`from`/`to`
+  fields in the log viewer) instead of only the full file. Filters by
+  whatever timestamps the runner's own console output includes;
+  untimestamped lines (most job output) inherit the last-seen timestamp.
+
 ## [1.1.0] - 2026-09-12
 
 ### Added

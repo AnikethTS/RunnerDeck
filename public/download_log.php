@@ -24,9 +24,49 @@ if (!is_file($logFile)) {
     exit;
 }
 
+$from = isset($_GET['from']) && $_GET['from'] !== '' ? (int) $_GET['from'] : null;
+$to = isset($_GET['to']) && $_GET['to'] !== '' ? (int) $_GET['to'] : null;
+
 header('Content-Type: text/plain; charset=utf-8');
-header('Content-Disposition: attachment; filename="' . $id . '-runner.log"');
+$filename = $from === null && $to === null
+    ? "{$id}-runner.log"
+    : "{$id}-runner-" . ($from ?? 'start') . '-to-' . ($to ?? 'end') . '.log';
+header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+if ($from === null && $to === null) {
+    // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
+    header('Content-Length: ' . (string) filesize($logFile));
+    // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
+    readfile($logFile);
+    exit;
+}
+
+// The GitHub Actions runner console log timestamps status lines (e.g.
+// "2026-09-12 10:15:23Z: Listening for Jobs") but not every line — job
+// output in between has none. Each line inherits the most recently seen
+// timestamp, so "from"/"to" reflect what was happening at that point in
+// the log even for untimestamped lines.
 // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
-header('Content-Length: ' . (string) filesize($logFile));
-// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
-readfile($logFile);
+$fh = fopen($logFile, 'r');
+if ($fh === false) {
+    http_response_code(500);
+    exit;
+}
+$lastTs = null;
+while (($line = fgets($fh)) !== false) {
+    if (preg_match('/^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})/', $line, $m)) {
+        $parsed = strtotime($m[1] . ' UTC');
+        if ($parsed !== false) {
+            $lastTs = $parsed;
+        }
+    }
+
+    if ($from !== null && ($lastTs === null || $lastTs < $from)) {
+        continue;
+    }
+    if ($to !== null && $lastTs !== null && $lastTs > $to) {
+        continue;
+    }
+    echo $line;
+}
+fclose($fh);

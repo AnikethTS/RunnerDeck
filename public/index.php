@@ -186,6 +186,13 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <button id="log-modal-close" class="btn">Close</button>
           </div>
         </div>
+        <div class="log-range-row">
+          <label for="log-range-from">Download from</label>
+          <input type="datetime-local" id="log-range-from" />
+          <label for="log-range-to">to</label>
+          <input type="datetime-local" id="log-range-to" />
+          <span class="muted">(leave blank for the full log)</span>
+        </div>
         <pre id="log-modal-body" class="log-view"></pre>
       </div>
     </div>
