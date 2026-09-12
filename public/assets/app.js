@@ -84,9 +84,9 @@ function initDashboard() {
     });
   })();
 
-  document.querySelectorAll('th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
+  document.querySelectorAll('.sortable[data-sort]').forEach((control) => {
+    control.addEventListener('click', () => {
+      const key = control.dataset.sort;
       sortState.dir = sortState.key === key ? sortState.dir * -1 : 1;
       sortState.key = key;
       if (lastSnapshot) render(lastSnapshot);

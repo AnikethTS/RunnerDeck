@@ -169,7 +169,16 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <th class="select-col"><input type="checkbox" id="select-all-runners" /></th>
             <th class="sortable" data-sort="id">Runner<span class="sort-caret"></span></th>
             <th class="sortable" data-sort="status">GitHub<span class="sort-caret"></span></th>
-            <th class="sortable" data-sort="cpu">Local process<span class="sort-caret"></span></th>
+            <th>Local process
+              <div class="process-sort-controls">
+                <button type="button" class="sortable sort-button" data-sort="cpu" aria-label="Sort by CPU">
+                  CPU<span class="sort-caret" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="sortable sort-button" data-sort="uptime" aria-label="Sort by uptime">
+                  Uptime<span class="sort-caret" aria-hidden="true"></span>
+                </button>
+              </div>
+            </th>
             <th>Recent log</th>
             <th></th>
           </tr>

@@ -319,3 +319,40 @@ test('log search treats markup and regex characters as literal text', async ({ p
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   await expect(page.locator('#log-modal-close')).toBeInViewport();
 });
+
+// https://github.com/AnikethTS/RunnerDeck/issues/45
+test('Local process sorts independently by CPU and uptime, including absent values', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'long', uptime_seconds: 100, cpu_percent: 20 }),
+    fixtureRunner({ id: 'zero', uptime_seconds: 0, cpu_percent: 90 }),
+    fixtureRunner({ id: 'missing', uptime_seconds: undefined, cpu_percent: 30 }),
+    fixtureRunner({ id: 'stopped', uptime_seconds: null, cpu_percent: null, local_running: false }),
+    fixtureRunner({ id: 'short', uptime_seconds: 9, cpu_percent: 10 }),
+  ]);
+  await page.goto('/');
+  const uptime = page.getByRole('button', { name: 'Sort by uptime', exact: true });
+  const cpu = page.getByRole('button', { name: 'Sort by CPU', exact: true });
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('tr[data-runner]')).toHaveCount(5);
+  const rows = () => page.locator('tr[data-runner]').evaluateAll((els) => els.map((el) => el.dataset.runner));
+  await uptime.click();
+  expect(await rows()).toEqual(['missing', 'stopped', 'zero', 'short', 'long']);
+  await expect(uptime.locator('.sort-caret')).toHaveText('▲');
+  await expect(cpu.locator('.sort-caret')).toBeEmpty();
+  await expect(uptime.locator('xpath=ancestor::th')).toHaveAttribute('aria-sort', 'ascending');
+  await uptime.press('Enter');
+  expect(await rows()).toEqual(['long', 'short', 'zero', 'missing', 'stopped']);
+  await expect(uptime.locator('.sort-caret')).toHaveText('▼');
+  await cpu.click();
+  expect(await rows()).toEqual(['stopped', 'short', 'long', 'missing', 'zero']);
+  await expect(cpu.locator('.sort-caret')).toHaveText('▲');
+  await expect(uptime.locator('.sort-caret')).toBeEmpty();
+  await cpu.press('Space');
+  expect(await rows()).toEqual(['zero', 'missing', 'long', 'short', 'stopped']);
+  await expect(cpu.locator('.sort-caret')).toHaveText('▼');
+  await page.locator('th[data-sort="id"]').click();
+  expect(await rows()).toEqual(['long', 'missing', 'short', 'stopped', 'zero']);
+  await expect(cpu.locator('.sort-caret')).toBeEmpty();
+  await expect(page.locator('th[aria-sort]')).toHaveCount(1);
+  await expect(page.locator('thead th')).toHaveCount(6);
+});
