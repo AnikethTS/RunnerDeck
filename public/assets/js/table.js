@@ -14,6 +14,7 @@ function sortValue(runner, key) {
   if (key === 'id') return runner.id;
   if (key === 'status') return runner.github ? (runner.github.busy ? 2 : runner.github.status === 'online' ? 1 : 0) : -1;
   if (key === 'cpu') return runner.cpu_percent ?? -1;
+  if (key === 'uptime') return runner.uptime_seconds ?? -1;
   return '';
 }
 
@@ -30,12 +31,17 @@ export function sortRunners(runners) {
 }
 
 export function updateSortIndicators() {
-  document.querySelectorAll('th.sortable .sort-caret').forEach((el) => {
+  document.querySelectorAll('.sortable .sort-caret').forEach((el) => {
     el.textContent = '';
   });
+  document.querySelectorAll('.runner-table th[aria-sort]').forEach((th) => {
+    th.removeAttribute('aria-sort');
+  });
   if (sortState.key) {
-    const caret = document.querySelector(`th.sortable[data-sort="${sortState.key}"] .sort-caret`);
+    const control = document.querySelector(`.sortable[data-sort="${sortState.key}"]`);
+    const caret = control?.querySelector('.sort-caret');
     if (caret) caret.textContent = sortState.dir === 1 ? ' ▲' : ' ▼';
+    control?.closest('th').setAttribute('aria-sort', sortState.dir === 1 ? 'ascending' : 'descending');
   }
 }
 
