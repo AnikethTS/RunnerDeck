@@ -67,7 +67,9 @@ of a script incantation.
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID or registered name, and
-  each runner's log can be **downloaded in full**, not just tailed.
+  each runner's log can be **downloaded in full**, not just tailed — or
+  narrowed to a time range first, using whatever timestamps the runner's
+  own console output includes.
 - Two **System CPU/RAM** stat cards show whole-machine usage (all
   processes, not just runners) — useful for telling "my runners are the
   load" apart from "something else on this box is." Reuses the same `ps`
