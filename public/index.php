@@ -30,6 +30,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RunnerDeck</title>
+  <link rel="manifest" href="assets/manifest.webmanifest" />
   <?php if ($hasLogo) : ?>
     <link rel="icon" href="assets/logo.png" />
   <?php endif; ?>
