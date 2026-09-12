@@ -17,11 +17,13 @@ function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
   const bannerEl = document.getElementById('health-banner');
   const lastUpdatedEl = document.getElementById('last-updated');
+  const exportBtn = document.getElementById('btn-export');
 
   let lastSnapshot = null;
 
   function render(snapshot) {
     lastSnapshot = snapshot;
+    exportBtn.disabled = false;
     const h = snapshot.health;
     if (!h.logged_in || !h.org_access_ok) {
       bannerEl.hidden = false;
@@ -163,6 +165,19 @@ function initDashboard() {
         clearLoading(btn);
       }
     }
+  });
+
+  exportBtn.addEventListener('click', () => {
+    if (!lastSnapshot) return;
+    const blob = new window.Blob([JSON.stringify(lastSnapshot.runners, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `runnerdeck-runners-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
   });
 
   document.getElementById('btn-refresh').addEventListener('click', async (e) => {

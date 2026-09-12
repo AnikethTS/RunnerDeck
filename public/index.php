@@ -136,6 +136,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
+        <button id="btn-export" type="button" class="btn" disabled>Export JSON</button>
         <span id="last-updated" class="muted"></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
         <label class="checkbox-label">
