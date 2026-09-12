@@ -180,9 +180,11 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
     <div id="log-modal" class="modal" hidden>
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header log-modal-header">
           <h2 id="log-modal-title">Log</h2>
           <div class="modal-header-actions">
+            <input type="search" id="log-search" class="filter-input"
+                   aria-label="Search log" placeholder="Search log…" />
             <a id="log-modal-download" class="btn btn-sm" href="#" download>Download</a>
             <button id="log-modal-close" class="btn">Close</button>
           </div>

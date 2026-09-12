@@ -245,3 +245,77 @@ test('shortcuts leave editable controls, modifiers and composition alone', async
   expect(results).toHaveLength(18);
   expect(results.every(Boolean)).toBe(true);
 });
+
+// https://github.com/AnikethTS/RunnerDeck/issues/40
+async function mockLogStream(page) {
+  await page.addInitScript(() => {
+    window.logStreams = [];
+    window.EventSource = class {
+      constructor(url) {
+        this.url = url;
+        this.closed = false;
+        window.logStreams.push(this);
+      }
+      close() { this.closed = true; }
+    };
+  });
+}
+
+async function emitLogLine(page, line) {
+  await page.evaluate((data) => window.logStreams.at(-1).onmessage({ data }), line);
+}
+
+test('log search highlights existing and streamed text, and resets on reopening', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.goto('/');
+  const open = page.locator('[data-action="view-log"]');
+  await open.click();
+  const search = page.getByRole('searchbox', { name: 'Search log' });
+  const body = page.locator('#log-modal-body');
+  await expect(search).toBeVisible();
+  await emitLogLine(page, 'ERROR: first error');
+  await emitLogLine(page, 'ready');
+  await search.fill('error');
+  await expect(body.locator('mark')).toHaveText(['ERROR', 'error']);
+  await emitLogLine(page, 'another Error');
+  await expect(body.locator('mark')).toHaveText(['ERROR', 'error', 'Error']);
+  await search.fill('ready');
+  await expect(body.locator('mark')).toHaveText(['ready']);
+  await search.fill('absent');
+  await expect(body.locator('mark')).toHaveCount(0);
+  await search.fill('');
+  await expect(body).toHaveText('ERROR: first error\nready\nanother Error\n', { useInnerText: false });
+  await expect(body.locator('mark')).toHaveCount(0);
+  await search.fill('error');
+  await page.locator('#log-modal-close').click();
+  expect(await page.evaluate(() => window.logStreams[0].closed)).toBe(true);
+  await open.click();
+  await expect(search).toHaveValue('');
+  await expect(body).toBeEmpty();
+  await emitLogLine(page, 'new log');
+  await expect(body).toHaveText('new log\n', { useInnerText: false });
+});
+
+test('log search treats markup and regex characters as literal text', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.locator('[data-action="view-log"]').click();
+  const search = page.getByRole('searchbox', { name: 'Search log' });
+  const body = page.locator('#log-modal-body');
+  const line = '<img src=x onerror="window.logHtmlExecuted=true"> & [.*+?^${}()|\\] İ ERROR';
+  await emitLogLine(page, line);
+  for (const query of ['<img', '[.*+?^${}()|\\]', 'error']) {
+    await search.fill(query);
+    await expect(body.locator('mark')).toHaveText(query === 'error' ? ['error', 'ERROR'] : [query]);
+    expect(await body.textContent()).toBe(line + '\n');
+    await expect(body.locator('img, script')).toHaveCount(0);
+    expect(await page.evaluate(() => window.logHtmlExecuted)).toBeUndefined();
+  }
+  const bounds = await search.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  await expect(page.locator('#log-modal-close')).toBeInViewport();
+});

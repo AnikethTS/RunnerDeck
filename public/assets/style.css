@@ -361,6 +361,9 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .modal-header-actions { display: flex; gap: 8px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
+.log-modal-header { flex-wrap: wrap; gap: 8px; }
+.log-modal-header .modal-header-actions { flex-wrap: wrap; }
+
 .log-range-row {
   display: flex;
   align-items: center;
