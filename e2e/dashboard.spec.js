@@ -192,3 +192,56 @@ test('JSON export supports an empty runner pool', async ({ page }) => {
   expect(await download.failure()).toBeNull();
   expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual([]);
 });
+
+// https://github.com/AnikethTS/RunnerDeck/issues/26
+test('dashboard shortcuts focus the filter and reuse Refresh', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  await page.locator('#btn-refresh').focus();
+  await page.keyboard.press('/');
+  await expect(page.locator('#runner-filter')).toBeFocused();
+  await expect(page.locator('#runner-filter')).toHaveValue('');
+  await page.keyboard.type('/r');
+  await expect(page.locator('#runner-filter')).toHaveValue('/r');
+  await page.evaluate(() => {
+    window.refreshClicks = 0;
+    document.getElementById('btn-refresh').addEventListener('click', () => window.refreshClicks++);
+  });
+  await page.locator('#btn-refresh').focus();
+  await page.keyboard.press('r');
+  await expect.poll(() => page.evaluate(() => window.refreshClicks)).toBe(1);
+});
+
+test('shortcuts leave editable controls, modifiers and composition alone', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  const results = await page.evaluate(() => {
+    let clicks = 0;
+    document.getElementById('btn-refresh').addEventListener('click', () => clicks++);
+    const results = [];
+    for (const tag of ['input', 'textarea', 'select', 'div']) {
+      const element = document.createElement(tag);
+      if (tag === 'div') element.contentEditable = 'true';
+      document.body.appendChild(element);
+      element.focus();
+      for (const key of ['/', 'r']) {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        element.dispatchEvent(event);
+        results.push(!event.defaultPrevented && document.activeElement === element && clicks === 0);
+      }
+      element.remove();
+    }
+    const button = document.getElementById('btn-refresh');
+    button.focus();
+    for (const flag of ['ctrlKey', 'metaKey', 'altKey', 'isComposing', 'repeat']) {
+      for (const key of ['/', 'r']) {
+        const event = new KeyboardEvent('keydown', { key, [flag]: true, bubbles: true, cancelable: true });
+        button.dispatchEvent(event);
+        results.push(!event.defaultPrevented && document.activeElement === button && clicks === 0);
+      }
+    }
+    return results;
+  });
+  expect(results).toHaveLength(18);
+  expect(results.every(Boolean)).toBe(true);
+});
