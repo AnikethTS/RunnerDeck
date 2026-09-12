@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 // This suite drives the real PHP backend (php -S) and the real app.js in a
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
@@ -150,4 +151,44 @@ test('a persistent local/GitHub status disagreement gets flagged', async ({ page
 
   await expect(page.locator('tr[data-runner="runner-base"] .row-flag')).toBeVisible();
   await expect(page.locator('tr[data-runner="runner-base"] .row-flag')).toContainText('disagree');
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/41
+test('JSON export includes filtered-out runners and uses the latest snapshot', async ({ page }) => {
+  const runners = [
+    fixtureRunner({ id: 'runner-base', agent_name: 'ci-worker' }),
+    fixtureRunner({ id: 'runner-1', agent_name: 'deploy-box', github: { status: 'offline', busy: false, labels: ['custom-label'] } }),
+  ];
+  await mockStatus(page, runners);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#runner-filter').fill('deploy');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+
+  async function exportRunners() {
+    const pending = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Export JSON' }).click();
+    const download = await pending;
+    expect(download.suggestedFilename()).toMatch(/^runnerdeck-runners-\d{4}-\d{2}-\d{2}T.*\.json$/);
+    expect(await download.failure()).toBeNull();
+    return JSON.parse(await readFile(await download.path(), 'utf8'));
+  }
+
+  expect(await exportRunners()).toEqual(runners);
+  runners[0].cpu_percent = 55;
+  runners.push(fixtureRunner({ id: 'runner-2', agent_name: 'new-worker' }));
+  await page.locator('#btn-refresh').click();
+  expect(await exportRunners()).toEqual(runners);
+  await expect(page.locator('a[download^="runnerdeck-runners-"]')).toHaveCount(0);
+});
+
+test('JSON export supports an empty runner pool', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export JSON' }).click();
+  const download = await pending;
+  expect(await download.failure()).toBeNull();
+  expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual([]);
 });
