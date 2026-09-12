@@ -134,6 +134,10 @@ if ($action === 'check_updates' && $method === 'GET') {
     respond(['ok' => true] + UpdateCheck::check());
 }
 
+if ($action === 'csrf_token' && $method === 'GET') {
+    respond(['ok' => true, 'token' => Csrf::token()]);
+}
+
 if ($method !== 'POST') {
     respond(['ok' => false, 'message' => 'not found'], 404);
 }

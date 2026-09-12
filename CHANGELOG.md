@@ -12,6 +12,24 @@ follows [SemVer](https://semver.org/).
   fields in the log viewer) instead of only the full file. Filters by
   whatever timestamps the runner's own console output includes;
   untimestamped lines (most job output) inherit the last-seen timestamp.
+- **RunnerDeck's first community-contributed features**, all via
+  `up-for-grabs` issues:
+  - An **Export JSON** toolbar button downloads the full current runner
+    list — unaffected by the filter box — as a timestamped `.json` file.
+  - `/` focuses the runner filter and `r` triggers Refresh, guarded
+    against firing while typing in an editable field, modifier-key
+    combinations, IME composition, and key-repeat.
+  - The live log viewer gained a search field that highlights matches as
+    you type, including newly streamed lines — built with text nodes and
+    `<mark>`, never `innerHTML`, so log content stays safe either way.
+  - A web app manifest and bundled icons (from `.github/logo.png`) let
+    supported browsers install RunnerDeck via "Add to Home Screen" —
+    browser- and HTTPS-dependent, no service worker or offline support.
+  - The "Local process" column header now has independent CPU and
+    Uptime sort controls, instead of CPU-only.
+- `API.md`: a full reference for `api.php`'s actions plus the two
+  standalone log endpoints, including how to get a CSRF token from a
+  script instead of a browser session (`action=csrf_token`).
 
 ## [1.1.0] - 2026-09-12
 

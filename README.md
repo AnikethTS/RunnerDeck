@@ -97,6 +97,9 @@ of a script incantation.
   only thing in RunnerDeck that calls out to a repo other than the one
   you're managing runners for, which is why it's opt-in rather than on
   by default.
+- The UI is just a client of its own API — see **[API.md](API.md)** for
+  every `api.php` action, the two standalone log endpoints, and how to
+  get a CSRF token from a script instead of a browser session.
 
 ## Platform support
 
