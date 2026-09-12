@@ -55,10 +55,33 @@ function updateLogDownloadHref() {
   document.getElementById('log-modal-download').href = `download_log.php?${params}`;
 }
 
+function appendLogText(text) {
+  const body = document.getElementById('log-modal-body');
+  const query = document.getElementById('log-search').value;
+  if (!query) {
+    body.append(document.createTextNode(text));
+    return;
+  }
+  // Escape regex syntax so the query is always a literal substring.
+  const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  const fragment = document.createDocumentFragment();
+  let offset = 0;
+  for (const match of text.matchAll(pattern)) {
+    fragment.append(document.createTextNode(text.slice(offset, match.index)));
+    const mark = document.createElement('mark');
+    mark.textContent = match[0];
+    fragment.append(mark);
+    offset = match.index + match[0].length;
+  }
+  fragment.append(document.createTextNode(text.slice(offset)));
+  body.append(fragment);
+}
+
 export function openLogViewer(runnerId) {
   const modal = document.getElementById('log-modal');
   const body = document.getElementById('log-modal-body');
   currentLogRunnerId = runnerId;
+  document.getElementById('log-search').value = '';
   document.getElementById('log-modal-title').textContent = `${runnerId} — live log`;
   document.getElementById('log-range-from').value = '';
   document.getElementById('log-range-to').value = '';
@@ -75,7 +98,7 @@ export function openLogViewer(runnerId) {
   const stream = new EventSource(`log_stream.php?runner=${encodeURIComponent(runnerId)}`);
   activeStream = stream;
   stream.onmessage = (ev) => {
-    body.textContent += ev.data + '\n';
+    appendLogText(ev.data + '\n');
     body.scrollTop = body.scrollHeight;
   };
   stream.onerror = () => {};
@@ -120,6 +143,12 @@ function closeRenameModal() {
 }
 
 export function initModals(fetchStatus) {
+  document.getElementById('log-search').addEventListener('input', () => {
+    const body = document.getElementById('log-modal-body');
+    const text = body.textContent;
+    body.replaceChildren();
+    appendLogText(text);
+  });
   document.getElementById('log-modal-close').addEventListener('click', closeLogViewer);
   document.getElementById('log-modal').addEventListener('click', (e) => {
     if (e.target.id === 'log-modal') closeLogViewer();
