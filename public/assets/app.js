@@ -55,6 +55,19 @@ function initDashboard() {
     if (lastSnapshot) render(lastSnapshot);
   });
 
+  document.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.repeat) return;
+    const active = document.activeElement;
+    if (active && (active.matches('input, textarea, select') || active.isContentEditable)) return;
+    if (event.key === '/') {
+      event.preventDefault();
+      document.getElementById('runner-filter').focus();
+    } else if (event.key === 'r') {
+      event.preventDefault();
+      document.getElementById('btn-refresh').click();
+    }
+  });
+
   (() => {
     const toggle = document.getElementById('auto-restart-toggle');
     try {
