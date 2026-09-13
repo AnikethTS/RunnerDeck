@@ -26,6 +26,11 @@ now — the project's policy on AI-assisted contributions.
 - Add or update tests under `tests/` for anything you change in `src/`.
   `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, and `Totp` all have
   existing test files to follow the pattern of.
+- If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
+  link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`
+  comment directly above the `test(...)` call — see the existing tests
+  there for the pattern. Helps a future reader understand why that
+  particular case is being checked.
 - Run `composer run test`, `composer run stan`, and `composer run cs`
   locally (or just commit — the pre-commit hook runs them for you) before
   opening a PR. CI runs the same checks plus a boot smoke test on Linux and
@@ -52,6 +57,9 @@ oversight.
 ## Pull requests
 
 - Reference the issue you're addressing, if there is one.
+- Add a bullet under `## [Unreleased]` in `CHANGELOG.md` describing your
+  change, in the same voice as the existing entries. This is part of the
+  PR, not something that gets backfilled after merge.
 - Fill in the test plan: what you ran, and — where it's feasible — how you
   verified the change against a real (even single-runner) pool, not just
   that CI is green.
