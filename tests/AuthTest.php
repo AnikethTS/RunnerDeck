@@ -158,6 +158,29 @@ final class AuthTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testPendingTotpSecretNullBeforeBegin(): void
+    {
+        $this->assertNull(\Auth::pendingTotpSecret());
+    }
+
+    #[RunInSeparateProcess]
+    public function testPendingTotpSecretReflectsBegin(): void
+    {
+        $secret = \Auth::beginTotpSetup();
+
+        $this->assertSame($secret, \Auth::pendingTotpSecret());
+    }
+
+    #[RunInSeparateProcess]
+    public function testPendingTotpSecretClearedAfterConfirm(): void
+    {
+        $secret = \Auth::beginTotpSetup();
+        \Auth::confirmTotpSetup(\Totp::code($secret));
+
+        $this->assertNull(\Auth::pendingTotpSecret());
+    }
+
+    #[RunInSeparateProcess]
     public function testSaveTotpSecretPreservesOtherSettings(): void
     {
         \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);

@@ -169,9 +169,6 @@ export function initModals(fetchStatus) {
     document.getElementById('settings-check-updates').checked = Boolean(cur.checkUpdates);
     settingsScope.dispatchEvent(new Event('change'));
     document.getElementById('settings-error').hidden = true;
-    document.getElementById('totp-setup').hidden = true;
-    document.getElementById('totp-error').hidden = true;
-    document.getElementById('totp-code').value = '';
     settingsModal.hidden = false;
   });
 
@@ -182,26 +179,6 @@ export function initModals(fetchStatus) {
       window.location.href = 'login.php';
     });
   }
-
-  document.getElementById('totp-begin').addEventListener('click', async () => {
-    const { data } = await post('totp_begin');
-    if (!data.ok) return;
-    document.getElementById('totp-secret').textContent = data.secret.match(/.{1,4}/g).join(' ');
-    document.getElementById('totp-setup').hidden = false;
-    document.getElementById('totp-code').focus();
-  });
-
-  document.getElementById('totp-confirm').addEventListener('click', async () => {
-    const errorEl = document.getElementById('totp-error');
-    const code = document.getElementById('totp-code').value;
-    const { data } = await post('totp_confirm', { code });
-    if (!data.ok) {
-      errorEl.textContent = data.message || 'Invalid code';
-      errorEl.hidden = false;
-      return;
-    }
-    window.location.reload();
-  });
 
   document.getElementById('settings-cancel').addEventListener('click', () => {
     settingsModal.hidden = true;
