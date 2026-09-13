@@ -9,10 +9,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-static-analysis:
     name: Lint & static analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -22,6 +27,17 @@ jobs:
           extensions: posix, pcntl, json, pdo_sqlite
           tools: composer:v2
           coverage: none
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
 
       - name: Validate composer.json
         run: composer validate --strict
@@ -45,9 +61,10 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
+          cache: npm
 
       - name: Install JS dev tooling
-        run: npm install
+        run: npm ci
 
       - name: eslint
         run: npm run lint:js
@@ -58,6 +75,7 @@ jobs:
   test:
     name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.php }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -78,6 +96,17 @@ jobs:
           tools: composer:v2
           coverage: none
 
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
@@ -87,6 +116,7 @@ jobs:
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +160,7 @@ jobs:
   e2e-test:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -142,9 +173,10 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
+          cache: npm
 
       - name: Install JS dev tooling
-        run: npm install
+        run: npm ci
 
       - name: Install Playwright's Chromium
         run: npx playwright install --with-deps chromium
@@ -162,6 +194,7 @@ jobs:
   alpine-smoke-test:
     name: Boot smoke test (Alpine/musl)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: php:8.3-cli-alpine
     steps:
@@ -215,6 +248,7 @@ jobs:
   docker-smoke-test:
     name: Boot smoke test (Docker)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -223,8 +257,16 @@ jobs:
           php-version: "8.3"
           coverage: none
 
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
       - name: Build the image
-        run: docker build -t runnerdeck:ci .
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          load: true
+          tags: runnerdeck:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Run the container and hit the status endpoint
         run: |

@@ -50,6 +50,15 @@ follows [SemVer](https://semver.org/).
   implementation (`src/Totp.php`) verifies codes; 5 wrong codes in a row
   locks login out for 5 minutes (`src/Auth.php`). The secret is stored the
   same way as every other setting, in `storage/settings.json`.
+- CI/CD hardening: `main` now requires all CI checks to pass (and blocks
+  force-pushes) before anything can merge — previously nothing enforced
+  that. Workflows also gained `timeout-minutes` on every job,
+  `concurrency`-based cancellation of superseded runs on rapid pushes, and
+  dependency caching (`composer.lock`/`package-lock.json` are now
+  committed so `setup-php`/`setup-node` can cache reliably, and `npm ci`
+  replaces `npm install` in CI). The Docker smoke test now builds via
+  `docker/build-push-action` with GitHub Actions layer caching instead of
+  a from-scratch `docker build` every run.
 
 ## [1.1.0] - 2026-09-12
 

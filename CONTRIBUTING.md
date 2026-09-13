@@ -11,9 +11,12 @@ now — the project's policy on AI-assisted contributions.
    [First-time setup](README.md#first-time-setup) — you'll need `gh`
    authenticated and either an org or your own GitHub account to point it
    at; you don't need real runners running to work on most of the codebase).
-3. Install dev tooling: `composer install`. This pulls in PHPUnit, phpstan,
-   and phpcs, and wires up the pre-commit hook (`.githooks/pre-commit`) that
-   runs all three before every commit. Nothing about *running* RunnerDeck
+3. Install dev tooling: `composer install` and `npm install`. `composer.lock`
+   and `package-lock.json` are committed, so this installs the exact versions
+   CI uses — if you add/update a dev dependency, commit the updated lock file
+   alongside it. This pulls in PHPUnit, phpstan, and phpcs, and wires up the
+   pre-commit hook (`.githooks/pre-commit`) that runs all three before every
+   commit. Nothing about *running* RunnerDeck
    itself needs Composer — this step is purely for contributors.
 4. Confirm your setup: `composer run test && composer run stan && composer run cs`.
    All three should pass on a clean checkout.
