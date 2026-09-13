@@ -13,6 +13,75 @@ import {
 const POLL_MS = 5000;
 const SYSTEM_POLL_MS = 2000;
 
+(() => {
+  const STORAGE_KEY = 'runnerdeck-theme';
+  const btn = document.getElementById('btn-theme-toggle');
+  const sunIcon = document.getElementById('theme-icon-sun');
+  const moonIcon = document.getElementById('theme-icon-moon');
+  if (!btn) return;
+
+  function getStoredTheme() {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  function storeTheme(theme) {
+    try {
+      if (theme) {
+        localStorage.setItem(STORAGE_KEY, theme);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      // storage unavailable; toggle still works for this session
+    }
+  }
+
+  function systemPrefersDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function effectiveTheme(stored) {
+    if (stored === 'dark' || stored === 'light') return stored;
+    return systemPrefersDark() ? 'dark' : 'light';
+  }
+
+  function applyTheme(stored) {
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.dataset.theme = stored;
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+    const effective = effectiveTheme(stored);
+    if (effective === 'dark') {
+  sunIcon.setAttribute('hidden', '');
+  moonIcon.removeAttribute('hidden');
+} else {
+  sunIcon.removeAttribute('hidden');
+  moonIcon.setAttribute('hidden', '');
+}
+  }
+
+  let stored = getStoredTheme();
+  applyTheme(stored);
+
+  btn.addEventListener('click', () => {
+    const next = effectiveTheme(stored) === 'dark' ? 'light' : 'dark';
+    stored = next;
+    storeTheme(next);
+    applyTheme(next);
+  });
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (!getStoredTheme()) applyTheme(null);
+    });
+  }
+})();
+
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
   const bannerEl = document.getElementById('health-banner');
