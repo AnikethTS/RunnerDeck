@@ -113,6 +113,13 @@ final class Auth
         return $secret;
     }
 
+    public static function pendingTotpSecret(): ?string
+    {
+        self::ensureSession();
+        $secret = $_SESSION[self::PENDING_SECRET_KEY] ?? null;
+        return is_string($secret) ? $secret : null;
+    }
+
     public static function confirmTotpSetup(string $code): bool
     {
         self::ensureSession();

@@ -260,31 +260,14 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
           <div class="settings-field">
             <label>Login</label>
-            <p class="muted" id="totp-status">
+            <p class="muted">
               <?= Auth::isEnabled()
                 ? 'Enabled — an authenticator app code is required to sign in.'
                 : 'Disabled — anyone who can reach this port has full access.' ?>
             </p>
-            <div id="totp-setup" hidden>
-              <p class="muted">
-                Add this secret to your authenticator app (manual/text entry), then
-                enter the code it shows to confirm:
-              </p>
-              <p><code id="totp-secret"></code></p>
-              <input
-                type="text"
-                id="totp-code"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="6"
-                placeholder="123456"
-              />
-              <button type="button" id="totp-confirm" class="btn btn-sm btn-good">Confirm</button>
-              <p id="totp-error" class="setup-error" hidden></p>
-            </div>
-            <button type="button" id="totp-begin" class="btn btn-sm">
+            <a href="totp_setup.php" class="btn btn-sm">
               <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
-            </button>
+            </a>
           </div>
 
           <div class="modal-actions">
