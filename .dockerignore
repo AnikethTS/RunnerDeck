@@ -1,0 +1,11 @@
+.git
+.github
+node_modules
+vendor
+runners
+storage
+docs
+e2e
+tests
+.env
+*.log

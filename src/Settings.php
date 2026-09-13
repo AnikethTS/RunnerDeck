@@ -7,11 +7,18 @@ final class Settings
 {
     private const KEYS = [
         'RUNNERDECK_SCOPE', 'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL', 'RUNNERDECK_CHECK_UPDATES',
+        'RUNNERDECK_AUTH_TOTP_SECRET',
     ];
 
     private static function path(): string
     {
         return getenv('RUNNERDECK_SETTINGS_FILE') ?: dirname(__DIR__) . '/storage/settings.json';
+    }
+
+    /** The directory settings.json lives in — reused by Auth.php for its lockout file, same storage location. */
+    public static function storageDir(): string
+    {
+        return dirname(self::path());
     }
 
     /** @return array<string, string> */

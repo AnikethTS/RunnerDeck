@@ -24,8 +24,13 @@ now — the project's policy on AI-assisted contributions.
 - Keep PRs focused. One logical change per PR is much easier to review than
   a bundle of unrelated fixes — see [Scope](#scope) below.
 - Add or update tests under `tests/` for anything you change in `src/`.
-  `RunnerPool`, `Config`, `Shell`, and `Csrf` all have existing test files
-  to follow the pattern of.
+  `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, and `Totp` all have
+  existing test files to follow the pattern of.
+- If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
+  link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`
+  comment directly above the `test(...)` call — see the existing tests
+  there for the pattern. Helps a future reader understand why that
+  particular case is being checked.
 - Run `composer run test`, `composer run stan`, and `composer run cs`
   locally (or just commit — the pre-commit hook runs them for you) before
   opening a PR. CI runs the same checks plus a boot smoke test on Linux and
@@ -36,9 +41,9 @@ now — the project's policy on AI-assisted contributions.
 ## Scope
 
 Some parts of this codebase are load-bearing for safety, not just
-functionality: `ProcessControl`, `Provisioner`, `Shell`, and the CSRF layer
-in particular. Changes there get more scrutiny, and are a rockier place to
-land a first PR. If you're new here, look for issues labeled
+functionality: `ProcessControl`, `Provisioner`, `Shell`, the CSRF layer,
+and `Auth`/`Totp` (the optional login gate) in particular. Changes there
+get more scrutiny, and are a rockier place to land a first PR. If you're new here, look for issues labeled
 [`up-for-grabs`](https://github.com/AnikethTS/RunnerDeck/issues?q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs)
 — they're picked specifically to be self-contained and not on that critical
 path. If an issue isn't labeled and you're not sure whether it's a good
@@ -52,6 +57,9 @@ oversight.
 ## Pull requests
 
 - Reference the issue you're addressing, if there is one.
+- Add a bullet under `## [Unreleased]` in `CHANGELOG.md` describing your
+  change, in the same voice as the existing entries. This is part of the
+  PR, not something that gets backfilled after merge.
 - Fill in the test plan: what you ran, and — where it's feasible — how you
   verified the change against a real (even single-runner) pool, not just
   that CI is green.

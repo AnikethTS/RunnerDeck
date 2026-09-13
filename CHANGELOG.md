@@ -6,6 +6,51 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The log download can now be narrowed to a time range (`from`/`to`
+  fields in the log viewer) instead of only the full file. Filters by
+  whatever timestamps the runner's own console output includes;
+  untimestamped lines (most job output) inherit the last-seen timestamp.
+- **RunnerDeck's first community-contributed features**, all via
+  `up-for-grabs` issues:
+  - An **Export JSON** toolbar button downloads the full current runner
+    list — unaffected by the filter box — as a timestamped `.json` file.
+  - `/` focuses the runner filter and `r` triggers Refresh, guarded
+    against firing while typing in an editable field, modifier-key
+    combinations, IME composition, and key-repeat.
+  - The live log viewer gained a search field that highlights matches as
+    you type, including newly streamed lines — built with text nodes and
+    `<mark>`, never `innerHTML`, so log content stays safe either way.
+  - A web app manifest and bundled icons (from `.github/logo.png`) let
+    supported browsers install RunnerDeck via "Add to Home Screen" —
+    browser- and HTTPS-dependent, no service worker or offline support.
+  - The "Local process" column header now has independent CPU and
+    Uptime sort controls, instead of CPU-only.
+- `API.md`: a full reference for `api.php`'s actions plus the two
+  standalone log endpoints, including how to get a CSRF token from a
+  script instead of a browser session (`action=csrf_token`).
+- A `Dockerfile` and `docker-compose.yml`, as an alternative to the
+  PHP-CLI/WSL2 path — see the README's [Docker](README.md#docker) section.
+  Runner pool/settings/history relocate to a mounted `/data` volume; the
+  container binds `0.0.0.0` internally (only there — every other install
+  still binds `127.0.0.1`) with the host-side port mapping pinned to
+  `127.0.0.1:8090:8090` to stay loopback-only end to end. Runner jobs that
+  need their own `docker` command need DinD or a mounted socket, neither
+  of which this image sets up. Podman works as a drop-in (`podman compose
+  up --build`) — the volume mounts carry a `:z` SELinux relabel option for
+  rootless Podman on SELinux-enforcing distros; Docker ignores it
+  elsewhere.
+- Optional TOTP login, for anyone hosting their instance somewhere beyond
+  localhost behind a TLS-terminating reverse proxy — see the README's
+  [Hosting remotely](README.md#hosting-remotely) section. Set up either via
+  `php bin/setup-totp.php` or **Settings → Login** in the dashboard itself.
+  Off by default, zero behavior change for the existing localhost-only
+  setup. Single-user only, no accounts/roles. A dependency-free RFC 6238
+  implementation (`src/Totp.php`) verifies codes; 5 wrong codes in a row
+  locks login out for 5 minutes (`src/Auth.php`). The secret is stored the
+  same way as every other setting, in `storage/settings.json`.
+
 ## [1.1.0] - 2026-09-12
 
 ### Added

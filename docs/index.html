@@ -320,6 +320,10 @@
         <h3>Org or single-repo scope</h3>
         <p>Manage runners across a GitHub org you admin, or scope everything to one repo you own. No org access required, configurable straight from the UI with a first-run setup screen.</p>
       </div>
+      <div class="feature-card reveal">
+        <h3>Optional login for remote access</h3>
+        <p>Localhost-only with no login by default. Want to reach it from another device? <code>bin/setup-totp.php</code> adds an authenticator-app code gate — put a TLS-terminating reverse proxy in front and you're covered.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -347,6 +351,11 @@
           <td>Windows</td>
           <td class="support">Via WSL2</td>
           <td><code>run.ps1</code> forwards into WSL2, a real Linux kernel, so it inherits the Linux support above.</td>
+        </tr>
+        <tr>
+          <td>Docker</td>
+          <td class="support">docker compose up</td>
+          <td>Alternative to installing PHP or WSL2 at all — <code>docker compose up --build</code>. CI-tested build + boot on every push.</td>
         </tr>
       </tbody>
     </table>
@@ -394,7 +403,10 @@ git clone https://github.com/AnikethTS/RunnerDeck.git
 cd RunnerDeck
 ./run.sh                    <span class="cmt"># binds 127.0.0.1:8090</span>
 
-<span class="cmt"># open http://127.0.0.1:8090/, pick org or repo scope on the setup screen</span></pre>
+<span class="cmt"># open http://127.0.0.1:8090/, pick org or repo scope on the setup screen</span>
+
+<span class="cmt"># or, no PHP install needed:</span>
+docker compose up --build</pre>
   </div>
 </section>
 

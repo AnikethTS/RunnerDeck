@@ -312,6 +312,9 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 }
 .runner-table th.sortable { cursor: pointer; user-select: none; }
 .runner-table th.sortable:hover { color: var(--text-primary); }
+.process-sort-controls { display: flex; gap: 8px; margin-top: 4px; }
+.sort-button { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.sort-button:hover { color: var(--text-primary); }
 .sort-caret { display: inline-block; width: 10px; color: var(--brand); }
 .runner-table tbody tr:last-child td { border-bottom: none; }
 .runner-table tbody tr:hover { background: var(--page-plane); }
@@ -406,6 +409,27 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .modal-header h2 { font-size: 15px; margin: 0; }
 .modal-header-actions { display: flex; gap: 8px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+.log-modal-header { flex-wrap: wrap; gap: 8px; }
+.log-modal-header .modal-header-actions { flex-wrap: wrap; }
+
+.log-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.log-range-row input {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 12px;
+}
 
 .log-view {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;

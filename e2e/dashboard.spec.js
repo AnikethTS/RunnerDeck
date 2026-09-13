@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 // This suite drives the real PHP backend (php -S) and the real app.js in a
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
@@ -150,4 +151,208 @@ test('a persistent local/GitHub status disagreement gets flagged', async ({ page
 
   await expect(page.locator('tr[data-runner="runner-base"] .row-flag')).toBeVisible();
   await expect(page.locator('tr[data-runner="runner-base"] .row-flag')).toContainText('disagree');
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/41
+test('JSON export includes filtered-out runners and uses the latest snapshot', async ({ page }) => {
+  const runners = [
+    fixtureRunner({ id: 'runner-base', agent_name: 'ci-worker' }),
+    fixtureRunner({ id: 'runner-1', agent_name: 'deploy-box', github: { status: 'offline', busy: false, labels: ['custom-label'] } }),
+  ];
+  await mockStatus(page, runners);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#runner-filter').fill('deploy');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+
+  async function exportRunners() {
+    const pending = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Export JSON' }).click();
+    const download = await pending;
+    expect(download.suggestedFilename()).toMatch(/^runnerdeck-runners-\d{4}-\d{2}-\d{2}T.*\.json$/);
+    expect(await download.failure()).toBeNull();
+    return JSON.parse(await readFile(await download.path(), 'utf8'));
+  }
+
+  expect(await exportRunners()).toEqual(runners);
+  runners[0].cpu_percent = 55;
+  runners.push(fixtureRunner({ id: 'runner-2', agent_name: 'new-worker' }));
+  await page.locator('#btn-refresh').click();
+  expect(await exportRunners()).toEqual(runners);
+  await expect(page.locator('a[download^="runnerdeck-runners-"]')).toHaveCount(0);
+});
+
+test('JSON export supports an empty runner pool', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export JSON' }).click();
+  const download = await pending;
+  expect(await download.failure()).toBeNull();
+  expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual([]);
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/26
+test('dashboard shortcuts focus the filter and reuse Refresh', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  await page.locator('#btn-refresh').focus();
+  await page.keyboard.press('/');
+  await expect(page.locator('#runner-filter')).toBeFocused();
+  await expect(page.locator('#runner-filter')).toHaveValue('');
+  await page.keyboard.type('/r');
+  await expect(page.locator('#runner-filter')).toHaveValue('/r');
+  await page.evaluate(() => {
+    window.refreshClicks = 0;
+    document.getElementById('btn-refresh').addEventListener('click', () => window.refreshClicks++);
+  });
+  await page.locator('#btn-refresh').focus();
+  await page.keyboard.press('r');
+  await expect.poll(() => page.evaluate(() => window.refreshClicks)).toBe(1);
+});
+
+test('shortcuts leave editable controls, modifiers and composition alone', async ({ page }) => {
+  await mockStatus(page, []);
+  await page.goto('/');
+  const results = await page.evaluate(() => {
+    let clicks = 0;
+    document.getElementById('btn-refresh').addEventListener('click', () => clicks++);
+    const results = [];
+    for (const tag of ['input', 'textarea', 'select', 'div']) {
+      const element = document.createElement(tag);
+      if (tag === 'div') element.contentEditable = 'true';
+      document.body.appendChild(element);
+      element.focus();
+      for (const key of ['/', 'r']) {
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        element.dispatchEvent(event);
+        results.push(!event.defaultPrevented && document.activeElement === element && clicks === 0);
+      }
+      element.remove();
+    }
+    const button = document.getElementById('btn-refresh');
+    button.focus();
+    for (const flag of ['ctrlKey', 'metaKey', 'altKey', 'isComposing', 'repeat']) {
+      for (const key of ['/', 'r']) {
+        const event = new KeyboardEvent('keydown', { key, [flag]: true, bubbles: true, cancelable: true });
+        button.dispatchEvent(event);
+        results.push(!event.defaultPrevented && document.activeElement === button && clicks === 0);
+      }
+    }
+    return results;
+  });
+  expect(results).toHaveLength(18);
+  expect(results.every(Boolean)).toBe(true);
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/40
+async function mockLogStream(page) {
+  await page.addInitScript(() => {
+    window.logStreams = [];
+    window.EventSource = class {
+      constructor(url) {
+        this.url = url;
+        this.closed = false;
+        window.logStreams.push(this);
+      }
+      close() { this.closed = true; }
+    };
+  });
+}
+
+async function emitLogLine(page, line) {
+  await page.evaluate((data) => window.logStreams.at(-1).onmessage({ data }), line);
+}
+
+test('log search highlights existing and streamed text, and resets on reopening', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.goto('/');
+  const open = page.locator('[data-action="view-log"]');
+  await open.click();
+  const search = page.getByRole('searchbox', { name: 'Search log' });
+  const body = page.locator('#log-modal-body');
+  await expect(search).toBeVisible();
+  await emitLogLine(page, 'ERROR: first error');
+  await emitLogLine(page, 'ready');
+  await search.fill('error');
+  await expect(body.locator('mark')).toHaveText(['ERROR', 'error']);
+  await emitLogLine(page, 'another Error');
+  await expect(body.locator('mark')).toHaveText(['ERROR', 'error', 'Error']);
+  await search.fill('ready');
+  await expect(body.locator('mark')).toHaveText(['ready']);
+  await search.fill('absent');
+  await expect(body.locator('mark')).toHaveCount(0);
+  await search.fill('');
+  await expect(body).toHaveText('ERROR: first error\nready\nanother Error\n', { useInnerText: false });
+  await expect(body.locator('mark')).toHaveCount(0);
+  await search.fill('error');
+  await page.locator('#log-modal-close').click();
+  expect(await page.evaluate(() => window.logStreams[0].closed)).toBe(true);
+  await open.click();
+  await expect(search).toHaveValue('');
+  await expect(body).toBeEmpty();
+  await emitLogLine(page, 'new log');
+  await expect(body).toHaveText('new log\n', { useInnerText: false });
+});
+
+test('log search treats markup and regex characters as literal text', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.locator('[data-action="view-log"]').click();
+  const search = page.getByRole('searchbox', { name: 'Search log' });
+  const body = page.locator('#log-modal-body');
+  const line = '<img src=x onerror="window.logHtmlExecuted=true"> & [.*+?^${}()|\\] İ ERROR';
+  await emitLogLine(page, line);
+  for (const query of ['<img', '[.*+?^${}()|\\]', 'error']) {
+    await search.fill(query);
+    await expect(body.locator('mark')).toHaveText(query === 'error' ? ['error', 'ERROR'] : [query]);
+    expect(await body.textContent()).toBe(line + '\n');
+    await expect(body.locator('img, script')).toHaveCount(0);
+    expect(await page.evaluate(() => window.logHtmlExecuted)).toBeUndefined();
+  }
+  const bounds = await search.boundingBox();
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  await expect(page.locator('#log-modal-close')).toBeInViewport();
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/45
+test('Local process sorts independently by CPU and uptime, including absent values', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'long', uptime_seconds: 100, cpu_percent: 20 }),
+    fixtureRunner({ id: 'zero', uptime_seconds: 0, cpu_percent: 90 }),
+    fixtureRunner({ id: 'missing', uptime_seconds: undefined, cpu_percent: 30 }),
+    fixtureRunner({ id: 'stopped', uptime_seconds: null, cpu_percent: null, local_running: false }),
+    fixtureRunner({ id: 'short', uptime_seconds: 9, cpu_percent: 10 }),
+  ]);
+  await page.goto('/');
+  const uptime = page.getByRole('button', { name: 'Sort by uptime', exact: true });
+  const cpu = page.getByRole('button', { name: 'Sort by CPU', exact: true });
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('tr[data-runner]')).toHaveCount(5);
+  const rows = () => page.locator('tr[data-runner]').evaluateAll((els) => els.map((el) => el.dataset.runner));
+  await uptime.click();
+  expect(await rows()).toEqual(['missing', 'stopped', 'zero', 'short', 'long']);
+  await expect(uptime.locator('.sort-caret')).toHaveText('▲');
+  await expect(cpu.locator('.sort-caret')).toBeEmpty();
+  await expect(uptime.locator('xpath=ancestor::th')).toHaveAttribute('aria-sort', 'ascending');
+  await uptime.press('Enter');
+  expect(await rows()).toEqual(['long', 'short', 'zero', 'missing', 'stopped']);
+  await expect(uptime.locator('.sort-caret')).toHaveText('▼');
+  await cpu.click();
+  expect(await rows()).toEqual(['stopped', 'short', 'long', 'missing', 'zero']);
+  await expect(cpu.locator('.sort-caret')).toHaveText('▲');
+  await expect(uptime.locator('.sort-caret')).toBeEmpty();
+  await cpu.press('Space');
+  expect(await rows()).toEqual(['zero', 'missing', 'long', 'short', 'stopped']);
+  await expect(cpu.locator('.sort-caret')).toHaveText('▼');
+  await page.locator('th[data-sort="id"]').click();
+  expect(await rows()).toEqual(['long', 'missing', 'short', 'stopped', 'zero']);
+  await expect(cpu.locator('.sort-caret')).toBeEmpty();
+  await expect(page.locator('th[aria-sort]')).toHaveCount(1);
+  await expect(page.locator('thead th')).toHaveCount(6);
 });

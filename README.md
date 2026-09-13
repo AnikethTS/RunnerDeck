@@ -67,7 +67,9 @@ of a script incantation.
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID or registered name, and
-  each runner's log can be **downloaded in full**, not just tailed.
+  each runner's log can be **downloaded in full**, not just tailed — or
+  narrowed to a time range first, using whatever timestamps the runner's
+  own console output includes.
 - Two **System CPU/RAM** stat cards show whole-machine usage (all
   processes, not just runners) — useful for telling "my runners are the
   load" apart from "something else on this box is." Reuses the same `ps`
@@ -95,6 +97,9 @@ of a script incantation.
   only thing in RunnerDeck that calls out to a repo other than the one
   you're managing runners for, which is why it's opt-in rather than on
   by default.
+- The UI is just a client of its own API — see **[API.md](API.md)** for
+  every `api.php` action, the two standalone log endpoints, and how to
+  get a CSRF token from a script instead of a browser session.
 
 ## Platform support
 
@@ -106,6 +111,7 @@ shipped." Be specific about what that means before assuming an old box works:
 | Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. CI tests `ubuntu-latest` and `ubuntu-22.04` on glibc, plus a dedicated Alpine (musl) smoke test — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
 | macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest` and `macos-14`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
 | Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there, so it inherits the Linux support above (WSL2 *is* a real Linux kernel). Requires **Windows 10 build 2004 (May 2020 update, 19041) or later, or Windows 11** — that's WSL2's own minimum, not something this project adds. There is no native-Windows code path and no WSL1 fallback: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, PHP does not ship those extensions on Windows, and WSL1 has no real Linux kernel for `/proc` to work the way this app expects. |
+| Docker | Alternative to native/WSL2 | `docker compose up --build` — see [Docker](#docker) below. Bypasses the PHP/WSL2 prerequisites entirely; the container is Linux regardless of host OS. Runner jobs that need a `docker` command of their own (build/run steps) need Docker-in-Docker or a mounted host socket, neither of which this image sets up — see the Docker section for why. |
 
 ## Prerequisites
 
@@ -178,6 +184,53 @@ Copy `.env.example` to `.env` and fill it in instead — real environment
 variables win over `.env`, which wins over anything saved through the UI,
 so this is always available as an override.
 
+## Docker
+
+An alternative to the [WSL2 path](#platform-support) on Windows, or just a
+self-contained way to run RunnerDeck without installing PHP directly:
+
+```bash
+docker compose up --build
+```
+
+This builds from the included `Dockerfile` (PHP 8.3 on Alpine, with `gh`
+installed and checksum-verified) and starts the container per
+`docker-compose.yml`:
+
+- **`./data`** is mounted to `/data` inside the container and holds
+  everything RunnerDeck would otherwise put in `<repo>/../runners` and
+  `storage/` — the runner pool, `settings.json`, and the history database.
+  Delete it to reset RunnerDeck to a blank state.
+- **`~/.config/gh`** is mounted read-only so the container reuses `gh` auth
+  already set up on the host — run `gh auth login` on the host first. Drop
+  that volume line and run `docker compose exec runnerdeck gh auth login`
+  once instead if you'd rather authenticate inside the container.
+- Edit the `environment:` block in `docker-compose.yml` for your org/repo
+  scope — same variables as [Configuration](#configuration) below.
+- The container binds `0.0.0.0` internally so Docker's port mapping can
+  reach it (a container bound to `127.0.0.1` is unreachable through `-p`
+  mapping) — every other install still binds `127.0.0.1` exactly as
+  before. `docker-compose.yml`'s port mapping is pinned to
+  `127.0.0.1:8090:8090` on the host side so the container stays
+  loopback-only end to end, matching [Safety notes](#safety-notes) below;
+  don't widen that mapping unless you specifically intend to expose this
+  beyond your own machine.
+
+**Runner jobs that need Docker of their own** (a workflow with `docker
+build`/`docker run` steps) won't work out of the box: the runner processes
+this container spawns run inside that same container, and this image
+doesn't set up Docker-in-Docker or mount the host's Docker socket. Add
+either yourself if you need it — this is the same tradeoff every
+self-hosted-runner-in-Docker setup has to make, not something specific to
+RunnerDeck.
+
+**Podman** works too — `podman compose up --build` (or `podman-compose`)
+consumes the same `Dockerfile`/`docker-compose.yml` as-is. The volume
+mounts carry a `:z` SELinux relabel option for this, needed on
+SELinux-enforcing distros (e.g. Fedora) for a rootless Podman container to
+actually be able to read/write them; Docker just ignores it where SELinux
+isn't in play.
+
 ## Configuration
 
 Three layers, highest priority first: **real environment variables** (e.g.
@@ -194,9 +247,59 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
+| `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Hosting remotely](#hosting-remotely) |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.
+
+## Hosting remotely
+
+RunnerDeck defaults to localhost-only with no login — the only thing
+between "who can reach this port" and "who can control your runners" is
+your OS's own network isolation. If you want to reach your instance from
+another device (a VPS, a home server you SSH into from your phone), that's
+supported, but it's opt-in and has two parts, both required together:
+
+1. **Require a login.** Either run `php bin/setup-totp.php`, or open
+   **Settings → Login → Set up login** in the dashboard itself — both do
+   the same thing: generate a TOTP secret, show it for you to add to an
+   authenticator app (Google Authenticator, Authy, 1Password, etc.) via
+   manual/text entry, and ask for a code back to confirm before saving
+   anything. Once set, every page and API call redirects to a login screen
+   until you enter a valid 6-digit code. Five wrong codes in a row locks
+   login out for 5 minutes. Re-run either path any time to replace the
+   secret (**Settings → Login → Replace secret**) — the old one stops
+   working immediately.
+2. **Put a TLS-terminating reverse proxy in front** (Caddy, nginx, Tailscale,
+   etc.) — RunnerDeck itself stays plain HTTP, no certificate handling
+   built in. Without TLS, the login code and session cookie both travel
+   the network in the clear, which defeats the point of requiring a login
+   at all.
+
+`run.sh` still binds `127.0.0.1` even for this setup — the reverse proxy
+runs on the *same machine* and forwards `proxy:443 → 127.0.0.1:8090`, so
+there's no bind-address change needed (unlike the [Docker](#docker) image,
+which genuinely needs to listen on `0.0.0.0` inside its own container).
+
+Login is still single-user — there's no concept of separate accounts or
+permissions. If you need that, this feature isn't it.
+
+## Add to Home Screen
+
+RunnerDeck includes a web app manifest and bundled icons derived from
+`.github/logo.png`. Where supported, use the browser's **Install app** or
+**Add to Home Screen** action to open it in a standalone window. The manifest
+uses the default light palette's `--brand` and `--surface-1` colors from
+`public/assets/style.css`; installed icons are separate from the optional
+header logo override.
+
+Installation options vary by browser. Chrome's install promotion requires
+HTTPS (with a localhost/loopback exception for development); visiting another
+machine at `http://192.168.x.x:8090/` from a phone does not meet that requirement.
+See [Chrome's installation criteria](https://web.dev/articles/install-criteria).
+A manual home-screen shortcut may still be available, depending on the browser.
+There is no service worker or offline support: the app still needs a connection
+to the running RunnerDeck server.
 
 ## Directory layout
 
@@ -206,6 +309,7 @@ runnerdeck/
     index.php       server-rendered dashboard page
     api.php         JSON API (status, start/stop/restart, pool resize)
     log_stream.php  Server-Sent Events log tailing
+    login.php       optional TOTP login screen (see Hosting remotely)
     assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
   src/
     bootstrap.php        single load point required by every public/*.php
@@ -213,6 +317,8 @@ runnerdeck/
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
     History.php            best-effort CPU/RAM history in storage/db/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
+    Auth.php              optional TOTP login gate, lockout tracking
+    Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
@@ -226,6 +332,8 @@ runnerdeck/
   deploy/           optional process-supervision examples (systemd, launchd)
   run.sh            Linux/macOS entry point
   run.ps1           Windows entry point (forwards into WSL2)
+  Dockerfile        alternative container entry point (see Docker, above)
+  docker-compose.yml
 ```
 
 ## Development
@@ -268,9 +376,11 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, and a
-dedicated Alpine (musl) container for every push/PR — see [Platform
-support](#platform-support) — with the default `GITHUB_TOKEN` restricted
+across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, a
+dedicated Alpine (musl) container, and the [Docker image](#docker) itself
+(`docker build` + boot + hit `action=status` through the real port mapping)
+for every push/PR — see [Platform support](#platform-support) — with the
+default `GITHUB_TOKEN` restricted
 to read-only and third-party actions pinned to commit SHAs rather than
 mutable version tags. `.github/workflows/release.yml` publishes
 a zipped GitHub Release whenever a `vX.Y.Z` tag is pushed — bump the
@@ -295,12 +405,22 @@ expectations and the project's policy on AI-assisted contributions.
 
 This is built for a **single-user, single-machine, localhost-only** setup —
 `run.sh` binds `127.0.0.1` deliberately and that should not be changed. The
-backend shells out to `gh` with whatever scope your login token has (real
-admin access to your org's runners in org scope, or to that one repo's
-runners in repo scope), and it can start and stop real processes on the
-machine it runs on. Don't put this behind a reverse proxy or expose the
-port on any network interface beyond loopback. It also downloads and
-executes GitHub's official
+one exception is the [Docker image](#docker), which binds `0.0.0.0` *inside*
+its own container — required for Docker's port mapping to reach it at all —
+and relies on that port mapping, pinned to `127.0.0.1:8090:8090` in the
+included `docker-compose.yml`, to stay loopback-only from the host's point
+of view instead. Don't widen that mapping, same as you wouldn't change
+`run.sh`'s bind address. The backend shells out to `gh` with whatever scope
+your login token has (real admin access to your org's runners in org scope,
+or to that one repo's runners in repo scope), and it can start and stop real
+processes on the machine it runs on. Don't put this behind a reverse proxy
+or expose the port on any network interface beyond loopback — **unless**
+you've enabled login (`php bin/setup-totp.php`) **and** that reverse proxy
+terminates TLS, the two required-together preconditions covered in
+[Hosting remotely](#hosting-remotely). Skipping either one turns "reachable
+beyond your machine" into "reachable by anyone," which is exactly what this
+default posture exists to prevent. It also downloads and executes GitHub's
+official
 runner package on first use of each runner slot — the same binary GitHub's
 own setup page would have you download by hand, checksum-verified before
 extraction.
@@ -308,8 +428,9 @@ extraction.
 All state-changing API calls (`start`, `stop`, `restart`, `start_all`,
 `stop_all`, `resize`) require a session-bound CSRF token minted by
 `index.php` and sent back by `assets/app.js` — this stops a malicious page
-open in another tab from silently driving the dashboard, but it is not a
-substitute for keeping this off any network beyond loopback.
+open in another tab from silently driving the dashboard, but on its own it
+is not a substitute for keeping this off any network beyond loopback (see
+[Hosting remotely](#hosting-remotely) for the one supported way to do that).
 
 ## License
 

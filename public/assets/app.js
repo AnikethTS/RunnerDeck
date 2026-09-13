@@ -1,4 +1,4 @@
-import { post } from './js/api.js';
+import { post, redirectIfUnauthenticated } from './js/api.js';
 import { setLoading, clearLoading } from './js/utils.js';
 import { updateMismatchStreaks, trackCrashesAndMaybeRestart, markExplicitlyStopped } from './js/reliability.js';
 import {
@@ -86,11 +86,13 @@ function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
   const bannerEl = document.getElementById('health-banner');
   const lastUpdatedEl = document.getElementById('last-updated');
+  const exportBtn = document.getElementById('btn-export');
 
   let lastSnapshot = null;
 
   function render(snapshot) {
     lastSnapshot = snapshot;
+    exportBtn.disabled = false;
     const h = snapshot.health;
     if (!h.logged_in || !h.org_access_ok) {
       bannerEl.hidden = false;
@@ -122,6 +124,19 @@ function initDashboard() {
     if (lastSnapshot) render(lastSnapshot);
   });
 
+  document.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.repeat) return;
+    const active = document.activeElement;
+    if (active && (active.matches('input, textarea, select') || active.isContentEditable)) return;
+    if (event.key === '/') {
+      event.preventDefault();
+      document.getElementById('runner-filter').focus();
+    } else if (event.key === 'r') {
+      event.preventDefault();
+      document.getElementById('btn-refresh').click();
+    }
+  });
+
   (() => {
     const toggle = document.getElementById('auto-restart-toggle');
     try {
@@ -138,9 +153,9 @@ function initDashboard() {
     });
   })();
 
-  document.querySelectorAll('th.sortable').forEach((th) => {
-    th.addEventListener('click', () => {
-      const key = th.dataset.sort;
+  document.querySelectorAll('.sortable[data-sort]').forEach((control) => {
+    control.addEventListener('click', () => {
+      const key = control.dataset.sort;
       sortState.dir = sortState.key === key ? sortState.dir * -1 : 1;
       sortState.key = key;
       if (lastSnapshot) render(lastSnapshot);
@@ -149,18 +164,21 @@ function initDashboard() {
 
   async function fetchStatus() {
     const res = await fetch('api.php?action=status&lines=5');
+    if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
     fetchHistory();
   }
 
   async function fetchSystemStats() {
     const res = await fetch('api.php?action=system');
+    if (redirectIfUnauthenticated(res.status)) return;
     const data = await res.json();
     if (data.ok) renderLoadStat(data.system);
   }
 
   async function checkForUpdates() {
     const res = await fetch('api.php?action=check_updates');
+    if (redirectIfUnauthenticated(res.status)) return;
     const data = await res.json();
     if (!data.ok || !data.update_available) return;
     const badge = document.getElementById('update-available');
@@ -232,6 +250,19 @@ function initDashboard() {
         clearLoading(btn);
       }
     }
+  });
+
+  exportBtn.addEventListener('click', () => {
+    if (!lastSnapshot) return;
+    const blob = new window.Blob([JSON.stringify(lastSnapshot.runners, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `runnerdeck-runners-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
   });
 
   document.getElementById('btn-refresh').addEventListener('click', async (e) => {

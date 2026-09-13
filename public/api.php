@@ -101,6 +101,14 @@ function checkNoneBusy(array $runners, bool $force): ?array
 $action = $_GET['action'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($action === 'csrf_token' && $method === 'GET') {
+    respond(['ok' => true, 'token' => Csrf::token()]);
+}
+
+if (Auth::isEnabled() && !Auth::isLoggedIn()) {
+    respond(['ok' => false, 'message' => 'authentication required'], 401);
+}
+
 if ($action === 'status' && $method === 'GET') {
     if (!Config::isConfigured()) {
         respond(['ok' => false, 'message' => 'RunnerDeck is not configured yet'], 409);
@@ -165,9 +173,30 @@ if ($action === 'save_settings') {
         'RUNNERDECK_REPO' => $scope === 'repo' ? $repo : '',
         'RUNNERDECK_LABEL' => $label,
         'RUNNERDECK_CHECK_UPDATES' => ($_POST['check_updates'] ?? '') === '1' ? '1' : '',
+        'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
     ]);
 
     respond(['ok' => true, 'message' => 'settings saved']);
+}
+
+if ($action === 'logout') {
+    if (Auth::isEnabled()) {
+        Auth::logout();
+    }
+    respond(['ok' => true]);
+}
+
+if ($action === 'totp_begin') {
+    $secret = Auth::beginTotpSetup();
+    $uri = 'otpauth://totp/RunnerDeck?secret=' . $secret . '&issuer=RunnerDeck';
+    respond(['ok' => true, 'secret' => $secret, 'uri' => $uri]);
+}
+
+if ($action === 'totp_confirm') {
+    if (!Auth::confirmTotpSetup((string) ($_POST['code'] ?? ''))) {
+        respond(['ok' => false, 'message' => 'Invalid code'], 422);
+    }
+    respond(['ok' => true]);
 }
 
 $force = (($_POST['force'] ?? $_GET['force'] ?? '0') === '1');

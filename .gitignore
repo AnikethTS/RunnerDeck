@@ -4,6 +4,9 @@
 # UI-saved settings (scope/org/repo/label) — see src/Settings.php
 /storage/
 
+# docker-compose's bind-mounted runner pool/settings/history volume
+/data/
+
 # Custom branding — drop your own logo.png here, it's optional at runtime
 public/assets/logo.png
 
@@ -17,6 +20,7 @@ public/assets/logo.png
 /vendor/
 .phpunit.result.cache
 .phpunit.cache/
+composer.lock
 
 # Dev tooling (npm install regenerates this; see README)
 /node_modules/

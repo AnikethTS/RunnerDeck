@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+if (Auth::isEnabled() && !Auth::isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
 $csrfToken = Csrf::token();
 $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 $needsSetup = !Config::isConfigured();
@@ -30,6 +35,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RunnerDeck</title>
+  <link rel="manifest" href="assets/manifest.webmanifest" />
   <?php if ($hasLogo) : ?>
     <link rel="icon" href="assets/logo.png" />
   <?php endif; ?>
@@ -50,6 +56,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
       <button id="btn-settings" class="btn btn-sm">Settings</button>
+        <?php if (Auth::isEnabled()) : ?>
+        <button id="btn-logout" class="btn btn-sm">Log out</button>
+        <?php endif; ?>
     <?php endif; ?>
     <button id="btn-theme-toggle" class="btn btn-sm" aria-label="Toggle theme" title="Toggle theme">
     <svg
@@ -173,6 +182,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
+        <button id="btn-export" type="button" class="btn" disabled>Export JSON</button>
         <span id="last-updated" class="muted"></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
         <label class="checkbox-label">
@@ -205,7 +215,16 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <th class="select-col"><input type="checkbox" id="select-all-runners" /></th>
             <th class="sortable" data-sort="id">Runner<span class="sort-caret"></span></th>
             <th class="sortable" data-sort="status">GitHub<span class="sort-caret"></span></th>
-            <th class="sortable" data-sort="cpu">Local process<span class="sort-caret"></span></th>
+            <th>Local process
+              <div class="process-sort-controls">
+                <button type="button" class="sortable sort-button" data-sort="cpu" aria-label="Sort by CPU">
+                  CPU<span class="sort-caret" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="sortable sort-button" data-sort="uptime" aria-label="Sort by uptime">
+                  Uptime<span class="sort-caret" aria-hidden="true"></span>
+                </button>
+              </div>
+            </th>
             <th>Recent log</th>
             <th></th>
           </tr>
@@ -216,12 +235,21 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
 
     <div id="log-modal" class="modal" hidden>
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header log-modal-header">
           <h2 id="log-modal-title">Log</h2>
           <div class="modal-header-actions">
+            <input type="search" id="log-search" class="filter-input"
+                   aria-label="Search log" placeholder="Search log…" />
             <a id="log-modal-download" class="btn btn-sm" href="#" download>Download</a>
             <button id="log-modal-close" class="btn">Close</button>
           </div>
+        </div>
+        <div class="log-range-row">
+          <label for="log-range-from">Download from</label>
+          <input type="datetime-local" id="log-range-from" />
+          <label for="log-range-to">to</label>
+          <input type="datetime-local" id="log-range-to" />
+          <span class="muted">(leave blank for the full log)</span>
         </div>
         <pre id="log-modal-body" class="log-view"></pre>
       </div>
@@ -266,6 +294,18 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <input type="checkbox" id="settings-check-updates" name="check_updates" value="1" />
             Check GitHub for new RunnerDeck releases
           </label>
+
+          <div class="settings-field">
+            <label>Login</label>
+            <p class="muted">
+              <?= Auth::isEnabled()
+                ? 'Enabled — an authenticator app code is required to sign in.'
+                : 'Disabled — anyone who can reach this port has full access.' ?>
+            </p>
+            <a href="totp_setup.php" class="btn btn-sm">
+              <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
+            </a>
+          </div>
 
           <div class="modal-actions">
             <button type="button" id="settings-cancel" class="btn">Cancel</button>

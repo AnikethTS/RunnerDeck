@@ -1,3 +1,5 @@
+import { redirectIfUnauthenticated } from './api.js';
+
 export function renderChart(svg, values, min, max, unavailable) {
   if (unavailable) {
     svg.innerHTML = '<text x="8" y="34" font-size="10" fill="currentColor" opacity="0.5">unavailable — php-pdo_sqlite not installed</text>';
@@ -19,6 +21,7 @@ export function renderChart(svg, values, min, max, unavailable) {
 
 export async function fetchHistory() {
   const res = await fetch('api.php?action=history');
+  if (redirectIfUnauthenticated(res.status)) return;
   const data = await res.json();
   if (!data.ok) return;
   const cpuChart = document.getElementById('chart-cpu');
