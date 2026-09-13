@@ -188,7 +188,8 @@ if ($action === 'logout') {
 
 if ($action === 'totp_begin') {
     $secret = Auth::beginTotpSetup();
-    respond(['ok' => true, 'secret' => $secret, 'uri' => 'otpauth://totp/RunnerDeck?secret=' . $secret . '&issuer=RunnerDeck']);
+    $uri = 'otpauth://totp/RunnerDeck?secret=' . $secret . '&issuer=RunnerDeck';
+    respond(['ok' => true, 'secret' => $secret, 'uri' => $uri]);
 }
 
 if ($action === 'totp_confirm') {

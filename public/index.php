@@ -56,9 +56,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
       <button id="btn-settings" class="btn btn-sm">Settings</button>
-      <?php if (Auth::isEnabled()) : ?>
+        <?php if (Auth::isEnabled()) : ?>
         <button id="btn-logout" class="btn btn-sm">Log out</button>
-      <?php endif; ?>
+        <?php endif; ?>
     <?php endif; ?>
   </header>
 
