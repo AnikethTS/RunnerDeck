@@ -1,4 +1,4 @@
-import { post } from './api.js';
+import { post, redirectIfUnauthenticated } from './api.js';
 import { setLoading, clearLoading } from './utils.js';
 
 export function wireScopeToggle(scopeSelect, orgField, repoField) {
@@ -101,7 +101,18 @@ export function openLogViewer(runnerId) {
     appendLogText(ev.data + '\n');
     body.scrollTop = body.scrollHeight;
   };
-  stream.onerror = () => {};
+  stream.onerror = async () => {
+    try {
+      const res = await fetch('api.php?action=status');
+      if (res.status === 401) {
+        stream.close();
+        if (activeStream === stream) activeStream = null;
+        redirectIfUnauthenticated(res.status);
+      }
+    } catch {
+      // Keep EventSource's normal reconnect behavior for transient failures.
+    }
+  };
 }
 
 export function confirmModal(message) {

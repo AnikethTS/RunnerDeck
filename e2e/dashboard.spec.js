@@ -256,7 +256,10 @@ async function mockLogStream(page) {
         this.closed = false;
         window.logStreams.push(this);
       }
-      close() { this.closed = true; }
+      close() {
+        this.closed = true;
+        sessionStorage.setItem('log-stream-closed', '1');
+      }
     };
   });
 }
@@ -295,6 +298,30 @@ test('log search highlights existing and streamed text, and resets on reopening'
   await expect(body).toBeEmpty();
   await emitLogLine(page, 'new log');
   await expect(body).toHaveText('new log\n', { useInnerText: false });
+});
+
+// https://github.com/AnikethTS/RunnerDeck/issues/56
+test('log stream stops retrying and redirects when the session expires', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.goto('/');
+  await page.locator('[data-action="view-log"]').click();
+
+  await page.unroute('**/api.php*action=status*');
+  await page.route('**/api.php*action=status*', (route) => route.fulfill({
+    status: 401,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: false, message: 'unauthorized' }),
+  }));
+  await page.route('**/login.php', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Login</title>',
+  }));
+
+  await page.evaluate(() => window.logStreams.at(-1).onerror());
+  await page.waitForURL('**/login.php');
+  expect(await page.evaluate(() => sessionStorage.getItem('log-stream-closed'))).toBe('1');
 });
 
 test('log search treats markup and regex characters as literal text', async ({ page }) => {

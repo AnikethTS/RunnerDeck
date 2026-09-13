@@ -60,6 +60,11 @@ follows [SemVer](https://semver.org/).
   `docker/build-push-action` with GitHub Actions layer caching instead of
   a from-scratch `docker build` every run.
 
+### Fixed
+
+- The live log viewer now stops reconnecting and returns to the login page
+  when a TOTP-authenticated session expires.
+
 ## [1.1.0] - 2026-09-12
 
 ### Added
