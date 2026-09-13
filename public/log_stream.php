@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+if (Auth::isEnabled() && !Auth::isLoggedIn()) {
+    http_response_code(401);
+    header('Content-Type: text/plain');
+    echo 'unauthorized';
+    exit;
+}
+
 $id = $_GET['runner'] ?? '';
 if (!RunnerPool::isKnownId($id)) {
     http_response_code(404);

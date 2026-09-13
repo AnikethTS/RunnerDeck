@@ -15,3 +15,5 @@ require __DIR__ . '/Provisioner.php';
 require __DIR__ . '/ProcessControl.php';
 require __DIR__ . '/Dashboard.php';
 require __DIR__ . '/Csrf.php';
+require __DIR__ . '/Totp.php';
+require __DIR__ . '/Auth.php';

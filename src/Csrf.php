@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-// No login exists in this app; the session-bound token is the only defense
-// against a forged request from another page.
 final class Csrf
 {
     private const SESSION_KEY = 'csrf_token';
@@ -13,6 +11,8 @@ final class Csrf
     private static function ensureSession(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            ini_set('session.use_strict_mode', '1');
+            session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
             session_start();
         }
     }

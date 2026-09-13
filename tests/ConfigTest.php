@@ -13,6 +13,7 @@ final class ConfigTest extends TestCase
     private const ENV_KEYS = [
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
+        'RUNNERDECK_AUTH_TOTP_SECRET',
     ];
 
     protected function tearDown(): void
@@ -109,6 +110,21 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_CHECK_UPDATES=1');
         $this->assertTrue(\Config::checkUpdatesEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAuthEnabledDefaultsToFalse(): void
+    {
+        $this->assertFalse(\Config::authEnabled());
+        $this->assertNull(\Config::authTotpSecret());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAuthEnabledTrueWhenSecretSet(): void
+    {
+        putenv('RUNNERDECK_AUTH_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ');
+        $this->assertTrue(\Config::authEnabled());
+        $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', \Config::authTotpSecret());
     }
 
     #[RunInSeparateProcess]
