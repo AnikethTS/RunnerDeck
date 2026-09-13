@@ -3,8 +3,11 @@
 RunnerDeck's UI is just a client of its own API — `public/api.php`, plus two
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`)
 for streaming and downloading logs. Everything here is `127.0.0.1`-only by
-default (see [Safety notes](README.md#safety-notes)); there's no API key or
-user account, so "who can call this" is exactly "who can reach this port."
+default (see [Safety notes](README.md#safety-notes)); by default there's no
+API key or user account, so "who can call this" is exactly "who can reach
+this port" — unless you've enabled the optional TOTP login (see
+[Hosting remotely](README.md#hosting-remotely)), in which case every action
+below needs an authenticated session first (see **Auth**).
 
 ## Stability
 
@@ -17,11 +20,12 @@ fields as forward-compatible noise, not an error.
 
 ## Auth
 
-GET actions need nothing — no session, no token. POST actions require a
-CSRF token, since the only thing standing between this app and a forged
-request from another browser tab is that token (see `src/Csrf.php`). The
-UI gets one for free (embedded in `index.php` as `window.__CSRF__` on every
-page load); a script that isn't rendering that page can fetch one directly:
+By default, GET actions need nothing — no session, no token. POST actions
+require a CSRF token, since the only thing standing between this app and a
+forged request from another browser tab is that token (see `src/Csrf.php`).
+The UI gets one for free (embedded in `index.php` as `window.__CSRF__` on
+every page load); a script that isn't rendering that page can fetch one
+directly:
 
 ```bash
 curl -sS -c cookies.txt 'http://127.0.0.1:8090/api.php?action=csrf_token'
@@ -40,6 +44,29 @@ curl -sS -b cookies.txt -X POST 'http://127.0.0.1:8090/api.php?action=start' \
 The token is session-bound and doesn't expire on its own, but a fresh
 `action=csrf_token` call is cheap — don't bother caching it across scripts.
 
+### If TOTP login is enabled
+
+Every action except `action=csrf_token` returns `401` until the session is
+logged in — get a token, log in with it, then reuse the same cookie jar for
+everything else:
+
+```bash
+curl -sS -c cookies.txt 'http://127.0.0.1:8090/api.php?action=csrf_token'
+# {"ok":true,"token":"<64 hex chars>"}
+
+curl -sS -b cookies.txt -c cookies.txt -X POST 'http://127.0.0.1:8090/login.php' \
+  --data-urlencode "csrf_token=$TOKEN" \
+  --data-urlencode "code=$(totp-code-from-your-authenticator-app)"
+# 302 to index.php on success; re-renders the login form (200) with an error on failure
+
+curl -sS -b cookies.txt 'http://127.0.0.1:8090/api.php?action=status'
+# now works — the session is authenticated
+```
+
+Five wrong codes in a row locks login out for 5 minutes, same as the UI
+(`src/Auth.php`). There's no separate API token or key to mint — a script
+authenticates exactly the way a browser does.
+
 ## Response shape
 
 Every response is JSON with at least an `ok` boolean. A `false` response
@@ -49,6 +76,7 @@ failure reason, not just 200-vs-not:
 | Status | Meaning |
 |---|---|
 | `200` | success |
+| `401` | TOTP login is enabled and this session isn't logged in — see **Auth** |
 | `403` | missing/invalid CSRF token, or an opt-in feature (update checks) is disabled |
 | `404` | unknown action, or an unknown runner id |
 | `409` | the target runner(s) are busy (see **Busy checks** below), or the app isn't configured yet |
@@ -149,7 +177,9 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=check_updates'
 
 ### `action=csrf_token`
 
-See **Auth** above.
+See **Auth** above. The one action that stays reachable even when TOTP
+login is enabled — it's how a script bootstraps into `login.php` in the
+first place.
 
 ## POST actions
 
@@ -160,6 +190,9 @@ ids for the `bulk_*` actions).
 | Action | Required fields | Notes |
 |---|---|---|
 | `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted) | Persists to `storage/settings.json` |
+| `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
+| `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](README.md#hosting-remotely) |
+| `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |
 | `start` | `runner` | No busy check — starting is never destructive |
 | `stop` | `runner` | Busy-checked |
 | `restart` | `runner` | Busy-checked |
@@ -192,14 +225,16 @@ These aren't under `api.php` — they're their own front controllers.
 Server-Sent Events. No auth beyond a valid `runner` id — this is a
 long-lived `text/event-stream` connection (the UI's live log viewer uses
 it directly via `EventSource`), not something most scripts need over the
-plain `action=log` tail.
+plain `action=log` tail. If TOTP login is enabled, an unauthenticated
+request gets a plain `401 unauthorized` body instead of a stream.
 
 ### `GET /download_log.php?runner=<id>&from=<epoch>&to=<epoch>`
 
 The full log file, or a slice of it. `from`/`to` are optional Unix epoch
 seconds; omit both for the complete file. See the log viewer's "Download
 from / to" fields for the UI equivalent, and `public/download_log.php`
-for exactly how partial-timestamp lines are handled.
+for exactly how partial-timestamp lines are handled. Same `401` behavior
+as `log_stream.php` above when TOTP login is enabled and unauthenticated.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/download_log.php?runner=runner-base' -o runner-base.log

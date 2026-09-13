@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+if (Auth::isEnabled() && !Auth::isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
 $csrfToken = Csrf::token();
 $hasLogo = is_file(__DIR__ . '/assets/logo.png');
 $needsSetup = !Config::isConfigured();
@@ -51,6 +56,9 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
       <button id="btn-settings" class="btn btn-sm">Settings</button>
+        <?php if (Auth::isEnabled()) : ?>
+        <button id="btn-logout" class="btn btn-sm">Log out</button>
+        <?php endif; ?>
     <?php endif; ?>
   </header>
 
@@ -249,6 +257,35 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
             <input type="checkbox" id="settings-check-updates" name="check_updates" value="1" />
             Check GitHub for new RunnerDeck releases
           </label>
+
+          <div class="settings-field">
+            <label>Login</label>
+            <p class="muted" id="totp-status">
+              <?= Auth::isEnabled()
+                ? 'Enabled — an authenticator app code is required to sign in.'
+                : 'Disabled — anyone who can reach this port has full access.' ?>
+            </p>
+            <div id="totp-setup" hidden>
+              <p class="muted">
+                Add this secret to your authenticator app (manual/text entry), then
+                enter the code it shows to confirm:
+              </p>
+              <p><code id="totp-secret"></code></p>
+              <input
+                type="text"
+                id="totp-code"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="6"
+                placeholder="123456"
+              />
+              <button type="button" id="totp-confirm" class="btn btn-sm btn-good">Confirm</button>
+              <p id="totp-error" class="setup-error" hidden></p>
+            </div>
+            <button type="button" id="totp-begin" class="btn btn-sm">
+              <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
+            </button>
+          </div>
 
           <div class="modal-actions">
             <button type="button" id="settings-cancel" class="btn">Cancel</button>

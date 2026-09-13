@@ -41,6 +41,15 @@ follows [SemVer](https://semver.org/).
   up --build`) — the volume mounts carry a `:z` SELinux relabel option for
   rootless Podman on SELinux-enforcing distros; Docker ignores it
   elsewhere.
+- Optional TOTP login, for anyone hosting their instance somewhere beyond
+  localhost behind a TLS-terminating reverse proxy — see the README's
+  [Hosting remotely](README.md#hosting-remotely) section. Set up either via
+  `php bin/setup-totp.php` or **Settings → Login** in the dashboard itself.
+  Off by default, zero behavior change for the existing localhost-only
+  setup. Single-user only, no accounts/roles. A dependency-free RFC 6238
+  implementation (`src/Totp.php`) verifies codes; 5 wrong codes in a row
+  locks login out for 5 minutes (`src/Auth.php`). The secret is stored the
+  same way as every other setting, in `storage/settings.json`.
 
 ## [1.1.0] - 2026-09-12
 

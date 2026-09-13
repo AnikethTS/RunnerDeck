@@ -247,9 +247,42 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
+| `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Hosting remotely](#hosting-remotely) |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.
+
+## Hosting remotely
+
+RunnerDeck defaults to localhost-only with no login — the only thing
+between "who can reach this port" and "who can control your runners" is
+your OS's own network isolation. If you want to reach your instance from
+another device (a VPS, a home server you SSH into from your phone), that's
+supported, but it's opt-in and has two parts, both required together:
+
+1. **Require a login.** Either run `php bin/setup-totp.php`, or open
+   **Settings → Login → Set up login** in the dashboard itself — both do
+   the same thing: generate a TOTP secret, show it for you to add to an
+   authenticator app (Google Authenticator, Authy, 1Password, etc.) via
+   manual/text entry, and ask for a code back to confirm before saving
+   anything. Once set, every page and API call redirects to a login screen
+   until you enter a valid 6-digit code. Five wrong codes in a row locks
+   login out for 5 minutes. Re-run either path any time to replace the
+   secret (**Settings → Login → Replace secret**) — the old one stops
+   working immediately.
+2. **Put a TLS-terminating reverse proxy in front** (Caddy, nginx, Tailscale,
+   etc.) — RunnerDeck itself stays plain HTTP, no certificate handling
+   built in. Without TLS, the login code and session cookie both travel
+   the network in the clear, which defeats the point of requiring a login
+   at all.
+
+`run.sh` still binds `127.0.0.1` even for this setup — the reverse proxy
+runs on the *same machine* and forwards `proxy:443 → 127.0.0.1:8090`, so
+there's no bind-address change needed (unlike the [Docker](#docker) image,
+which genuinely needs to listen on `0.0.0.0` inside its own container).
+
+Login is still single-user — there's no concept of separate accounts or
+permissions. If you need that, this feature isn't it.
 
 ## Add to Home Screen
 
@@ -276,6 +309,7 @@ runnerdeck/
     index.php       server-rendered dashboard page
     api.php         JSON API (status, start/stop/restart, pool resize)
     log_stream.php  Server-Sent Events log tailing
+    login.php       optional TOTP login screen (see Hosting remotely)
     assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
   src/
     bootstrap.php        single load point required by every public/*.php
@@ -283,6 +317,8 @@ runnerdeck/
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
     History.php            best-effort CPU/RAM history in storage/db/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
+    Auth.php              optional TOTP login gate, lockout tracking
+    Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
@@ -378,8 +414,13 @@ of view instead. Don't widen that mapping, same as you wouldn't change
 your login token has (real admin access to your org's runners in org scope,
 or to that one repo's runners in repo scope), and it can start and stop real
 processes on the machine it runs on. Don't put this behind a reverse proxy
-or expose the port on any network interface beyond loopback. It also
-downloads and executes GitHub's official
+or expose the port on any network interface beyond loopback — **unless**
+you've enabled login (`php bin/setup-totp.php`) **and** that reverse proxy
+terminates TLS, the two required-together preconditions covered in
+[Hosting remotely](#hosting-remotely). Skipping either one turns "reachable
+beyond your machine" into "reachable by anyone," which is exactly what this
+default posture exists to prevent. It also downloads and executes GitHub's
+official
 runner package on first use of each runner slot — the same binary GitHub's
 own setup page would have you download by hand, checksum-verified before
 extraction.
@@ -387,8 +428,9 @@ extraction.
 All state-changing API calls (`start`, `stop`, `restart`, `start_all`,
 `stop_all`, `resize`) require a session-bound CSRF token minted by
 `index.php` and sent back by `assets/app.js` — this stops a malicious page
-open in another tab from silently driving the dashboard, but it is not a
-substitute for keeping this off any network beyond loopback.
+open in another tab from silently driving the dashboard, but on its own it
+is not a substitute for keeping this off any network beyond loopback (see
+[Hosting remotely](#hosting-remotely) for the one supported way to do that).
 
 ## License
 

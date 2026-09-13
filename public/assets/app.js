@@ -1,4 +1,4 @@
-import { post } from './js/api.js';
+import { post, redirectIfUnauthenticated } from './js/api.js';
 import { setLoading, clearLoading } from './js/utils.js';
 import { updateMismatchStreaks, trackCrashesAndMaybeRestart, markExplicitlyStopped } from './js/reliability.js';
 import {
@@ -95,18 +95,21 @@ function initDashboard() {
 
   async function fetchStatus() {
     const res = await fetch('api.php?action=status&lines=5');
+    if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
     fetchHistory();
   }
 
   async function fetchSystemStats() {
     const res = await fetch('api.php?action=system');
+    if (redirectIfUnauthenticated(res.status)) return;
     const data = await res.json();
     if (data.ok) renderLoadStat(data.system);
   }
 
   async function checkForUpdates() {
     const res = await fetch('api.php?action=check_updates');
+    if (redirectIfUnauthenticated(res.status)) return;
     const data = await res.json();
     if (!data.ok || !data.update_available) return;
     const badge = document.getElementById('update-available');

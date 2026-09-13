@@ -87,6 +87,18 @@ final class Config
         return getenv('RUNNERDECK_CHECK_UPDATES') === '1';
     }
 
+    /** @return string|null the base32 TOTP secret shared with an authenticator app, or null if login is off */
+    public static function authTotpSecret(): ?string
+    {
+        $secret = getenv('RUNNERDECK_AUTH_TOTP_SECRET');
+        return $secret !== false && $secret !== '' ? $secret : null;
+    }
+
+    public static function authEnabled(): bool
+    {
+        return self::authTotpSecret() !== null;
+    }
+
     public static function version(): string
     {
         static $version = null;

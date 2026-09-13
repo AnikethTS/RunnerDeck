@@ -20,6 +20,7 @@ public/assets/logo.png
 /vendor/
 .phpunit.result.cache
 .phpunit.cache/
+composer.lock
 
 # Dev tooling (npm install regenerates this; see README)
 /node_modules/
