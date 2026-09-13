@@ -313,6 +313,11 @@ test('log stream stops retrying and redirects when the session expires', async (
     contentType: 'application/json',
     body: JSON.stringify({ ok: false, message: 'unauthorized' }),
   }));
+  await page.route('**/login.php', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Login</title>',
+  }));
 
   await page.evaluate(() => window.logStreams.at(-1).onerror());
   await page.waitForURL('**/login.php');
