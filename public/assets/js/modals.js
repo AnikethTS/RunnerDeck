@@ -11,7 +11,9 @@ export function wireScopeToggle(scopeSelect, orgField, repoField) {
   update();
 }
 
-export async function submitSettingsForm(errorEl, scopeSelect, orgInput, repoInput, labelInput, submitBtn, checkUpdatesInput = null) {
+export async function submitSettingsForm(
+  errorEl, scopeSelect, orgInput, repoInput, labelInput, submitBtn, checkUpdatesInput = null, autoRestartInput = null,
+) {
   errorEl.hidden = true;
   setLoading(submitBtn, 'Saving…');
   try {
@@ -21,6 +23,7 @@ export async function submitSettingsForm(errorEl, scopeSelect, orgInput, repoInp
       repo: repoInput.value.trim(),
       label: labelInput.value.trim(),
       check_updates: checkUpdatesInput && checkUpdatesInput.checked ? '1' : '',
+      auto_restart: autoRestartInput && autoRestartInput.checked ? '1' : '',
     });
     if (!data.ok) {
       errorEl.textContent = data.message || 'failed to save settings';
@@ -178,6 +181,7 @@ export function initModals(fetchStatus) {
     document.getElementById('settings-repo').value = cur.repo || '';
     document.getElementById('settings-label').value = cur.label || '';
     document.getElementById('settings-check-updates').checked = Boolean(cur.checkUpdates);
+    document.getElementById('settings-auto-restart').checked = Boolean(cur.autoRestart);
     settingsScope.dispatchEvent(new Event('change'));
     document.getElementById('settings-error').hidden = true;
     settingsModal.hidden = false;
@@ -208,6 +212,7 @@ export function initModals(fetchStatus) {
       document.getElementById('settings-label'),
       e.target.querySelector('button[type="submit"]'),
       document.getElementById('settings-check-updates'),
+      document.getElementById('settings-auto-restart'),
     );
   });
 

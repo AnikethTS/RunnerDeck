@@ -87,6 +87,11 @@ final class Config
         return getenv('RUNNERDECK_CHECK_UPDATES') === '1';
     }
 
+    public static function autoRestartEnabled(): bool
+    {
+        return getenv('RUNNERDECK_AUTO_RESTART') === '1';
+    }
+
     /** @return string|null the base32 TOTP secret shared with an authenticator app, or null if login is off */
     public static function authTotpSecret(): ?string
     {

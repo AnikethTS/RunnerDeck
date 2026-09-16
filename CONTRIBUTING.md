@@ -27,8 +27,8 @@ now — the project's policy on AI-assisted contributions.
 - Keep PRs focused. One logical change per PR is much easier to review than
   a bundle of unrelated fixes — see [Scope](#scope) below.
 - Add or update tests under `tests/` for anything you change in `src/`.
-  `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, and `Totp` all have
-  existing test files to follow the pattern of.
+  `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
+  all have existing test files to follow the pattern of.
 - If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
   link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`
   comment directly above the `test(...)` call — see the existing tests
@@ -45,8 +45,9 @@ now — the project's policy on AI-assisted contributions.
 
 Some parts of this codebase are load-bearing for safety, not just
 functionality: `ProcessControl`, `Provisioner`, `Shell`, the CSRF layer,
-and `Auth`/`Totp` (the optional login gate) in particular. Changes there
-get more scrutiny, and are a rockier place to land a first PR. If you're new here, look for issues labeled
+`Auth`/`Totp` (the optional login gate), and `CrashState` (decides when
+auto-restart fires) in particular. Changes there get more scrutiny, and
+are a rockier place to land a first PR. If you're new here, look for issues labeled
 [`up-for-grabs`](https://github.com/AnikethTS/RunnerDeck/issues?q=is%3Aissue+is%3Aopen+label%3Aup-for-grabs)
 — they're picked specifically to be self-contained and not on that critical
 path. If an issue isn't labeled and you're not sure whether it's a good

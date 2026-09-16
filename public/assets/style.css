@@ -130,6 +130,26 @@ body {
   font-size: 14px;
 }
 
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+}
+.toast {
+  background: var(--surface-1);
+  border: 1px solid var(--status-critical);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  max-width: 320px;
+}
+
 main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 
 .stat-grid {

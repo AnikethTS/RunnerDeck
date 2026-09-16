@@ -7,7 +7,7 @@ final class Settings
 {
     private const KEYS = [
         'RUNNERDECK_SCOPE', 'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL', 'RUNNERDECK_CHECK_UPDATES',
-        'RUNNERDECK_AUTH_TOTP_SECRET',
+        'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART',
     ];
 
     private static function path(): string

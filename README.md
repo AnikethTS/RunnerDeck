@@ -83,11 +83,13 @@ of a script incantation.
   mismatch during a status transition is normal and ignored, a persistent
   one usually means the process died without GitHub finding out yet (or
   vice versa).
-- An optional **auto-restart** toggle brings a runner back up if its
-  process dies without you having stopped it yourself. It backs off after
-  a few failed attempts in a row (crash-looping is flagged, not retried
-  forever) and resets once the runner has stayed healthy for a couple of
-  minutes.
+- An optional **auto-restart** setting (Settings dialog) brings a runner
+  back up if its process dies without you having stopped it yourself. It
+  backs off after a few failed attempts in a row — crash-looping is
+  flagged with a toast notification and a row badge, not retried forever —
+  and resets once the runner has stayed healthy for a couple of minutes.
+  This tracking lives server-side, so it's consistent across every browser
+  tab and survives a page reload.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.
@@ -248,6 +250,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
 | `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Hosting remotely](#hosting-remotely) |
+| `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.
