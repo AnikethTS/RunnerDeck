@@ -116,29 +116,8 @@ jobs:
       - name: Run test suite
         run: composer run test
 
-  smoke-test:
-    name: Boot smoke test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macos-latest, macos-14]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
-        if: runner.os == 'Linux'
-        with:
-          php-version: "8.3"
-          extensions: posix, pcntl, json, pdo_sqlite
-          coverage: none
-
-      - name: Use runner image PHP
-        if: runner.os == 'macOS'
-        run: php -v
-
       - name: Boot the dashboard and hit the status endpoint
+        if: matrix.php == '8.3'
         env:
           RUNNERDECK_ORG: smoke-test-org
         run: |

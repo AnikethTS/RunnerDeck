@@ -89,10 +89,11 @@ follows [SemVer](https://semver.org/).
   `spl_autoload_register` in `src/bootstrap.php` (`RunnerDeck\Foo` →
   `src/Foo.php`). Composer is still dev-only (PSR-4 autoload-dev for tests).
   HTTP URLs and JSON bodies are unchanged.
-- macOS boot-smoke jobs use the runner image's PHP instead of
-  `setup-php` (which was regularly spending 4+ minutes and hitting the
-  5-minute job timeout on `macos-14`). Remaining `setup-php` steps pass
-  `GITHUB_TOKEN` so GitHub rate-limits don't stall PHP downloads.
+- Boot smoke on Linux/macOS now runs as a step in the PHP 8.3 unit-test
+  jobs instead of a second VM. macos-14 images have no `php` on `PATH`,
+  so skipping `setup-php` there failed immediately; this reuses the PHP
+  that job already installed. `GITHUB_TOKEN` is set for `setup-php` so
+  GitHub rate-limits are less likely to stall PHP downloads.
 - `public/api.php` is a thin front controller. Each `action=` is a
   handler class under `src/Api/`, dispatched by `src/Api.php`. URLs,
   CSRF, auth gating, and response bodies are unchanged.
