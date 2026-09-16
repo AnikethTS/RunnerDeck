@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class ProcessControl
 {
     // /proc doesn't exist on macOS; /dev/fd works on both (a symlink to
@@ -191,7 +193,7 @@ final class ProcessControl
                 if ($ghId !== null) {
                     GithubClient::deleteRunner($ghId);
                 }
-            } catch (RuntimeException $e) {
+            } catch (\RuntimeException $e) {
                 $message = "failed to deregister {$r->agentName}: " . $e->getMessage();
                 return self::fail('process.deregister', $message, $r->id, $e->getMessage());
             }

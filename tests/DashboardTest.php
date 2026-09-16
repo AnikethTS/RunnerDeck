@@ -15,7 +15,7 @@ final class DashboardTest extends TestCase
 
     public function testComputeStatsOnEmptyPool(): void
     {
-        $stats = \Dashboard::computeStats([]);
+        $stats = \RunnerDeck\Dashboard::computeStats([]);
 
         $this->assertSame(0, $stats['total']);
         $this->assertSame(0, $stats['running']);
@@ -31,7 +31,7 @@ final class DashboardTest extends TestCase
             $this->runner(false, null, null),
         ];
 
-        $stats = \Dashboard::computeStats($runners);
+        $stats = \RunnerDeck\Dashboard::computeStats($runners);
 
         $this->assertSame(3, $stats['total']);
         $this->assertSame(2, $stats['running']);
@@ -46,7 +46,7 @@ final class DashboardTest extends TestCase
             $this->runner(true, null, null),
         ];
 
-        $stats = \Dashboard::computeStats($runners);
+        $stats = \RunnerDeck\Dashboard::computeStats($runners);
 
         $this->assertSame(2, $stats['running']);
         $this->assertSame(40.0, $stats['avg_cpu_percent']);

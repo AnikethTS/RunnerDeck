@@ -27,54 +27,54 @@ final class ConfigTest extends TestCase
     public function testOrgThrowsWhenUnset(): void
     {
         $this->expectException(RuntimeException::class);
-        \Config::org();
+        \RunnerDeck\Config::org();
     }
 
     #[RunInSeparateProcess]
     public function testOrgReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_ORG=my-org');
-        $this->assertSame('my-org', \Config::org());
+        $this->assertSame('my-org', \RunnerDeck\Config::org());
     }
 
     #[RunInSeparateProcess]
     public function testLabelDefaultsWhenUnset(): void
     {
-        $this->assertSame('self-hosted-runnerdeck', \Config::label());
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testLabelReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_LABEL=custom-label');
-        $this->assertSame('custom-label', \Config::label());
+        $this->assertSame('custom-label', \RunnerDeck\Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testPoolDirStripsTrailingSlash(): void
     {
         putenv('RUNNERDECK_POOL_DIR=/tmp/runners/');
-        $this->assertSame('/tmp/runners', \Config::poolDir());
+        $this->assertSame('/tmp/runners', \RunnerDeck\Config::poolDir());
     }
 
     #[RunInSeparateProcess]
     public function testPoolDirDefaultsNextToRepoCheckout(): void
     {
         $expected = dirname(__DIR__, 2) . '/runners';
-        $this->assertSame($expected, \Config::poolDir());
+        $this->assertSame($expected, \RunnerDeck\Config::poolDir());
     }
 
     #[RunInSeparateProcess]
     public function testScopeDefaultsToOrg(): void
     {
-        $this->assertSame('org', \Config::scope());
+        $this->assertSame('org', \RunnerDeck\Config::scope());
     }
 
     #[RunInSeparateProcess]
     public function testScopeAcceptsRepo(): void
     {
         putenv('RUNNERDECK_SCOPE=repo');
-        $this->assertSame('repo', \Config::scope());
+        $this->assertSame('repo', \RunnerDeck\Config::scope());
     }
 
     #[RunInSeparateProcess]
@@ -82,68 +82,68 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_SCOPE=user');
         $this->expectException(RuntimeException::class);
-        \Config::scope();
+        \RunnerDeck\Config::scope();
     }
 
     #[RunInSeparateProcess]
     public function testRepoThrowsWhenUnset(): void
     {
         $this->expectException(RuntimeException::class);
-        \Config::repo();
+        \RunnerDeck\Config::repo();
     }
 
     #[RunInSeparateProcess]
     public function testRepoReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_REPO=AnikethTS/RunnerDeck');
-        $this->assertSame('AnikethTS/RunnerDeck', \Config::repo());
+        $this->assertSame('AnikethTS/RunnerDeck', \RunnerDeck\Config::repo());
     }
 
     #[RunInSeparateProcess]
     public function testCheckUpdatesEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\Config::checkUpdatesEnabled());
+        $this->assertFalse(\RunnerDeck\Config::checkUpdatesEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testCheckUpdatesEnabledTrueWhenSetTo1(): void
     {
         putenv('RUNNERDECK_CHECK_UPDATES=1');
-        $this->assertTrue(\Config::checkUpdatesEnabled());
+        $this->assertTrue(\RunnerDeck\Config::checkUpdatesEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testAutoRestartEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\Config::autoRestartEnabled());
+        $this->assertFalse(\RunnerDeck\Config::autoRestartEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testAutoRestartEnabledTrueWhenSetTo1(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        $this->assertTrue(\Config::autoRestartEnabled());
+        $this->assertTrue(\RunnerDeck\Config::autoRestartEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testAuthEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\Config::authEnabled());
-        $this->assertNull(\Config::authTotpSecret());
+        $this->assertFalse(\RunnerDeck\Config::authEnabled());
+        $this->assertNull(\RunnerDeck\Config::authTotpSecret());
     }
 
     #[RunInSeparateProcess]
     public function testAuthEnabledTrueWhenSecretSet(): void
     {
         putenv('RUNNERDECK_AUTH_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ');
-        $this->assertTrue(\Config::authEnabled());
-        $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', \Config::authTotpSecret());
+        $this->assertTrue(\RunnerDeck\Config::authEnabled());
+        $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', \RunnerDeck\Config::authTotpSecret());
     }
 
     #[RunInSeparateProcess]
     public function testVersionReadsFromVersionFile(): void
     {
         $expected = trim((string) file_get_contents(dirname(__DIR__) . '/VERSION'));
-        $this->assertSame($expected, \Config::version());
+        $this->assertSame($expected, \RunnerDeck\Config::version());
     }
 }

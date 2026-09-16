@@ -2,6 +2,31 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
+use RunnerDeck\Api\AddRunnerAction;
+use RunnerDeck\Api\BulkDeleteAction;
+use RunnerDeck\Api\BulkStartAction;
+use RunnerDeck\Api\BulkStopAction;
+use RunnerDeck\Api\CheckUpdatesAction;
+use RunnerDeck\Api\CsrfTokenAction;
+use RunnerDeck\Api\DeleteRunnerAction;
+use RunnerDeck\Api\HistoryAction;
+use RunnerDeck\Api\LogAction;
+use RunnerDeck\Api\LogoutAction;
+use RunnerDeck\Api\RenameAction;
+use RunnerDeck\Api\ResizeAction;
+use RunnerDeck\Api\RestartAction;
+use RunnerDeck\Api\SaveSettingsAction;
+use RunnerDeck\Api\StartAction;
+use RunnerDeck\Api\StartAllAction;
+use RunnerDeck\Api\StatusAction;
+use RunnerDeck\Api\StopAction;
+use RunnerDeck\Api\StopAllAction;
+use RunnerDeck\Api\SystemAction;
+use RunnerDeck\Api\TotpBeginAction;
+use RunnerDeck\Api\TotpConfirmAction;
+
 final class Api
 {
     /** @var array<string, class-string> */
@@ -153,7 +178,7 @@ final class Api
 
         try {
             $ghRunners = GithubClient::listRunners();
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) {
             return [
                 'ok' => false,
                 'busy_unknown' => true,

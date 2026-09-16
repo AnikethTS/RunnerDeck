@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class Auth
 {
     private const SESSION_KEY = 'authenticated';

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class Config
 {
     public static function bootstrapEnv(): void
@@ -36,7 +38,7 @@ final class Config
     {
         $org = getenv('RUNNERDECK_ORG');
         if (!$org) {
-            throw new RuntimeException('RUNNERDECK_ORG is not set — see README');
+            throw new \RuntimeException('RUNNERDECK_ORG is not set — see README');
         }
         return $org;
     }
@@ -46,7 +48,7 @@ final class Config
     {
         $repo = getenv('RUNNERDECK_REPO');
         if (!$repo) {
-            throw new RuntimeException('RUNNERDECK_REPO is not set — see README');
+            throw new \RuntimeException('RUNNERDECK_REPO is not set — see README');
         }
         return $repo;
     }
@@ -61,7 +63,7 @@ final class Config
     {
         $scope = getenv('RUNNERDECK_SCOPE') ?: 'org';
         if ($scope !== 'org' && $scope !== 'repo') {
-            throw new RuntimeException("RUNNERDECK_SCOPE must be 'org' or 'repo', got '{$scope}'");
+            throw new \RuntimeException("RUNNERDECK_SCOPE must be 'org' or 'repo', got '{$scope}'");
         }
         return $scope;
     }
@@ -71,7 +73,7 @@ final class Config
     {
         try {
             $scope = self::scope();
-        } catch (RuntimeException) {
+        } catch (\RuntimeException) {
             return false;
         }
         return $scope === 'repo' ? (bool) getenv('RUNNERDECK_REPO') : (bool) getenv('RUNNERDECK_ORG');

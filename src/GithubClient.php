@@ -2,24 +2,7 @@
 
 declare(strict_types=1);
 
-final class GithubAuthStatus
-{
-    public function __construct(
-        public readonly bool $loggedIn,
-        public readonly bool $orgAccessOk,
-        public readonly string $message,
-    ) {
-    }
-
-    public function toArray(): array
-    {
-        return [
-            'logged_in' => $this->loggedIn,
-            'org_access_ok' => $this->orgAccessOk,
-            'message' => $this->message,
-        ];
-    }
-}
+namespace RunnerDeck;
 
 final class GithubClient
 {
@@ -79,7 +62,7 @@ final class GithubClient
 
     /**
      * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}> keyed by runner name
-     * @throws RuntimeException if the gh call fails
+     * @throws \RuntimeException if the gh call fails
      */
     public static function listRunners(): array
     {
@@ -106,7 +89,7 @@ final class GithubClient
         return $runners;
     }
 
-    /** @throws RuntimeException if the gh call fails */
+    /** @throws \RuntimeException if the gh call fails */
     public static function deleteRunner(int $id): void
     {
         self::ensureGhEnv();
@@ -179,7 +162,7 @@ final class GithubClient
         return $decoded;
     }
 
-    /** @throws RuntimeException */
+    /** @throws \RuntimeException */
     private static function fail(string $action, string $message, string $stderr = '', bool $throttle = false): never
     {
         $ctx = ['stderr' => $stderr];
@@ -188,6 +171,6 @@ final class GithubClient
         } else {
             AppLog::error($action, $message, $ctx);
         }
-        throw new RuntimeException($message);
+        throw new \RuntimeException($message);
     }
 }

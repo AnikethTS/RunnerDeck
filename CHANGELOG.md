@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-16
+
 ### Added
 
 - Failures from `gh`, `config.sh`, and start/stop are appended as JSON
@@ -83,6 +85,14 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- PHP classes live in the `RunnerDeck\` namespace, loaded by a small
+  `spl_autoload_register` in `src/bootstrap.php` (`RunnerDeck\Foo` →
+  `src/Foo.php`). Composer is still dev-only (PSR-4 autoload-dev for tests).
+  HTTP URLs and JSON bodies are unchanged.
+- `setup-php` in CI now gets `GITHUB_TOKEN` so unauthenticated GitHub
+  rate limits are less likely to stall PHP downloads on macOS. Boot-smoke
+  job timeout is 15 minutes (was 5) so a slow macos-14 PHP install cannot
+  cancel the required check.
 - `public/api.php` is a thin front controller. Each `action=` is a
   handler class under `src/Api/`, dispatched by `src/Api.php`. URLs,
   CSRF, auth gating, and response bodies are unchanged.

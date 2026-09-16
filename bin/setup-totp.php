@@ -5,6 +5,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use RunnerDeck\Auth;
+use RunnerDeck\Config;
+use RunnerDeck\Totp;
+
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
 
 function paint(string $code, string $text, bool $color): string

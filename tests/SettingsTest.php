@@ -33,26 +33,26 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testLoadReturnsEmptyArrayWhenFileMissing(): void
     {
-        $this->assertSame([], \Settings::load());
+        $this->assertSame([], \RunnerDeck\Settings::load());
     }
 
     #[RunInSeparateProcess]
     public function testIsConfiguredFalseWhenUnset(): void
     {
-        $this->assertFalse(\Settings::isConfigured());
+        $this->assertFalse(\RunnerDeck\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testSaveThenLoadRoundTrips(): void
     {
-        \Settings::save([
+        \RunnerDeck\Settings::save([
             'RUNNERDECK_SCOPE' => 'repo',
             'RUNNERDECK_REPO' => 'AnikethTS/RunnerDeck',
             'RUNNERDECK_ORG' => '',
             'RUNNERDECK_LABEL' => 'my-label',
         ]);
 
-        $loaded = \Settings::load();
+        $loaded = \RunnerDeck\Settings::load();
 
         $this->assertSame('repo', $loaded['RUNNERDECK_SCOPE']);
         $this->assertSame('AnikethTS/RunnerDeck', $loaded['RUNNERDECK_REPO']);
@@ -63,24 +63,24 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testIsConfiguredTrueAfterSavingOrgScope(): void
     {
-        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
-        $this->assertTrue(\Settings::isConfigured());
+        \RunnerDeck\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
+        $this->assertTrue(\RunnerDeck\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testIsConfiguredFalseWhenRepoScopeMissingRepo(): void
     {
-        \Settings::save(['RUNNERDECK_SCOPE' => 'repo']);
-        $this->assertFalse(\Settings::isConfigured());
+        \RunnerDeck\Settings::save(['RUNNERDECK_SCOPE' => 'repo']);
+        $this->assertFalse(\RunnerDeck\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testApplyToEnvDoesNotOverrideRealEnvVar(): void
     {
-        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'from-settings-file']);
+        \RunnerDeck\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'from-settings-file']);
         putenv('RUNNERDECK_ORG=from-real-env');
 
-        \Settings::applyToEnv();
+        \RunnerDeck\Settings::applyToEnv();
 
         $this->assertSame('from-real-env', getenv('RUNNERDECK_ORG'));
     }
@@ -88,9 +88,9 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testApplyToEnvSetsUnsetKeysFromSavedSettings(): void
     {
-        \Settings::save(['RUNNERDECK_SCOPE' => 'repo', 'RUNNERDECK_REPO' => 'owner/repo']);
+        \RunnerDeck\Settings::save(['RUNNERDECK_SCOPE' => 'repo', 'RUNNERDECK_REPO' => 'owner/repo']);
 
-        \Settings::applyToEnv();
+        \RunnerDeck\Settings::applyToEnv();
 
         $this->assertSame('repo', getenv('RUNNERDECK_SCOPE'));
         $this->assertSame('owner/repo', getenv('RUNNERDECK_REPO'));
@@ -99,9 +99,13 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveThenLoadRoundTripsCheckUpdates(): void
     {
-        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org', 'RUNNERDECK_CHECK_UPDATES' => '1']);
+        \RunnerDeck\Settings::save([
+            'RUNNERDECK_SCOPE' => 'org',
+            'RUNNERDECK_ORG' => 'my-org',
+            'RUNNERDECK_CHECK_UPDATES' => '1',
+        ]);
 
-        $loaded = \Settings::load();
+        $loaded = \RunnerDeck\Settings::load();
 
         $this->assertSame('1', $loaded['RUNNERDECK_CHECK_UPDATES']);
     }
@@ -112,6 +116,6 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_SETTINGS_FILE=/nonexistent-root-only-path/settings.json');
 
         $this->expectException(RuntimeException::class);
-        \Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
+        \RunnerDeck\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
     }
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 // Real env vars and .env still win over this; see Config::bootstrapEnv().
 final class Settings
 {
@@ -71,7 +73,7 @@ final class Settings
 
         $dir = dirname(self::path());
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
-            throw new RuntimeException("failed to create {$dir}");
+            throw new \RuntimeException("failed to create {$dir}");
         }
 
         $json = json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

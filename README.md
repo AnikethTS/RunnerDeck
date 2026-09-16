@@ -316,7 +316,7 @@ runnerdeck/
     login.php       optional TOTP login screen (see Hosting remotely)
     assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
   src/
-    bootstrap.php        single load point required by every public/*.php
+    bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
     AppLog.php             JSON error log at storage/runnerdeck.log (rotated)
@@ -333,7 +333,7 @@ runnerdeck/
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Dashboard.php         merges local + GitHub state into one snapshot
     Api.php               JSON API router and shared request helpers
-    Api/                  one handler class per `api.php?action=`
+    Api/                  one class per `api.php?action=` (`RunnerDeck\Api\`)
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
