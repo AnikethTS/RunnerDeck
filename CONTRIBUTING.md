@@ -27,7 +27,7 @@ now — the project's policy on AI-assisted contributions.
 - Keep PRs focused. One logical change per PR is much easier to review than
   a bundle of unrelated fixes — see [Scope](#scope) below.
 - Add or update tests under `tests/` for anything you change in `src/`.
-  `ProcessControl`, `Provisioner`, `ProcessDecision`, `Api`, `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
+  `ProcessControl`, `Provisioner`, `ProcessDecision`, `AppLog`, `Api`, `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
   all have existing test files to follow the pattern of.
 - If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
   link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`

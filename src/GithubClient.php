@@ -86,12 +86,12 @@ final class GithubClient
         self::ensureGhEnv();
         $result = Shell::exec([Config::ghBinary(), 'api', self::accountBase() . '/actions/runners'], 15);
         if ($result['code'] !== 0) {
-            throw new RuntimeException('gh api call failed: ' . trim($result['stderr']));
+            self::fail('gh.list_runners', 'gh api call failed: ' . trim($result['stderr']), $result['stderr'], true);
         }
 
         $decoded = json_decode($result['stdout'], true);
         if (!is_array($decoded)) {
-            throw new RuntimeException('gh api returned unexpected output');
+            self::fail('gh.list_runners', 'gh api returned unexpected output', $result['stdout'], true);
         }
 
         $runners = [];
@@ -115,7 +115,11 @@ final class GithubClient
             15
         );
         if ($result['code'] !== 0) {
-            throw new RuntimeException('failed to deregister runner: ' . trim($result['stderr']));
+            self::fail(
+                'gh.delete_runner',
+                'failed to deregister runner: ' . trim($result['stderr']),
+                $result['stderr']
+            );
         }
     }
 
@@ -132,7 +136,11 @@ final class GithubClient
         );
         $token = trim($result['stdout']);
         if ($result['code'] !== 0 || $token === '') {
-            throw new RuntimeException('failed to obtain a runner registration token: ' . trim($result['stderr']));
+            self::fail(
+                'gh.registration_token',
+                'failed to obtain a runner registration token: ' . trim($result['stderr']),
+                $result['stderr']
+            );
         }
         return $token;
     }
@@ -154,12 +162,32 @@ final class GithubClient
             15
         );
         if ($result['code'] !== 0) {
-            throw new RuntimeException('failed to list runner downloads: ' . trim($result['stderr']));
+            self::fail(
+                'gh.list_downloads',
+                'failed to list runner downloads: ' . trim($result['stderr']),
+                $result['stderr']
+            );
         }
         $decoded = json_decode($result['stdout'], true);
         if (!is_array($decoded)) {
-            throw new RuntimeException('gh api returned unexpected output for runner downloads');
+            self::fail(
+                'gh.list_downloads',
+                'gh api returned unexpected output for runner downloads',
+                $result['stdout']
+            );
         }
         return $decoded;
+    }
+
+    /** @throws RuntimeException */
+    private static function fail(string $action, string $message, string $stderr = '', bool $throttle = false): never
+    {
+        $ctx = ['stderr' => $stderr];
+        if ($throttle) {
+            AppLog::errorThrottled($action, $message, $ctx);
+        } else {
+            AppLog::error($action, $message, $ctx);
+        }
+        throw new RuntimeException($message);
     }
 }

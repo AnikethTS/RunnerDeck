@@ -50,7 +50,8 @@ final class ProcessControl
         );
         $newPid = ProcessDecision::parseSpawnedPid($result['stdout']);
         if ($newPid <= 0) {
-            return ['ok' => false, 'message' => "failed to start {$r->id}: " . trim($result['stderr'])];
+            $message = "failed to start {$r->id}: " . trim($result['stderr']);
+            return self::fail('process.start', $message, $r->id, $result['stderr']);
         }
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
@@ -74,6 +75,15 @@ final class ProcessControl
         self::terminate($pid);
         @unlink($pidFile);
         return ['ok' => true, 'message' => "{$r->id} stopped (pid {$pid})"];
+    }
+
+    /**
+     * @return array{ok: false, message: string}
+     */
+    private static function fail(string $action, string $message, ?string $runner = null, string $stderr = ''): array
+    {
+        AppLog::error($action, $message, ['runner' => $runner, 'stderr' => $stderr]);
+        return ['ok' => false, 'message' => $message];
     }
 
     private static function terminate(int $pid): void
@@ -160,7 +170,8 @@ final class ProcessControl
 
         $result = Shell::exec(['rm', '-rf', $r->dir], 15);
         if ($result['code'] !== 0) {
-            return ['ok' => false, 'message' => "failed to delete {$r->id}'s files: " . trim($result['stderr'])];
+            $message = "failed to delete {$r->id}'s files: " . trim($result['stderr']);
+            return self::fail('process.delete', $message, $r->id, $result['stderr']);
         }
 
         return ['ok' => true, 'message' => "{$r->id} deleted"];
@@ -181,7 +192,8 @@ final class ProcessControl
                     GithubClient::deleteRunner($ghId);
                 }
             } catch (RuntimeException $e) {
-                return ['ok' => false, 'message' => "failed to deregister {$r->agentName}: " . $e->getMessage()];
+                $message = "failed to deregister {$r->agentName}: " . $e->getMessage();
+                return self::fail('process.deregister', $message, $r->id, $e->getMessage());
             }
             Provisioner::deregister($r->dir);
         }
