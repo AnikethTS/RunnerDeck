@@ -327,7 +327,9 @@ runnerdeck/
     GithubClient.php      shells out to `gh`
     UpdateCheck.php        opt-in check against this project's own GitHub Releases
     Provisioner.php       downloads, installs, and registers a runner
+    ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
+    ProcessDecision.php   pidfile vs live-process start/stop decisions (tested without spawning)
     Dashboard.php         merges local + GitHub state into one snapshot
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above

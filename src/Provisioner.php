@@ -27,15 +27,12 @@ final class Provisioner
         }
 
         $expectedSha = $download['sha256_checksum'] ?? null;
-        if ($expectedSha) {
-            $actualSha = hash_file('sha256', $archivePath);
-            if (!hash_equals(strtolower($expectedSha), strtolower((string) $actualSha))) {
-                @unlink($archivePath);
-                return ['ok' => false, 'message' => 'downloaded runner package failed checksum verification — aborted'];
-            }
+        if (!self::checksumMatches($archivePath, is_string($expectedSha) ? $expectedSha : null)) {
+            @unlink($archivePath);
+            return ['ok' => false, 'message' => 'downloaded runner package failed checksum verification — aborted'];
         }
 
-        $extract = str_ends_with($download['filename'], '.zip')
+        $extract = self::isZipArchive($download['filename'])
             ? Shell::exec(['unzip', '-q', $archivePath, '-d', $dir], 120)
             : Shell::exec(['tar', 'xzf', $archivePath, '-C', $dir], 120);
         @unlink($archivePath);
@@ -100,13 +97,33 @@ final class Provisioner
         return 'https://github.com/' . $owner;
     }
 
-    /** @throws RuntimeException if this OS/arch has no matching official package */
-    private static function pickDownload(): array
+    public static function checksumMatches(string $path, ?string $expectedSha): bool
+    {
+        if ($expectedSha === null || $expectedSha === '') {
+            return true;
+        }
+        $actualSha = hash_file('sha256', $path);
+        return is_string($actualSha) && hash_equals(strtolower($expectedSha), strtolower($actualSha));
+    }
+
+    public static function isZipArchive(string $filename): bool
+    {
+        return str_ends_with($filename, '.zip');
+    }
+
+    /**
+     * Pick the official runner package for this OS/arch from GitHub's downloads list.
+     *
+     * @param array<int, array<string, mixed>> $downloads
+     * @return array<string, mixed>
+     * @throws RuntimeException if this OS/arch has no matching official package
+     */
+    public static function matchDownload(array $downloads, string $osFamily, string $machine): array
     {
         $osMap = ['Linux' => 'linux', 'Darwin' => 'osx', 'Windows' => 'win'];
-        $os = $osMap[PHP_OS_FAMILY] ?? null;
+        $os = $osMap[$osFamily] ?? null;
         if ($os === null) {
-            throw new RuntimeException('unsupported OS: ' . PHP_OS_FAMILY);
+            throw new RuntimeException('unsupported OS: ' . $osFamily);
         }
 
         $archMap = [
@@ -114,17 +131,22 @@ final class Provisioner
             'aarch64' => 'arm64', 'arm64' => 'arm64',
             'armv7l' => 'arm',
         ];
-        $machine = php_uname('m');
         $arch = $archMap[$machine] ?? null;
         if ($arch === null) {
             throw new RuntimeException("unsupported architecture: {$machine}");
         }
 
-        foreach (GithubClient::listRunnerDownloads() as $d) {
-            if ($d['os'] === $os && $d['architecture'] === $arch) {
+        foreach ($downloads as $d) {
+            if (($d['os'] ?? null) === $os && ($d['architecture'] ?? null) === $arch) {
                 return $d;
             }
         }
         throw new RuntimeException("no official runner package found for {$os}/{$arch}");
+    }
+
+    /** @throws RuntimeException if this OS/arch has no matching official package */
+    private static function pickDownload(): array
+    {
+        return self::matchDownload(GithubClient::listRunnerDownloads(), PHP_OS_FAMILY, php_uname('m'));
     }
 }

@@ -8,6 +8,10 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Unit tests for start/stop/provision: `ProcessDecision` covers pidfile vs
+  live-listener decisions, and `ProcessControl`/`Provisioner` run against
+  temp dirs with a fake `Shell` so checksum failure, config.sh, and
+  start/stop never spawn a real runner or call GitHub.
 - The log download can now be narrowed to a time range (`from`/`to`
   fields in the log viewer) instead of only the full file. Filters by
   whatever timestamps the runner's own console output includes;

@@ -4,8 +4,27 @@ declare(strict_types=1);
 
 final class Shell
 {
+    /** @var callable|null */
+    private static $fake = null;
+
+    /**
+     * Test seam: intercept exec() without spawning. Pass null to restore.
+     *
+     * @param callable|null $handler
+     *        (array<int, string> $cmd, int $timeoutSec, ?string $cwd):
+     *        array{code: int, stdout: string, stderr: string}
+     */
+    public static function fake(?callable $handler): void
+    {
+        self::$fake = $handler;
+    }
+
     public static function exec(array $cmd, int $timeoutSec = 20, ?string $cwd = null): array
     {
+        if (self::$fake !== null) {
+            return (self::$fake)($cmd, $timeoutSec, $cwd);
+        }
+
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
         $proc = proc_open($cmd, $descriptors, $pipes, $cwd);
         if (!is_resource($proc)) {
