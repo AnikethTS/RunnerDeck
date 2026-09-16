@@ -118,7 +118,10 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "cpu_percent": 1.2,
       "rss_kb": 204800,
       "uptime_seconds": 305,
-      "github": { "status": "online", "busy": false, "labels": ["self-hosted-runnerdeck"] }
+      "github": { "status": "online", "busy": false, "labels": ["self-hosted-runnerdeck"] },
+      "crash_flagged": false,
+      "just_flagged": false,
+      "should_auto_restart": false
     }
   ],
   "stats": { "total": 1, "running": 1, "avg_cpu_percent": 1.2, "total_rss_kb": 204800 },
@@ -128,6 +131,20 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
 
 `runners[].github` is `null` if GitHub has no record under that runner's
 registered name yet (still provisioning, or access issue — see `health`).
+
+`crash_flagged`/`just_flagged`/`should_auto_restart` are server-tracked
+bookkeeping (`src/CrashState.php`) — reading/updating a small state file on
+every poll, the same category of side effect as `History::record()` already
+writing a stats sample from within this same GET action, not a
+runner-mutating one. `just_flagged` is `true` for exactly one poll, the one
+where a crash-loop is first detected — use it to fire a one-shot
+notification, not `crash_flagged` (which stays `true` until the runner's
+been healthy again for a couple of minutes). `should_auto_restart: true` is
+an *instruction*, not an action already taken: it means "auto-restart is
+enabled and this runner just crashed with attempts remaining — you should
+`POST action=start` for it now." RunnerDeck's own UI does this
+automatically on every poll; a script driving this API directly needs to
+replicate that if it wants auto-restart behavior.
 
 ### `action=log`
 
@@ -189,7 +206,7 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](README.md#hosting-remotely) |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |

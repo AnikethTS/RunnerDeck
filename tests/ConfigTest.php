@@ -13,7 +13,7 @@ final class ConfigTest extends TestCase
     private const ENV_KEYS = [
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
-        'RUNNERDECK_AUTH_TOTP_SECRET',
+        'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART',
     ];
 
     protected function tearDown(): void
@@ -110,6 +110,19 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_CHECK_UPDATES=1');
         $this->assertTrue(\Config::checkUpdatesEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAutoRestartEnabledDefaultsToFalse(): void
+    {
+        $this->assertFalse(\Config::autoRestartEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAutoRestartEnabledTrueWhenSetTo1(): void
+    {
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+        $this->assertTrue(\Config::autoRestartEnabled());
     }
 
     #[RunInSeparateProcess]

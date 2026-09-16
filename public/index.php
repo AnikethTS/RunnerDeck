@@ -24,6 +24,7 @@ $currentSettings = [
     'repo' => (string) getenv('RUNNERDECK_REPO'),
     'label' => Config::label(),
     'checkUpdates' => Config::checkUpdatesEnabled(),
+    'autoRestart' => Config::autoRestartEnabled(),
 ];
 
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
@@ -42,6 +43,7 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
   <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
 </head>
 <body>
+  <div id="toast-container"></div>
   <header class="topbar">
     <?php if ($hasLogo) : ?>
       <img src="assets/logo.png" alt="Logo" class="logo" />
@@ -185,10 +187,6 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
         <button id="btn-export" type="button" class="btn" disabled>Export JSON</button>
         <span id="last-updated" class="muted"></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
-        <label class="checkbox-label">
-          <input type="checkbox" id="auto-restart-toggle" />
-          Auto-restart crashed runners
-        </label>
         <span class="spacer"></span>
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>
@@ -293,6 +291,11 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
           <label class="checkbox-label">
             <input type="checkbox" id="settings-check-updates" name="check_updates" value="1" />
             Check GitHub for new RunnerDeck releases
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="settings-auto-restart" name="auto_restart" value="1" />
+            Auto-restart crashed runners
           </label>
 
           <div class="settings-field">

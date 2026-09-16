@@ -35,6 +35,8 @@ final class Dashboard
             $runners[] = $row;
         }
 
+        $runners = CrashState::track($runners);
+
         $stats = self::computeStats($runners);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
 

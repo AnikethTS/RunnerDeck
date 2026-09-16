@@ -60,6 +60,18 @@ follows [SemVer](https://semver.org/).
   `docker/build-push-action` with GitHub Actions layer caching instead of
   a from-scratch `docker build` every run.
 
+- Crash-loop detection and auto-restart now live server-side
+  (`src/CrashState.php`), instead of independently in every open browser
+  tab. `action=status` returns `crash_flagged`/`just_flagged`/
+  `should_auto_restart` per runner (see `API.md`); the client reacts to
+  these instead of tracking its own state. A toast notification now fires
+  the moment a runner is flagged as crash-looping, in addition to the
+  existing row badge — previously the only signal was that inline badge,
+  easy to miss if you weren't looking at that row. The auto-restart toggle
+  moved from an unbound toolbar checkbox (persisted only via
+  `localStorage`, per-browser) to a real setting
+  (`RUNNERDECK_AUTO_RESTART`, Settings dialog), consistent everywhere.
+
 ### Fixed
 
 - The live log viewer now stops reconnecting and returns to the login page

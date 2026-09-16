@@ -1,6 +1,7 @@
 import { post, redirectIfUnauthenticated } from './js/api.js';
 import { setLoading, clearLoading } from './js/utils.js';
-import { updateMismatchStreaks, trackCrashesAndMaybeRestart, markExplicitlyStopped } from './js/reliability.js';
+import { updateMismatchStreaks } from './js/reliability.js';
+import { showToast } from './js/toast.js';
 import {
   sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, rowHtml, updateBulkActionsBar,
 } from './js/table.js';
@@ -106,7 +107,10 @@ function initDashboard() {
 
     renderStats(snapshot);
     updateMismatchStreaks(snapshot.runners);
-    trackCrashesAndMaybeRestart(snapshot.runners);
+    snapshot.runners.forEach((r) => {
+      if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
+      if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
+    });
 
     const liveIds = new Set(snapshot.runners.map((r) => r.id));
     [...selectedRunners].forEach((id) => {
@@ -136,22 +140,6 @@ function initDashboard() {
       document.getElementById('btn-refresh').click();
     }
   });
-
-  (() => {
-    const toggle = document.getElementById('auto-restart-toggle');
-    try {
-      toggle.checked = localStorage.getItem('runnerdeck-auto-restart') === '1';
-    } catch {
-      toggle.checked = false;
-    }
-    toggle.addEventListener('change', () => {
-      try {
-        localStorage.setItem('runnerdeck-auto-restart', toggle.checked ? '1' : '0');
-      } catch {
-        // storage unavailable; toggle still works for this session
-      }
-    });
-  })();
 
   document.querySelectorAll('.sortable[data-sort]').forEach((control) => {
     control.addEventListener('click', () => {
@@ -226,7 +214,6 @@ function initDashboard() {
       return;
     }
     if (action === 'stop' || action === 'restart') {
-      markExplicitlyStopped(runner);
       setLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…');
       try {
         await runWithBusyGuard(action, { runner });
@@ -242,7 +229,6 @@ function initDashboard() {
         + 'including logs. This cannot be undone.',
       );
       if (!sure) return;
-      markExplicitlyStopped(runner);
       setLoading(btn, 'Deleting…');
       try {
         await runWithBusyGuard('delete_runner', { runner });
@@ -290,7 +276,6 @@ function initDashboard() {
 
   document.getElementById('btn-stop-all').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    if (lastSnapshot) lastSnapshot.runners.forEach((r) => markExplicitlyStopped(r.id));
     setLoading(btn, 'Stopping All…');
     try {
       await runWithBusyGuard('stop_all', {});
@@ -342,7 +327,6 @@ function initDashboard() {
 
   document.getElementById('btn-bulk-stop').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    selectedRunners.forEach((id) => markExplicitlyStopped(id));
     setLoading(btn, 'Stopping…');
     try {
       await runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') });
@@ -359,7 +343,6 @@ function initDashboard() {
       + 'each from GitHub and deletes its local files, including logs. This cannot be undone.',
     );
     if (!sure) return;
-    selectedRunners.forEach((id) => markExplicitlyStopped(id));
     const runners = [...selectedRunners].join(',');
     setLoading(btn, 'Deleting…');
     try {

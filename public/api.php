@@ -174,6 +174,7 @@ if ($action === 'save_settings') {
         'RUNNERDECK_LABEL' => $label,
         'RUNNERDECK_CHECK_UPDATES' => ($_POST['check_updates'] ?? '') === '1' ? '1' : '',
         'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
+        'RUNNERDECK_AUTO_RESTART' => ($_POST['auto_restart'] ?? '') === '1' ? '1' : '',
     ]);
 
     respond(['ok' => true, 'message' => 'settings saved']);
@@ -211,6 +212,7 @@ if ($action === 'stop') {
     if ($blocked = checkNotBusy($r->agentName, $force)) {
         respond($blocked, 409);
     }
+    CrashState::markExplicitlyStopped($r->id);
     respond(ProcessControl::stopIndividual($r));
 }
 
@@ -219,6 +221,7 @@ if ($action === 'restart') {
     if ($blocked = checkNotBusy($r->agentName, $force)) {
         respond($blocked, 409);
     }
+    CrashState::markExplicitlyStopped($r->id);
     respond(ProcessControl::restartIndividual($r));
 }
 
@@ -244,6 +247,7 @@ if ($action === 'delete_runner') {
     if ($blocked = checkNotBusy($r->agentName, $force)) {
         respond($blocked, 409);
     }
+    CrashState::markExplicitlyStopped($r->id);
     respond(ProcessControl::deleteRunner($r));
 }
 
@@ -253,8 +257,12 @@ if ($action === 'start_all') {
 }
 
 if ($action === 'stop_all') {
-    if ($blocked = checkNoneBusy(RunnerPool::discover(0), $force)) {
+    $allRunners = RunnerPool::discover(0);
+    if ($blocked = checkNoneBusy($allRunners, $force)) {
         respond($blocked, 409);
+    }
+    foreach ($allRunners as $r) {
+        CrashState::markExplicitlyStopped($r->id);
     }
     respond(ProcessControl::stopAll());
 }
@@ -268,6 +276,9 @@ if ($action === 'bulk_stop') {
     if ($blocked = checkNoneBusy($runners, $force)) {
         respond($blocked, 409);
     }
+    foreach ($runners as $r) {
+        CrashState::markExplicitlyStopped($r->id);
+    }
     respond(ProcessControl::bulkStop($runners));
 }
 
@@ -275,6 +286,9 @@ if ($action === 'bulk_delete') {
     $runners = requireRunners();
     if ($blocked = checkNoneBusy($runners, $force)) {
         respond($blocked, 409);
+    }
+    foreach ($runners as $r) {
+        CrashState::markExplicitlyStopped($r->id);
     }
     respond(ProcessControl::bulkDelete($runners));
 }
