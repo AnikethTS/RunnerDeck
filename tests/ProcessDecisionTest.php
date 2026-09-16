@@ -10,7 +10,7 @@ final class ProcessDecisionTest extends TestCase
 {
     public function testStartUsesPidfileWhenAlive(): void
     {
-        $result = \ProcessDecision::resolveStart([true, 42], ['/runners/r1' => 99], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStart([true, 42], ['/runners/r1' => 99], '/runners/r1');
 
         $this->assertTrue($result['running']);
         $this->assertSame(42, $result['pid']);
@@ -19,7 +19,7 @@ final class ProcessDecisionTest extends TestCase
 
     public function testStartRewritesPidfileFromLiveListener(): void
     {
-        $result = \ProcessDecision::resolveStart([false, 7], ['/runners/r1' => 99], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStart([false, 7], ['/runners/r1' => 99], '/runners/r1');
 
         $this->assertTrue($result['running']);
         $this->assertSame(99, $result['pid']);
@@ -28,7 +28,7 @@ final class ProcessDecisionTest extends TestCase
 
     public function testStartSpawnsWhenNothingIsLive(): void
     {
-        $result = \ProcessDecision::resolveStart([false, null], [], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStart([false, null], [], '/runners/r1');
 
         $this->assertFalse($result['running']);
         $this->assertNull($result['pid']);
@@ -37,7 +37,7 @@ final class ProcessDecisionTest extends TestCase
 
     public function testStopUsesPidfileWhenAlive(): void
     {
-        $result = \ProcessDecision::resolveStop([true, 42], ['/runners/r1' => 99], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStop([true, 42], ['/runners/r1' => 99], '/runners/r1');
 
         $this->assertTrue($result['running']);
         $this->assertSame(42, $result['pid']);
@@ -45,7 +45,7 @@ final class ProcessDecisionTest extends TestCase
 
     public function testStopFallsBackToLiveListener(): void
     {
-        $result = \ProcessDecision::resolveStop([false, 7], ['/runners/r1' => 99], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStop([false, 7], ['/runners/r1' => 99], '/runners/r1');
 
         $this->assertTrue($result['running']);
         $this->assertSame(99, $result['pid']);
@@ -53,7 +53,7 @@ final class ProcessDecisionTest extends TestCase
 
     public function testStopNotRunningKeepsStalePidfilePid(): void
     {
-        $result = \ProcessDecision::resolveStop([false, 7], [], '/runners/r1');
+        $result = \RunnerDeck\ProcessDecision::resolveStop([false, 7], [], '/runners/r1');
 
         $this->assertFalse($result['running']);
         $this->assertSame(7, $result['pid']);
@@ -61,8 +61,8 @@ final class ProcessDecisionTest extends TestCase
 
     public function testParseSpawnedPidTrimsStdout(): void
     {
-        $this->assertSame(1234, \ProcessDecision::parseSpawnedPid("1234\n"));
-        $this->assertSame(0, \ProcessDecision::parseSpawnedPid(""));
-        $this->assertSame(0, \ProcessDecision::parseSpawnedPid("not-a-pid"));
+        $this->assertSame(1234, \RunnerDeck\ProcessDecision::parseSpawnedPid("1234\n"));
+        $this->assertSame(0, \RunnerDeck\ProcessDecision::parseSpawnedPid(""));
+        $this->assertSame(0, \RunnerDeck\ProcessDecision::parseSpawnedPid("not-a-pid"));
     }
 }

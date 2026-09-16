@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use RunnerDeck\Auth;
+use RunnerDeck\RunnerPool;
+
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
     http_response_code(401);
     header('Content-Type: text/plain');

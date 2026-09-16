@@ -12,8 +12,8 @@ final class CsrfTest extends TestCase
     #[RunInSeparateProcess]
     public function testTokenIsStableWithinASession(): void
     {
-        $first = \Csrf::token();
-        $second = \Csrf::token();
+        $first = \RunnerDeck\Csrf::token();
+        $second = \RunnerDeck\Csrf::token();
 
         $this->assertSame($first, $second);
         $this->assertSame(64, strlen($first));
@@ -22,37 +22,37 @@ final class CsrfTest extends TestCase
     #[RunInSeparateProcess]
     public function testVerifyRequestRejectsMissingToken(): void
     {
-        \Csrf::token();
+        \RunnerDeck\Csrf::token();
         $_POST = [];
         $_SERVER['HTTP_X_CSRF_TOKEN'] = '';
 
-        $this->assertFalse(\Csrf::verifyRequest());
+        $this->assertFalse(\RunnerDeck\Csrf::verifyRequest());
     }
 
     #[RunInSeparateProcess]
     public function testVerifyRequestRejectsWrongToken(): void
     {
-        \Csrf::token();
+        \RunnerDeck\Csrf::token();
         $_POST['csrf_token'] = 'not-the-right-token';
 
-        $this->assertFalse(\Csrf::verifyRequest());
+        $this->assertFalse(\RunnerDeck\Csrf::verifyRequest());
     }
 
     #[RunInSeparateProcess]
     public function testVerifyRequestAcceptsMatchingPostField(): void
     {
-        $token = \Csrf::token();
+        $token = \RunnerDeck\Csrf::token();
         $_POST['csrf_token'] = $token;
 
-        $this->assertTrue(\Csrf::verifyRequest());
+        $this->assertTrue(\RunnerDeck\Csrf::verifyRequest());
     }
 
     #[RunInSeparateProcess]
     public function testVerifyRequestAcceptsMatchingHeader(): void
     {
-        $token = \Csrf::token();
+        $token = \RunnerDeck\Csrf::token();
         $_SERVER['HTTP_X_CSRF_TOKEN'] = $token;
 
-        $this->assertTrue(\Csrf::verifyRequest());
+        $this->assertTrue(\RunnerDeck\Csrf::verifyRequest());
     }
 }

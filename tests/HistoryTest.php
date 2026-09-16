@@ -28,15 +28,15 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentReturnsEmptyArrayWhenNothingRecorded(): void
     {
-        $this->assertSame([], \History::recent());
+        $this->assertSame([], \RunnerDeck\History::recent());
     }
 
     #[RunInSeparateProcess]
     public function testRecordThenRecentRoundTrips(): void
     {
-        \History::record(42.5, 102400);
+        \RunnerDeck\History::record(42.5, 102400);
 
-        $samples = \History::recent();
+        $samples = \RunnerDeck\History::recent();
 
         $this->assertCount(1, $samples);
         $this->assertSame(42.5, $samples[0]['avg_cpu']);
@@ -47,12 +47,12 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentExcludesSamplesOlderThanRetentionWindow(): void
     {
-        \History::record(10.0, 1000);
+        \RunnerDeck\History::record(10.0, 1000);
 
         $db = new PDO('sqlite:' . $this->dbFile);
         $db->prepare('UPDATE samples SET ts = ?')->execute([time() - 7200]);
 
-        $this->assertSame([], \History::recent());
+        $this->assertSame([], \RunnerDeck\History::recent());
     }
 
     #[RunInSeparateProcess]
@@ -60,8 +60,8 @@ final class HistoryTest extends TestCase
     {
         putenv('RUNNERDECK_HISTORY_FILE=/nonexistent-root-only-path/history.sqlite');
 
-        \History::record(1.0, 1);
+        \RunnerDeck\History::record(1.0, 1);
 
-        $this->assertSame([], \History::recent());
+        $this->assertSame([], \RunnerDeck\History::recent());
     }
 }

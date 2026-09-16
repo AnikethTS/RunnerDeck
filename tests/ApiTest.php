@@ -13,37 +13,37 @@ final class ApiTest extends TestCase
     {
         $_POST = [];
         $_GET = [];
-        \Shell::fake(null);
+        \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
     }
     public function testParseRunnerIdsSplitsAndDropsBlanks(): void
     {
-        $this->assertSame(['runner-1', 'runner-2'], \Api::parseRunnerIds(' runner-1, runner-2 ,'));
-        $this->assertSame([], \Api::parseRunnerIds(''));
-        $this->assertSame([], \Api::parseRunnerIds(' , , '));
+        $this->assertSame(['runner-1', 'runner-2'], \RunnerDeck\Api::parseRunnerIds(' runner-1, runner-2 ,'));
+        $this->assertSame([], \RunnerDeck\Api::parseRunnerIds(''));
+        $this->assertSame([], \RunnerDeck\Api::parseRunnerIds(' , , '));
     }
 
     public function testForceReadsPostThenGet(): void
     {
         $_POST = [];
         $_GET = [];
-        $this->assertFalse(\Api::force());
+        $this->assertFalse(\RunnerDeck\Api::force());
 
         $_GET['force'] = '1';
-        $this->assertTrue(\Api::force());
+        $this->assertTrue(\RunnerDeck\Api::force());
 
         $_POST['force'] = '0';
-        $this->assertFalse(\Api::force());
+        $this->assertFalse(\RunnerDeck\Api::force());
 
         $_POST['force'] = '1';
-        $this->assertTrue(\Api::force());
+        $this->assertTrue(\RunnerDeck\Api::force());
     }
 
     public function testBusyChecksAreSkippedWhenForced(): void
     {
-        $this->assertNull(\Api::checkNotBusy('any', true));
-        $this->assertNull(\Api::checkNoneBusy([], true));
+        $this->assertNull(\RunnerDeck\Api::checkNotBusy('any', true));
+        $this->assertNull(\RunnerDeck\Api::checkNoneBusy([], true));
     }
 
     #[RunInSeparateProcess]
@@ -51,9 +51,9 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'gh down']);
+        \RunnerDeck\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'gh down']);
 
-        $blocked = \Api::checkNotBusy('acme-1', false);
+        $blocked = \RunnerDeck\Api::checkNotBusy('acme-1', false);
 
         $this->assertNotNull($blocked);
         $this->assertTrue($blocked['busy_unknown']);
@@ -65,7 +65,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \Shell::fake(fn () => [
+        \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
@@ -76,7 +76,7 @@ final class ApiTest extends TestCase
             'stderr' => '',
         ]);
 
-        $blocked = \Api::checkNoneBusy([
+        $blocked = \RunnerDeck\Api::checkNoneBusy([
             $this->runner('runner-1', 'busy-one'),
             $this->runner('runner-2', 'idle-one'),
         ], false);
@@ -91,7 +91,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \Shell::fake(fn () => [
+        \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
@@ -101,7 +101,7 @@ final class ApiTest extends TestCase
             'stderr' => '',
         ]);
 
-        $this->assertNull(\Api::checkNoneBusy([$this->runner('runner-2', 'idle-one')], false));
+        $this->assertNull(\RunnerDeck\Api::checkNoneBusy([$this->runner('runner-2', 'idle-one')], false));
     }
 
     #[RunInSeparateProcess]
@@ -109,7 +109,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \Shell::fake(fn () => [
+        \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
@@ -119,16 +119,16 @@ final class ApiTest extends TestCase
             'stderr' => '',
         ]);
 
-        $blocked = \Api::checkNotBusy('busy-one', false);
+        $blocked = \RunnerDeck\Api::checkNotBusy('busy-one', false);
 
         $this->assertNotNull($blocked);
         $this->assertTrue($blocked['busy']);
         $this->assertStringContainsString('stop anyway', $blocked['message']);
     }
 
-    private function runner(string $id, string $agentName): \RunnerInfo
+    private function runner(string $id, string $agentName): \RunnerDeck\RunnerInfo
     {
-        return new \RunnerInfo(
+        return new \RunnerDeck\RunnerInfo(
             id: $id,
             dir: '/tmp/' . $id,
             configured: true,

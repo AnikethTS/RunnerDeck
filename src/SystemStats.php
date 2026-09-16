@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 // Whole-machine CPU/RAM usage, distinct from Dashboard's per-runner stats.
 // Reuses RunnerPool::allProcessStats() (already a system-wide `ps` scan,
 // just filtered to runner pids elsewhere) rather than a second shell call.

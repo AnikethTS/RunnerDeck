@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class Provisioner
 {
     public static function ensureInstalled(string $dir): array
@@ -12,7 +14,7 @@ final class Provisioner
 
         try {
             $download = self::pickDownload();
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) {
             return self::fail('provision.pick_download', $e->getMessage());
         }
 
@@ -62,7 +64,7 @@ final class Provisioner
         try {
             $registrationUrl = self::registrationUrl();
             $token = GithubClient::registrationToken();
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) {
             return self::fail('provision.registration_token', $e->getMessage(), $name);
         }
 
@@ -128,14 +130,14 @@ final class Provisioner
      *
      * @param array<int, array<string, mixed>> $downloads
      * @return array<string, mixed>
-     * @throws RuntimeException if this OS/arch has no matching official package
+     * @throws \RuntimeException if this OS/arch has no matching official package
      */
     public static function matchDownload(array $downloads, string $osFamily, string $machine): array
     {
         $osMap = ['Linux' => 'linux', 'Darwin' => 'osx', 'Windows' => 'win'];
         $os = $osMap[$osFamily] ?? null;
         if ($os === null) {
-            throw new RuntimeException('unsupported OS: ' . $osFamily);
+            throw new \RuntimeException('unsupported OS: ' . $osFamily);
         }
 
         $archMap = [
@@ -145,7 +147,7 @@ final class Provisioner
         ];
         $arch = $archMap[$machine] ?? null;
         if ($arch === null) {
-            throw new RuntimeException("unsupported architecture: {$machine}");
+            throw new \RuntimeException("unsupported architecture: {$machine}");
         }
 
         foreach ($downloads as $d) {
@@ -153,10 +155,10 @@ final class Provisioner
                 return $d;
             }
         }
-        throw new RuntimeException("no official runner package found for {$os}/{$arch}");
+        throw new \RuntimeException("no official runner package found for {$os}/{$arch}");
     }
 
-    /** @throws RuntimeException if this OS/arch has no matching official package */
+    /** @throws \RuntimeException if this OS/arch has no matching official package */
     private static function pickDownload(): array
     {
         return self::matchDownload(GithubClient::listRunnerDownloads(), PHP_OS_FAMILY, php_uname('m'));

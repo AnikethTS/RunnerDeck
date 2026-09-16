@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 // Rolling pool-wide CPU/RAM history, sampled once per Dashboard::snapshot()
 // call (the existing poll cycle is the sampler — no separate daemon/cron).
 // Best-effort throughout: a missing pdo_sqlite extension or a write failure
@@ -20,7 +22,7 @@ final class History
         return getenv('RUNNERDECK_HISTORY_FILE') ?: dirname(__DIR__) . '/storage/db/history.sqlite';
     }
 
-    private static function db(): PDO
+    private static function db(): \PDO
     {
         static $pdo = null;
         if ($pdo !== null) {
@@ -30,11 +32,11 @@ final class History
         $path = self::path();
         $dir = dirname($path);
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
-            throw new RuntimeException("failed to create {$dir}");
+            throw new \RuntimeException("failed to create {$dir}");
         }
 
-        $pdo = new PDO('sqlite:' . $path);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo = new \PDO('sqlite:' . $path);
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE IF NOT EXISTS samples (
             ts INTEGER NOT NULL,
             avg_cpu REAL NOT NULL,
@@ -51,7 +53,7 @@ final class History
                 ->execute([time(), $avgCpu, $totalRssKb]);
             $db->prepare('DELETE FROM samples WHERE ts < ?')
                 ->execute([time() - self::RETENTION_SECONDS]);
-        } catch (Throwable) {
+        } catch (\Throwable) {
             // History is a nice-to-have; never let it take the dashboard down.
         }
     }
@@ -67,8 +69,8 @@ final class History
                 'ts' => (int) $row['ts'],
                 'avg_cpu' => (float) $row['avg_cpu'],
                 'total_rss_kb' => (int) $row['total_rss_kb'],
-            ], $stmt->fetchAll(PDO::FETCH_ASSOC));
-        } catch (Throwable) {
+            ], $stmt->fetchAll(\PDO::FETCH_ASSOC));
+        } catch (\Throwable) {
             return [];
         }
     }

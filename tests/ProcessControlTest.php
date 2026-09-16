@@ -22,9 +22,9 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
 
-        \RunnerPool::fakeLiveListeners([]);
-        \RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \ProcessControl::fakeKill(function (int $pid): bool {
+        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\ProcessControl::fakeKill(function (int $pid): bool {
             $this->killed[] = $pid;
             return true;
         });
@@ -32,19 +32,19 @@ final class ProcessControlTest extends TestCase
 
     protected function tearDown(): void
     {
-        \Shell::fake(null);
-        \RunnerPool::fakeLiveListeners(null);
-        \RunnerPool::fakeCheckProcess(null);
-        \ProcessControl::fakeKill(null);
+        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(null);
+        \RunnerDeck\ProcessControl::fakeKill(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
-    private function runner(bool $configured = true): \RunnerInfo
+    private function runner(bool $configured = true): \RunnerDeck\RunnerInfo
     {
-        return new \RunnerInfo(
+        return new \RunnerDeck\RunnerInfo(
             id: 'runner-1',
             dir: $this->dir,
             configured: $configured,
@@ -58,14 +58,14 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartSkipsSpawnWhenPidfileIsLive(): void
     {
-        \RunnerPool::fakeCheckProcess(fn () => [true, 4242]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 4242]);
         $spawned = false;
-        \Shell::fake(function () use (&$spawned): array {
+        \RunnerDeck\Shell::fake(function () use (&$spawned): array {
             $spawned = true;
             return ['code' => 0, 'stdout' => '1', 'stderr' => ''];
         });
 
-        $result = \ProcessControl::startIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 already running (pid 4242)', $result['message']);
@@ -76,9 +76,9 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartRewritesPidfileFromLiveListener(): void
     {
-        \RunnerPool::fakeLiveListeners([$this->dir => 99]);
+        \RunnerDeck\RunnerPool::fakeLiveListeners([$this->dir => 99]);
 
-        $result = \ProcessControl::startIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 already running (pid 99)', $result['message']);
@@ -88,13 +88,13 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartWritesPidfileFromSpawnStdout(): void
     {
-        \Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
             $this->assertSame('bash', $cmd[0]);
             $this->assertStringContainsString('nohup ./run.sh', $cmd[2]);
             return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
         });
 
-        $result = \ProcessControl::startIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 started (pid 5555)', $result['message']);
@@ -104,9 +104,9 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartFailsWhenSpawnReturnsNoPid(): void
     {
-        \Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'nohup: failed']);
+        \RunnerDeck\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'nohup: failed']);
 
-        $result = \ProcessControl::startIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('failed to start runner-1', $result['message']);
@@ -117,9 +117,9 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartUnconfiguredFailsClosedWhenProvisionFails(): void
     {
-        \Shell::fake(fn () => ['code' => 22, 'stdout' => '', 'stderr' => '404']);
+        \RunnerDeck\Shell::fake(fn () => ['code' => 22, 'stdout' => '', 'stderr' => '404']);
 
-        $result = \ProcessControl::startIndividual($this->runner(configured: false));
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner(configured: false));
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('failed to list runner downloads', $result['message']);
@@ -130,7 +130,7 @@ final class ProcessControlTest extends TestCase
     {
         file_put_contents($this->dir . '/runner.pid', '123');
 
-        $result = \ProcessControl::stopIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::stopIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 not running', $result['message']);
@@ -142,9 +142,9 @@ final class ProcessControlTest extends TestCase
     public function testStopSignalsPidAndRemovesPidfile(): void
     {
         file_put_contents($this->dir . '/runner.pid', '777');
-        \RunnerPool::fakeCheckProcess(fn () => [true, 777]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 777]);
 
-        $result = \ProcessControl::stopIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::stopIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 stopped (pid 777)', $result['message']);
@@ -155,9 +155,9 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStopUsesLiveListenerWhenPidfileIsStale(): void
     {
-        \RunnerPool::fakeLiveListeners([$this->dir => 888]);
+        \RunnerDeck\RunnerPool::fakeLiveListeners([$this->dir => 888]);
 
-        $result = \ProcessControl::stopIndividual($this->runner());
+        $result = \RunnerDeck\ProcessControl::stopIndividual($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 stopped (pid 888)', $result['message']);
@@ -168,7 +168,7 @@ final class ProcessControlTest extends TestCase
     public function testDeleteUnconfiguredRemovesDirectory(): void
     {
         file_put_contents($this->dir . '/runner.log', 'log');
-        \Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'rm') {
                 exec('rm -rf ' . escapeshellarg($cmd[2]));
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -176,7 +176,7 @@ final class ProcessControlTest extends TestCase
             self::fail('unexpected command: ' . implode(' ', $cmd));
         });
 
-        $result = \ProcessControl::deleteRunner($this->runner(configured: false));
+        $result = \RunnerDeck\ProcessControl::deleteRunner($this->runner(configured: false));
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 deleted', $result['message']);
@@ -189,7 +189,7 @@ final class ProcessControlTest extends TestCase
         file_put_contents($this->dir . '/.runner', '{"agentName":"acme-1"}');
         file_put_contents($this->dir . '/.credentials', 'secret');
         $deletedGhId = null;
-        \Shell::fake(function (array $cmd) use (&$deletedGhId): array {
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners') && !str_contains($joined, 'DELETE')) {
                 return [
@@ -213,7 +213,7 @@ final class ProcessControlTest extends TestCase
             self::fail('unexpected command: ' . implode(' ', $cmd));
         });
 
-        $result = \ProcessControl::deleteRunner($this->runner());
+        $result = \RunnerDeck\ProcessControl::deleteRunner($this->runner());
 
         $this->assertTrue($result['ok']);
         $this->assertSame(17, $deletedGhId);
@@ -223,7 +223,7 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testBulkStopJoinsMessages(): void
     {
-        $result = \ProcessControl::bulkStop([$this->runner()]);
+        $result = \RunnerDeck\ProcessControl::bulkStop([$this->runner()]);
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 not running', $result['message']);

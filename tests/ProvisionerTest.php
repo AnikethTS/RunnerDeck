@@ -23,7 +23,7 @@ final class ProvisionerTest extends TestCase
 
     protected function tearDown(): void
     {
-        \Shell::fake(null);
+        \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_LABEL');
@@ -57,8 +57,8 @@ final class ProvisionerTest extends TestCase
     {
         $path = $this->dir . '/pkg.bin';
         file_put_contents($path, 'payload');
-        $this->assertTrue(\Provisioner::checksumMatches($path, null));
-        $this->assertTrue(\Provisioner::checksumMatches($path, ''));
+        $this->assertTrue(\RunnerDeck\Provisioner::checksumMatches($path, null));
+        $this->assertTrue(\RunnerDeck\Provisioner::checksumMatches($path, ''));
     }
 
     public function testChecksumMatchesComparesSha256(): void
@@ -67,15 +67,15 @@ final class ProvisionerTest extends TestCase
         file_put_contents($path, 'payload');
         $sha = hash('sha256', 'payload');
 
-        $this->assertTrue(\Provisioner::checksumMatches($path, $sha));
-        $this->assertTrue(\Provisioner::checksumMatches($path, strtoupper($sha)));
-        $this->assertFalse(\Provisioner::checksumMatches($path, str_repeat('0', 64)));
+        $this->assertTrue(\RunnerDeck\Provisioner::checksumMatches($path, $sha));
+        $this->assertTrue(\RunnerDeck\Provisioner::checksumMatches($path, strtoupper($sha)));
+        $this->assertFalse(\RunnerDeck\Provisioner::checksumMatches($path, str_repeat('0', 64)));
     }
 
     public function testIsZipArchive(): void
     {
-        $this->assertTrue(\Provisioner::isZipArchive('actions-runner-win-x64.zip'));
-        $this->assertFalse(\Provisioner::isZipArchive('actions-runner-linux-x64.tar.gz'));
+        $this->assertTrue(\RunnerDeck\Provisioner::isZipArchive('actions-runner-win-x64.zip'));
+        $this->assertFalse(\RunnerDeck\Provisioner::isZipArchive('actions-runner-linux-x64.tar.gz'));
     }
 
     public function testMatchDownloadPicksOsAndArch(): void
@@ -85,7 +85,7 @@ final class ProvisionerTest extends TestCase
             $this->packageMeta() + ['os' => 'linux', 'architecture' => 'x64'],
         ];
 
-        $picked = \Provisioner::matchDownload($downloads, 'Linux', 'x86_64');
+        $picked = \RunnerDeck\Provisioner::matchDownload($downloads, 'Linux', 'x86_64');
 
         $this->assertSame('actions-runner-linux-x64.tar.gz', $picked['filename']);
     }
@@ -94,21 +94,21 @@ final class ProvisionerTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('unsupported OS');
-        \Provisioner::matchDownload([], 'Solaris', 'x86_64');
+        \RunnerDeck\Provisioner::matchDownload([], 'Solaris', 'x86_64');
     }
 
     public function testMatchDownloadRejectsUnknownArch(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('unsupported architecture');
-        \Provisioner::matchDownload([], 'Linux', 'riscv64');
+        \RunnerDeck\Provisioner::matchDownload([], 'Linux', 'riscv64');
     }
 
     public function testMatchDownloadRejectsMissingPackage(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('no official runner package found for linux/x64');
-        \Provisioner::matchDownload(
+        \RunnerDeck\Provisioner::matchDownload(
             [['os' => 'osx', 'architecture' => 'x64', 'filename' => 'osx.tar.gz']],
             'Linux',
             'x86_64'
@@ -121,7 +121,7 @@ final class ProvisionerTest extends TestCase
             file_put_contents($this->dir . '/' . $file, 'x');
         }
 
-        \Provisioner::deregister($this->dir);
+        \RunnerDeck\Provisioner::deregister($this->dir);
 
         $this->assertFileDoesNotExist($this->dir . '/.runner');
         $this->assertFileDoesNotExist($this->dir . '/.credentials');
@@ -134,12 +134,12 @@ final class ProvisionerTest extends TestCase
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
         $called = false;
-        \Shell::fake(function () use (&$called): array {
+        \RunnerDeck\Shell::fake(function () use (&$called): array {
             $called = true;
             return ['code' => 1, 'stdout' => '', 'stderr' => 'should not run'];
         });
 
-        $result = \Provisioner::ensureInstalled($this->dir);
+        $result = \RunnerDeck\Provisioner::ensureInstalled($this->dir);
 
         $this->assertTrue($result['ok']);
         $this->assertSame('runner binaries already present', $result['message']);
@@ -150,7 +150,7 @@ final class ProvisionerTest extends TestCase
     public function testEnsureInstalledAbortsOnChecksumMismatch(): void
     {
         $payload = 'corrupt-archive';
-        \Shell::fake(function (array $cmd) use ($payload): array {
+        \RunnerDeck\Shell::fake(function (array $cmd) use ($payload): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -167,7 +167,7 @@ final class ProvisionerTest extends TestCase
             self::fail('unexpected command: ' . $joined);
         });
 
-        $result = \Provisioner::ensureInstalled($this->dir);
+        $result = \RunnerDeck\Provisioner::ensureInstalled($this->dir);
 
         $this->assertFalse($result['ok']);
         $this->assertSame(
@@ -182,7 +182,7 @@ final class ProvisionerTest extends TestCase
     {
         $payload = 'good-archive';
         $sha = hash('sha256', $payload);
-        \Shell::fake(function (array $cmd) use ($payload, $sha): array {
+        \RunnerDeck\Shell::fake(function (array $cmd) use ($payload, $sha): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -207,7 +207,7 @@ final class ProvisionerTest extends TestCase
             self::fail('unexpected command: ' . $joined);
         });
 
-        $result = \Provisioner::ensureInstalled($this->dir);
+        $result = \RunnerDeck\Provisioner::ensureInstalled($this->dir);
 
         $this->assertTrue($result['ok']);
         $this->assertStringContainsString('runner binaries installed', $result['message']);
@@ -221,7 +221,7 @@ final class ProvisionerTest extends TestCase
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
         file_put_contents($this->dir . '/.runner', '{}');
 
-        $result = \Provisioner::ensureConfigured($this->dir, 'acme-1');
+        $result = \RunnerDeck\Provisioner::ensureConfigured($this->dir, 'acme-1');
 
         $this->assertTrue($result['ok']);
         $this->assertSame('acme-1 already configured', $result['message']);
@@ -231,7 +231,7 @@ final class ProvisionerTest extends TestCase
     public function testEnsureConfiguredFailsWhenConfigShFails(): void
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
-        \Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
@@ -242,7 +242,7 @@ final class ProvisionerTest extends TestCase
             self::fail('unexpected command: ' . $joined);
         });
 
-        $result = \Provisioner::ensureConfigured($this->dir, 'acme-1');
+        $result = \RunnerDeck\Provisioner::ensureConfigured($this->dir, 'acme-1');
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('config.sh failed for acme-1', $result['message']);
@@ -254,7 +254,7 @@ final class ProvisionerTest extends TestCase
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
         $configCmd = [];
-        \Shell::fake(function (array $cmd) use (&$configCmd): array {
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$configCmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
@@ -267,7 +267,7 @@ final class ProvisionerTest extends TestCase
             self::fail('unexpected command: ' . $joined);
         });
 
-        $result = \Provisioner::ensureConfigured($this->dir, 'acme-1');
+        $result = \RunnerDeck\Provisioner::ensureConfigured($this->dir, 'acme-1');
 
         $this->assertTrue($result['ok']);
         $this->assertSame('acme-1 configured', $result['message']);
@@ -281,7 +281,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureInstalledReportsDownloadFailure(): void
     {
-        \Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return ['code' => 0, 'stdout' => json_encode($this->downloadsForAnyHost()), 'stderr' => ''];
@@ -292,7 +292,7 @@ final class ProvisionerTest extends TestCase
             self::fail('unexpected command: ' . $joined);
         });
 
-        $result = \Provisioner::ensureInstalled($this->dir);
+        $result = \RunnerDeck\Provisioner::ensureInstalled($this->dir);
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('failed to download runner package', $result['message']);

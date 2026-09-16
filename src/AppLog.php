@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class AppLog
 {
     private const FILE = 'runnerdeck.log';

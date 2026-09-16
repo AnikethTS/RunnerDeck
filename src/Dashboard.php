@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class Dashboard
 {
     public static function snapshot(int $logLines = 15): array
@@ -17,7 +19,7 @@ final class Dashboard
                 $ghRunners = GithubClient::listRunners();
                 $orgAccessOk = true;
                 $message = 'OK';
-            } catch (RuntimeException $e) {
+            } catch (\RuntimeException $e) {
                 $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
                 $message = "Logged in, but cannot read {$scopeLabel} runners: " . $e->getMessage();
             }
@@ -74,7 +76,7 @@ final class Dashboard
     {
         try {
             $runners = GithubClient::listRunners();
-        } catch (RuntimeException $e) {
+        } catch (\RuntimeException $e) {
             return [false, false, $e->getMessage()];
         }
         $gh = $runners[$agentName] ?? null;

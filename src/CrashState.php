@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace RunnerDeck;
+
 final class CrashState
 {
     private const STATE_FILE = 'crash_state.json';

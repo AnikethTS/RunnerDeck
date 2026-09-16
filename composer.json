@@ -15,9 +15,10 @@
         "squizlabs/php_codesniffer": "^4.0"
     },
     "autoload-dev": {
-        "classmap": [
-            "src/"
-        ]
+        "psr-4": {
+            "RunnerDeck\\": "src/",
+            "Tests\\": "tests/"
+        }
     },
     "scripts": {
         "test": "phpunit",

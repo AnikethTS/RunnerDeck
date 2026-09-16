@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use RunnerDeck\Auth;
+use RunnerDeck\Csrf;
+
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
     header('Location: login.php');
     exit;

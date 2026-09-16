@@ -13,11 +13,8 @@
 
     <rule ref="PSR12"/>
 
-    <!-- This project deliberately uses the global namespace (no framework,
-         no autoloader dependency) and front-controller scripts that mix
-         declarations with side effects by design; small companion classes
-         (e.g. GithubAuthStatus alongside GithubClient) are kept in one file
-         on purpose. Formatting rules still apply everywhere else. -->
+    <!-- Front-controller scripts mix declarations with side effects by design.
+         App classes live in the RunnerDeck namespace (PSR-4 via bootstrap.php). -->
     <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
         <severity>0</severity>
     </rule>
