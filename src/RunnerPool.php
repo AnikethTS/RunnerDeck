@@ -38,6 +38,35 @@ final class RunnerPool
 {
     private const ID_PATTERN = '/^runner-(base|[0-9]+)$/';
 
+    /** @var array<string, int>|null */
+    private static ?array $liveListenersFake = null;
+
+    /** @var (callable(string): array{0: bool, 1: ?int})|null */
+    private static $checkProcessFake = null;
+
+    /** @var array<string, int>|null */
+    private static $listenersCache = null;
+
+    private static float $listenersCachedAt = 0;
+
+    /** @param array<string, int>|null $map */
+    public static function fakeLiveListeners(?array $map): void
+    {
+        self::$liveListenersFake = $map;
+        self::$listenersCache = null;
+        self::$listenersCachedAt = 0;
+    }
+
+    /**
+     * Test seam: override pidfile liveness. Pass null to restore.
+     *
+     * @param (callable(string): array{0: bool, 1: ?int})|null $handler
+     */
+    public static function fakeCheckProcess(?callable $handler): void
+    {
+        self::$checkProcessFake = $handler;
+    }
+
     /** @return array<string, RunnerInfo> keyed by id, base first then numeric order */
     public static function discover(int $logLines = 15): array
     {
@@ -178,16 +207,18 @@ final class RunnerPool
     /** @return array<string, int> runner dir => pid, independent of any pidfile */
     public static function liveListenersByDir(): array
     {
-        static $cache = null;
-        static $cachedAt = 0;
-        if ($cache !== null && (microtime(true) - $cachedAt) < 2.0) {
-            return $cache;
+        if (self::$liveListenersFake !== null) {
+            return self::$liveListenersFake;
+        }
+
+        if (self::$listenersCache !== null && (microtime(true) - self::$listenersCachedAt) < 2.0) {
+            return self::$listenersCache;
         }
 
         $map = PHP_OS_FAMILY === 'Darwin' ? self::liveListenersByDirDarwin() : self::liveListenersByDirLinux();
 
-        $cache = $map;
-        $cachedAt = microtime(true);
+        self::$listenersCache = $map;
+        self::$listenersCachedAt = microtime(true);
         return $map;
     }
 
@@ -241,6 +272,10 @@ final class RunnerPool
     /** @return array{0: bool, 1: ?int} [running, pid] */
     public static function checkProcess(string $pidFile): array
     {
+        if (self::$checkProcessFake !== null) {
+            return (self::$checkProcessFake)($pidFile);
+        }
+
         if (!is_file($pidFile)) {
             return [false, null];
         }

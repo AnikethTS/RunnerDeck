@@ -9,6 +9,19 @@ final class ProcessControl
     private const CLOSE_FDS_PREFIX =
         'for fd in /dev/fd/*; do n=${fd##*/}; [ "$n" -gt 2 ] 2>/dev/null && eval "exec $n<&-" 2>/dev/null; done; ';
 
+    /** @var (callable(int): bool)|null */
+    private static $killFake = null;
+
+    /**
+     * Test seam: intercept SIGTERM. Pass null to restore posix_kill.
+     *
+     * @param (callable(int): bool)|null $handler
+     */
+    public static function fakeKill(?callable $handler): void
+    {
+        self::$killFake = $handler;
+    }
+
     public static function startIndividual(RunnerInfo $r, ?string $desiredName = null): array
     {
         if (!$r->configured) {
@@ -18,15 +31,16 @@ final class ProcessControl
             }
         }
 
-        [$running, $pid] = RunnerPool::checkProcess("{$r->dir}/runner.pid");
-        if ($running) {
-            return ['ok' => true, 'message' => "{$r->id} already running (pid {$pid})"];
-        }
-
-        $existingPid = RunnerPool::liveListenersByDir()[$r->dir] ?? null;
-        if ($existingPid !== null) {
-            file_put_contents("{$r->dir}/runner.pid", (string) $existingPid);
-            return ['ok' => true, 'message' => "{$r->id} already running (pid {$existingPid})"];
+        $resolved = ProcessDecision::resolveStart(
+            RunnerPool::checkProcess("{$r->dir}/runner.pid"),
+            RunnerPool::liveListenersByDir(),
+            $r->dir
+        );
+        if ($resolved['running']) {
+            if ($resolved['rewrite_pidfile']) {
+                file_put_contents("{$r->dir}/runner.pid", (string) $resolved['pid']);
+            }
+            return ['ok' => true, 'message' => "{$r->id} already running (pid {$resolved['pid']})"];
         }
 
         $result = Shell::exec(
@@ -34,7 +48,7 @@ final class ProcessControl
             10,
             $r->dir
         );
-        $newPid = (int) trim($result['stdout']);
+        $newPid = ProcessDecision::parseSpawnedPid($result['stdout']);
         if ($newPid <= 0) {
             return ['ok' => false, 'message' => "failed to start {$r->id}: " . trim($result['stderr'])];
         }
@@ -46,23 +60,29 @@ final class ProcessControl
     public static function stopIndividual(RunnerInfo $r): array
     {
         $pidFile = "{$r->dir}/runner.pid";
-        [$running, $pid] = RunnerPool::checkProcess($pidFile);
+        $resolved = ProcessDecision::resolveStop(
+            RunnerPool::checkProcess($pidFile),
+            RunnerPool::liveListenersByDir(),
+            $r->dir
+        );
 
-        if (!$running) {
-            $found = RunnerPool::liveListenersByDir()[$r->dir] ?? null;
-            if ($found !== null) {
-                $running = true;
-                $pid = $found;
-            }
-        }
-
-        if (!$running) {
+        if (!$resolved['running']) {
             return ['ok' => true, 'message' => "{$r->id} not running"];
         }
 
-        posix_kill($pid, SIGTERM);
+        $pid = (int) $resolved['pid'];
+        self::terminate($pid);
         @unlink($pidFile);
         return ['ok' => true, 'message' => "{$r->id} stopped (pid {$pid})"];
+    }
+
+    private static function terminate(int $pid): void
+    {
+        if (self::$killFake !== null) {
+            (self::$killFake)($pid);
+            return;
+        }
+        posix_kill($pid, SIGTERM);
     }
 
     public static function restartIndividual(RunnerInfo $r): array
