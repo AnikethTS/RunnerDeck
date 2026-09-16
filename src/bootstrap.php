@@ -6,6 +6,7 @@ require __DIR__ . '/Settings.php';
 require __DIR__ . '/History.php';
 require __DIR__ . '/Config.php';
 Config::bootstrapEnv();
+require __DIR__ . '/AppLog.php';
 require __DIR__ . '/Shell.php';
 require __DIR__ . '/RunnerPool.php';
 require __DIR__ . '/SystemStats.php';

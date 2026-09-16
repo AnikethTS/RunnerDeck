@@ -13,23 +13,24 @@ final class Provisioner
         try {
             $download = self::pickDownload();
         } catch (RuntimeException $e) {
-            return ['ok' => false, 'message' => $e->getMessage()];
+            return self::fail('provision.pick_download', $e->getMessage());
         }
 
         if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            return ['ok' => false, 'message' => "failed to create {$dir}"];
+            return self::fail('provision.mkdir', "failed to create {$dir}");
         }
 
         $archivePath = "$dir/" . $download['filename'];
         $fetch = Shell::exec(['curl', '-fsSL', '-o', $archivePath, $download['download_url']], 180);
         if ($fetch['code'] !== 0 || !is_file($archivePath)) {
-            return ['ok' => false, 'message' => 'failed to download runner package: ' . trim($fetch['stderr'])];
+            $message = 'failed to download runner package: ' . trim($fetch['stderr']);
+            return self::fail('provision.download', $message, stderr: $fetch['stderr']);
         }
 
         $expectedSha = $download['sha256_checksum'] ?? null;
         if (!self::checksumMatches($archivePath, is_string($expectedSha) ? $expectedSha : null)) {
             @unlink($archivePath);
-            return ['ok' => false, 'message' => 'downloaded runner package failed checksum verification — aborted'];
+            return self::fail('provision.checksum', 'downloaded runner package failed checksum verification — aborted');
         }
 
         $extract = self::isZipArchive($download['filename'])
@@ -38,7 +39,8 @@ final class Provisioner
         @unlink($archivePath);
 
         if ($extract['code'] !== 0) {
-            return ['ok' => false, 'message' => 'failed to extract runner package: ' . trim($extract['stderr'])];
+            $message = 'failed to extract runner package: ' . trim($extract['stderr']);
+            return self::fail('provision.extract', $message, stderr: $extract['stderr']);
         }
 
         Shell::exec(['chmod', '+x', "$dir/config.sh", "$dir/run.sh"], 5);
@@ -61,7 +63,7 @@ final class Provisioner
             $registrationUrl = self::registrationUrl();
             $token = GithubClient::registrationToken();
         } catch (RuntimeException $e) {
-            return ['ok' => false, 'message' => $e->getMessage()];
+            return self::fail('provision.registration_token', $e->getMessage(), $name);
         }
 
         $config = Shell::exec([
@@ -77,10 +79,20 @@ final class Provisioner
 
         if ($config['code'] !== 0) {
             $output = trim($config['stderr'] . "\n" . $config['stdout']);
-            return ['ok' => false, 'message' => "config.sh failed for {$name}: {$output}"];
+            $message = "config.sh failed for {$name}: {$output}";
+            return self::fail('provision.config', $message, $name, $output);
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];
+    }
+
+    /**
+     * @return array{ok: false, message: string}
+     */
+    private static function fail(string $action, string $message, ?string $runner = null, string $stderr = ''): array
+    {
+        AppLog::error($action, $message, ['runner' => $runner, 'stderr' => $stderr]);
+        return ['ok' => false, 'message' => $message];
     }
 
     /** Removes local registration artifacts so ensureConfigured() treats this slot as fresh again. */

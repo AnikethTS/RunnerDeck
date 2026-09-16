@@ -8,6 +8,11 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Failures from `gh`, `config.sh`, and start/stop are appended as JSON
+  lines to `storage/runnerdeck.log` (rotated into `runnerdeck.log.1` at
+  256 KiB). Secrets (TOTP, `gh` tokens, `--token` values) are stripped
+  before write. Polling `gh` errors are throttled to once a minute so a
+  down API cannot fill the disk.
 - Unit tests for start/stop/provision: `ProcessDecision` covers pidfile vs
   live-listener decisions, and `ProcessControl`/`Provisioner` run against
   temp dirs with a fake `Shell` so checksum failure, config.sh, and

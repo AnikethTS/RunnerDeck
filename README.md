@@ -201,7 +201,8 @@ installed and checksum-verified) and starts the container per
 
 - **`./data`** is mounted to `/data` inside the container and holds
   everything RunnerDeck would otherwise put in `<repo>/../runners` and
-  `storage/` — the runner pool, `settings.json`, and the history database.
+  `storage/` — the runner pool, `settings.json`, the history database, and
+  `runnerdeck.log`.
   Delete it to reset RunnerDeck to a blank state.
 - **`~/.config/gh`** is mounted read-only so the container reuses `gh` auth
   already set up on the host — run `gh auth login` on the host first. Drop
@@ -318,6 +319,7 @@ runnerdeck/
     bootstrap.php        single load point required by every public/*.php
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
+    AppLog.php             JSON error log at storage/runnerdeck.log (rotated)
     History.php            best-effort CPU/RAM history in storage/db/history.sqlite
     Csrf.php              session-bound CSRF token minting/verification
     Auth.php              optional TOTP login gate, lockout tracking
