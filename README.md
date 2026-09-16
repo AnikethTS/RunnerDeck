@@ -329,7 +329,6 @@ runnerdeck/
     Provisioner.php       downloads, installs, and registers a runner
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
-    ProcessDecision.php   pidfile vs live-process start/stop decisions (tested without spawning)
     Dashboard.php         merges local + GitHub state into one snapshot
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
