@@ -76,6 +76,12 @@ follows [SemVer](https://semver.org/).
   `localStorage`, per-browser) to a real setting
   (`RUNNERDECK_AUTO_RESTART`, Settings dialog), consistent everywhere.
 
+### Changed
+
+- `public/api.php` is a thin front controller. Each `action=` is a
+  handler class under `src/Api/`, dispatched by `src/Api.php`. URLs,
+  CSRF, auth gating, and response bodies are unchanged.
+
 ### Fixed
 
 - The live log viewer now stops reconnecting and returns to the login page

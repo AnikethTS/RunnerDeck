@@ -310,7 +310,7 @@ to the running RunnerDeck server.
 runnerdeck/
   public/
     index.php       server-rendered dashboard page
-    api.php         JSON API (status, start/stop/restart, pool resize)
+    api.php         JSON API front controller (`action=` handlers in src/Api/)
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Hosting remotely)
     assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
@@ -330,6 +330,8 @@ runnerdeck/
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Dashboard.php         merges local + GitHub state into one snapshot
+    Api.php               JSON API router and shared request helpers
+    Api/                  one handler class per `api.php?action=`
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
