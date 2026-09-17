@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -88,7 +85,6 @@ jobs:
           - { os: macos-latest, php: "8.1" }
           - { os: macos-latest, php: "8.3" }
           - { os: ubuntu-22.04, php: "8.3" }
-          - { os: macos-14, php: "8.3" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -123,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macos-latest, macos-14]
+        os: [ubuntu-latest, ubuntu-22.04, macos-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -136,6 +132,7 @@ jobs:
       - name: Boot the dashboard and hit the status endpoint
         env:
           RUNNERDECK_ORG: smoke-test-org
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           php -S 127.0.0.1:8090 -t public &
           SERVER_PID=$!
@@ -224,6 +221,7 @@ jobs:
       - name: Boot the dashboard and hit the status endpoint
         env:
           RUNNERDECK_ORG: smoke-test-org
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           php -S 127.0.0.1:8090 -t public &
           SERVER_PID=$!
@@ -272,10 +270,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run the container and hit the status endpoint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker run -d --name runnerdeck-ci \
             -p 127.0.0.1:8090:8090 \
             -e RUNNERDECK_ORG=smoke-test-org \
+            -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
             runnerdeck:ci
 
           for i in $(seq 1 20); do

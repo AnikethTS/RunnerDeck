@@ -1,0 +1,13 @@
+# Normalize line endings for everything text-based, so Windows/Unix
+# contributors don't produce diff-only line-ending churn.
+* text=auto eol=lf
+
+# Windows launcher needs CRLF regardless of the committer's platform.
+run.ps1 text eol=crlf
+
+# Binary assets: never diff/convert.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary

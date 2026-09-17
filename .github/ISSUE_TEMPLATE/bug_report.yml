@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in RunnerDeck isn't working as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: A clear description of the bug. Include exact error text if there is any.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger it. Exact clicks/requests/commands, not a general description.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: e.g. Ubuntu 24.04, macOS 15, Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: php -v
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: RunnerDeck version
+      description: See the VERSION file, or the footer of the dashboard.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: >
+        Browser console errors, or storage/runnerdeck.log contents (redact
+        anything sensitive — check first, but AppLog already redacts
+        tokens/secrets by default).
+      render: shell

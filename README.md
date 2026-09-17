@@ -1,18 +1,55 @@
+<div align="center">
+
 <img src=".github/logo.png" alt="RunnerDeck logo" width="96" />
 
 # RunnerDeck
 
+**One dashboard for every self-hosted GitHub Actions runner on your machine.**
+
 [![CI](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/AnikethTS/RunnerDeck)](https://github.com/AnikethTS/RunnerDeck/releases/latest)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AnikethTS/RunnerDeck/badge)](https://scorecard.dev/viewer/?uri=github.com/AnikethTS/RunnerDeck)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A small, local-only web UI for managing a pool of self-hosted GitHub Actions
-runners on a single machine: see their GitHub-reported status (online/offline,
-busy/idle), see whether the local process is actually running, tail their
-logs live, and start/stop/restart them — individually or all at once —
-without hand-editing pidfiles or SSHing in to run `ps aux | grep`.
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](composer.json)
+[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](public/assets/js)
+[![SQLite](https://img.shields.io/badge/SQLite-optional-003B57?logo=sqlite&logoColor=white)](#how-it-works)
+[![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](#docker)
 
-Plain PHP, no framework, no build step, no Composer dependencies. A bit of
-vanilla JS for auto-refresh and live log tailing. That's it.
+![Dashboard overview](.github/screenshots/dashboard.png)
+
+</div>
+
+See which runners are online, busy, or quietly dead. Tail their logs live.
+Start, stop, or restart them — one at a time or all together — from a
+button instead of a pidfile and an SSH session.
+
+No framework, no build step, no dependencies to run it. Just PHP and a
+little vanilla JS.
+
+### Quick start
+
+```bash
+git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
+./run.sh                # binds 127.0.0.1:8090, no .env required
+```
+
+Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
+That's the whole setup. Full walkthrough in
+[First-time setup](#first-time-setup) — or run `php bin/doctor.php` first
+if you're not sure your machine's ready (see [Prerequisites](#prerequisites)).
+
+### Contents
+
+[Screenshots](#screenshots) · [Why this exists](#why-this-exists) ·
+[How it works](#how-it-works) · [Platform support](#platform-support) ·
+[Prerequisites](#prerequisites) · [First-time setup](#first-time-setup) ·
+[Docker](#docker) · [Configuration](#configuration) ·
+[Hosting remotely](#hosting-remotely) ·
+[Add to Home Screen](#add-to-home-screen) ·
+[Directory layout](#directory-layout) · [Development](#development) ·
+[Contributors](#contributors) · [Safety notes](#safety-notes) ·
+[License](#license)
 
 ## Screenshots
 
@@ -111,7 +148,7 @@ shipped." Be specific about what that means before assuming an old box works:
 | Platform | Support | Notes |
 |---|---|---|
 | Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. CI tests `ubuntu-latest` and `ubuntu-22.04` on glibc, plus a dedicated Alpine (musl) smoke test — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
-| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest` and `macos-14`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
+| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI tests `macos-latest`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
 | Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there, so it inherits the Linux support above (WSL2 *is* a real Linux kernel). Requires **Windows 10 build 2004 (May 2020 update, 19041) or later, or Windows 11** — that's WSL2's own minimum, not something this project adds. There is no native-Windows code path and no WSL1 fallback: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, PHP does not ship those extensions on Windows, and WSL1 has no real Linux kernel for `/proc` to work the way this app expects. |
 | Docker | Alternative to native/WSL2 | `docker compose up --build` — see [Docker](#docker) below. Bypasses the PHP/WSL2 prerequisites entirely; the container is Linux regardless of host OS. Runner jobs that need a `docker` command of their own (build/run steps) need Docker-in-Docker or a mounted host socket, neither of which this image sets up — see the Docker section for why. |
 
@@ -384,7 +421,7 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-14`, a
+across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, a
 dedicated Alpine (musl) container, and the [Docker image](#docker) itself
 (`docker build` + boot + hit `action=status` through the real port mapping)
 for every push/PR — see [Platform support](#platform-support) — with the
@@ -408,6 +445,12 @@ configure, but worth knowing they're on).
 
 Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) — it covers PR
 expectations and the project's policy on AI-assisted contributions.
+
+## Contributors
+
+<a href="https://github.com/AnikethTS/RunnerDeck/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=AnikethTS/RunnerDeck" alt="RunnerDeck contributors" />
+</a>
 
 ## Safety notes
 
