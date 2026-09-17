@@ -17,11 +17,16 @@ if (Auth::isLoggedIn() && $_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 $error = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$lockout = Auth::lockoutStatus();
+
+if ($lockout['locked']) {
+    $retryAfter = $lockout['retryAfter'] ?? 0;
+    $minutes = intdiv($retryAfter, 60);
+    $seconds = $retryAfter % 60;
+    $error = sprintf('Too many attempts — try again in %dm %02ds.', $minutes, $seconds);
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::verifyRequest()) {
         $error = 'Session expired — reload and try again.';
-    } elseif (Auth::lockoutStatus()['locked']) {
-        $error = 'Too many attempts — try again in a few minutes.';
     } elseif (Auth::attempt((string) ($_POST['code'] ?? ''))) {
         header('Location: index.php');
         exit;

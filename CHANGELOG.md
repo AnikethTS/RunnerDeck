@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.
+
 ## [1.2.0] - 2026-09-16
 
 ### Added
