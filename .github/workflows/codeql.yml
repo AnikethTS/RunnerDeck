@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze (javascript-typescript)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -21,23 +21,14 @@ jobs:
       actions: read
       contents: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
-          - language: php
-            build-mode: none
-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          languages: javascript-typescript
+          build-mode: none
 
       - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:javascript-typescript"
