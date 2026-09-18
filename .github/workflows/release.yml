@@ -39,9 +39,13 @@ jobs:
         run: sha256sum "runnerdeck-${GITHUB_REF_NAME}.zip" > "runnerdeck-${GITHUB_REF_NAME}.zip.sha256"
 
       - name: Attest build provenance
+        id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: "runnerdeck-${{ github.ref_name }}.zip"
+
+      - name: Attach the attestation bundle as a release asset
+        run: cp "${{ steps.attest.outputs.bundle-path }}" "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json"
 
       - name: Publish GitHub release
         env:
@@ -50,6 +54,7 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             "runnerdeck-${GITHUB_REF_NAME}.zip" \
             "runnerdeck-${GITHUB_REF_NAME}.zip.sha256" \
+            "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
-            --notes "Verify: \`sha256sum -c runnerdeck-${GITHUB_REF_NAME}.zip.sha256\`. Build provenance attestation: \`gh attestation verify runnerdeck-${GITHUB_REF_NAME}.zip -o AnikethTS\`."
+            --notes "Verify: \`sha256sum -c runnerdeck-${GITHUB_REF_NAME}.zip.sha256\`. Verify build provenance: \`gh attestation verify runnerdeck-${GITHUB_REF_NAME}.zip -o AnikethTS\` (or via the attached .sigstore.json bundle)."

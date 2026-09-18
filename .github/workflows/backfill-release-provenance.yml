@@ -1,0 +1,47 @@
+name: Backfill release provenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Space-separated release tags to backfill (e.g. v1.0.0 v1.1.0)"
+        required: true
+        default: "v1.0.0 v1.1.0 v1.2.0"
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    name: Attest existing releases and attach signature bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Download each release's zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p artifacts
+          for tag in ${{ inputs.tags }}; do
+            gh release download "$tag" --repo "${{ github.repository }}" --pattern '*.zip' --dir artifacts --clobber
+          done
+
+      - name: Attest build provenance for all downloaded zips
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "artifacts/*.zip"
+
+      - name: Attach the attestation bundle to each release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for tag in ${{ inputs.tags }}; do
+            bundle="runnerdeck-${tag}.zip.sigstore.json"
+            cp "${{ steps.attest.outputs.bundle-path }}" "$bundle"
+            gh release upload "$tag" "$bundle" --repo "${{ github.repository }}" --clobber
+          done
