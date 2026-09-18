@@ -1,4 +1,4 @@
-FROM php:8.3-cli-alpine@sha256:f8a09730b01244ca2e58978a154fe1dc178f077f47eed13d5ecbc87372b90005
+FROM php:8.5-cli-alpine@sha256:dae77e6aa4934d22b903da93e0e506c34032f5d8f8f91693d2cbf6e2724ddf73
 
 RUN apk add --no-cache bash curl tar sqlite-dev \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
