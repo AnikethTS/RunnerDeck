@@ -3,10 +3,10 @@
 RunnerDeck's UI is just a client of its own API — `public/api.php`, plus two
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`)
 for streaming and downloading logs. Everything here is `127.0.0.1`-only by
-default (see [Safety notes](README.md#safety-notes)); by default there's no
+default (see [Safety notes](docs/security-and-safety.md#safety-notes)); by default there's no
 API key or user account, so "who can call this" is exactly "who can reach
 this port" — unless you've enabled the optional TOTP login (see
-[Hosting remotely](README.md#hosting-remotely)), in which case every action
+[Hosting remotely](docs/security-and-safety.md#hosting-remotely)), in which case every action
 below needs an authenticated session first (see **Auth**).
 
 ## Stability
@@ -161,7 +161,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=log&runner=runner-base&lines=50'
 ### `action=history`
 
 Rolling one-hour CPU/RAM history, sampled once per `action=status` call
-(see [History](README.md)). `available: false` means `pdo_sqlite` isn't
+(see [How it works](docs/how-it-works.md)). `available: false` means `pdo_sqlite` isn't
 installed — `samples` is always present but empty in that case.
 
 ```bash
@@ -185,7 +185,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=system'
 
 Compares this install's `VERSION` against RunnerDeck's own latest GitHub
 release. Returns `403` unless `RUNNERDECK_CHECK_UPDATES=1` is set — see
-[Configuration](README.md#configuration).
+[Configuration](docs/configuration.md).
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/api.php?action=check_updates'
@@ -208,7 +208,7 @@ ids for the `bulk_*` actions).
 |---|---|---|
 | `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
-| `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](README.md#hosting-remotely) |
+| `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](docs/security-and-safety.md#hosting-remotely) |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |
 | `start` | `runner` | No busy check — starting is never destructive |
 | `stop` | `runner` | Busy-checked |

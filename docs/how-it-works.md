@@ -1,0 +1,68 @@
+# How it works
+
+- **Local process state** comes from reading each runner directory directly
+  — its `.runner` config, its `runner.pid` file, and (as a fallback, since
+  pidfiles can go stale or get lost) a live scan of `/proc` matching on the
+  actual `Runner.Listener` executable path. A runner is never silently
+  "invisible" just because its pidfile disappeared.
+- **GitHub-reported state** comes from `gh api orgs/<org>/actions/runners`.
+- **Starting an unconfigured runner slot** downloads the official runner
+  package for this machine's OS/arch (via the same
+  `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
+  runner" page uses), verifies its checksum, extracts it, requests a fresh
+  org registration token, and runs `config.sh` — the same flow you'd do by
+  hand, done for you. No manual pre-setup step.
+- **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
+  `/proc` fallback if the pidfile is missing) and waits for a graceful exit.
+- Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
+  runner and asks for confirmation if it's mid-job (or if that status can't
+  be verified at all — it fails closed, not open).
+- **Add Runner** allocates the next free slot and lets you give it its own
+  GitHub-registered name. **Rename** stops a runner, deregisters it from
+  GitHub, and re-registers it fresh under the new name — same busy-flag
+  confirmation as Stop, since it interrupts any in-progress job. **Delete**
+  does the same deregistration and then permanently removes the runner's
+  local directory (binaries, config, logs) — always confirmed separately
+  from the busy check, since there's no undo.
+- Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
+  cross-platform, read-only — nothing is capped or throttled), with a
+  rolling one-hour pool-wide history chart backed by a small local SQLite
+  file (`storage/db/history.sqlite`). This is best-effort: if the `pdo_sqlite`
+  PHP extension isn't installed, the rest of the dashboard works exactly
+  the same, you just don't get the chart.
+- A **filter box** narrows the table by runner ID or registered name, and
+  each runner's log can be **downloaded in full**, not just tailed — or
+  narrowed to a time range first, using whatever timestamps the runner's
+  own console output includes.
+- Two **System CPU/RAM** stat cards show whole-machine usage (all
+  processes, not just runners) — useful for telling "my runners are the
+  load" apart from "something else on this box is." Reuses the same `ps`
+  scan the per-runner stats already do, plus `nproc`/`sysctl` for core
+  count and total RAM; degrades to `—` rather than guessing if those
+  aren't available. These are pure local reads with no GitHub API cost,
+  so they poll independently on a faster 2s cadence rather than waiting
+  on the main 5s runner/GitHub poll.
+- If a runner's local process state and its GitHub-reported state
+  **disagree for several polls in a row**, the row is flagged — a one-off
+  mismatch during a status transition is normal and ignored, a persistent
+  one usually means the process died without GitHub finding out yet (or
+  vice versa).
+- An optional **auto-restart** setting (Settings dialog) brings a runner
+  back up if its process dies without you having stopped it yourself. It
+  backs off after a few failed attempts in a row — crash-looping is
+  flagged with a toast notification and a row badge, not retried forever —
+  and resets once the runner has stayed healthy for a couple of minutes.
+  This tracking lives server-side, so it's consistent across every browser
+  tab and survives a page reload.
+- Runners can be **selected in bulk** (checkboxes, with a "select all" for
+  the current filter) and started, stopped, or deleted together — the busy
+  check for Stop/Delete is done once for the whole selection, not per runner.
+- An optional **update check** (off by default — enable it in Settings)
+  compares this install's `VERSION` file against the latest GitHub Release
+  and shows a small badge in the header if a newer one exists. It's the
+  only thing in RunnerDeck that calls out to a repo other than the one
+  you're managing runners for, which is why it's opt-in rather than on
+  by default.
+- The UI is just a client of its own API — see **[API.md](../API.md)** for
+  every `api.php` action, the two standalone log endpoints, and how to
+  get a CSRF token from a script instead of a browser session.
