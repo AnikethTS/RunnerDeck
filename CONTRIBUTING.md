@@ -7,10 +7,10 @@ now — the project's policy on AI-assisted contributions.
 ## Getting started
 
 1. Fork the repo and clone your fork.
-2. Copy `.env.example` to `.env` and fill it in (see the README's
-   [First-time setup](README.md#first-time-setup) — you'll need `gh`
-   authenticated and either an org or your own GitHub account to point it
-   at; you don't need real runners running to work on most of the codebase).
+2. Copy `.env.example` to `.env` and fill it in (see
+   [Getting started](docs/getting-started.md#first-time-setup) — you'll need
+   `gh` authenticated and either an org or your own GitHub account to point
+   it at; you don't need real runners running to work on most of the codebase).
 3. Install dev tooling: `composer install` and `npm install`. `composer.lock`
    and `package-lock.json` are committed, so this installs the exact versions
    CI uses — if you add/update a dev dependency, commit the updated lock file
