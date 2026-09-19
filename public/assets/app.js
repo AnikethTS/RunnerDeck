@@ -108,6 +108,7 @@ function initDashboard() {
     renderStats(snapshot);
     snapshot.runners.forEach((r) => {
       if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
+      if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
     });
 
     const liveIds = new Set(snapshot.runners.map((r) => r.id));

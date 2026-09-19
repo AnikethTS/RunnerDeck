@@ -8,17 +8,28 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
-- Auto-restart now starts the process during `action=status` on the server
-  instead of every open browser tab posting `start`. Local/GitHub mismatch
-  streaks are counted in `CrashState` (`mismatch_flagged`) rather than in
-  JavaScript. CPU/RAM history charts are drawn as SVG in PHP and embedded
-  in the status snapshot, so the UI dropped its extra `action=history`
-  poll. Theme preference is a cookie so the first paint can set
-  `data-theme` without a flash.
+- Local/GitHub mismatch streaks are counted in `CrashState`
+  (`mismatch_flagged`) rather than in JavaScript. CPU/RAM history charts
+  are drawn as SVG in PHP and embedded in the status snapshot, so the UI
+  dropped its extra `action=history` poll. Theme preference is a cookie
+  so the first paint can set `data-theme` without a flash.
 
 ### Fixed
 
 - TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.
+
+### Security
+
+- `action=status` (a GET, which has no CSRF check by design) briefly
+  called `ProcessControl::startIndividual()` directly for auto-restart,
+  meaning any page loaded in the same browser — a plain `<img src>` to
+  that URL — could make RunnerDeck spawn a real runner process with no
+  user interaction and no token. Reverted: the GET only ever decides
+  `should_auto_restart`; the client still has to `POST action=start`
+  (CSRF-protected) for the restart to actually happen. Added a regression
+  test (`DashboardTest::testSnapshotNeverSpawnsAProcessEvenWhenAutoRestartShouldFire`)
+  asserting `Dashboard::snapshot()` never spawns a process, so this can't
+  silently come back.
 
 ## [1.2.0] - 2026-09-16
 

@@ -53,9 +53,12 @@
   backs off after a few failed attempts in a row — crash-looping is
   flagged with a toast notification and a row badge, not retried forever —
   and resets once the runner has stayed healthy for a couple of minutes.
-  Crash tracking and the restart itself both live server-side (a status
-  poll starts the process), so it's consistent across every browser tab
-  and survives a page reload.
+  Crash tracking lives server-side, so the decision is consistent across
+  every browser tab and survives a page reload — but the actual restart
+  is still a CSRF-protected `POST action=start`, triggered by the client
+  when it sees the flag. `action=status` (a GET) only ever decides and
+  reports; it never spawns a process itself, deliberately — a GET has no
+  CSRF check by design, so it must stay side-effect-free.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.
