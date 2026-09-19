@@ -46,14 +46,16 @@
   **disagree for several polls in a row**, the row is flagged — a one-off
   mismatch during a status transition is normal and ignored, a persistent
   one usually means the process died without GitHub finding out yet (or
-  vice versa).
+  vice versa). The streak is counted server-side (`mismatch_flagged` on
+  `action=status`), so every tab sees the same flag.
 - An optional **auto-restart** setting (Settings dialog) brings a runner
   back up if its process dies without you having stopped it yourself. It
   backs off after a few failed attempts in a row — crash-looping is
   flagged with a toast notification and a row badge, not retried forever —
   and resets once the runner has stayed healthy for a couple of minutes.
-  This tracking lives server-side, so it's consistent across every browser
-  tab and survives a page reload.
+  Crash tracking and the restart itself both live server-side (a status
+  poll starts the process), so it's consistent across every browser tab
+  and survives a page reload.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.

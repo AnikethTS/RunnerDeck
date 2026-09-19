@@ -64,4 +64,25 @@ final class HistoryTest extends TestCase
 
         $this->assertSame([], \RunnerDeck\History::recent());
     }
+
+    public function testPolylineSvgPlaceholderWhenUnavailable(): void
+    {
+        $svg = \RunnerDeck\History::polylineSvg([1.0, 2.0], 0.0, 100.0, true);
+        $this->assertStringContainsString('unavailable', $svg);
+        $this->assertStringNotContainsString('polyline', $svg);
+    }
+
+    public function testPolylineSvgNeedsTwoSamples(): void
+    {
+        $svg = \RunnerDeck\History::polylineSvg([12.0], 0.0, 100.0, false);
+        $this->assertStringContainsString('collecting data', $svg);
+    }
+
+    public function testPolylineSvgPointsScaleToViewBox(): void
+    {
+        $svg = \RunnerDeck\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false);
+        $this->assertStringContainsString('0.0,60.0', $svg);
+        $this->assertStringContainsString('300.0,0.0', $svg);
+        $this->assertStringContainsString('<polyline', $svg);
+    }
 }

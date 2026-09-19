@@ -23,6 +23,15 @@ export function renderLoadStat(sys) {
     : `${usedMb} MB used, total unknown`;
 }
 
+export function renderHistory(snapshot) {
+  const history = snapshot.history;
+  if (!history) return;
+  const cpuChart = document.getElementById('chart-cpu');
+  const memChart = document.getElementById('chart-mem');
+  if (cpuChart) cpuChart.innerHTML = history.cpu_svg;
+  if (memChart) memChart.innerHTML = history.mem_svg;
+}
+
 export function renderStats(snapshot) {
   const s = snapshot.stats;
   document.getElementById('stat-active').textContent = String(s.running);
@@ -43,4 +52,5 @@ export function renderStats(snapshot) {
   document.getElementById('stat-mem-sub').textContent = s.running ? `across ${s.running} running` : 'no runners active';
 
   renderLoadStat(snapshot.system);
+  renderHistory(snapshot);
 }

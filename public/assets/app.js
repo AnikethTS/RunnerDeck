@@ -1,11 +1,9 @@
 import { post, redirectIfUnauthenticated } from './js/api.js';
 import { setLoading, clearLoading } from './js/utils.js';
-import { updateMismatchStreaks } from './js/reliability.js';
 import { showToast } from './js/toast.js';
 import {
   sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, rowHtml, updateBulkActionsBar,
 } from './js/table.js';
-import { fetchHistory } from './js/history-chart.js';
 import { renderStats, renderLoadStat } from './js/stats.js';
 import {
   wireScopeToggle, submitSettingsForm, confirmModal, openLogViewer, openRenameModal, initModals,
@@ -13,32 +11,39 @@ import {
 
 const POLL_MS = 5000;
 const SYSTEM_POLL_MS = 2000;
+const THEME_KEY = 'runnerdeck-theme';
 
 (() => {
-  const STORAGE_KEY = 'runnerdeck-theme';
   const btn = document.getElementById('btn-theme-toggle');
   const sunIcon = document.getElementById('theme-icon-sun');
   const moonIcon = document.getElementById('theme-icon-moon');
   if (!btn) return;
 
+  function readCookie() {
+    const match = document.cookie.match(/(?:^|; )runnerdeck-theme=(dark|light)/);
+    return match ? match[1] : null;
+  }
+
   function getStoredTheme() {
+    const fromCookie = readCookie();
+    if (fromCookie) return fromCookie;
     try {
-      return localStorage.getItem(STORAGE_KEY);
+      const legacy = localStorage.getItem(THEME_KEY);
+      if (legacy === 'dark' || legacy === 'light') {
+        storeTheme(legacy);
+        localStorage.removeItem(THEME_KEY);
+        return legacy;
+      }
     } catch {
-      return null;
+      // storage unavailable
     }
+    return null;
   }
 
   function storeTheme(theme) {
-    try {
-      if (theme) {
-        localStorage.setItem(STORAGE_KEY, theme);
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      // storage unavailable; toggle still works for this session
-    }
+    const maxAge = theme ? 31536000 : 0;
+    const value = theme || '';
+    document.cookie = `${THEME_KEY}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
   }
 
   function systemPrefersDark() {
@@ -56,31 +61,23 @@ const SYSTEM_POLL_MS = 2000;
     } else {
       delete document.documentElement.dataset.theme;
     }
-    const effective = effectiveTheme(stored);
-    if (effective === 'dark') {
-  sunIcon.setAttribute('hidden', '');
-  moonIcon.removeAttribute('hidden');
-} else {
-  sunIcon.removeAttribute('hidden');
-  moonIcon.setAttribute('hidden', '');
-}
+    const dark = effectiveTheme(stored) === 'dark';
+    sunIcon.toggleAttribute('hidden', dark);
+    moonIcon.toggleAttribute('hidden', !dark);
   }
 
   let stored = getStoredTheme();
   applyTheme(stored);
 
   btn.addEventListener('click', () => {
-    const next = effectiveTheme(stored) === 'dark' ? 'light' : 'dark';
-    stored = next;
-    storeTheme(next);
-    applyTheme(next);
+    stored = effectiveTheme(stored) === 'dark' ? 'light' : 'dark';
+    storeTheme(stored);
+    applyTheme(stored);
   });
 
-  if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (!getStoredTheme()) applyTheme(null);
-    });
-  }
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!getStoredTheme()) applyTheme(null);
+  });
 })();
 
 function initDashboard() {
@@ -88,8 +85,11 @@ function initDashboard() {
   const bannerEl = document.getElementById('health-banner');
   const lastUpdatedEl = document.getElementById('last-updated');
   const exportBtn = document.getElementById('btn-export');
-
   let lastSnapshot = null;
+
+  function visibleRows() {
+    return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
+  }
 
   function render(snapshot) {
     lastSnapshot = snapshot;
@@ -106,10 +106,8 @@ function initDashboard() {
     }
 
     renderStats(snapshot);
-    updateMismatchStreaks(snapshot.runners);
     snapshot.runners.forEach((r) => {
       if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
-      if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
     });
 
     const liveIds = new Set(snapshot.runners.map((r) => r.id));
@@ -117,11 +115,20 @@ function initDashboard() {
       if (!liveIds.has(id)) selectedRunners.delete(id);
     });
 
-    const visible = sortRunners(filteredRunners(snapshot.runners));
+    const visible = visibleRows();
     rowsEl.innerHTML = visible.map(rowHtml).join('');
     updateSortIndicators();
     updateBulkActionsBar(visible);
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
+  }
+
+  async function withLoading(btn, label, fn) {
+    setLoading(btn, label);
+    try {
+      await fn();
+    } finally {
+      clearLoading(btn);
+    }
   }
 
   document.getElementById('runner-filter').addEventListener('input', () => {
@@ -154,7 +161,6 @@ function initDashboard() {
     const res = await fetch('api.php?action=status&lines=5');
     if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
-    fetchHistory();
   }
 
   async function fetchSystemStats() {
@@ -203,23 +209,15 @@ function initDashboard() {
       return;
     }
     if (action === 'start') {
-      setLoading(btn, 'Starting…');
-      try {
+      await withLoading(btn, 'Starting…', async () => {
         const { data } = await post('start', { runner });
         if (!data.ok) alert(data.message);
         await fetchStatus();
-      } finally {
-        clearLoading(btn);
-      }
+      });
       return;
     }
     if (action === 'stop' || action === 'restart') {
-      setLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…');
-      try {
-        await runWithBusyGuard(action, { runner });
-      } finally {
-        clearLoading(btn);
-      }
+      await withLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…', () => runWithBusyGuard(action, { runner }));
       return;
     }
     if (action === 'delete') {
@@ -229,12 +227,7 @@ function initDashboard() {
         + 'including logs. This cannot be undone.',
       );
       if (!sure) return;
-      setLoading(btn, 'Deleting…');
-      try {
-        await runWithBusyGuard('delete_runner', { runner });
-      } finally {
-        clearLoading(btn);
-      }
+      await withLoading(btn, 'Deleting…', () => runWithBusyGuard('delete_runner', { runner }));
     }
   });
 
@@ -251,59 +244,35 @@ function initDashboard() {
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
   });
 
-  document.getElementById('btn-refresh').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    setLoading(btn, 'Refreshing…');
-    try {
-      await fetchStatus();
-    } finally {
-      clearLoading(btn);
-    }
+  document.getElementById('btn-refresh').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, 'Refreshing…', fetchStatus);
   });
 
-  document.getElementById('btn-start-all').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
+  document.getElementById('btn-start-all').addEventListener('click', (e) => {
     const count = document.getElementById('pool-size').value || 10;
-    setLoading(btn, 'Starting All…');
-    try {
+    withLoading(e.currentTarget, 'Starting All…', async () => {
       const { data } = await post('start_all', { count });
       if (!data.ok) alert(data.message);
       await fetchStatus();
-    } finally {
-      clearLoading(btn);
-    }
+    });
   });
 
-  document.getElementById('btn-stop-all').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    setLoading(btn, 'Stopping All…');
-    try {
-      await runWithBusyGuard('stop_all', {});
-    } finally {
-      clearLoading(btn);
-    }
+  document.getElementById('btn-stop-all').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, 'Stopping All…', () => runWithBusyGuard('stop_all', {}));
   });
 
   rowsEl.addEventListener('change', (e) => {
     const checkbox = e.target.closest('input.row-select');
     if (!checkbox) return;
     const id = checkbox.dataset.runner;
-    if (checkbox.checked) {
-      selectedRunners.add(id);
-    } else {
-      selectedRunners.delete(id);
-    }
-    if (lastSnapshot) updateBulkActionsBar(sortRunners(filteredRunners(lastSnapshot.runners)));
+    if (checkbox.checked) selectedRunners.add(id);
+    else selectedRunners.delete(id);
+    if (lastSnapshot) updateBulkActionsBar(visibleRows());
   });
 
   document.getElementById('select-all-runners').addEventListener('change', (e) => {
     if (!lastSnapshot) return;
-    const visible = sortRunners(filteredRunners(lastSnapshot.runners));
-    if (e.target.checked) {
-      visible.forEach((r) => selectedRunners.add(r.id));
-    } else {
-      visible.forEach((r) => selectedRunners.delete(r.id));
-    }
+    visibleRows().forEach((r) => (e.target.checked ? selectedRunners.add(r.id) : selectedRunners.delete(r.id)));
     render(lastSnapshot);
   });
 
@@ -312,70 +281,46 @@ function initDashboard() {
     if (lastSnapshot) render(lastSnapshot);
   });
 
-  document.getElementById('btn-bulk-start').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    const runners = [...selectedRunners].join(',');
-    setLoading(btn, 'Starting…');
-    try {
-      const { data } = await post('bulk_start', { runners });
+  document.getElementById('btn-bulk-start').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, 'Starting…', async () => {
+      const { data } = await post('bulk_start', { runners: [...selectedRunners].join(',') });
       if (!data.ok) alert(data.message);
       await fetchStatus();
-    } finally {
-      clearLoading(btn);
-    }
+    });
   });
 
-  document.getElementById('btn-bulk-stop').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    setLoading(btn, 'Stopping…');
-    try {
-      await runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') });
-    } finally {
-      clearLoading(btn);
-    }
+  document.getElementById('btn-bulk-stop').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, 'Stopping…', () => runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') }));
   });
 
   document.getElementById('btn-bulk-delete').addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
     const count = selectedRunners.size;
     const sure = await confirmModal(
       `Permanently delete ${count} runner${count === 1 ? '' : 's'}? This deregisters `
       + 'each from GitHub and deletes its local files, including logs. This cannot be undone.',
     );
     if (!sure) return;
-    const runners = [...selectedRunners].join(',');
-    setLoading(btn, 'Deleting…');
-    try {
-      await runWithBusyGuard('bulk_delete', { runners });
+    await withLoading(e.currentTarget, 'Deleting…', async () => {
+      await runWithBusyGuard('bulk_delete', { runners: [...selectedRunners].join(',') });
       selectedRunners.clear();
-    } finally {
-      clearLoading(btn);
-    }
+    });
   });
 
-  document.getElementById('pool-size-form').addEventListener('submit', async (e) => {
+  document.getElementById('pool-size-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
-    const count = document.getElementById('pool-size').value;
-    setLoading(btn, 'Applying…');
-    try {
-      const { data } = await post('resize', { count });
+    withLoading(btn, 'Applying…', async () => {
+      const { data } = await post('resize', { count: document.getElementById('pool-size').value });
       if (!data.ok) alert(data.message);
       await fetchStatus();
-    } finally {
-      clearLoading(btn);
-    }
+    });
   });
 
   initModals(fetchStatus);
   checkForUpdates();
 
-  if (window.__SNAPSHOT__) {
-    render(window.__SNAPSHOT__);
-    fetchHistory();
-  } else {
-    fetchStatus();
-  }
+  if (window.__SNAPSHOT__) render(window.__SNAPSHOT__);
+  else fetchStatus();
   setInterval(fetchStatus, POLL_MS);
   setInterval(fetchSystemStats, SYSTEM_POLL_MS);
 }
@@ -383,7 +328,6 @@ function initDashboard() {
 if (window.__NEEDS_SETUP__) {
   const scopeSelect = document.getElementById('setup-scope');
   wireScopeToggle(scopeSelect, document.getElementById('setup-org-field'), document.getElementById('setup-repo-field'));
-
   document.getElementById('setup-form').addEventListener('submit', (e) => {
     e.preventDefault();
     submitSettingsForm(

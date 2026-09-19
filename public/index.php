@@ -34,9 +34,14 @@ $currentSettings = [
 
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
 $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSettings['repo'] : $currentSettings['org']);
+$themeCookie = $_COOKIE['runnerdeck-theme'] ?? '';
+$themeAttr = ($themeCookie === 'dark' || $themeCookie === 'light')
+    ? ' data-theme="' . htmlspecialchars($themeCookie, ENT_QUOTES) . '"'
+    : '';
+$history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="en"<?= $themeAttr ?>>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -179,11 +184,15 @@ $accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSetting
       <div class="history-grid">
         <div class="history-card">
           <span class="stat-label">CPU % &middot; last hour</span>
-          <svg id="chart-cpu" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+          <svg id="chart-cpu" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
+            <?= is_array($history) ? $history['cpu_svg'] : '' ?>
+          </svg>
         </div>
         <div class="history-card">
           <span class="stat-label">Memory MB &middot; last hour</span>
-          <svg id="chart-mem" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+          <svg id="chart-mem" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
+            <?= is_array($history) ? $history['mem_svg'] : '' ?>
+          </svg>
         </div>
       </div>
 

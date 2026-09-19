@@ -6,6 +6,16 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Auto-restart now starts the process during `action=status` on the server
+  instead of every open browser tab posting `start`. Local/GitHub mismatch
+  streaks are counted in `CrashState` (`mismatch_flagged`) rather than in
+  JavaScript. CPU/RAM history charts are drawn as SVG in PHP and embedded
+  in the status snapshot, so the UI dropped its extra `action=history`
+  poll. Theme preference is a cookie so the first paint can set
+  `data-theme` without a flash.
+
 ### Fixed
 
 - TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.

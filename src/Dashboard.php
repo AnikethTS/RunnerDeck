@@ -25,8 +25,9 @@ final class Dashboard
             }
         }
 
+        $discovered = RunnerPool::discover($logLines);
         $runners = [];
-        foreach (RunnerPool::discover($logLines) as $id => $info) {
+        foreach ($discovered as $info) {
             $row = $info->toArray();
             $gh = $ghRunners[$info->agentName] ?? null;
             $row['github'] = $gh === null ? null : [
@@ -38,6 +39,7 @@ final class Dashboard
         }
 
         $runners = CrashState::track($runners);
+        self::applyAutoRestarts($discovered, $runners);
 
         $stats = self::computeStats($runners);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
@@ -52,6 +54,7 @@ final class Dashboard
             'runners' => $runners,
             'stats' => $stats,
             'system' => SystemStats::snapshot(),
+            'history' => self::historyView(),
         ];
     }
 
@@ -68,6 +71,45 @@ final class Dashboard
             'running' => count($running),
             'avg_cpu_percent' => $cpuValues ? array_sum($cpuValues) / count($cpuValues) : null,
             'total_rss_kb' => $rssValues ? array_sum($rssValues) : null,
+        ];
+    }
+
+    /**
+     * @param array<string, RunnerInfo> $discovered
+     * @param array<int, array<string, mixed>> $runners
+     */
+    public static function applyAutoRestarts(array $discovered, array $runners): void
+    {
+        foreach ($runners as $r) {
+            if (empty($r['should_auto_restart'])) {
+                continue;
+            }
+            $info = $discovered[$r['id']] ?? null;
+            if ($info === null) {
+                continue;
+            }
+            $result = ProcessControl::startIndividual($info);
+            if (!$result['ok']) {
+                AppLog::error('auto_restart', (string) ($result['message'] ?? 'start failed'), [
+                    'runner' => $r['id'],
+                ]);
+            }
+        }
+    }
+
+    /** @return array{available: bool, cpu_svg: string, mem_svg: string} */
+    public static function historyView(): array
+    {
+        $unavailable = !History::isAvailable();
+        $samples = History::recent();
+        $cpu = array_map(static fn (array $s): float => (float) $s['avg_cpu'], $samples);
+        $mem = array_map(static fn (array $s): float => ((int) $s['total_rss_kb']) / 1024.0, $samples);
+        $memMax = $mem === [] ? 10.0 : (float) max(10.0, ...$mem);
+
+        return [
+            'available' => !$unavailable,
+            'cpu_svg' => History::polylineSvg($cpu, 0.0, 100.0, $unavailable),
+            'mem_svg' => History::polylineSvg($mem, 0.0, $memMax, $unavailable),
         ];
     }
 

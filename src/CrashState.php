@@ -9,6 +9,7 @@ final class CrashState
     private const STATE_FILE = 'crash_state.json';
     private const MAX_ATTEMPTS = 3;
     private const HEALTHY_RESET_SECONDS = 120;
+    private const MISMATCH_THRESHOLD = 3;
 
     private static function statePath(): string
     {
@@ -54,12 +55,13 @@ final class CrashState
         return $state[$id] ?? [
             'wasRunning' => false, 'attempts' => 0, 'healthySince' => 0,
             'flagged' => false, 'notified' => false, 'justStopped' => false,
+            'mismatchStreak' => 0,
         ];
     }
 
     /**
      * @param array<int, array<string, mixed>> $runners each with at least id/local_running/configured
-     * @return array<int, array<string, mixed>> same runners, with crash_flagged/just_flagged/should_auto_restart added
+     * @return array<int, array<string, mixed>> same runners, with crash/mismatch flags added
      */
     public static function track(array $runners): array
     {
@@ -98,6 +100,10 @@ final class CrashState
                 $s['notified'] = true;
             }
 
+            $ghOnline = is_array($r['github'] ?? null) && ($r['github']['status'] ?? '') === 'online';
+            $mismatched = is_array($r['github'] ?? null) && $ghOnline !== (bool) $r['local_running'];
+            $s['mismatchStreak'] = $mismatched ? ((int) ($s['mismatchStreak'] ?? 0)) + 1 : 0;
+
             $s['justStopped'] = false;
             $s['wasRunning'] = $r['local_running'];
             $state[$r['id']] = $s;
@@ -105,6 +111,7 @@ final class CrashState
             $r['crash_flagged'] = $s['flagged'];
             $r['just_flagged'] = $justFlagged;
             $r['should_auto_restart'] = $shouldAutoRestart;
+            $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
         }
 
         self::writeState($state);
