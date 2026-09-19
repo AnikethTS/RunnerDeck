@@ -1,5 +1,4 @@
 import { escapeHtml, badge, miniBar, formatUptime } from './utils.js';
-import { mismatchWarning, crashWarning } from './reliability.js';
 
 export const sortState = { key: null, dir: 1 };
 export const selectedRunners = new Set();
@@ -48,9 +47,7 @@ export function updateSortIndicators() {
 function githubBadges(gh) {
   if (!gh) return badge('unknown', 'muted');
   const statusCls = gh.status === 'online' ? 'good' : 'critical';
-  const parts = [badge(gh.status, statusCls)];
-  parts.push(badge(gh.busy ? 'busy' : 'idle', gh.busy ? 'warning' : 'good'));
-  return parts.join(' ');
+  return `${badge(gh.status, statusCls)} ${badge(gh.busy ? 'busy' : 'idle', gh.busy ? 'warning' : 'good')}`;
 }
 
 function githubLabels(gh) {
@@ -68,10 +65,13 @@ function localBadge(runner) {
 function resourceUsage(runner) {
   if (!runner.local_running || runner.cpu_percent == null || runner.rss_kb == null) return '';
   const mb = (runner.rss_kb / 1024).toFixed(0);
-  const bar = miniBar(runner.cpu_percent);
   const uptime = formatUptime(runner.uptime_seconds);
   const uptimeText = uptime ? ` &middot; up ${uptime}` : '';
-  return `<span class="resource-usage">${bar}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB${uptimeText}</span>`;
+  return `<span class="resource-usage">${miniBar(runner.cpu_percent)}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB${uptimeText}</span>`;
+}
+
+function flag(runner, key, text, cls) {
+  return runner[key] ? `<div class="row-flag">${badge(text, cls)}</div>` : '';
 }
 
 export function rowHtml(runner) {
@@ -86,8 +86,8 @@ export function rowHtml(runner) {
         <span class="runner-name">${escapeHtml(runner.id)}</span>
         <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
       </td>
-      <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${mismatchWarning(runner)}</td>
-      <td>${localBadge(runner)}${resourceUsage(runner)}${crashWarning(runner)}</td>
+      <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${flag(runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')}</td>
+      <td>${localBadge(runner)}${resourceUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}</td>
       <td>
         <pre class="log-preview">${escapeHtml(logPreview)}</pre>
         <button class="log-link" data-action="view-log">View live log &rarr;</button>

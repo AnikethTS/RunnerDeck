@@ -74,4 +74,31 @@ final class History
             return [];
         }
     }
+
+    /** @param list<float> $values */
+    public static function polylineSvg(array $values, float $min, float $max, bool $unavailable): string
+    {
+        if ($unavailable) {
+            return '<text x="8" y="34" font-size="10" fill="currentColor" opacity="0.5">'
+                . 'unavailable — php-pdo_sqlite not installed</text>';
+        }
+        if (count($values) < 2) {
+            return '<text x="8" y="34" font-size="10" fill="currentColor" opacity="0.5">'
+                . 'collecting data…</text>';
+        }
+
+        $w = 300.0;
+        $h = 60.0;
+        $range = ($max - $min) ?: 1.0;
+        $step = $w / (count($values) - 1);
+        $points = [];
+        foreach ($values as $i => $v) {
+            $x = number_format($i * $step, 1, '.', '');
+            $y = number_format($h - (($v - $min) / $range) * $h, 1, '.', '');
+            $points[] = "{$x},{$y}";
+        }
+
+        return '<polyline points="' . implode(' ', $points)
+            . '" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" />';
+    }
 }

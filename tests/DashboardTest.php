@@ -4,52 +4,88 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 final class DashboardTest extends TestCase
 {
-    private function runner(bool $running, ?float $cpu, ?int $rssKb): array
+    private string $dir;
+
+    protected function setUp(): void
     {
-        return ['local_running' => $running, 'cpu_percent' => $cpu, 'rss_kb' => $rssKb];
+        $this->dir = sys_get_temp_dir() . '/runnerdeck-dash-test-' . uniqid();
+        mkdir($this->dir, 0755, true);
+        putenv('RUNNERDECK_POOL_DIR=' . dirname($this->dir));
+        putenv('RUNNERDECK_ORG=acme');
+        putenv('RUNNERDECK_SCOPE=org');
+
+        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
     }
 
-    public function testComputeStatsOnEmptyPool(): void
+    protected function tearDown(): void
     {
-        $stats = \RunnerDeck\Dashboard::computeStats([]);
-
-        $this->assertSame(0, $stats['total']);
-        $this->assertSame(0, $stats['running']);
-        $this->assertNull($stats['avg_cpu_percent']);
-        $this->assertNull($stats['total_rss_kb']);
+        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(null);
+        putenv('RUNNERDECK_POOL_DIR');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_SCOPE');
+        exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
-    public function testComputeStatsCountsOnlyRunningTowardAverages(): void
+    #[RunInSeparateProcess]
+    public function testApplyAutoRestartsStartsFlaggedRunners(): void
     {
-        $runners = [
-            $this->runner(true, 10.0, 1000),
-            $this->runner(true, 30.0, 2000),
-            $this->runner(false, null, null),
-        ];
+        $spawned = false;
+        \RunnerDeck\Shell::fake(function () use (&$spawned): array {
+            $spawned = true;
+            return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
+        });
 
-        $stats = \RunnerDeck\Dashboard::computeStats($runners);
+        $info = new \RunnerDeck\RunnerInfo(
+            id: 'runner-1',
+            dir: $this->dir,
+            configured: true,
+            agentName: 'acme-1',
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
 
-        $this->assertSame(3, $stats['total']);
-        $this->assertSame(2, $stats['running']);
-        $this->assertSame(20.0, $stats['avg_cpu_percent']);
-        $this->assertSame(3000, $stats['total_rss_kb']);
+        \RunnerDeck\Dashboard::applyAutoRestarts(
+            ['runner-1' => $info],
+            [['id' => 'runner-1', 'should_auto_restart' => true]],
+        );
+
+        $this->assertTrue($spawned);
+        $this->assertSame('4242', trim((string) file_get_contents($this->dir . '/runner.pid')));
     }
 
-    public function testComputeStatsIgnoresRunningRunnersWithMissingStats(): void
+    #[RunInSeparateProcess]
+    public function testApplyAutoRestartsSkipsRunnersWithoutFlag(): void
     {
-        $runners = [
-            $this->runner(true, 40.0, 4000),
-            $this->runner(true, null, null),
-        ];
+        $spawned = false;
+        \RunnerDeck\Shell::fake(function () use (&$spawned): array {
+            $spawned = true;
+            return ['code' => 0, 'stdout' => "1\n", 'stderr' => ''];
+        });
 
-        $stats = \RunnerDeck\Dashboard::computeStats($runners);
+        $info = new \RunnerDeck\RunnerInfo(
+            id: 'runner-1',
+            dir: $this->dir,
+            configured: true,
+            agentName: 'acme-1',
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
 
-        $this->assertSame(2, $stats['running']);
-        $this->assertSame(40.0, $stats['avg_cpu_percent']);
-        $this->assertSame(4000, $stats['total_rss_kb']);
+        \RunnerDeck\Dashboard::applyAutoRestarts(
+            ['runner-1' => $info],
+            [['id' => 'runner-1', 'should_auto_restart' => false]],
+        );
+
+        $this->assertFalse($spawned);
     }
 }

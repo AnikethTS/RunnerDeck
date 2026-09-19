@@ -6,7 +6,8 @@ import { readFile } from 'node:fs/promises';
 // so GithubClient degrades to health.logged_in === false, same as any fresh
 // machine. Runner data for the richer UI tests (filter/sort/bulk/mismatch)
 // is supplied by mocking `action=status` responses at the network level —
-// see mockStatus() below. First-run setup and Settings, by contrast, hit
+// see mockStatus() below. Mismatch badges require `mismatch_flagged: true`
+// on that payload (the streak itself is counted in PHP). First-run setup and Settings, by contrast, hit
 // the real Settings::save() code path with no mocking at all.
 //
 // Tests run serially in this one file: the first test performs real
@@ -129,9 +130,8 @@ test('selecting runners shows the bulk-actions bar with an accurate count', asyn
 });
 
 test('a persistent local/GitHub status disagreement gets flagged', async ({ page }) => {
-  // github.status is 'online' but local_running is false — isMismatched()
-  // in app.js only flags this after MISMATCH_THRESHOLD (3) consecutive
-  // polls, so refresh three times before asserting.
+  // Streak counting lives in CrashState on the server. The UI just renders
+  // mismatch_flagged from the status payload (this suite mocks that JSON).
   await mockStatus(page, [
     fixtureRunner({
       id: 'runner-base',
@@ -141,12 +141,10 @@ test('a persistent local/GitHub status disagreement gets flagged', async ({ page
       cpu_percent: null,
       rss_kb: null,
       github: { status: 'online', busy: false, labels: [] },
+      mismatch_flagged: true,
     }),
   ]);
   await page.goto('/');
-
-  await page.locator('#btn-refresh').click();
-  await page.locator('#btn-refresh').click();
   await page.locator('#btn-refresh').click();
 
   await expect(page.locator('tr[data-runner="runner-base"] .row-flag')).toBeVisible();

@@ -42,6 +42,57 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($result[0]['crash_flagged']);
         $this->assertFalse($result[0]['just_flagged']);
         $this->assertFalse($result[0]['should_auto_restart']);
+        $this->assertFalse($result[0]['mismatch_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testMismatchFlagsAfterThreePolls(): void
+    {
+        $row = [
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'github' => ['status' => 'online', 'busy' => false, 'labels' => []],
+        ];
+
+        $first = \RunnerDeck\CrashState::track([$row]);
+        $second = \RunnerDeck\CrashState::track([$row]);
+        $third = \RunnerDeck\CrashState::track([$row]);
+
+        $this->assertFalse($first[0]['mismatch_flagged']);
+        $this->assertFalse($second[0]['mismatch_flagged']);
+        $this->assertTrue($third[0]['mismatch_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testMismatchResetsWhenStatesAgree(): void
+    {
+        $offline = [
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'github' => ['status' => 'online', 'busy' => false, 'labels' => []],
+        ];
+        $agreed = [
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'github' => ['status' => 'offline', 'busy' => false, 'labels' => []],
+        ];
+
+        \RunnerDeck\CrashState::track([$offline]);
+        \RunnerDeck\CrashState::track([$offline]);
+        $cleared = \RunnerDeck\CrashState::track([$agreed]);
+
+        $this->assertFalse($cleared[0]['mismatch_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testNoGithubRecordIsNotAMismatch(): void
+    {
+        $row = ['id' => 'runner-base', 'local_running' => true, 'configured' => true, 'github' => null];
+        $result = \RunnerDeck\CrashState::track([$row]);
+        $this->assertFalse($result[0]['mismatch_flagged']);
     }
 
     #[RunInSeparateProcess]

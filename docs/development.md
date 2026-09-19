@@ -79,7 +79,7 @@ runnerdeck/
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
     AppLog.php             JSON error log at storage/runnerdeck.log (rotated)
-    History.php            best-effort CPU/RAM history in storage/db/history.sqlite
+    History.php            best-effort CPU/RAM history + SVG chart markup
     Csrf.php              session-bound CSRF token minting/verification
     Auth.php              optional TOTP login gate, lockout tracking
     Totp.php               RFC 6238 TOTP code generation/verification, no dependency

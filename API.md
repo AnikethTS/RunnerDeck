@@ -121,30 +121,42 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "github": { "status": "online", "busy": false, "labels": ["self-hosted-runnerdeck"] },
       "crash_flagged": false,
       "just_flagged": false,
-      "should_auto_restart": false
+      "should_auto_restart": false,
+      "mismatch_flagged": false
     }
   ],
   "stats": { "total": 1, "running": 1, "avg_cpu_percent": 1.2, "total_rss_kb": 204800 },
-  "system": { "cpu_percent": 4.5, "cpu_cores": 8, "mem_used_kb": 3200000, "mem_total_kb": 16000000, "mem_percent": 20.0 }
+  "system": { "cpu_percent": 4.5, "cpu_cores": 8, "mem_used_kb": 3200000, "mem_total_kb": 16000000, "mem_percent": 20.0 },
+  "history": {
+    "available": true,
+    "cpu_svg": "<polyline points=\"0.0,60.0 300.0,0.0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\" />",
+    "mem_svg": "<polyline points=\"0.0,60.0 300.0,0.0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\" />"
+  }
 }
 ```
 
 `runners[].github` is `null` if GitHub has no record under that runner's
 registered name yet (still provisioning, or access issue — see `health`).
 
-`crash_flagged`/`just_flagged`/`should_auto_restart` are server-tracked
-bookkeeping (`src/CrashState.php`) — reading/updating a small state file on
-every poll, the same category of side effect as `History::record()` already
-writing a stats sample from within this same GET action, not a
-runner-mutating one. `just_flagged` is `true` for exactly one poll, the one
-where a crash-loop is first detected — use it to fire a one-shot
-notification, not `crash_flagged` (which stays `true` until the runner's
-been healthy again for a couple of minutes). `should_auto_restart: true` is
-an *instruction*, not an action already taken: it means "auto-restart is
-enabled and this runner just crashed with attempts remaining — you should
-`POST action=start` for it now." RunnerDeck's own UI does this
-automatically on every poll; a script driving this API directly needs to
-replicate that if it wants auto-restart behavior.
+`crash_flagged`/`just_flagged`/`should_auto_restart`/`mismatch_flagged` are
+server-tracked bookkeeping (`src/CrashState.php`) — reading/updating a small
+state file on every poll, the same category of side effect as
+`History::record()` already writing a stats sample from within this same GET
+action. `just_flagged` is `true` for exactly one poll, the one where a
+crash-loop is first detected — use it to fire a one-shot notification, not
+`crash_flagged` (which stays `true` until the runner's been healthy again
+for a couple of minutes). `mismatch_flagged` is `true` after three consecutive
+polls where GitHub `online` and the local process disagree.
+
+When auto-restart is enabled, `should_auto_restart: true` means this poll
+already called `ProcessControl::startIndividual()` for that runner. The flag
+is still returned so a script can see that a restart was attempted; you do
+not need to `POST action=start` yourself. The dashboard UI no longer starts
+runners from the browser on this flag.
+
+`history` is the CPU/RAM chart markup (`cpu_svg`/`mem_svg`) for the last hour,
+generated in PHP. `action=history` still returns the raw samples if you want
+to draw your own chart.
 
 ### `action=log`
 
