@@ -39,6 +39,7 @@ final class Dashboard
         }
 
         $runners = CrashState::track($runners);
+        self::notifyCrashes($runners);
 
         $stats = self::computeStats($runners);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
@@ -55,6 +56,16 @@ final class Dashboard
             'system' => SystemStats::snapshot(),
             'history' => self::historyView(),
         ];
+    }
+
+    /** @param array<int, array<string, mixed>> $runners */
+    private static function notifyCrashes(array $runners): void
+    {
+        foreach ($runners as $r) {
+            if (!empty($r['just_flagged'])) {
+                CrashWebhook::notify((string) $r['id'], (string) ($r['agent_name'] ?? $r['id']));
+            }
+        }
     }
 
     /** @param array<int, array<string, mixed>> $runners */

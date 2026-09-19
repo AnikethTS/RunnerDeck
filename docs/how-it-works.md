@@ -59,6 +59,11 @@
   when it sees the flag. `action=status` (a GET) only ever decides and
   reports; it never spawns a process itself, deliberately — a GET has no
   CSRF check by design, so it must stay side-effect-free.
+- An optional **crash-loop webhook** (Settings, `RUNNERDECK_CRASH_WEBHOOK_URL`)
+  POSTs a notification the moment a crash-loop is flagged, so you find out
+  even with no dashboard tab open. Slack and Discord incoming webhook URLs
+  are detected automatically and get their native payload shape; anything
+  else gets a plain JSON payload, e.g. for a webhook-to-email/push relay.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.

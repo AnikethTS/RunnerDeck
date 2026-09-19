@@ -21,6 +21,7 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_POOL_DIR=' . dirname($this->dir));
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/storage/settings.json');
 
         \RunnerDeck\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
@@ -39,6 +40,7 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 

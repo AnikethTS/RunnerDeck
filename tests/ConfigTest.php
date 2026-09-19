@@ -13,7 +13,7 @@ final class ConfigTest extends TestCase
     private const ENV_KEYS = [
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
-        'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART',
+        'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
     ];
 
     protected function tearDown(): void
@@ -123,6 +123,19 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
         $this->assertTrue(\RunnerDeck\Config::autoRestartEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashWebhookUrlDefaultsToNull(): void
+    {
+        $this->assertNull(\RunnerDeck\Config::crashWebhookUrl());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashWebhookUrlReturnsEnvValue(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://hooks.slack.com/services/x');
+        $this->assertSame('https://hooks.slack.com/services/x', \RunnerDeck\Config::crashWebhookUrl());
     }
 
     #[RunInSeparateProcess]

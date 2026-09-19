@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Optional crash-loop webhook (`RUNNERDECK_CRASH_WEBHOOK_URL`, Settings):
+  POSTs a notification the moment a crash-loop is flagged, so it's not
+  only visible if a dashboard tab happens to be open. Slack and Discord
+  incoming webhook URLs are detected automatically and get their native
+  payload shape; anything else gets a plain JSON payload.
+
 ### Changed
 
 - Local/GitHub mismatch streaks are counted in `CrashState`
@@ -17,6 +25,10 @@ follows [SemVer](https://semver.org/).
 ### Fixed
 
 - TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.
+- `ApiTest`, `ProvisionerTest`, `ProcessControlTest`, and `CrashWebhookTest`
+  didn't isolate `RUNNERDECK_SETTINGS_FILE`, so their failure-path fixtures
+  were writing real entries into this repo's own `storage/runnerdeck.log`
+  on every `composer run test`. No behavior change, test-only.
 
 ### Security
 

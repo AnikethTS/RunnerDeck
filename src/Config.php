@@ -94,6 +94,13 @@ final class Config
         return getenv('RUNNERDECK_AUTO_RESTART') === '1';
     }
 
+    /** @return string|null a URL to POST a crash-loop notification to, or null if unset */
+    public static function crashWebhookUrl(): ?string
+    {
+        $url = getenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        return $url !== false && $url !== '' ? $url : null;
+    }
+
     /** @return string|null the base32 TOTP secret shared with an authenticator app, or null if login is off */
     public static function authTotpSecret(): ?string
     {

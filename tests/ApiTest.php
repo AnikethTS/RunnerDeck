@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 
 final class ApiTest extends TestCase
 {
+    private ?string $tmpSettingsDir = null;
+
     protected function tearDown(): void
     {
         $_POST = [];
@@ -16,7 +18,18 @@ final class ApiTest extends TestCase
         \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_SETTINGS_FILE');
+        if ($this->tmpSettingsDir !== null) {
+            exec('rm -rf ' . escapeshellarg($this->tmpSettingsDir));
+        }
     }
+
+    private function isolateSettingsFile(): void
+    {
+        $this->tmpSettingsDir = sys_get_temp_dir() . '/runnerdeck-api-test-' . uniqid();
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->tmpSettingsDir . '/settings.json');
+    }
+
     public function testParseRunnerIdsSplitsAndDropsBlanks(): void
     {
         $this->assertSame(['runner-1', 'runner-2'], \RunnerDeck\Api::parseRunnerIds(' runner-1, runner-2 ,'));
@@ -51,6 +64,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        $this->isolateSettingsFile();
         \RunnerDeck\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'gh down']);
 
         $blocked = \RunnerDeck\Api::checkNotBusy('acme-1', false);
@@ -65,6 +79,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        $this->isolateSettingsFile();
         \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
@@ -91,6 +106,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        $this->isolateSettingsFile();
         \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
@@ -109,6 +125,7 @@ final class ApiTest extends TestCase
     {
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        $this->isolateSettingsFile();
         \RunnerDeck\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([

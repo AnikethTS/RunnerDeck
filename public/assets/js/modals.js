@@ -13,6 +13,7 @@ export function wireScopeToggle(scopeSelect, orgField, repoField) {
 
 export async function submitSettingsForm(
   errorEl, scopeSelect, orgInput, repoInput, labelInput, submitBtn, checkUpdatesInput = null, autoRestartInput = null,
+  crashWebhookUrlInput = null,
 ) {
   errorEl.hidden = true;
   setLoading(submitBtn, 'Saving…');
@@ -24,6 +25,7 @@ export async function submitSettingsForm(
       label: labelInput.value.trim(),
       check_updates: checkUpdatesInput && checkUpdatesInput.checked ? '1' : '',
       auto_restart: autoRestartInput && autoRestartInput.checked ? '1' : '',
+      crash_webhook_url: crashWebhookUrlInput ? crashWebhookUrlInput.value.trim() : '',
     });
     if (!data.ok) {
       errorEl.textContent = data.message || 'failed to save settings';
@@ -182,6 +184,7 @@ export function initModals(fetchStatus) {
     document.getElementById('settings-label').value = cur.label || '';
     document.getElementById('settings-check-updates').checked = Boolean(cur.checkUpdates);
     document.getElementById('settings-auto-restart').checked = Boolean(cur.autoRestart);
+    document.getElementById('settings-crash-webhook-url').value = cur.crashWebhookUrl || '';
     settingsScope.dispatchEvent(new Event('change'));
     document.getElementById('settings-error').hidden = true;
     settingsModal.hidden = false;
@@ -213,6 +216,7 @@ export function initModals(fetchStatus) {
       e.target.querySelector('button[type="submit"]'),
       document.getElementById('settings-check-updates'),
       document.getElementById('settings-auto-restart'),
+      document.getElementById('settings-crash-webhook-url'),
     );
   });
 
