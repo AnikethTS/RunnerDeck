@@ -19,6 +19,7 @@ final class ProvisionerTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         putenv('RUNNERDECK_LABEL=self-hosted-runnerdeck');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/storage/settings.json');
     }
 
     protected function tearDown(): void
@@ -27,6 +28,7 @@ final class ProvisionerTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_LABEL');
+        putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 

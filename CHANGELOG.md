@@ -25,6 +25,10 @@ follows [SemVer](https://semver.org/).
 ### Fixed
 
 - TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.
+- `ApiTest`, `ProvisionerTest`, `ProcessControlTest`, and `CrashWebhookTest`
+  didn't isolate `RUNNERDECK_SETTINGS_FILE`, so their failure-path fixtures
+  were writing real entries into this repo's own `storage/runnerdeck.log`
+  on every `composer run test`. No behavior change, test-only.
 
 ### Security
 

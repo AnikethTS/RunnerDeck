@@ -9,10 +9,20 @@ use PHPUnit\Framework\TestCase;
 
 final class CrashWebhookTest extends TestCase
 {
+    private string $tmpDir;
+
+    protected function setUp(): void
+    {
+        $this->tmpDir = sys_get_temp_dir() . '/runnerdeck-webhook-test-' . uniqid();
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->tmpDir . '/settings.json');
+    }
+
     protected function tearDown(): void
     {
         \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_SETTINGS_FILE');
+        exec('rm -rf ' . escapeshellarg($this->tmpDir));
     }
 
     #[RunInSeparateProcess]
