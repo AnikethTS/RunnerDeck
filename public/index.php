@@ -30,6 +30,7 @@ $currentSettings = [
     'label' => Config::label(),
     'checkUpdates' => Config::checkUpdatesEnabled(),
     'autoRestart' => Config::autoRestartEnabled(),
+    'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
 ];
 
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
@@ -311,6 +312,20 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
             <input type="checkbox" id="settings-auto-restart" name="auto_restart" value="1" />
             Auto-restart crashed runners
           </label>
+
+          <div class="settings-field">
+            <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>
+            <input
+              type="url"
+              id="settings-crash-webhook-url"
+              name="crash_webhook_url"
+              placeholder="https://hooks.slack.com/services/..."
+            />
+            <p class="muted">
+              Slack and Discord incoming webhook URLs are detected automatically;
+              anything else gets a plain JSON payload.
+            </p>
+          </div>
 
           <div class="settings-field">
             <label>Login</label>
