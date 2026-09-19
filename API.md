@@ -148,11 +148,12 @@ crash-loop is first detected — use it to fire a one-shot notification, not
 for a couple of minutes). `mismatch_flagged` is `true` after three consecutive
 polls where GitHub `online` and the local process disagree.
 
-When auto-restart is enabled, `should_auto_restart: true` means this poll
-already called `ProcessControl::startIndividual()` for that runner. The flag
-is still returned so a script can see that a restart was attempted; you do
-not need to `POST action=start` yourself. The dashboard UI no longer starts
-runners from the browser on this flag.
+When auto-restart is enabled, `should_auto_restart: true` means this runner
+just crashed and RunnerDeck wants it restarted — but `action=status` only
+ever decides this, it never acts on it: a GET has no CSRF check by design,
+so it must stay side-effect-free. A client that wants auto-restart to
+actually happen must itself `POST action=start` for that runner when it
+sees the flag — the dashboard UI does exactly this.
 
 `history` is the CPU/RAM chart markup (`cpu_svg`/`mem_svg`) for the last hour,
 generated in PHP. `action=history` still returns the raw samples if you want

@@ -39,7 +39,6 @@ final class Dashboard
         }
 
         $runners = CrashState::track($runners);
-        self::applyAutoRestarts($discovered, $runners);
 
         $stats = self::computeStats($runners);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
@@ -72,29 +71,6 @@ final class Dashboard
             'avg_cpu_percent' => $cpuValues ? array_sum($cpuValues) / count($cpuValues) : null,
             'total_rss_kb' => $rssValues ? array_sum($rssValues) : null,
         ];
-    }
-
-    /**
-     * @param array<string, RunnerInfo> $discovered
-     * @param array<int, array<string, mixed>> $runners
-     */
-    public static function applyAutoRestarts(array $discovered, array $runners): void
-    {
-        foreach ($runners as $r) {
-            if (empty($r['should_auto_restart'])) {
-                continue;
-            }
-            $info = $discovered[$r['id']] ?? null;
-            if ($info === null) {
-                continue;
-            }
-            $result = ProcessControl::startIndividual($info);
-            if (!$result['ok']) {
-                AppLog::error('auto_restart', (string) ($result['message'] ?? 'start failed'), [
-                    'runner' => $r['id'],
-                ]);
-            }
-        }
     }
 
     /** @return array{available: bool, cpu_svg: string, mem_svg: string} */
