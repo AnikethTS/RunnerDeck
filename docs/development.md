@@ -73,6 +73,7 @@ runnerdeck/
     api.php         JSON API front controller (`action=` handlers in src/Api/)
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
+    settings.php    scope/org/repo/label, auto-restart, crash webhook, login setup
     assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap

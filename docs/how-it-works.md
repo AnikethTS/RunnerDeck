@@ -48,7 +48,7 @@
   one usually means the process died without GitHub finding out yet (or
   vice versa). The streak is counted server-side (`mismatch_flagged` on
   `action=status`), so every tab sees the same flag.
-- An optional **auto-restart** setting (Settings dialog) brings a runner
+- An optional **auto-restart** setting (Settings page) brings a runner
   back up if its process dies without you having stopped it yourself. It
   backs off after a few failed attempts in a row — crash-looping is
   flagged with a toast notification and a row badge, not retried forever —
