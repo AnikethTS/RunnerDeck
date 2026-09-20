@@ -276,7 +276,7 @@
       to run <code>ps aux | grep</code>.
     </p>
     <div class="ctas">
-      <a class="btn btn-brand" href="https://github.com/AnikethTS/RunnerDeck#first-time-setup" target="_blank" rel="noopener noreferrer">Get started</a>
+      <a class="btn btn-brand" href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/getting-started.md#first-time-setup" target="_blank" rel="noopener noreferrer">Get started</a>
       <a class="btn" href="https://github.com/AnikethTS/RunnerDeck" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
       <a class="btn" href="https://github.com/AnikethTS/RunnerDeck/releases/latest" target="_blank" rel="noopener noreferrer">Releases</a>
     </div>
@@ -286,7 +286,7 @@
     <div class="shot-grid">
       <img class="shot reveal" src="screenshots/running.png" alt="A runner actively running, with live CPU and memory usage" />
       <img class="shot reveal" src="screenshots/add-runner.png" alt="The Add Runner dialog" />
-      <img class="shot reveal" src="screenshots/settings.png" alt="The scope, org, repo, and label settings dialog" />
+      <img class="shot reveal" src="screenshots/settings.png" alt="The Settings page — repository scope, automation, and notification options" />
     </div>
   </div>
 </section>
@@ -324,6 +324,10 @@
         <h3>Optional login for remote access</h3>
         <p>Localhost-only with no login by default. Want to reach it from another device? <code>bin/setup-totp.php</code> adds an authenticator-app code gate — put a TLS-terminating reverse proxy in front and you're covered.</p>
       </div>
+      <div class="feature-card reveal">
+        <h3>Crash-loop protection, with a heads-up</h3>
+        <p>Auto-restart brings a crashed runner back up, backing off after a few failed attempts instead of retrying forever. An optional webhook — Slack and Discord URLs detected automatically — tells you the moment it happens, even with no dashboard tab open.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -345,7 +349,7 @@
         <tr>
           <td>macOS</td>
           <td class="support">Native</td>
-          <td>Process liveness falls back to <code>ps</code>/<code>lsof</code> (no <code>/proc</code> on Darwin). CI-tested on macOS latest + 14.</td>
+          <td>Process liveness falls back to <code>ps</code>/<code>lsof</code> (no <code>/proc</code> on Darwin). CI-tested on macOS latest.</td>
         </tr>
         <tr>
           <td>Windows</td>
@@ -377,7 +381,7 @@
           <li>Org or single-repo scope</li>
           <li>No telemetry, no account required</li>
         </ul>
-        <a class="btn" href="https://github.com/AnikethTS/RunnerDeck#first-time-setup" target="_blank" rel="noopener noreferrer">Get started</a>
+        <a class="btn" href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/getting-started.md#first-time-setup" target="_blank" rel="noopener noreferrer">Get started</a>
       </div>
       <div class="plan-card plan-card-brand reveal">
         <span class="plan-tag plan-tag-brand">Paid &middot; cloud-hosted</span>
