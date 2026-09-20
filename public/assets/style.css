@@ -487,7 +487,24 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .setup-card h2 { margin: 0 0 6px; font-size: 17px; }
 .setup-card > p.muted { margin: 0 0 18px; font-size: 13px; }
 
-.settings-form { display: flex; flex-direction: column; gap: 4px; }
+.settings-main { padding: 24px 20px 60px; max-width: 1600px; margin: 0 auto; }
+.settings-main h2 { margin: 0 0 4px; font-size: 22px; }
+.settings-main > p.muted { margin: 0 0 28px; font-size: 13px; }
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-section:first-of-type { padding-top: 0; }
+.settings-section:last-of-type { border-bottom: none; }
+.settings-section h3 { margin: 0 0 4px; font-size: 14px; }
+.settings-section > p.muted { margin: 0 0 16px; font-size: 13px; }
+.settings-section > .btn { align-self: flex-start; }
+
+.settings-form { display: flex; flex-direction: column; }
 .settings-form label {
   font-size: 12px;
   font-weight: 600;
@@ -497,7 +514,8 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   margin-top: 10px;
 }
 .settings-form select,
-.settings-form input[type="text"] {
+.settings-form input[type="text"],
+.settings-form input[type="url"] {
   padding: 7px 9px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -506,5 +524,11 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   font-size: 14px;
 }
 .settings-form .settings-field { display: flex; flex-direction: column; gap: 4px; }
-.settings-form button[type="submit"] { margin-top: 16px; }
+.settings-form .settings-field[hidden] { display: none; }
+.settings-form .settings-field > p.muted { margin: 4px 0 0; }
+.settings-form button[type="submit"] {
+  align-self: flex-start;
+  min-width: 160px;
+  margin-top: 24px;
+}
 .setup-error { color: var(--status-critical); font-size: 13px; margin: 10px 0 0; }

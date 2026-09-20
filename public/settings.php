@@ -77,11 +77,16 @@ $csrfToken = Csrf::token();
     <h1>RunnerDeck</h1>
   </header>
 
-  <main class="setup-main">
-    <div class="setup-card">
-      <h2>Settings</h2>
-      <form method="post" class="settings-form">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+  <main class="settings-main">
+    <h2>Settings</h2>
+    <p class="muted"><a href="index.php">&larr; Back to dashboard</a></p>
+
+    <form method="post" class="settings-form">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+
+      <section class="settings-section">
+        <h3>Repository</h3>
+        <p class="muted">Which runners this instance manages.</p>
 
         <label for="settings-scope">Scope</label>
         <select id="settings-scope" name="scope">
@@ -118,6 +123,10 @@ $csrfToken = Csrf::token();
           placeholder="self-hosted-runnerdeck"
           value="<?= htmlspecialchars($current['label']) ?>"
         />
+      </section>
+
+      <section class="settings-section">
+        <h3>Automation</h3>
 
         <label class="checkbox-label">
           <input
@@ -138,6 +147,10 @@ $csrfToken = Csrf::token();
           />
           Auto-restart crashed runners
         </label>
+      </section>
+
+      <section class="settings-section">
+        <h3>Notifications</h3>
 
         <div class="settings-field">
           <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>
@@ -153,26 +166,25 @@ $csrfToken = Csrf::token();
             anything else gets a plain JSON payload.
           </p>
         </div>
+      </section>
 
-        <div class="settings-field">
-          <label>Login</label>
-          <p class="muted">
-            <?= Auth::isEnabled()
-              ? 'Enabled — an authenticator app code is required to sign in.'
-              : 'Disabled — anyone who can reach this port has full access.' ?>
-          </p>
-          <a href="totp_setup.php" class="btn btn-sm">
-            <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
-          </a>
-        </div>
+      <section class="settings-section">
+        <h3>Login</h3>
+        <p class="muted">
+          <?= Auth::isEnabled()
+            ? 'Enabled — an authenticator app code is required to sign in.'
+            : 'Disabled — anyone who can reach this port has full access.' ?>
+        </p>
+        <a href="totp_setup.php" class="btn btn-sm">
+          <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
+        </a>
+      </section>
 
-        <button type="submit" class="btn btn-good">Save</button>
-        <?php if ($error !== null) : ?>
-          <p class="setup-error"><?= htmlspecialchars($error) ?></p>
-        <?php endif; ?>
-      </form>
-      <p class="muted"><a href="index.php">Back to dashboard</a></p>
-    </div>
+      <button type="submit" class="btn btn-good">Save</button>
+      <?php if ($error !== null) : ?>
+        <p class="setup-error"><?= htmlspecialchars($error) ?></p>
+      <?php endif; ?>
+    </form>
   </main>
 
   <script>
