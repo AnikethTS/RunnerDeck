@@ -23,18 +23,11 @@ try {
 } catch (RuntimeException) {
     $currentScope = 'org';
 }
-$currentSettings = [
-    'scope' => $currentScope,
-    'org' => (string) getenv('RUNNERDECK_ORG'),
-    'repo' => (string) getenv('RUNNERDECK_REPO'),
-    'label' => Config::label(),
-    'checkUpdates' => Config::checkUpdatesEnabled(),
-    'autoRestart' => Config::autoRestartEnabled(),
-    'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
-];
 
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
-$accountLabel = $needsSetup ? null : ($currentScope === 'repo' ? $currentSettings['repo'] : $currentSettings['org']);
+$accountLabel = $needsSetup
+    ? null
+    : ($currentScope === 'repo' ? (string) getenv('RUNNERDECK_REPO') : (string) getenv('RUNNERDECK_ORG'));
 $themeCookie = $_COOKIE['runnerdeck-theme'] ?? '';
 $themeAttr = ($themeCookie === 'dark' || $themeCookie === 'light')
     ? ' data-theme="' . htmlspecialchars($themeCookie, ENT_QUOTES) . '"'
@@ -68,7 +61,7 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
       <span class="org-tag">
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
-      <button id="btn-settings" class="btn btn-sm">Settings</button>
+      <a href="settings.php" class="btn btn-sm">Settings</a>
         <?php if (Auth::isEnabled()) : ?>
         <button id="btn-logout" class="btn btn-sm">Log out</button>
         <?php endif; ?>
@@ -278,76 +271,6 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
       </div>
     </div>
 
-    <div id="settings-modal" class="modal" hidden>
-      <div class="modal-content modal-content-small">
-        <div class="modal-header">
-          <h2>Settings</h2>
-          <button id="settings-modal-close" class="btn">Close</button>
-        </div>
-        <form id="settings-form" class="settings-form">
-          <label for="settings-scope">Scope</label>
-          <select id="settings-scope" name="scope">
-            <option value="org">Organization</option>
-            <option value="repo">Single repo</option>
-          </select>
-
-          <div id="settings-org-field" class="settings-field">
-            <label for="settings-org">GitHub org</label>
-            <input type="text" id="settings-org" name="org" placeholder="my-org" />
-          </div>
-          <div id="settings-repo-field" class="settings-field" hidden>
-            <label for="settings-repo">Repo (owner/repo)</label>
-            <input type="text" id="settings-repo" name="repo" placeholder="owner/repo" />
-          </div>
-
-          <label for="settings-label">Runner label (optional)</label>
-          <input type="text" id="settings-label" name="label" placeholder="self-hosted-runnerdeck" />
-
-          <label class="checkbox-label">
-            <input type="checkbox" id="settings-check-updates" name="check_updates" value="1" />
-            Check GitHub for new RunnerDeck releases
-          </label>
-
-          <label class="checkbox-label">
-            <input type="checkbox" id="settings-auto-restart" name="auto_restart" value="1" />
-            Auto-restart crashed runners
-          </label>
-
-          <div class="settings-field">
-            <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>
-            <input
-              type="url"
-              id="settings-crash-webhook-url"
-              name="crash_webhook_url"
-              placeholder="https://hooks.slack.com/services/..."
-            />
-            <p class="muted">
-              Slack and Discord incoming webhook URLs are detected automatically;
-              anything else gets a plain JSON payload.
-            </p>
-          </div>
-
-          <div class="settings-field">
-            <label>Login</label>
-            <p class="muted">
-              <?= Auth::isEnabled()
-                ? 'Enabled — an authenticator app code is required to sign in.'
-                : 'Disabled — anyone who can reach this port has full access.' ?>
-            </p>
-            <a href="totp_setup.php" class="btn btn-sm">
-              <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
-            </a>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" id="settings-cancel" class="btn">Cancel</button>
-            <button type="submit" class="btn btn-good">Save</button>
-          </div>
-          <p id="settings-error" class="setup-error" hidden></p>
-        </form>
-      </div>
-    </div>
-
     <div id="add-runner-modal" class="modal" hidden>
       <div class="modal-content modal-content-small">
         <div class="modal-header">
@@ -402,7 +325,6 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
     window.__SNAPSHOT__ = <?= json_encode($snapshot) ?>;
     window.__CSRF__ = <?= json_encode($csrfToken) ?>;
     window.__NEEDS_SETUP__ = <?= json_encode($needsSetup) ?>;
-    window.__CURRENT_SETTINGS__ = <?= json_encode($currentSettings) ?>;
   </script>
 <script type="module" src="assets/app.js?v=<?= filemtime(__DIR__ . '/assets/app.js') ?>"></script>
 </body>

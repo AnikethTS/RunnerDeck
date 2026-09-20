@@ -172,24 +172,6 @@ export function initModals(fetchStatus) {
   document.getElementById('log-range-from').addEventListener('input', updateLogDownloadHref);
   document.getElementById('log-range-to').addEventListener('input', updateLogDownloadHref);
 
-  const settingsModal = document.getElementById('settings-modal');
-  const settingsScope = document.getElementById('settings-scope');
-  wireScopeToggle(settingsScope, document.getElementById('settings-org-field'), document.getElementById('settings-repo-field'));
-
-  document.getElementById('btn-settings').addEventListener('click', () => {
-    const cur = window.__CURRENT_SETTINGS__ || {};
-    settingsScope.value = cur.scope || 'org';
-    document.getElementById('settings-org').value = cur.org || '';
-    document.getElementById('settings-repo').value = cur.repo || '';
-    document.getElementById('settings-label').value = cur.label || '';
-    document.getElementById('settings-check-updates').checked = Boolean(cur.checkUpdates);
-    document.getElementById('settings-auto-restart').checked = Boolean(cur.autoRestart);
-    document.getElementById('settings-crash-webhook-url').value = cur.crashWebhookUrl || '';
-    settingsScope.dispatchEvent(new Event('change'));
-    document.getElementById('settings-error').hidden = true;
-    settingsModal.hidden = false;
-  });
-
   const logoutBtn = document.getElementById('btn-logout');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
@@ -197,28 +179,6 @@ export function initModals(fetchStatus) {
       window.location.href = 'login.php';
     });
   }
-
-  document.getElementById('settings-cancel').addEventListener('click', () => {
-    settingsModal.hidden = true;
-  });
-  document.getElementById('settings-modal-close').addEventListener('click', () => {
-    settingsModal.hidden = true;
-  });
-
-  document.getElementById('settings-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    submitSettingsForm(
-      document.getElementById('settings-error'),
-      settingsScope,
-      document.getElementById('settings-org'),
-      document.getElementById('settings-repo'),
-      document.getElementById('settings-label'),
-      e.target.querySelector('button[type="submit"]'),
-      document.getElementById('settings-check-updates'),
-      document.getElementById('settings-auto-restart'),
-      document.getElementById('settings-crash-webhook-url'),
-    );
-  });
 
   const addRunnerModal = document.getElementById('add-runner-modal');
 

@@ -381,3 +381,34 @@ test('Local process sorts independently by CPU and uptime, including absent valu
   await expect(page.locator('th[aria-sort]')).toHaveCount(1);
   await expect(page.locator('thead th')).toHaveCount(6);
 });
+
+test('settings page toggles scope fields and persists a change', async ({ page }) => {
+  await page.goto('/settings.php');
+  await expect(page.locator('#settings-org-field')).toBeVisible();
+  await expect(page.locator('#settings-repo-field')).toBeHidden();
+
+  await page.locator('#settings-scope').selectOption('repo');
+  await expect(page.locator('#settings-org-field')).toBeHidden();
+  await expect(page.locator('#settings-repo-field')).toBeVisible();
+
+  await page.locator('#settings-repo').fill('e2e-org/e2e-repo');
+  await page.locator('button[type="submit"]').click();
+
+  await expect(page).toHaveURL(/index\.php$/);
+  await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
+});
+
+test('settings page shows a validation error and keeps entered values', async ({ page }) => {
+  await page.goto('/settings.php');
+  await page.locator('#settings-scope').selectOption('org');
+  await page.locator('#settings-org').fill('e2e-org');
+  // A scheme browsers accept as a valid URL (so native type="url" validation
+  // doesn't block the submit) but that our own scheme allowlist rejects —
+  // this exercises the server-side check, not the browser's.
+  await page.locator('#settings-crash-webhook-url').fill('ftp://example.com');
+  await page.locator('button[type="submit"]').click();
+
+  await expect(page).toHaveURL(/settings\.php$/);
+  await expect(page.locator('.setup-error')).toContainText('crash webhook url must start with');
+  await expect(page.locator('#settings-org')).toHaveValue('e2e-org');
+});
