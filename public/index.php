@@ -8,6 +8,7 @@ use RunnerDeck\Auth;
 use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\Dashboard;
+use RunnerDeck\Layout;
 
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
     header('Location: login.php');
@@ -15,7 +16,6 @@ if (Auth::isEnabled() && !Auth::isLoggedIn()) {
 }
 
 $csrfToken = Csrf::token();
-$hasLogo = is_file(__DIR__ . '/assets/logo.png');
 $needsSetup = !Config::isConfigured();
 
 try {
@@ -28,35 +28,21 @@ $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
 $accountLabel = $needsSetup
     ? null
     : ($currentScope === 'repo' ? (string) getenv('RUNNERDECK_REPO') : (string) getenv('RUNNERDECK_ORG'));
-$themeCookie = $_COOKIE['runnerdeck-theme'] ?? '';
-$themeAttr = ($themeCookie === 'dark' || $themeCookie === 'light')
-    ? ' data-theme="' . htmlspecialchars($themeCookie, ENT_QUOTES) . '"'
-    : '';
 $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
+
+Layout::htmlOpen('RunnerDeck', manifest: true);
 ?>
-<!doctype html>
-<html lang="en"<?= $themeAttr ?>>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunnerDeck</title>
-  <link rel="manifest" href="assets/manifest.webmanifest" />
-  <?php if ($hasLogo) : ?>
-    <link rel="icon" href="assets/logo.png" />
-  <?php endif; ?>
-  <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
-</head>
-<body>
   <div id="toast-container"></div>
-  <header class="topbar">
-    <?php if ($hasLogo) : ?>
-      <img src="assets/logo.png" alt="Logo" class="logo" />
-    <?php endif; ?>
-    <h1>RunnerDeck</h1>
+<?php
+Layout::topbarStart();
+?>
     <span class="edition-tag">Community</span>
     <span class="version-tag">v<?= htmlspecialchars(Config::version()) ?></span>
     <a id="update-available" class="update-badge" href="https://github.com/AnikethTS/RunnerDeck/releases/latest"
        target="_blank" rel="noopener noreferrer" hidden></a>
+<?php
+Layout::topbarEndStart();
+?>
     <?php if (!$needsSetup) : ?>
       <span class="org-tag">
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
@@ -66,44 +52,9 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
         <button id="btn-logout" class="btn btn-sm">Log out</button>
         <?php endif; ?>
     <?php endif; ?>
-    <button id="btn-theme-toggle" class="btn btn-sm" aria-label="Toggle theme" title="Toggle theme">
-    <svg
-    id="theme-icon-sun"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <circle cx="12" cy="12" r="5"></circle>
-    <line x1="12" y1="1" x2="12" y2="3"></line>
-    <line x1="12" y1="21" x2="12" y2="23"></line>
-    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-    <line x1="1" y1="12" x2="3" y2="12"></line>
-    <line x1="21" y1="12" x2="23" y2="12"></line>
-    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-  </svg>
-   <svg
-    id="theme-icon-moon"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    hidden
-  >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-  </svg>
-</button>
-  </header>
+<?php
+Layout::topbarEnd();
+?>
 
   <?php if ($needsSetup) : ?>
     <main class="setup-main">
@@ -326,6 +277,5 @@ $history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
     window.__CSRF__ = <?= json_encode($csrfToken) ?>;
     window.__NEEDS_SETUP__ = <?= json_encode($needsSetup) ?>;
   </script>
-<script type="module" src="assets/app.js?v=<?= filemtime(__DIR__ . '/assets/app.js') ?>"></script>
-</body>
-</html>
+<?php
+Layout::htmlClose(['assets/app.js']);

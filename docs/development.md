@@ -74,7 +74,8 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     settings.php    scope/org/repo/label, auto-restart, crash webhook, login setup
-    assets/         app.js (entry point, ES modules — see assets/js/), style.css, optional logo.png
+    totp_setup.php  optional TOTP enroll / rotate
+    assets/         app.js (dashboard), js/theme.js, style.css, optional logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Config.php           env-based configuration
@@ -92,6 +93,7 @@ runnerdeck/
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Dashboard.php         merges local + GitHub state into one snapshot
+    Layout.php            shared HTML chrome: theme cookie, topbar, assets
     Api.php               JSON API router and shared request helpers
     Api/                  one class per `api.php?action=` (`RunnerDeck\Api\`)
     Shell.php             timeout-guarded subprocess helper

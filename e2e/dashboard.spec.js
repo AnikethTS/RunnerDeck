@@ -412,3 +412,16 @@ test('settings page shows a validation error and keeps entered values', async ({
   await expect(page.locator('.setup-error')).toContainText('crash webhook url must start with');
   await expect(page.locator('#settings-org')).toHaveValue('e2e-org');
 });
+
+test('settings page has a theme toggle that persists to the dashboard', async ({ page }) => {
+  await page.goto('/settings.php');
+  await expect(page.locator('#btn-theme-toggle')).toBeVisible();
+
+  await page.locator('#btn-theme-toggle').click();
+  const theme = await page.locator('html').getAttribute('data-theme');
+  expect(theme).toMatch(/^(dark|light)$/);
+
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  await expect(page.locator('#btn-theme-toggle')).toBeVisible();
+});

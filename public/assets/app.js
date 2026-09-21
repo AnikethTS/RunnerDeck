@@ -8,77 +8,10 @@ import { renderStats, renderLoadStat } from './js/stats.js';
 import {
   wireScopeToggle, submitSettingsForm, confirmModal, openLogViewer, openRenameModal, initModals,
 } from './js/modals.js';
+import './js/theme.js';
 
 const POLL_MS = 5000;
 const SYSTEM_POLL_MS = 2000;
-const THEME_KEY = 'runnerdeck-theme';
-
-(() => {
-  const btn = document.getElementById('btn-theme-toggle');
-  const sunIcon = document.getElementById('theme-icon-sun');
-  const moonIcon = document.getElementById('theme-icon-moon');
-  if (!btn) return;
-
-  function readCookie() {
-    const match = document.cookie.match(/(?:^|; )runnerdeck-theme=(dark|light)/);
-    return match ? match[1] : null;
-  }
-
-  function getStoredTheme() {
-    const fromCookie = readCookie();
-    if (fromCookie) return fromCookie;
-    try {
-      const legacy = localStorage.getItem(THEME_KEY);
-      if (legacy === 'dark' || legacy === 'light') {
-        storeTheme(legacy);
-        localStorage.removeItem(THEME_KEY);
-        return legacy;
-      }
-    } catch {
-      // storage unavailable
-    }
-    return null;
-  }
-
-  function storeTheme(theme) {
-    const maxAge = theme ? 31536000 : 0;
-    const value = theme || '';
-    document.cookie = `${THEME_KEY}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
-  }
-
-  function systemPrefersDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  function effectiveTheme(stored) {
-    if (stored === 'dark' || stored === 'light') return stored;
-    return systemPrefersDark() ? 'dark' : 'light';
-  }
-
-  function applyTheme(stored) {
-    if (stored === 'dark' || stored === 'light') {
-      document.documentElement.dataset.theme = stored;
-    } else {
-      delete document.documentElement.dataset.theme;
-    }
-    const dark = effectiveTheme(stored) === 'dark';
-    sunIcon.toggleAttribute('hidden', dark);
-    moonIcon.toggleAttribute('hidden', !dark);
-  }
-
-  let stored = getStoredTheme();
-  applyTheme(stored);
-
-  btn.addEventListener('click', () => {
-    stored = effectiveTheme(stored) === 'dark' ? 'light' : 'dark';
-    storeTheme(stored);
-    applyTheme(stored);
-  });
-
-  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (!getStoredTheme()) applyTheme(null);
-  });
-})();
 
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');

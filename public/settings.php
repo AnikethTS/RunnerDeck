@@ -8,6 +8,7 @@ use RunnerDeck\Api\SaveSettingsAction;
 use RunnerDeck\Auth;
 use RunnerDeck\Config;
 use RunnerDeck\Csrf;
+use RunnerDeck\Layout;
 
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
     header('Location: login.php');
@@ -55,27 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 }
 
-$hasLogo = is_file(__DIR__ . '/assets/logo.png');
 $csrfToken = Csrf::token();
+
+Layout::htmlOpen('RunnerDeck — Settings');
+Layout::topbarStart();
+Layout::topbarEndStart();
+Layout::topbarEnd();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunnerDeck — Settings</title>
-  <?php if ($hasLogo) : ?>
-    <link rel="icon" href="assets/logo.png" />
-  <?php endif; ?>
-  <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
-</head>
-<body>
-  <header class="topbar">
-    <?php if ($hasLogo) : ?>
-      <img src="assets/logo.png" alt="Logo" class="logo" />
-    <?php endif; ?>
-    <h1>RunnerDeck</h1>
-  </header>
 
   <main class="settings-main">
     <h2>Settings</h2>
@@ -201,5 +188,5 @@ $csrfToken = Csrf::token();
       update();
     })();
   </script>
-</body>
-</html>
+<?php
+Layout::htmlClose(['assets/js/theme.js']);
