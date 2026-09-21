@@ -6,6 +6,7 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Auth;
 use RunnerDeck\Csrf;
+use RunnerDeck\Layout;
 
 if (!Auth::isEnabled()) {
     header('Location: index.php');
@@ -35,27 +36,13 @@ if ($lockout['locked']) {
     }
 }
 
-$hasLogo = is_file(__DIR__ . '/assets/logo.png');
 $csrfToken = Csrf::token();
+
+Layout::htmlOpen('RunnerDeck — Log in');
+Layout::topbarStart();
+Layout::topbarEndStart();
+Layout::topbarEnd();
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RunnerDeck — Log in</title>
-  <?php if ($hasLogo) : ?>
-    <link rel="icon" href="assets/logo.png" />
-  <?php endif; ?>
-  <link rel="stylesheet" href="assets/style.css?v=<?= filemtime(__DIR__ . '/assets/style.css') ?>" />
-</head>
-<body>
-  <header class="topbar">
-    <?php if ($hasLogo) : ?>
-      <img src="assets/logo.png" alt="Logo" class="logo" />
-    <?php endif; ?>
-    <h1>RunnerDeck</h1>
-  </header>
 
   <main class="setup-main">
     <div class="setup-card">
@@ -82,5 +69,5 @@ $csrfToken = Csrf::token();
       </form>
     </div>
   </main>
-</body>
-</html>
+<?php
+Layout::htmlClose(['assets/js/theme.js']);

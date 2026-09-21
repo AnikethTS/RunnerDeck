@@ -92,6 +92,12 @@ body {
 
 .topbar .logo { height: 28px; }
 .topbar h1 { font-size: 18px; margin: 0; font-weight: 600; }
+.topbar-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .edition-tag {
   font-size: 11px;
   font-weight: 700;
@@ -104,7 +110,7 @@ body {
   padding: 3px 9px;
 }
 .version-tag { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.org-tag { margin-left: auto; color: var(--text-muted); font-size: 13px; }
+.org-tag { color: var(--text-muted); font-size: 13px; }
 
 .update-badge {
   display: inline-flex;

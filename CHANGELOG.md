@@ -29,6 +29,11 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- The light/dark toggle and cookie-backed `data-theme` now apply on
+  Settings (and login / TOTP setup), not only the dashboard. Shared
+  chrome lives in `src/Layout.php`; `assets/js/theme.js` is loaded on
+  those pages without pulling in the rest of the dashboard JS.
+
 - TOTP login lockouts now show the exact remaining wait time instead of a vague "few minutes" message.
 - `ApiTest`, `ProvisionerTest`, `ProcessControlTest`, and `CrashWebhookTest`
   didn't isolate `RUNNERDECK_SETTINGS_FILE`, so their failure-path fixtures
