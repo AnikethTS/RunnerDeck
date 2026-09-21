@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-21
+
 ### Added
 
 - Optional crash-loop webhook (`RUNNERDECK_CRASH_WEBHOOK_URL`, Settings):
@@ -18,9 +20,9 @@ follows [SemVer](https://semver.org/).
 
 - Settings moved from a modal on the dashboard to its own page
   (`settings.php`), matching the existing `login.php`/`totp_setup.php`
-  pattern: server-rendered, no JS beyond a small inline scope-field
-  toggle. Reflows properly on mobile instead of a fixed-width dialog, and
-  removes the settings-modal open/close/backdrop JS entirely.
+  pattern: a server-rendered form. Reflows properly on mobile instead of
+  a fixed-width dialog, and removes the settings-modal open/close/backdrop
+  JS entirely.
 - Local/GitHub mismatch streaks are counted in `CrashState`
   (`mismatch_flagged`) rather than in JavaScript. CPU/RAM history charts
   are drawn as SVG in PHP and embedded in the status snapshot, so the UI
