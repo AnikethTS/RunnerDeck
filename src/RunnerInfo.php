@@ -10,7 +10,7 @@ final class RunnerInfo
         public readonly string $id,
         public readonly string $dir,
         public readonly bool $configured,
-        public readonly ?string $agentName,
+        public readonly string $agentName,
         public readonly bool $localRunning,
         public readonly ?int $pid,
         public readonly array $logTail,

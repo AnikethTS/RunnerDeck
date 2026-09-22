@@ -7,7 +7,7 @@ checkout, no build step, no `composer install`. Composer is only used for
 ```bash
 composer install          # pulls in phpunit, phpstan, phpcs (dev-only)
 composer run test          # PHPUnit
-composer run stan          # phpstan (level 5)
+composer run stan          # phpstan (level 8)
 composer run cs            # phpcs, PSR-12
 composer run cs-fix        # phpcbf, auto-fixes what it can
 composer audit             # known CVEs in dependencies
@@ -93,7 +93,10 @@ runnerdeck/
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Dashboard.php         merges local + GitHub state into one snapshot
+    DashboardView.php     first-paint HTML for stats, health banner, runner rows
     Layout.php            shared HTML chrome: theme cookie, topbar, assets
+    Session.php           one session_start path (HttpOnly, SameSite, Secure)
+    SecurityHeaders.php   CSP / frame / referrer headers for PHP responses
     Api.php               JSON API router and shared request helpers
     Api/                  one class per `api.php?action=` (`RunnerDeck\Api\`)
     Shell.php             timeout-guarded subprocess helper

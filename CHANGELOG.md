@@ -6,6 +6,24 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Session cookies always go through `Session::start()`: `HttpOnly`,
+  `SameSite=Lax`, and `Secure` when the request is HTTPS (including
+  `X-Forwarded-Proto` behind a TLS proxy). Successful TOTP login still
+  calls `session_regenerate_id(true)`.
+- PHP responses send `X-Frame-Options: DENY`, `X-Content-Type-Options:
+  nosniff`, `Referrer-Policy: no-referrer`, and a CSP that allows only
+  same-origin assets plus a per-request script nonce.
+
+### Changed
+
+- First-run setup is a normal POST to `index.php` (same `SaveSettingsAction`
+  path as Settings), with errors rendered in the page instead of `alert()`.
+- The dashboard paints stats, health banner, and runner rows in PHP on the
+  first response so the table is not empty until JavaScript runs.
+- PHPStan is at level 8.
+
 ## [1.3.0] - 2026-09-21
 
 ### Added

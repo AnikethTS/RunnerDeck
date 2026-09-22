@@ -52,7 +52,7 @@ final class Totp
         }
         $output = '';
         foreach (str_split($bits, 5) as $chunk) {
-            $output .= self::ALPHABET[bindec(str_pad($chunk, 5, '0', STR_PAD_RIGHT))];
+            $output .= self::ALPHABET[(int) bindec(str_pad($chunk, 5, '0', STR_PAD_RIGHT))];
         }
         return $output;
     }
@@ -71,7 +71,11 @@ final class Totp
         $bytes = '';
         foreach (str_split($bits, 8) as $byte) {
             if (strlen($byte) === 8) {
-                $bytes .= chr(bindec($byte));
+                $n = (int) bindec($byte);
+                if ($n < 0 || $n > 255) {
+                    continue;
+                }
+                $bytes .= chr($n);
             }
         }
         return $bytes;

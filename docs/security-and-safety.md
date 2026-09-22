@@ -62,7 +62,15 @@ All state-changing API calls (`start`, `stop`, `restart`, `start_all`,
 open in another tab from silently driving the dashboard, but on its own it
 is not a substitute for keeping this off any network beyond loopback (see
 [Hosting remotely](#hosting-remotely) above for the one supported way to
-do that).
+do that). Auto-restart still goes through that same `POST action=start`;
+`GET action=status` only reports the flag and never starts a process.
+
+Session cookies always go through one helper: `HttpOnly`, `SameSite=Lax`,
+and `Secure` when the request is HTTPS (including `X-Forwarded-Proto`
+behind a TLS proxy). Successful TOTP login regenerates the session id.
+PHP responses also send `X-Frame-Options: DENY`, `X-Content-Type-Options:
+nosniff`, `Referrer-Policy: no-referrer`, and a CSP limited to same-origin
+assets plus a per-request script nonce.
 
 See also **[SECURITY.md](../SECURITY.md)** for how to report a
 vulnerability.

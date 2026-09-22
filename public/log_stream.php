@@ -49,23 +49,28 @@ echo "\n";
 // $logFile is built from the same whitelisted $id as above; every use of
 // it below is covered by that same reasoning.
 // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
-$lastSize = is_file($logFile) ? filesize($logFile) : 0;
+$lastSize = is_file($logFile) ? (int) filesize($logFile) : 0;
 $deadline = time() + 1800;
 
 while (!connection_aborted() && time() < $deadline) {
     // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
     clearstatcache(true, $logFile);
     // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
-    $size = is_file($logFile) ? filesize($logFile) : 0;
+    $size = is_file($logFile) ? (int) filesize($logFile) : 0;
 
     if ($size > $lastSize) {
         // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
         $fh = fopen($logFile, 'r');
+        if ($fh === false) {
+            $lastSize = $size;
+            continue;
+        }
+        $length = $size - $lastSize;
         fseek($fh, $lastSize);
-        $chunk = fread($fh, $size - $lastSize);
+        $chunk = $length > 0 ? fread($fh, $length) : '';
         fclose($fh);
         $lastSize = $size;
-        foreach (explode("\n", rtrim($chunk, "\n")) as $line) {
+        foreach (explode("\n", rtrim((string) $chunk, "\n")) as $line) {
             if ($line === '') {
                 continue;
             }

@@ -189,8 +189,9 @@ final class Api
 
         $busyNames = [];
         foreach ($runners as $r) {
-            if ($ghRunners[$r->agentName]['busy'] ?? false) {
-                $busyNames[] = $r->agentName;
+            $agentName = $r->agentName;
+            if ($ghRunners[$agentName]['busy'] ?? false) {
+                $busyNames[] = $agentName;
             }
         }
         if ($busyNames) {

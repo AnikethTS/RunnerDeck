@@ -1,8 +1,13 @@
 parameters:
-    level: 5
+    level: 8
     paths:
         - src
         - public
         - bin
     excludePaths:
         - vendor/*
+    ignoreErrors:
+        # Level 8 wants value types on every array. Snapshot/API payloads stay
+        # loosely keyed; annotating them all is a separate pass.
+        -
+            identifier: missingType.iterableValue

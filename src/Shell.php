@@ -21,6 +21,10 @@ final class Shell
         self::$fake = $handler;
     }
 
+    /**
+     * @param list<string> $cmd
+     * @return array{code: int, stdout: string, stderr: string}
+     */
     public static function exec(array $cmd, int $timeoutSec = 20, ?string $cwd = null): array
     {
         if (self::$fake !== null) {

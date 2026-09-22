@@ -104,7 +104,8 @@ final class Layout
             $full = $public . '/' . $module;
             $v = is_file($full) ? (string) filemtime($full) : '0';
             $src = htmlspecialchars($module, ENT_QUOTES, 'UTF-8');
-            echo '  <script type="module" src="' . $src . '?v=' . $v . '"></script>' . "\n";
+            echo '  <script type="module" src="' . $src . '?v=' . $v . '"'
+                . SecurityHeaders::nonceAttr() . '></script>' . "\n";
         }
         echo "</body>\n</html>\n";
     }

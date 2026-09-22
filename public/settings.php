@@ -173,20 +173,5 @@ Layout::topbarEnd();
       <?php endif; ?>
     </form>
   </main>
-
-  <script>
-    (() => {
-      const scopeSelect = document.getElementById('settings-scope');
-      const orgField = document.getElementById('settings-org-field');
-      const repoField = document.getElementById('settings-repo-field');
-      const update = () => {
-        const isRepo = scopeSelect.value === 'repo';
-        orgField.hidden = isRepo;
-        repoField.hidden = !isRepo;
-      };
-      scopeSelect.addEventListener('change', update);
-      update();
-    })();
-  </script>
 <?php
-Layout::htmlClose(['assets/js/theme.js']);
+Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js']);

@@ -14,9 +14,7 @@ final class Auth
 
     private static function ensureSession(): void
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        Session::start();
     }
 
     private static function lockoutPath(): string

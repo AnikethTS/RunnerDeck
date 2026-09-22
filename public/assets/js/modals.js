@@ -1,43 +1,6 @@
 import { post, redirectIfUnauthenticated } from './api.js';
 import { setLoading, clearLoading } from './utils.js';
 
-export function wireScopeToggle(scopeSelect, orgField, repoField) {
-  const update = () => {
-    const isRepo = scopeSelect.value === 'repo';
-    orgField.hidden = isRepo;
-    repoField.hidden = !isRepo;
-  };
-  scopeSelect.addEventListener('change', update);
-  update();
-}
-
-export async function submitSettingsForm(
-  errorEl, scopeSelect, orgInput, repoInput, labelInput, submitBtn, checkUpdatesInput = null, autoRestartInput = null,
-  crashWebhookUrlInput = null,
-) {
-  errorEl.hidden = true;
-  setLoading(submitBtn, 'Saving…');
-  try {
-    const { data } = await post('save_settings', {
-      scope: scopeSelect.value,
-      org: orgInput.value.trim(),
-      repo: repoInput.value.trim(),
-      label: labelInput.value.trim(),
-      check_updates: checkUpdatesInput && checkUpdatesInput.checked ? '1' : '',
-      auto_restart: autoRestartInput && autoRestartInput.checked ? '1' : '',
-      crash_webhook_url: crashWebhookUrlInput ? crashWebhookUrlInput.value.trim() : '',
-    });
-    if (!data.ok) {
-      errorEl.textContent = data.message || 'failed to save settings';
-      errorEl.hidden = false;
-      return;
-    }
-    location.reload();
-  } finally {
-    clearLoading(submitBtn);
-  }
-}
-
 let confirmOpen = false;
 let activeStream = null;
 let currentLogRunnerId = null;
