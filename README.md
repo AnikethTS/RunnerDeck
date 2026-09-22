@@ -16,7 +16,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-optional-003B57?logo=sqlite&logoColor=white)](docs/how-it-works.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](docs/docker.md)
 
-![Dashboard overview](.github/screenshots/dashboard.png)
+![Dashboard in use](.github/screenshots/demo.gif)
 
 </div>
 
@@ -42,13 +42,13 @@ Windows via WSL2).
 
 ## Screenshots
 
-| Dashboard | Running |
+| Dashboard | Live log |
 |---|---|
-| ![Dashboard overview](.github/screenshots/dashboard.png) | ![A runner active, with live CPU/RAM](.github/screenshots/running.png) |
+| ![Dashboard overview](.github/screenshots/dashboard.png) | ![Live log search highlighting matches](.github/screenshots/live-log.png) |
 
 | Add runner | Settings |
 |---|---|
-| ![Add runner dialog](.github/screenshots/add-runner.png) | ![Scope/org/repo settings dialog](.github/screenshots/settings.png) |
+| ![Add runner dialog](.github/screenshots/add-runner.png) | ![Settings page](.github/screenshots/settings.png) |
 
 ## Why this exists
 

@@ -18,6 +18,8 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- Landing page and README screenshots retaken from a live pool (dashboard,
+  live log, add runner, Settings), plus a short demo GIF.
 - First-run setup is a normal POST to `index.php` (same `SaveSettingsAction`
   path as Settings), with errors rendered in the page instead of `alert()`.
 - The dashboard paints stats, health banner, and runner rows in PHP on the
