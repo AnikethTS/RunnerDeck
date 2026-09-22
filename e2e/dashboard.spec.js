@@ -47,11 +47,11 @@ function fixtureSnapshot(runners) {
   };
 }
 
-async function mockStatus(page, runners) {
+async function mockStatus(page, runners, extra = {}) {
   await page.route('**/api.php*action=status*', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify(fixtureSnapshot(runners)),
+    body: JSON.stringify({ ...fixtureSnapshot(runners), ...extra }),
   }));
 }
 
@@ -424,4 +424,24 @@ test('settings page has a theme toggle that persists to the dashboard', async ({
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
   await expect(page.locator('#btn-theme-toggle')).toBeVisible();
+});
+
+test('dashboard shows recent errors from the status snapshot', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()], {
+    errors: [{
+      time: '2026-09-22T18:00:00+00:00',
+      action: 'process.start',
+      message: 'failed to start <runner-1>',
+      runner: 'runner-1',
+      stderr: 'nohup: failed',
+    }],
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#app-log').evaluate((el) => { el.open = true; });
+
+  await expect(page.locator('#app-log-count')).toContainText('(1)');
+  await expect(page.locator('#app-log-body')).toContainText('failed to start <runner-1>');
+  await expect(page.locator('#app-log-body')).toContainText('process.start');
+  await expect(page.locator('#app-log-body')).toContainText('nohup: failed');
 });

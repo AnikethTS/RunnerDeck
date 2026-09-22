@@ -39,6 +39,7 @@ function initDashboard() {
     }
 
     renderStats(snapshot);
+    renderErrors(snapshot.errors);
     snapshot.runners.forEach((r) => {
       if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
       if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
@@ -250,13 +251,87 @@ function initDashboard() {
     });
   });
 
+  function renderErrors(entries) {
+    const countEl = document.getElementById('app-log-count');
+    const body = document.getElementById('app-log-body');
+    if (!countEl || !body) return;
+    const list = Array.isArray(entries) ? entries : [];
+    countEl.textContent = list.length ? ` (${list.length})` : '';
+    body.replaceChildren();
+    if (!list.length) {
+      const empty = document.createElement('p');
+      empty.className = 'muted';
+      empty.textContent = 'No errors logged yet.';
+      body.append(empty);
+      return;
+    }
+    const ol = document.createElement('ol');
+    ol.className = 'app-log-list';
+    [...list].reverse().forEach((entry) => {
+      const li = document.createElement('li');
+      li.className = 'app-log-item';
+      const meta = document.createElement('div');
+      meta.className = 'app-log-meta';
+      const when = formatErrorTime(entry.time);
+      meta.textContent = entry.runner
+        ? `${when} · ${entry.action} · ${entry.runner}`
+        : `${when} · ${entry.action}`;
+      const msg = document.createElement('div');
+      msg.textContent = entry.message || '';
+      li.append(meta, msg);
+      if (entry.stderr) {
+        const pre = document.createElement('pre');
+        pre.className = 'app-log-stderr';
+        pre.textContent = entry.stderr;
+        li.append(pre);
+      }
+      ol.append(li);
+    });
+    body.append(ol);
+  }
+
+  function formatErrorTime(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso || '';
+    return d.toLocaleString();
+  }
+
+  let statusTimer = null;
+  let systemTimer = null;
+
+  function stopPolling() {
+    if (statusTimer !== null) {
+      clearInterval(statusTimer);
+      statusTimer = null;
+    }
+    if (systemTimer !== null) {
+      clearInterval(systemTimer);
+      systemTimer = null;
+    }
+  }
+
+  function startPolling() {
+    stopPolling();
+    statusTimer = setInterval(fetchStatus, POLL_MS);
+    systemTimer = setInterval(fetchSystemStats, SYSTEM_POLL_MS);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling();
+      return;
+    }
+    fetchStatus();
+    fetchSystemStats();
+    startPolling();
+  });
+
   initModals(fetchStatus);
   checkForUpdates();
 
   if (window.__SNAPSHOT__) render(window.__SNAPSHOT__);
   else fetchStatus();
-  setInterval(fetchStatus, POLL_MS);
-  setInterval(fetchSystemStats, SYSTEM_POLL_MS);
+  if (!document.hidden) startPolling();
 }
 
 initDashboard();

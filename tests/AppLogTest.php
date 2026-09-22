@@ -121,4 +121,41 @@ final class AppLogTest extends TestCase
         $lines = array_values(array_filter(explode("\n", (string) file_get_contents(\RunnerDeck\AppLog::path()))));
         $this->assertCount(1, $lines);
     }
+
+    #[RunInSeparateProcess]
+    public function testRecentReturnsNewestLastAndReadsRotatedFile(): void
+    {
+        \RunnerDeck\AppLog::fakeMaxBytes(80);
+        \RunnerDeck\AppLog::error('process.start', 'first-failure-xxxxxxxxxxxxxxxxxxxx');
+        \RunnerDeck\AppLog::error('process.start', 'second-failure-xxxxxxxxxxxxxxxxxxxx');
+
+        $recent = \RunnerDeck\AppLog::recent(10);
+        $this->assertCount(2, $recent);
+        $this->assertStringContainsString('first-failure', $recent[0]['message']);
+        $this->assertStringContainsString('second-failure', $recent[1]['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testRecentSkipsInvalidLinesAndHonorsLimit(): void
+    {
+        $okOne = json_encode([
+            'time' => '2026-09-22T18:00:00+00:00',
+            'action' => 'process.start',
+            'message' => 'ok-one',
+        ]);
+        $okTwo = json_encode([
+            'time' => '2026-09-22T18:01:00+00:00',
+            'action' => 'gh.list_runners',
+            'message' => 'ok-two',
+        ]);
+        file_put_contents(
+            \RunnerDeck\AppLog::path(),
+            "not-json\n{$okOne}\n{$okTwo}\n"
+        );
+
+        $recent = \RunnerDeck\AppLog::recent(1);
+        $this->assertCount(1, $recent);
+        $this->assertSame('gh.list_runners', $recent[0]['action']);
+        $this->assertSame('ok-two', $recent[0]['message']);
+    }
 }

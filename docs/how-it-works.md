@@ -73,6 +73,16 @@
   only thing in RunnerDeck that calls out to a repo other than the one
   you're managing runners for, which is why it's opt-in rather than on
   by default.
+- The dashboard **polls** `action=status` every 5s and `action=system`
+  every 2s only while the tab is visible. A hidden tab stops both timers
+  and fetches once when you come back — so a background tab is not a
+  second load on the same machine that is running the jobs. Client-side
+  auto-restart (POST `action=start` when `should_auto_restart` is set)
+  therefore also only runs from a visible dashboard tab.
+- **Recent errors** on the dashboard are the JSON lines already written to
+  `storage/runnerdeck.log` (start/provision/`gh` failures, secrets
+  redacted). The file is still there for SSH; the panel is so you do not
+  have to.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

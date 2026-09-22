@@ -462,6 +462,41 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   word-break: break-all;
 }
 
+.app-log {
+  margin-top: 16px;
+  border: 1px solid var(--gridline);
+  border-radius: 8px;
+  padding: 8px 14px 10px;
+  background: var(--page-plane);
+}
+.app-log summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.app-log-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.app-log-item {
+  padding: 8px 0;
+  border-top: 1px solid var(--gridline);
+  font-size: 12px;
+}
+.app-log-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+.app-log-stderr {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  margin: 4px 0 0;
+}
+
 .footer {
   margin-top: 24px;
   padding: 22px 20px 26px;

@@ -242,6 +242,7 @@ Layout::topbarEnd();
         </thead>
         <tbody id="runner-rows"><?= $rowsHtml ?></tbody>
       </table>
+      <?= DashboardView::errorsPanel(is_array($dash['errors'] ?? null) ? $dash['errors'] : []) ?>
     </main>
 
     <div id="log-modal" class="modal" hidden>

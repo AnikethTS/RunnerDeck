@@ -6,6 +6,11 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The dashboard shows a **Recent errors** panel from `storage/runnerdeck.log`
+  (start/provision/`gh` failures already written there, redacted).
+
 ### Security
 
 - Session cookies always go through `Session::start()`: `HttpOnly`,
@@ -23,6 +28,10 @@ follows [SemVer](https://semver.org/).
 - The dashboard paints stats, health banner, and runner rows in PHP on the
   first response so the table is not empty until JavaScript runs.
 - PHPStan is at level 8.
+- Status (5s) and system-stats (2s) polls pause while the dashboard tab is
+  hidden, then fetch once when it becomes visible again. Auto-restart is
+  still a client `POST action=start` on those polls, so it also waits until
+  a dashboard tab is in the foreground.
 
 ## [1.3.0] - 2026-09-21
 
