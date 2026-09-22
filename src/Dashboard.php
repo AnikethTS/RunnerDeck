@@ -89,8 +89,11 @@ final class Dashboard
     {
         $unavailable = !History::isAvailable();
         $samples = History::recent();
-        $cpu = array_map(static fn (array $s): float => (float) $s['avg_cpu'], $samples);
-        $mem = array_map(static fn (array $s): float => ((int) $s['total_rss_kb']) / 1024.0, $samples);
+        $cpu = array_values(array_map(static fn (array $s): float => (float) $s['avg_cpu'], $samples));
+        $mem = array_values(array_map(
+            static fn (array $s): float => ((int) $s['total_rss_kb']) / 1024.0,
+            $samples
+        ));
         $memMax = $mem === [] ? 10.0 : (float) max(10.0, ...$mem);
 
         return [

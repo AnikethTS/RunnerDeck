@@ -4,19 +4,49 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use RunnerDeck\Api\SaveSettingsAction;
 use RunnerDeck\Auth;
 use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\Dashboard;
+use RunnerDeck\DashboardView;
 use RunnerDeck\Layout;
+use RunnerDeck\SecurityHeaders;
 
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-$csrfToken = Csrf::token();
 $needsSetup = !Config::isConfigured();
+$setupError = null;
+$setupValues = [
+    'scope' => 'org',
+    'org' => '',
+    'repo' => '',
+    'label' => '',
+];
+
+if ($needsSetup && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!Csrf::verifyRequest()) {
+        $setupError = 'Session expired — reload and try again.';
+    } else {
+        $result = SaveSettingsAction::save($_POST);
+        if ($result['ok']) {
+            header('Location: index.php');
+            exit;
+        }
+        $setupError = $result['message'];
+    }
+    $setupValues = [
+        'scope' => (string) ($_POST['scope'] ?? 'org'),
+        'org' => (string) ($_POST['org'] ?? ''),
+        'repo' => (string) ($_POST['repo'] ?? ''),
+        'label' => (string) ($_POST['label'] ?? ''),
+    ];
+}
+
+$csrfToken = Csrf::token();
 
 try {
     $currentScope = Config::scope();
@@ -28,7 +58,12 @@ $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
 $accountLabel = $needsSetup
     ? null
     : ($currentScope === 'repo' ? (string) getenv('RUNNERDECK_REPO') : (string) getenv('RUNNERDECK_ORG'));
-$history = is_array($snapshot) ? ($snapshot['history'] ?? null) : null;
+$dash = is_array($snapshot) ? $snapshot : [];
+$history = is_array($dash['history'] ?? null) ? $dash['history'] : [];
+$stats = DashboardView::statsCards($dash);
+$banner = DashboardView::healthBanner($dash);
+$updated = DashboardView::lastUpdated($dash);
+$rowsHtml = DashboardView::rowsHtml(is_array($dash['runners'] ?? null) ? $dash['runners'] : []);
 
 Layout::htmlOpen('RunnerDeck', manifest: true);
 ?>
@@ -65,64 +100,83 @@ Layout::topbarEnd();
           personal-account-level runner — pick an org you admin, or a
           single repo you own.
         </p>
-        <form id="setup-form" class="settings-form">
+        <form id="setup-form" class="settings-form" method="post">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
           <label for="setup-scope">Scope</label>
           <select id="setup-scope" name="scope">
-            <option value="org">Organization</option>
-            <option value="repo">Single repo</option>
+            <option value="org" <?= $setupValues['scope'] === 'org' ? 'selected' : '' ?>>Organization</option>
+            <option value="repo" <?= $setupValues['scope'] === 'repo' ? 'selected' : '' ?>>Single repo</option>
           </select>
 
           <div id="setup-org-field" class="settings-field">
             <label for="setup-org">GitHub org</label>
-            <input type="text" id="setup-org" name="org" placeholder="my-org" />
+            <input type="text" id="setup-org" name="org" placeholder="my-org"
+                   value="<?= htmlspecialchars($setupValues['org']) ?>" />
           </div>
-          <div id="setup-repo-field" class="settings-field" hidden>
+          <div id="setup-repo-field" class="settings-field">
             <label for="setup-repo">Repo (owner/repo)</label>
-            <input type="text" id="setup-repo" name="repo" placeholder="owner/repo" />
+            <input type="text" id="setup-repo" name="repo" placeholder="owner/repo"
+                   value="<?= htmlspecialchars($setupValues['repo']) ?>" />
           </div>
 
           <label for="setup-label">Runner label (optional)</label>
-          <input type="text" id="setup-label" name="label" placeholder="self-hosted-runnerdeck" />
+          <input type="text" id="setup-label" name="label" placeholder="self-hosted-runnerdeck"
+                 value="<?= htmlspecialchars($setupValues['label']) ?>" />
 
           <button type="submit" class="btn btn-good">Save &amp; continue</button>
-          <p id="setup-error" class="setup-error" hidden></p>
+          <?php if ($setupError !== null) : ?>
+            <p id="setup-error" class="setup-error"><?= htmlspecialchars($setupError) ?></p>
+          <?php else : ?>
+            <p id="setup-error" class="setup-error" hidden></p>
+          <?php endif; ?>
         </form>
       </div>
     </main>
   <?php else : ?>
-    <div id="health-banner" class="banner" hidden></div>
+    <div id="health-banner" class="banner"<?= $banner['hidden'] ? ' hidden' : '' ?>>
+      <?= htmlspecialchars($banner['text']) ?>
+    </div>
 
     <main>
       <div class="stat-grid">
         <div class="stat-card">
           <span class="stat-label">Active Runners</span>
-          <span class="stat-value" id="stat-active">—</span>
-          <span class="stat-sub" id="stat-active-sub">—</span>
+          <span class="stat-value" id="stat-active"><?= htmlspecialchars((string) $stats['active']) ?></span>
+          <span class="stat-sub" id="stat-active-sub"><?= htmlspecialchars((string) $stats['active_sub']) ?></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">GitHub API</span>
-          <span class="stat-value" id="stat-github">—</span>
-          <span class="stat-sub" id="stat-github-sub">—</span>
+          <span
+            class="<?= htmlspecialchars((string) $stats['github_class']) ?>"
+            id="stat-github"
+          ><?= htmlspecialchars((string) $stats['github']) ?></span>
+          <span class="stat-sub" id="stat-github-sub"><?= htmlspecialchars((string) $stats['github_sub']) ?></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Avg CPU</span>
-          <span class="stat-value" id="stat-cpu">—</span>
-          <span class="stat-sub" id="stat-cpu-sub">—</span>
+          <span class="stat-value" id="stat-cpu"><?= htmlspecialchars((string) $stats['cpu']) ?></span>
+          <span class="stat-sub" id="stat-cpu-sub"><?= htmlspecialchars((string) $stats['cpu_sub']) ?></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Memory</span>
-          <span class="stat-value" id="stat-mem">—</span>
-          <span class="stat-sub" id="stat-mem-sub">—</span>
+          <span class="stat-value" id="stat-mem"><?= htmlspecialchars((string) $stats['mem']) ?></span>
+          <span class="stat-sub" id="stat-mem-sub"><?= htmlspecialchars((string) $stats['mem_sub']) ?></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">System CPU</span>
-          <span class="stat-value" id="stat-sys-cpu">—</span>
-          <span class="stat-sub" id="stat-sys-cpu-sub">—</span>
+          <span
+            class="<?= htmlspecialchars((string) $stats['sys_cpu_class']) ?>"
+            id="stat-sys-cpu"
+          ><?= htmlspecialchars((string) $stats['sys_cpu']) ?></span>
+          <span class="stat-sub" id="stat-sys-cpu-sub"><?= htmlspecialchars((string) $stats['sys_cpu_sub']) ?></span>
         </div>
         <div class="stat-card">
           <span class="stat-label">System RAM</span>
-          <span class="stat-value" id="stat-sys-mem">—</span>
-          <span class="stat-sub" id="stat-sys-mem-sub">—</span>
+          <span
+            class="<?= htmlspecialchars((string) $stats['sys_mem_class']) ?>"
+            id="stat-sys-mem"
+          ><?= htmlspecialchars((string) $stats['sys_mem']) ?></span>
+          <span class="stat-sub" id="stat-sys-mem-sub"><?= htmlspecialchars((string) $stats['sys_mem_sub']) ?></span>
         </div>
       </div>
 
@@ -130,21 +184,21 @@ Layout::topbarEnd();
         <div class="history-card">
           <span class="stat-label">CPU % &middot; last hour</span>
           <svg id="chart-cpu" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
-            <?= is_array($history) ? $history['cpu_svg'] : '' ?>
+            <?= (string) ($history['cpu_svg'] ?? '') ?>
           </svg>
         </div>
         <div class="history-card">
           <span class="stat-label">Memory MB &middot; last hour</span>
           <svg id="chart-mem" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
-            <?= is_array($history) ? $history['mem_svg'] : '' ?>
+            <?= (string) ($history['mem_svg'] ?? '') ?>
           </svg>
         </div>
       </div>
 
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
-        <button id="btn-export" type="button" class="btn" disabled>Export JSON</button>
-        <span id="last-updated" class="muted"></span>
+        <button id="btn-export" type="button" class="btn">Export JSON</button>
+        <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
         <span class="spacer"></span>
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
@@ -186,7 +240,7 @@ Layout::topbarEnd();
             <th></th>
           </tr>
         </thead>
-        <tbody id="runner-rows"></tbody>
+        <tbody id="runner-rows"><?= $rowsHtml ?></tbody>
       </table>
     </main>
 
@@ -271,11 +325,14 @@ Layout::topbarEnd();
     <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/LICENSE"
        target="_blank" rel="noopener noreferrer">MIT License</a>
   </footer>
-
-  <script>
-    window.__SNAPSHOT__ = <?= json_encode($snapshot) ?>;
-    window.__CSRF__ = <?= json_encode($csrfToken) ?>;
-    window.__NEEDS_SETUP__ = <?= json_encode($needsSetup) ?>;
-  </script>
 <?php
-Layout::htmlClose(['assets/app.js']);
+if ($needsSetup) {
+    Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js']);
+} else {
+    $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";
+    echo '    window.__SNAPSHOT__ = ' . json_encode($snapshot, $jsonFlags) . ";\n";
+    echo '    window.__CSRF__ = ' . json_encode($csrfToken, $jsonFlags) . ";\n";
+    echo "  </script>\n";
+    Layout::htmlClose(['assets/app.js']);
+}

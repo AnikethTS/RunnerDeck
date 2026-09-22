@@ -88,9 +88,10 @@ final class RunnerPool
         $agentName = null;
 
         if ($configured) {
-            $raw = preg_replace('/^\xEF\xBB\xBF/', '', file_get_contents($runnerFile) ?: '');
+            $raw = preg_replace('/^\xEF\xBB\xBF/', '', file_get_contents($runnerFile) ?: '') ?? '';
             $json = json_decode($raw, true);
-            $agentName = $json['agentName'] ?? null;
+            $fromJson = is_array($json) ? ($json['agentName'] ?? null) : null;
+            $agentName = is_string($fromJson) ? $fromJson : null;
         }
 
         [$running, $pid] = self::checkProcess("$dir/runner.pid");
@@ -157,7 +158,7 @@ final class RunnerPool
         if ($result['code'] === 0) {
             foreach (explode("\n", $result['stdout']) as $line) {
                 $parts = preg_split('/\s+/', trim($line));
-                if (count($parts) !== 4) {
+                if (!is_array($parts) || count($parts) !== 4) {
                     continue;
                 }
                 [$pid, $cpu, $rss, $etimes] = $parts;

@@ -6,7 +6,7 @@ import {
 } from './js/table.js';
 import { renderStats, renderLoadStat } from './js/stats.js';
 import {
-  wireScopeToggle, submitSettingsForm, confirmModal, openLogViewer, openRenameModal, initModals,
+  confirmModal, openLogViewer, openRenameModal, initModals,
 } from './js/modals.js';
 import './js/theme.js';
 
@@ -122,7 +122,7 @@ function initDashboard() {
       ({ data } = await post(action, { ...params, force: '1' }));
     }
     if (!data.ok) {
-      alert(data.message || `${action} failed`);
+      showToast(data.message || `${action} failed`);
     }
     await fetchStatus();
   }
@@ -145,7 +145,7 @@ function initDashboard() {
     if (action === 'start') {
       await withLoading(btn, 'Starting…', async () => {
         const { data } = await post('start', { runner });
-        if (!data.ok) alert(data.message);
+        if (!data.ok) showToast(data.message);
         await fetchStatus();
       });
       return;
@@ -186,7 +186,7 @@ function initDashboard() {
     const count = document.getElementById('pool-size').value || 10;
     withLoading(e.currentTarget, 'Starting All…', async () => {
       const { data } = await post('start_all', { count });
-      if (!data.ok) alert(data.message);
+      if (!data.ok) showToast(data.message);
       await fetchStatus();
     });
   });
@@ -218,7 +218,7 @@ function initDashboard() {
   document.getElementById('btn-bulk-start').addEventListener('click', (e) => {
     withLoading(e.currentTarget, 'Starting…', async () => {
       const { data } = await post('bulk_start', { runners: [...selectedRunners].join(',') });
-      if (!data.ok) alert(data.message);
+      if (!data.ok) showToast(data.message);
       await fetchStatus();
     });
   });
@@ -245,7 +245,7 @@ function initDashboard() {
     const btn = e.target.querySelector('button[type="submit"]');
     withLoading(btn, 'Applying…', async () => {
       const { data } = await post('resize', { count: document.getElementById('pool-size').value });
-      if (!data.ok) alert(data.message);
+      if (!data.ok) showToast(data.message);
       await fetchStatus();
     });
   });
@@ -259,20 +259,4 @@ function initDashboard() {
   setInterval(fetchSystemStats, SYSTEM_POLL_MS);
 }
 
-if (window.__NEEDS_SETUP__) {
-  const scopeSelect = document.getElementById('setup-scope');
-  wireScopeToggle(scopeSelect, document.getElementById('setup-org-field'), document.getElementById('setup-repo-field'));
-  document.getElementById('setup-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    submitSettingsForm(
-      document.getElementById('setup-error'),
-      scopeSelect,
-      document.getElementById('setup-org'),
-      document.getElementById('setup-repo'),
-      document.getElementById('setup-label'),
-      e.target.querySelector('button[type="submit"]'),
-    );
-  });
-} else {
-  initDashboard();
-}
+initDashboard();
