@@ -66,4 +66,38 @@ final class DashboardViewTest extends TestCase
         $this->assertSame('denied', $cards['github_sub']);
         $this->assertStringContainsString('stat-warning', $cards['sys_mem_class']);
     }
+
+    public function testErrorsPanelEscapesAndListsNewestFirst(): void
+    {
+        $html = \RunnerDeck\DashboardView::errorsPanel([
+            [
+                'time' => '2026-09-22T18:00:00+00:00',
+                'action' => 'process.start',
+                'message' => 'failed <one>',
+                'runner' => 'runner-1',
+            ],
+            [
+                'time' => '2026-09-22T18:01:00+00:00',
+                'action' => 'gh.list_runners',
+                'message' => 'denied',
+                'stderr' => '<b>nope</b>',
+            ],
+        ]);
+        $this->assertStringContainsString('open', $html);
+        $this->assertStringContainsString('(2)', $html);
+        $this->assertStringContainsString('failed &lt;one&gt;', $html);
+        $this->assertStringContainsString('&lt;b&gt;nope&lt;/b&gt;', $html);
+        $this->assertStringNotContainsString('<b>nope</b>', $html);
+        $this->assertTrue(
+            strpos($html, 'gh.list_runners') < strpos($html, 'process.start'),
+            'newest entry should appear first'
+        );
+    }
+
+    public function testErrorsPanelEmptyState(): void
+    {
+        $html = \RunnerDeck\DashboardView::errorsPanel([]);
+        $this->assertStringContainsString('No errors logged yet.', $html);
+        $this->assertStringNotContainsString(' open', $html);
+    }
 }

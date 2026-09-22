@@ -94,7 +94,8 @@ the same escape hatch the UI's confirmation dialogs use.
 
 ### `action=status`
 
-The full dashboard snapshot — this is what the UI polls every 5s.
+The full dashboard snapshot — this is what the UI polls every 5s while the
+tab is visible. Hidden tabs stop polling and fetch once on focus.
 
 - `lines` (optional, default `15`, max `500`) — log-tail lines per runner.
 - Returns `409` if RunnerDeck itself isn't configured yet (`{ok: false, message: "..."}`).
@@ -131,7 +132,16 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
     "available": true,
     "cpu_svg": "<polyline points=\"0.0,60.0 300.0,0.0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\" />",
     "mem_svg": "<polyline points=\"0.0,60.0 300.0,0.0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\" />"
-  }
+  },
+  "errors": [
+    {
+      "time": "2026-09-22T18:00:00+00:00",
+      "action": "process.start",
+      "message": "failed to start runner-1",
+      "runner": "runner-1",
+      "stderr": "nohup: failed"
+    }
+  ]
 }
 ```
 
@@ -158,6 +168,10 @@ sees the flag — the dashboard UI does exactly this.
 `history` is the CPU/RAM chart markup (`cpu_svg`/`mem_svg`) for the last hour,
 generated in PHP. `action=history` still returns the raw samples if you want
 to draw your own chart.
+
+`errors` is the newest 30 lines from `storage/runnerdeck.log` (plus the
+rotated `.1` file if present), already redacted. Entries are oldest-first.
+`runner` and `stderr` are omitted when empty.
 
 ### `action=log`
 
@@ -186,8 +200,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=history'
 
 Whole-machine CPU/RAM (not just runners) — the same thing embedded in
 `action=status`'s `system` field, exposed on its own since the UI polls it
-independently every 2s (no GitHub API cost, so no reason to wait on the
-slower runner poll).
+independently every 2s while the tab is visible (no GitHub API cost, so no
+reason to wait on the slower runner poll). Hidden tabs skip this poll too.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/api.php?action=system'

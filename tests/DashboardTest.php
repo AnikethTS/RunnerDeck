@@ -70,6 +70,7 @@ final class DashboardTest extends TestCase
             $spawned,
             'action=status (GET) must never spawn a process — it has no CSRF check by design'
         );
+        $this->assertIsArray($result['errors']);
     }
 
     #[RunInSeparateProcess]

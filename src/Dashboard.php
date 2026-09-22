@@ -55,6 +55,7 @@ final class Dashboard
             'stats' => $stats,
             'system' => SystemStats::snapshot(),
             'history' => self::historyView(),
+            'errors' => AppLog::recent(30),
         ];
     }
 

@@ -17,6 +17,7 @@ export default [
         Event: 'readonly',
         URLSearchParams: 'readonly',
         setInterval: 'readonly',
+        clearInterval: 'readonly',
         setTimeout: 'readonly',
         console: 'readonly',
         alert: 'readonly',

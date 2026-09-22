@@ -252,6 +252,87 @@ final class DashboardView
         return '<span class="badge badge-' . self::e($cls) . '">' . self::e($text) . '</span>';
     }
 
+    /** @param array<int|string, mixed> $entries */
+    public static function errorsPanel(array $entries): string
+    {
+        $normalized = self::normalizeErrors($entries);
+        $count = count($normalized);
+        $countText = $count > 0 ? ' (' . $count . ')' : '';
+        $open = $count > 0 ? ' open' : '';
+        return '      <details id="app-log" class="app-log"' . $open . ">\n"
+            . '        <summary>Recent errors<span id="app-log-count" class="muted">'
+            . self::e($countText) . "</span></summary>\n"
+            . '        <div id="app-log-body">' . self::errorsBody($normalized) . "</div>\n"
+            . "      </details>\n";
+    }
+
+    /** @param array<int|string, mixed> $entries */
+    public static function errorsBody(array $entries): string
+    {
+        $normalized = self::normalizeErrors($entries);
+        if ($normalized === []) {
+            return '<p class="muted">No errors logged yet.</p>';
+        }
+        $html = '<ol class="app-log-list">';
+        foreach (array_reverse($normalized) as $entry) {
+            $meta = self::formatErrorTime($entry['time']) . ' &middot; ' . self::e($entry['action']);
+            if (isset($entry['runner'])) {
+                $meta .= ' &middot; ' . self::e($entry['runner']);
+            }
+            $html .= '<li class="app-log-item"><div class="app-log-meta">' . $meta
+                . '</div><div>' . self::e($entry['message']) . '</div>';
+            if (isset($entry['stderr'])) {
+                $html .= '<pre class="app-log-stderr">' . self::e($entry['stderr']) . '</pre>';
+            }
+            $html .= '</li>';
+        }
+        return $html . '</ol>';
+    }
+
+    /**
+     * @param array<int|string, mixed> $entries
+     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     */
+    private static function normalizeErrors(array $entries): array
+    {
+        $out = [];
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $action = $entry['action'] ?? null;
+            $message = $entry['message'] ?? null;
+            $time = $entry['time'] ?? null;
+            if (!is_string($action) || !is_string($message) || !is_string($time)) {
+                continue;
+            }
+            $row = [
+                'time' => $time,
+                'action' => $action,
+                'message' => $message,
+            ];
+            $runner = $entry['runner'] ?? null;
+            if (is_string($runner) && $runner !== '') {
+                $row['runner'] = $runner;
+            }
+            $stderr = $entry['stderr'] ?? null;
+            if (is_string($stderr) && $stderr !== '') {
+                $row['stderr'] = $stderr;
+            }
+            $out[] = $row;
+        }
+        return $out;
+    }
+
+    private static function formatErrorTime(string $iso): string
+    {
+        $ts = strtotime($iso);
+        if ($ts === false) {
+            return $iso;
+        }
+        return gmdate('Y-m-d H:i:s', $ts) . ' UTC';
+    }
+
     private static function e(string $s): string
     {
         return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');

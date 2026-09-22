@@ -110,4 +110,69 @@ final class AppLog
         error_log($line, 3, $path);
         @chmod($path, 0600);
     }
+
+    /**
+     * Newest last. Includes the rotated file so a just-rotated line is not lost.
+     *
+     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     */
+    public static function recent(int $limit = 30): array
+    {
+        $limit = max(1, min(100, $limit));
+        $dir = Settings::storageDir();
+        $lines = array_merge(
+            self::readRecords($dir . '/' . self::ROTATED),
+            self::readRecords(self::path())
+        );
+        if (count($lines) > $limit) {
+            return array_slice($lines, -$limit);
+        }
+        return $lines;
+    }
+
+    /**
+     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     */
+    private static function readRecords(string $path): array
+    {
+        if (!is_file($path)) {
+            return [];
+        }
+        $raw = file_get_contents($path);
+        if (!is_string($raw) || $raw === '') {
+            return [];
+        }
+        $out = [];
+        foreach (explode("\n", $raw) as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            $decoded = json_decode($line, true);
+            if (!is_array($decoded)) {
+                continue;
+            }
+            $action = $decoded['action'] ?? null;
+            $message = $decoded['message'] ?? null;
+            $time = $decoded['time'] ?? null;
+            if (!is_string($action) || !is_string($message) || !is_string($time)) {
+                continue;
+            }
+            $entry = [
+                'time' => $time,
+                'action' => $action,
+                'message' => $message,
+            ];
+            $runner = $decoded['runner'] ?? null;
+            if (is_string($runner) && $runner !== '') {
+                $entry['runner'] = $runner;
+            }
+            $stderr = $decoded['stderr'] ?? null;
+            if (is_string($stderr) && $stderr !== '') {
+                $entry['stderr'] = $stderr;
+            }
+            $out[] = $entry;
+        }
+        return $out;
+    }
 }
