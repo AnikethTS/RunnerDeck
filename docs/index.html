@@ -169,8 +169,7 @@
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
   }
-  .shot-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 18px; }
-  @media (max-width: 860px) { .shot-grid { grid-template-columns: 1fr 1fr; } }
+  .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
   @media (max-width: 560px) { .shot-grid { grid-template-columns: 1fr; } }
 
   section { padding: 56px 0; }
@@ -282,9 +281,10 @@
     </div>
     <p class="sub">Plain PHP, no framework, no build step, no Composer dependencies. A bit of vanilla JS. That's it.</p>
 
-    <img class="shot reveal" style="margin-top:44px;" src="screenshots/dashboard.png" alt="RunnerDeck dashboard showing stat cards, CPU/RAM history charts, and a table of runners" />
+    <img class="shot reveal" style="margin-top:44px;" src="screenshots/demo.gif" alt="Screen recording of the RunnerDeck dashboard with a live runner pool" />
     <div class="shot-grid">
-      <img class="shot reveal" src="screenshots/running.png" alt="A runner actively running, with live CPU and memory usage" />
+      <img class="shot reveal" src="screenshots/dashboard.png" alt="RunnerDeck dashboard showing stat cards, CPU/RAM history charts, and a table of runners" />
+      <img class="shot reveal" src="screenshots/live-log.png" alt="Live log viewer with search highlighting matching lines" />
       <img class="shot reveal" src="screenshots/add-runner.png" alt="The Add Runner dialog" />
       <img class="shot reveal" src="screenshots/settings.png" alt="The Settings page — repository scope, automation, and notification options" />
     </div>
