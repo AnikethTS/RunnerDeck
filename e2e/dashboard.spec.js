@@ -413,6 +413,16 @@ test('settings page shows a validation error and keeps entered values', async ({
   await expect(page.locator('#settings-org')).toHaveValue('e2e-org');
 });
 
+test('settings page test-webhook button reports delivery failure', async ({ page }) => {
+  await page.goto('/settings.php');
+  await page.locator('#settings-crash-webhook-url').fill('https://127.0.0.1:1/unreachable');
+  await page.locator('#settings-test-webhook').click();
+
+  await expect(page.locator('#settings-test-webhook-result')).toBeVisible();
+  await expect(page.locator('#settings-test-webhook-result')).toContainText('Delivery failed');
+  await expect(page.locator('#settings-test-webhook-result')).toHaveClass(/setup-error/);
+});
+
 test('settings page has a theme toggle that persists to the dashboard', async ({ page }) => {
   await page.goto('/settings.php');
   await expect(page.locator('#btn-theme-toggle')).toBeVisible();

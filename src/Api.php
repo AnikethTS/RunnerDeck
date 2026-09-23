@@ -24,6 +24,7 @@ use RunnerDeck\Api\StatusAction;
 use RunnerDeck\Api\StopAction;
 use RunnerDeck\Api\StopAllAction;
 use RunnerDeck\Api\SystemAction;
+use RunnerDeck\Api\TestWebhookAction;
 use RunnerDeck\Api\TotpBeginAction;
 use RunnerDeck\Api\TotpConfirmAction;
 
@@ -41,6 +42,7 @@ final class Api
     /** @var array<string, class-string> */
     private const POST_ACTIONS = [
         'save_settings' => SaveSettingsAction::class,
+        'test_webhook' => TestWebhookAction::class,
         'logout' => LogoutAction::class,
         'totp_begin' => TotpBeginAction::class,
         'totp_confirm' => TotpConfirmAction::class,

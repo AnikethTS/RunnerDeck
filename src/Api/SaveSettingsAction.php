@@ -6,6 +6,7 @@ namespace RunnerDeck\Api;
 
 use RunnerDeck\Api as JsonApi;
 use RunnerDeck\Config;
+use RunnerDeck\CrashWebhook;
 use RunnerDeck\Settings;
 
 final class SaveSettingsAction
@@ -38,8 +39,7 @@ final class SaveSettingsAction
         if ($scope === 'repo' && !str_contains($repo, '/')) {
             return ['ok' => false, 'message' => "repo must be in 'owner/repo' format"];
         }
-        $validWebhookUrl = str_starts_with($webhookUrl, 'https://') || str_starts_with($webhookUrl, 'http://');
-        if ($webhookUrl !== '' && !$validWebhookUrl) {
+        if ($webhookUrl !== '' && !CrashWebhook::isValidUrl($webhookUrl)) {
             return ['ok' => false, 'message' => 'crash webhook url must start with http:// or https://'];
         }
 

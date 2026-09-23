@@ -100,4 +100,62 @@ final class CrashWebhookTest extends TestCase
 
         $this->addToAssertionCount(1);
     }
+
+    public function testIsValidUrlAcceptsHttpAndHttps(): void
+    {
+        $this->assertTrue(\RunnerDeck\CrashWebhook::isValidUrl('https://example.com/hook'));
+        $this->assertTrue(\RunnerDeck\CrashWebhook::isValidUrl('http://example.com/hook'));
+    }
+
+    public function testIsValidUrlRejectsOtherSchemesAndGarbage(): void
+    {
+        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl('ftp://example.com'));
+        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl('not-a-url'));
+        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl(''));
+    }
+
+    #[RunInSeparateProcess]
+    public function testSendTestUsesADistinctMessageAndDoesNotIncludeARunner(): void
+    {
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        $result = \RunnerDeck\CrashWebhook::sendTest('https://example.com/hook');
+
+        $this->assertTrue($result['ok']);
+        $decoded = json_decode((string) $body, true);
+        $this->assertSame('test', $decoded['event']);
+        $this->assertArrayNotHasKey('runner', $decoded);
+        $this->assertStringContainsString('test notification', $decoded['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSendTestReportsFailureWithStderr(): void
+    {
+        \RunnerDeck\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'could not resolve host']);
+
+        $result = \RunnerDeck\CrashWebhook::sendTest('https://example.com/hook');
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('could not resolve host', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSendTestRespectsSlackPayloadShape(): void
+    {
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\CrashWebhook::sendTest('https://hooks.slack.com/services/x');
+
+        $decoded = json_decode((string) $body, true);
+        $this->assertArrayHasKey('text', $decoded);
+        $this->assertArrayNotHasKey('event', $decoded);
+    }
 }

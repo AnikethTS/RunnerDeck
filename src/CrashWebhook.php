@@ -8,6 +8,11 @@ final class CrashWebhook
 {
     private const TIMEOUT_SECONDS = 5;
 
+    public static function isValidUrl(string $url): bool
+    {
+        return str_starts_with($url, 'https://') || str_starts_with($url, 'http://');
+    }
+
     public static function notify(string $runnerId, string $agentName): void
     {
         $url = Config::crashWebhookUrl();
@@ -15,9 +20,45 @@ final class CrashWebhook
             return;
         }
 
-        $body = json_encode(self::payloadFor($url, $runnerId, $agentName));
+        $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
+        $payload = self::payloadFor($url, 'crash_loop', $message, $runnerId, $agentName);
+        [$ok, $stderr] = self::post($url, $payload);
+
+        if (!$ok) {
+            AppLog::errorThrottled('crash_webhook', 'failed to deliver crash-loop notification', [
+                'runner' => $runnerId,
+                'stderr' => $stderr,
+            ]);
+        }
+    }
+
+    /** @return array{ok: bool, message: string} */
+    public static function sendTest(string $url): array
+    {
+        $message = 'RunnerDeck: this is a test notification from Settings.';
+        $payload = self::payloadFor($url, 'test', $message, null, null);
+        [$ok, $stderr] = self::post($url, $payload);
+
+        if ($ok) {
+            return ['ok' => true, 'message' => 'Test notification sent.'];
+        }
+
+        AppLog::errorThrottled('crash_webhook', 'failed to deliver test notification', ['stderr' => $stderr]);
+        return [
+            'ok' => false,
+            'message' => trim($stderr) !== '' ? "Delivery failed: {$stderr}" : 'Delivery failed.',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array{0: bool, 1: string}
+     */
+    private static function post(string $url, array $payload): array
+    {
+        $body = json_encode($payload);
         if ($body === false) {
-            return;
+            return [false, 'failed to encode payload'];
         }
 
         $result = Shell::exec(
@@ -26,19 +67,17 @@ final class CrashWebhook
             self::TIMEOUT_SECONDS + 2
         );
 
-        if ($result['code'] !== 0) {
-            AppLog::errorThrottled('crash_webhook', 'failed to deliver crash-loop notification', [
-                'runner' => $runnerId,
-                'stderr' => $result['stderr'],
-            ]);
-        }
+        return [$result['code'] === 0, $result['stderr']];
     }
 
     /** @return array<string, mixed> */
-    private static function payloadFor(string $url, string $runnerId, string $agentName): array
-    {
-        $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
-
+    private static function payloadFor(
+        string $url,
+        string $event,
+        string $message,
+        ?string $runnerId,
+        ?string $agentName
+    ): array {
         if (str_contains($url, 'hooks.slack.com')) {
             return ['text' => $message];
         }
@@ -46,12 +85,11 @@ final class CrashWebhook
             return ['content' => $message];
         }
 
-        return [
-            'event' => 'crash_loop',
-            'runner' => $runnerId,
-            'agent_name' => $agentName,
-            'message' => $message,
-            'time' => gmdate('c'),
-        ];
+        $payload = ['event' => $event, 'message' => $message, 'time' => gmdate('c')];
+        if ($runnerId !== null) {
+            $payload['runner'] = $runnerId;
+            $payload['agent_name'] = $agentName;
+        }
+        return $payload;
     }
 }

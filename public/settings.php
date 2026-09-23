@@ -141,16 +141,21 @@ Layout::topbarEnd();
 
         <div class="settings-field">
           <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>
-          <input
-            type="url"
-            id="settings-crash-webhook-url"
-            name="crash_webhook_url"
-            placeholder="https://hooks.slack.com/services/..."
-            value="<?= htmlspecialchars($current['crashWebhookUrl']) ?>"
-          />
+          <div class="settings-field-row">
+            <input
+              type="url"
+              id="settings-crash-webhook-url"
+              name="crash_webhook_url"
+              placeholder="https://hooks.slack.com/services/..."
+              value="<?= htmlspecialchars($current['crashWebhookUrl']) ?>"
+            />
+            <button type="button" id="settings-test-webhook" class="btn btn-sm">Test</button>
+          </div>
+          <p id="settings-test-webhook-result" class="muted" hidden></p>
           <p class="muted">
             Slack and Discord incoming webhook URLs are detected automatically;
-            anything else gets a plain JSON payload.
+            anything else gets a plain JSON payload. Testing sends whatever's
+            typed above — it doesn't need to be saved first.
           </p>
         </div>
       </section>
@@ -174,4 +179,4 @@ Layout::topbarEnd();
     </form>
   </main>
 <?php
-Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js']);
+Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js', 'assets/js/webhook-test.js']);
