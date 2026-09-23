@@ -11,6 +11,8 @@ final class ProcessControlTest extends TestCase
 {
     private string $dir;
 
+    private string $storageDir;
+
     /** @var list<int> */
     private array $killed = [];
 
@@ -18,10 +20,12 @@ final class ProcessControlTest extends TestCase
     {
         $this->dir = sys_get_temp_dir() . '/runnerdeck-pc-test-' . uniqid();
         mkdir($this->dir, 0755, true);
+        $this->storageDir = sys_get_temp_dir() . '/runnerdeck-pc-storage-' . uniqid();
+        mkdir($this->storageDir, 0700, true);
         putenv('RUNNERDECK_POOL_DIR=' . dirname($this->dir));
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/storage/settings.json');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->storageDir . '/settings.json');
 
         \RunnerDeck\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
@@ -41,7 +45,8 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_SETTINGS_FILE');
-        exec('rm -rf ' . escapeshellarg($this->dir));
+        exec('rm -rf ' . escapeshellarg($this->dir) . ' ' . escapeshellarg($this->dir . '.deleting')
+            . ' ' . escapeshellarg($this->storageDir));
     }
 
     private function runner(bool $configured = true): \RunnerDeck\RunnerInfo
@@ -172,6 +177,7 @@ final class ProcessControlTest extends TestCase
         file_put_contents($this->dir . '/runner.log', 'log');
         \RunnerDeck\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'rm') {
+                $this->assertSame($this->dir . '.deleting', $cmd[2]);
                 exec('rm -rf ' . escapeshellarg($cmd[2]));
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
@@ -220,6 +226,30 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame(17, $deletedGhId);
         $this->assertDirectoryDoesNotExist($this->dir);
+    }
+
+    #[RunInSeparateProcess]
+    public function testDeleteRenamesSlotAwayBeforeRmSoATimeoutCannotGhostIt(): void
+    {
+        mkdir($this->dir . '/externals', 0755, true);
+        file_put_contents($this->dir . '/externals/x', 'partial');
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
+            if (($cmd[0] ?? '') === 'rm') {
+                return [
+                    'code' => -1,
+                    'stdout' => '',
+                    'stderr' => "[timed out after 60s, process killed]",
+                ];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\ProcessControl::deleteRunner($this->runner(configured: false));
+
+        $this->assertFalse($result['ok']);
+        $this->assertDirectoryDoesNotExist($this->dir);
+        $this->assertDirectoryExists($this->dir . '.deleting');
+        $this->assertStringContainsString('.deleting', $result['message']);
     }
 
     #[RunInSeparateProcess]

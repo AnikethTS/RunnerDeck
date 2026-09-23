@@ -5,6 +5,8 @@ services:
       - "127.0.0.1:8090:8090"
     volumes:
       - ./data:/data:z
+      # Host `gh auth login` (read-only). Comment this out to authenticate
+      # inside the container instead — `gh auth login` has to write here.
       - ~/.config/gh:/root/.config/gh:ro,z
     environment:
       RUNNERDECK_SCOPE: org

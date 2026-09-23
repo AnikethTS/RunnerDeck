@@ -218,6 +218,69 @@ final class ProvisionerTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testInstallOsDependenciesNoopsWhenScriptMissing(): void
+    {
+        $result = \RunnerDeck\Provisioner::installOsDependencies($this->dir);
+        $this->assertTrue($result['ok']);
+        $this->assertSame('no OS dependency script', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testInstallOsDependenciesRunsGithubScript(): void
+    {
+        mkdir($this->dir . '/bin', 0755, true);
+        file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\ntrue\n");
+        $ran = false;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$ran): array {
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'bash' && str_contains((string) ($cmd[1] ?? ''), 'installdependencies.sh')) {
+                $ran = true;
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\Provisioner::installOsDependencies($this->dir);
+
+        $this->assertTrue($result['ok']);
+        if (is_file('/etc/alpine-release')) {
+            $this->assertFalse($ran);
+            $this->assertStringContainsString('Alpine', $result['message']);
+            return;
+        }
+        $this->assertTrue($ran);
+        $this->assertSame('runner OS libraries installed', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testInstallOsDependenciesFailsWithLibraryHint(): void
+    {
+        mkdir($this->dir . '/bin', 0755, true);
+        file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\n");
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'bash') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'E: Unable to locate package libicu'];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\Provisioner::installOsDependencies($this->dir);
+
+        if (is_file('/etc/alpine-release')) {
+            $this->assertTrue($result['ok']);
+            return;
+        }
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('libicu', $result['message']);
+        $this->assertStringContainsString('will not start', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
     public function testEnsureConfiguredSkipsWhenAlreadyRegistered(): void
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');

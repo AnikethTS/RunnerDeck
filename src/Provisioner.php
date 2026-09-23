@@ -47,6 +47,11 @@ final class Provisioner
 
         Shell::exec(['chmod', '+x', "$dir/config.sh", "$dir/run.sh"], 5);
 
+        $deps = self::installOsDependencies($dir);
+        if (!$deps['ok']) {
+            return $deps;
+        }
+
         return ['ok' => true, 'message' => "runner binaries installed ({$download['os']}/{$download['architecture']})"];
     }
 
@@ -86,6 +91,36 @@ final class Provisioner
         }
 
         return ['ok' => true, 'message' => "{$name} configured"];
+    }
+
+    /**
+     * GitHub's Linux tarball ships bin/installdependencies.sh (libicu, libkrb5,
+     * …). Skip on Alpine: that script is apt/yum only; the image installs the
+     * libs via apk instead.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public static function installOsDependencies(string $dir): array
+    {
+        $script = "$dir/bin/installdependencies.sh";
+        if (!is_file($script)) {
+            return ['ok' => true, 'message' => 'no OS dependency script'];
+        }
+        if (is_file('/etc/alpine-release')) {
+            return ['ok' => true, 'message' => 'skipping installdependencies.sh on Alpine'];
+        }
+
+        Shell::exec(['chmod', '+x', $script], 5);
+        $deps = Shell::exec(['bash', $script], 180, $dir);
+        if ($deps['code'] !== 0) {
+            $output = trim($deps['stderr'] . "\n" . $deps['stdout']);
+            $message = 'failed to install runner OS libraries (libicu, libkrb5, …): '
+                . $output
+                . ' — the .NET runner binary will not start without them';
+            return self::fail('provision.os_deps', $message, stderr: $output);
+        }
+
+        return ['ok' => true, 'message' => 'runner OS libraries installed'];
     }
 
     /**

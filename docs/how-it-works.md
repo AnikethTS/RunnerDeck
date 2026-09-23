@@ -9,7 +9,9 @@
 - **Starting an unconfigured runner slot** downloads the official runner
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
-  runner" page uses), verifies its checksum, extracts it, requests a fresh
+  runner" page uses), verifies its checksum, extracts it, runs
+  `bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine,
+  where the Docker image installs those libs via apk), requests a fresh
   org registration token, and runs `config.sh` — the same flow you'd do by
   hand, done for you. No manual pre-setup step.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
@@ -21,9 +23,9 @@
   GitHub-registered name. **Rename** stops a runner, deregisters it from
   GitHub, and re-registers it fresh under the new name — same busy-flag
   confirmation as Stop, since it interrupts any in-progress job. **Delete**
-  does the same deregistration and then permanently removes the runner's
-  local directory (binaries, config, logs) — always confirmed separately
-  from the busy check, since there's no undo.
+  does the same deregistration, then renames the slot out of the pool and
+  removes the directory (binaries, config, logs) — always confirmed
+  separately from the busy check, since there's no undo.
 - Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
   cross-platform, read-only — nothing is capped or throttled), with a
   rolling one-hour pool-wide history chart backed by a small local SQLite

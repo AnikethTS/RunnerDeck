@@ -8,7 +8,7 @@ PHP directly:
 docker compose up --build
 ```
 
-This builds from the included `Dockerfile` (PHP 8.3 on Alpine, with `gh`
+This builds from the included `Dockerfile` (PHP 8.5 on Alpine, with `gh`
 installed and checksum-verified) and starts the container per
 `docker-compose.yml`:
 
@@ -17,10 +17,19 @@ installed and checksum-verified) and starts the container per
   `storage/` — the runner pool, `settings.json`, the history database, and
   `runnerdeck.log`.
   Delete it to reset RunnerDeck to a blank state.
-- **`~/.config/gh`** is mounted read-only so the container reuses `gh` auth
-  already set up on the host — run `gh auth login` on the host first. Drop
-  that volume line and run `docker compose exec runnerdeck gh auth login`
-  once instead if you'd rather authenticate inside the container.
+- **GitHub CLI auth** — pick **one**:
+  1. Run `gh auth login` on the host, then keep the default
+     `~/.config/gh:/root/.config/gh:ro` volume so the container reuses that
+     token read-only.
+  2. Comment out that volume line and run
+     `docker compose exec runnerdeck gh auth login` once inside the
+     container. That command *writes* `~/.config/gh`, so it cannot work
+     with the read-only mount still attached.
+- The image runs as root and sets `RUNNER_ALLOW_RUNASROOT=1` because
+  GitHub's `config.sh` otherwise refuses UID 0. It also `apk add`s the
+  shared libraries the .NET runner binary needs (`icu-libs`, `krb5-libs`,
+  …) — GitHub's `bin/installdependencies.sh` is apt/yum-only and is
+  skipped on Alpine.
 - Edit the `environment:` block in `docker-compose.yml` for your org/repo
   scope — same variables as [Configuration](configuration.md).
 - The container binds `0.0.0.0` internally so Docker's port mapping can

@@ -170,13 +170,48 @@ final class ProcessControl
             return $deregister;
         }
 
-        $result = Shell::exec(['rm', '-rf', $r->dir], 15);
-        if ($result['code'] !== 0) {
-            $message = "failed to delete {$r->id}'s files: " . trim($result['stderr']);
-            return self::fail('process.delete', $message, $r->id, $result['stderr']);
+        $removed = self::removeDirectory($r->dir);
+        if (!$removed['ok']) {
+            return self::fail('process.delete', $removed['message'], $r->id, $removed['stderr']);
         }
 
         return ['ok' => true, 'message' => "{$r->id} deleted"];
+    }
+
+    /**
+     * Rename the slot out of the pool first so discover() cannot pick it up
+     * mid-rm, then delete. A timed-out in-place rm left half-extracted dirs
+     * that looked like unconfigured runners.
+     *
+     * @return array{ok: bool, message: string, stderr: string}
+     */
+    public static function removeDirectory(string $dir): array
+    {
+        if (!is_dir($dir)) {
+            return ['ok' => true, 'message' => '', 'stderr' => ''];
+        }
+
+        $trash = rtrim($dir, '/') . '.deleting';
+        if (is_dir($trash)) {
+            Shell::exec(['rm', '-rf', $trash], 60);
+        }
+        $target = $dir;
+        if (@rename($dir, $trash)) {
+            $target = $trash;
+        }
+
+        $result = Shell::exec(['rm', '-rf', $target], 60);
+        if ($result['code'] !== 0) {
+            $detail = trim($result['stderr']);
+            $message = "failed to delete files at {$target}"
+                . ($detail !== '' ? ': ' . $detail : '');
+            if ($target !== $dir) {
+                $message .= ' — the slot is gone from the dashboard; remove that leftover directory by hand or retry';
+            }
+            return ['ok' => false, 'message' => $message, 'stderr' => $result['stderr']];
+        }
+
+        return ['ok' => true, 'message' => '', 'stderr' => ''];
     }
 
     /** Stops the runner and, if it was configured, deregisters it from GitHub and clears local registration files. */

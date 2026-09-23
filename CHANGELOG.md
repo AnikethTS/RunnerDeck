@@ -35,6 +35,19 @@ follows [SemVer](https://semver.org/).
   still a client `POST action=start` on those polls, so it also waits until
   a dashboard tab is in the foreground.
 
+### Fixed
+
+- Linux provision now runs GitHub's `bin/installdependencies.sh` after
+  extract (skipped on Alpine; the Docker image installs those libs via
+  `apk` instead) so a bare host gets libicu/libkrb5 instead of a missing
+  shared-library error when the runner binary starts.
+- Delete renames the slot out of the pool before `rm -rf` (60s timeout),
+  so a timed-out delete cannot leave a half-wiped directory that still
+  looks like a runner.
+- Docker: `RUNNER_ALLOW_RUNASROOT=1` so `config.sh` can run as root;
+  `docker.md` no longer suggests in-container `gh auth login` while the
+  compose file mounts `~/.config/gh` read-only.
+
 ## [1.3.0] - 2026-09-21
 
 ### Added
