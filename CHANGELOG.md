@@ -10,6 +10,10 @@ follows [SemVer](https://semver.org/).
 
 - The dashboard shows a **Recent errors** panel from `storage/runnerdeck.log`
   (start/provision/`gh` failures already written there, redacted).
+- Settings has a **Test** button next to the crash-loop webhook URL field —
+  sends a clearly-labeled test notification to whatever's currently typed,
+  without needing to save first, so Slack/Discord/generic delivery can be
+  confirmed before relying on it.
 
 ### Security
 

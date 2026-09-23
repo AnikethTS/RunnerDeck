@@ -567,6 +567,8 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .settings-form .settings-field { display: flex; flex-direction: column; gap: 4px; }
 .settings-form .settings-field[hidden] { display: none; }
 .settings-form .settings-field > p.muted { margin: 4px 0 0; }
+.settings-field-row { display: flex; gap: 8px; align-items: center; }
+.settings-field-row input { flex: 1; }
 .settings-form button[type="submit"] {
   align-self: flex-start;
   min-width: 160px;
