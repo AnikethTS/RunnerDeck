@@ -501,3 +501,22 @@ test('crash count sort puts the flakiest runner first', async ({ page }) => {
   );
   expect(ids[0]).toBe('flaky');
 });
+
+test('disk usage and drain/clear-work controls render', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'fat',
+      local_running: false,
+      pid: null,
+      disk_kb: 2048,
+      can_clear_work: true,
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+
+  await expect(page.getByText('2.0 MB disk')).toBeVisible();
+  await expect(page.locator('tr[data-runner="fat"] button[data-action="drain"]')).toBeDisabled();
+  await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
+  await expect(page.locator('#btn-drain-all')).toBeVisible();
+});

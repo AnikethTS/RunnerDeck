@@ -260,4 +260,27 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 not running', $result['message']);
     }
+
+    #[RunInSeparateProcess]
+    public function testClearWorkDirRefusesWhenRunning(): void
+    {
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 9]);
+
+        $result = \RunnerDeck\ProcessControl::clearWorkDir($this->runner());
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('running', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testClearWorkDirRemovesWorkTreeWhenStopped(): void
+    {
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/x', 'job');
+
+        $result = \RunnerDeck\ProcessControl::clearWorkDir($this->runner());
+
+        $this->assertTrue($result['ok']);
+        $this->assertDirectoryDoesNotExist($this->dir . '/_work');
+    }
 }

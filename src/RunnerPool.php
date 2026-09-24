@@ -106,6 +106,9 @@ final class RunnerPool
         }
 
         $stats = ($running && $pid !== null) ? (self::allProcessStats()[$pid] ?? null) : null;
+        $logTail = self::tailLog("$dir/runner.log", $logLines);
+        RunnerLog::rotateIfOversized($dir);
+        $disk = SlotDisk::inspect($dir);
 
         return new RunnerInfo(
             id: $id,
@@ -114,10 +117,12 @@ final class RunnerPool
             agentName: $agentName ?? self::agentNameFor($id),
             localRunning: $running,
             pid: $pid,
-            logTail: self::tailLog("$dir/runner.log", $logLines),
+            logTail: $logTail,
             cpuPercent: $stats['cpu_percent'] ?? null,
             rssKb: $stats['rss_kb'] ?? null,
             uptimeSeconds: $stats['uptime_seconds'] ?? null,
+            diskKb: $disk['kb'],
+            canClearWork: $disk['can_clear'] && !$running,
         );
     }
 

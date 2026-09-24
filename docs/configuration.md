@@ -18,6 +18,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |
 | `RUNNERDECK_CRASH_WEBHOOK_URL` | no | off | POSTed once per crash-loop onset, and also when a runner's 7-day crash count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` if that is set. Slack/Discord incoming webhook URLs are detected and get their native payload shape; anything else gets a plain JSON payload. Set from Settings |
 | `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1. When set, the crash webhook also fires once as a runner's 7-day crash count first reaches this value. Set from Settings |
+| `RUNNERDECK_DRAIN_TIMEOUT` | no | `600` | Seconds to wait for GitHub `busy=false` before drain-stop gives up (1–3600). Used by Drain in the UI, `drain_stop` API actions, and `php bin/drain-stop.php` |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.

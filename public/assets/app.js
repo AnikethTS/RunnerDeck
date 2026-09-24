@@ -117,6 +117,45 @@ function initDashboard() {
     badge.hidden = false;
   }
 
+  function drainTimeoutMs() {
+    const n = Number(window.__DRAIN_TIMEOUT__);
+    return (Number.isFinite(n) && n >= 1 ? n : 600) * 1000;
+  }
+
+  function idsStillBusy(ids) {
+    if (!lastSnapshot) return true;
+    const want = new Set(ids);
+    return lastSnapshot.runners.some((r) => {
+      if (!want.has(r.id)) return false;
+      if (!r.github) return true;
+      return !!r.github.busy;
+    });
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
+  async function drainThenStop(action, params, ids) {
+    const deadline = Date.now() + drainTimeoutMs();
+    while (idsStillBusy(ids) && Date.now() < deadline) {
+      await fetchStatus();
+      if (!idsStillBusy(ids)) break;
+      await sleep(2000);
+    }
+    if (idsStillBusy(ids)) {
+      const proceed = await confirmModal(
+        'Still busy after waiting for the job to finish. Stop anyway and interrupt it?',
+      );
+      if (!proceed) return;
+      await runWithBusyGuard(action, { ...params, force: '1' });
+      return;
+    }
+    await runWithBusyGuard(action, params);
+  }
+
   async function runWithBusyGuard(action, params) {
     let { status, data } = await post(action, params);
     if (status === 409) {
@@ -182,6 +221,18 @@ function initDashboard() {
       await withLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…', () => runWithBusyGuard(action, { runner }));
       return;
     }
+    if (action === 'drain') {
+      await withLoading(btn, 'Draining…', () => drainThenStop('stop', { runner }, [runner]));
+      return;
+    }
+    if (action === 'clear-work') {
+      await withLoading(btn, 'Clearing…', async () => {
+        const { data } = await post('clear_work', { runner });
+        if (!data.ok) showToast(data.message);
+        await fetchStatus();
+      });
+      return;
+    }
     if (action === 'delete') {
       const name = tr.dataset.agentName || runner;
       const sure = await confirmModal(
@@ -223,6 +274,11 @@ function initDashboard() {
     withLoading(e.currentTarget, 'Stopping All…', () => runWithBusyGuard('stop_all', {}));
   });
 
+  document.getElementById('btn-drain-all').addEventListener('click', (e) => {
+    const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
+    withLoading(e.currentTarget, 'Draining…', () => drainThenStop('stop_all', {}, ids));
+  });
+
   rowsEl.addEventListener('change', (e) => {
     const checkbox = e.target.closest('input.row-select');
     if (!checkbox) return;
@@ -253,6 +309,15 @@ function initDashboard() {
 
   document.getElementById('btn-bulk-stop').addEventListener('click', (e) => {
     withLoading(e.currentTarget, 'Stopping…', () => runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') }));
+  });
+
+  document.getElementById('btn-bulk-drain').addEventListener('click', (e) => {
+    const ids = [...selectedRunners];
+    withLoading(
+      e.currentTarget,
+      'Draining…',
+      () => drainThenStop('bulk_stop', { runners: ids.join(',') }, ids),
+    );
   });
 
   document.getElementById('btn-bulk-delete').addEventListener('click', async (e) => {

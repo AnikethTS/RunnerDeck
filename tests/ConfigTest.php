@@ -14,7 +14,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
-        'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD',
+        'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
     ];
 
     protected function tearDown(): void
@@ -159,6 +159,19 @@ final class ConfigTest extends TestCase
         $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=nope');
         $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+    }
+
+    #[RunInSeparateProcess]
+    public function testDrainTimeoutSecondsDefaultsTo600(): void
+    {
+        $this->assertSame(600, \RunnerDeck\Config::drainTimeoutSeconds());
+    }
+
+    #[RunInSeparateProcess]
+    public function testDrainTimeoutSecondsCapsAt3600(): void
+    {
+        putenv('RUNNERDECK_DRAIN_TIMEOUT=99999');
+        $this->assertSame(3600, \RunnerDeck\Config::drainTimeoutSeconds());
     }
 
     #[RunInSeparateProcess]

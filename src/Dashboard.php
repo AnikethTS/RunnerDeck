@@ -63,7 +63,7 @@ final class Dashboard
     }
 
     /** @param array<int, array<string, mixed>> $runners */
-    private static function notifyCrashes(array $runners): void
+    public static function notifyCrashes(array $runners): void
     {
         foreach ($runners as $r) {
             if (!empty($r['just_flagged'])) {

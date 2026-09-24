@@ -65,6 +65,26 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="crash-history"', $html);
     }
 
+    public function testRowHtmlShowsDiskDrainAndClearWork(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => [],
+            'github' => null,
+            'disk_kb' => 2048,
+            'can_clear_work' => true,
+        ]);
+
+        $this->assertStringContainsString('2.0 MB disk', $html);
+        $this->assertStringContainsString('data-action="drain"', $html);
+        $this->assertStringContainsString('data-action="clear-work"', $html);
+        $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
+    }
+
     public function testStatsCardsIssueWhenGithubUnreachable(): void
     {
         $cards = \RunnerDeck\DashboardView::statsCards([

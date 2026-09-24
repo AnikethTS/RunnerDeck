@@ -84,11 +84,16 @@ failure reason, not just 200-vs-not:
 
 ### Busy checks
 
-`stop`, `restart`, `rename`, `delete_runner`, `stop_all`, `bulk_stop`, and
-`bulk_delete` all check GitHub's `busy` flag before acting, and refuse
-(`409`) if the runner(s) might be mid-job or that can't be verified. Pass
-`force=1` (POST field or query string) to skip the check and act anyway —
-the same escape hatch the UI's confirmation dialogs use.
+`stop`, `restart`, `rename`, `delete_runner`, `stop_all`, `bulk_stop`,
+`drain_stop`, `drain_stop_all`, `bulk_drain_stop`, and `bulk_delete` all
+check GitHub's `busy` flag before acting, and refuse (`409`) if the
+runner(s) might be mid-job or that can't be verified. Drain actions wait
+until idle (POST `timeout` seconds, else `RUNNERDECK_DRAIN_TIMEOUT`)
+then stop; they still `409` on timeout or unknown busy unless you pass
+`force=1`. `clear_work` refuses (`409`) while the local process is
+running. Pass `force=1` (POST field or query string) to skip the busy
+check and act anyway — the same escape hatch the UI's confirmation
+dialogs use.
 
 ## GET actions
 
@@ -120,6 +125,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "cpu_percent": 1.2,
       "rss_kb": 204800,
       "uptime_seconds": 305,
+      "disk_kb": 4096,
+      "can_clear_work": false,
       "github": { "status": "online", "busy": false, "labels": ["self-hosted-runnerdeck"] },
       "crash_flagged": false,
       "just_flagged": false,
@@ -167,7 +174,9 @@ non-zero even after the runner's recovered and the flag has cleared.
 `crash_at_7d` is the newest timestamps for those events (unix seconds,
 capped at 100). `crash_threshold_crossed` is `true` on the poll where
 the 7-day count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD`
-(when that setting is on).
+(when that setting is on). `disk_kb` is best-effort `_work` + `_diag` +
+`runner.log` size; `can_clear_work` is true when `_work` exists and the
+local process is not running.
 
 When auto-restart is enabled, `should_auto_restart: true` means this runner
 just crashed and RunnerDeck wants it restarted — but `action=status` only
@@ -250,16 +259,20 @@ ids for the `bulk_*` actions).
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |
 | `start` | `runner` | No busy check — starting is never destructive |
 | `stop` | `runner` | Busy-checked |
+| `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
 | `restart` | `runner` | Busy-checked |
 | `rename` | `runner`, `name` | Busy-checked; deregisters and re-registers under the new name |
 | `add_runner` | `name` (optional — auto-named if blank) | |
 | `delete_runner` | `runner` | Busy-checked; deletes local files, deregisters from GitHub — no undo |
 | `start_all` | `count` (optional, default `10`, max `30`) | |
 | `stop_all` | — | Busy-checked across the whole pool in one GitHub call |
+| `drain_stop_all` | — | Wait until the pool is idle, then stop all |
 | `bulk_start` | `runners` | |
 | `bulk_stop` | `runners` | Busy-checked across the selection in one GitHub call |
+| `bulk_drain_stop` | `runners` | Wait until the selection is idle, then stop |
 | `bulk_delete` | `runners` | Busy-checked; no undo |
 | `resize` | `count` (optional, default `10`, max `30`) | Same as `start_all` |
+| `clear_work` | `runner` | Deletes `_work` in the slot; `409` if the process is running |
 
 Every action here responds `{"ok": true, "message": "..."}` on success (or
 `{"ok": true, "id": "runner-2", "message": "..."}` for `add_runner`

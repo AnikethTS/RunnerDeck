@@ -15,6 +15,7 @@ function sortValue(runner, key) {
   if (key === 'cpu') return runner.cpu_percent ?? -1;
   if (key === 'uptime') return runner.uptime_seconds ?? -1;
   if (key === 'crashes') return runner.crash_count_7d ?? 0;
+  if (key === 'disk') return runner.disk_kb ?? -1;
   return '';
 }
 
@@ -71,6 +72,13 @@ function resourceUsage(runner) {
   return `<span class="resource-usage">${miniBar(runner.cpu_percent)}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB${uptimeText}</span>`;
 }
 
+function diskUsage(runner) {
+  if (runner.disk_kb == null) return '';
+  const kb = runner.disk_kb;
+  const text = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB disk` : `${kb} KB disk`;
+  return `<span class="resource-usage disk-usage">${escapeHtml(text)}</span>`;
+}
+
 function flag(runner, key, text, cls) {
   return runner[key] ? `<div class="row-flag">${badge(text, cls)}</div>` : '';
 }
@@ -95,7 +103,7 @@ export function rowHtml(runner) {
         <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
       </td>
       <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${flag(runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')}</td>
-      <td>${localBadge(runner)}${resourceUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}${crashHistoryBadge(runner)}</td>
+      <td>${localBadge(runner)}${resourceUsage(runner)}${diskUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}${crashHistoryBadge(runner)}</td>
       <td>
         <pre class="log-preview">${escapeHtml(logPreview)}</pre>
         <button class="log-link" data-action="view-log">View live log &rarr;</button>
@@ -104,8 +112,10 @@ export function rowHtml(runner) {
         <div class="row-actions">
           <button class="btn btn-sm btn-good" data-action="start" ${runner.local_running ? 'disabled' : ''}>Start</button>
           <button class="btn btn-sm btn-critical" data-action="stop" ${runner.local_running ? '' : 'disabled'}>Stop</button>
+          <button class="btn btn-sm" data-action="drain" ${runner.local_running ? '' : 'disabled'}>Drain</button>
           <button class="btn btn-sm" data-action="restart">Restart</button>
           <button class="btn btn-sm" data-action="rename">Rename</button>
+          <button class="btn btn-sm" data-action="clear-work" ${runner.can_clear_work ? '' : 'disabled'}>Clear work</button>
           <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
         </div>
       </td>

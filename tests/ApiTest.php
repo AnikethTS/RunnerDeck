@@ -143,6 +143,18 @@ final class ApiTest extends TestCase
         $this->assertStringContainsString('stop anyway', $blocked['message']);
     }
 
+    public function testDrainTimeoutUsesPostThenDefault(): void
+    {
+        $_POST = [];
+        $this->assertSame(600, \RunnerDeck\Api::drainTimeout());
+
+        $_POST['timeout'] = '30';
+        $this->assertSame(30, \RunnerDeck\Api::drainTimeout());
+
+        $_POST['timeout'] = '99999';
+        $this->assertSame(3600, \RunnerDeck\Api::drainTimeout());
+    }
+
     private function runner(string $id, string $agentName): \RunnerDeck\RunnerInfo
     {
         return new \RunnerDeck\RunnerInfo(
