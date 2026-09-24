@@ -45,8 +45,8 @@ final class SlotDiskTest extends TestCase
 
     public function testClearWorkRemovesWorkDir(): void
     {
-        mkdir($this->dir . '/_work', 0755, true);
-        file_put_contents($this->dir . '/_work/a', 'x');
+        mkdir($this->dir . '/_work/nested', 0755, true);
+        file_put_contents($this->dir . '/_work/nested/a', 'x');
 
         $result = \RunnerDeck\SlotDisk::clearWork($this->dir);
 

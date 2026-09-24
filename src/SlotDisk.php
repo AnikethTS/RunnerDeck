@@ -54,11 +54,10 @@ final class SlotDisk
         if (!is_dir($work)) {
             return ['ok' => true, 'message' => 'no work directory to clear'];
         }
-        $result = Shell::exec(['rm', '-rf', $work], 60);
-        if ($result['code'] !== 0) {
-            $detail = trim($result['stderr']);
-            $message = 'failed to clear work dir' . ($detail !== '' ? ': ' . $detail : '');
-            return ['ok' => false, 'message' => $message];
+        self::removeTree($work);
+        clearstatcache(true, $work);
+        if (is_dir($work)) {
+            return ['ok' => false, 'message' => 'failed to clear work dir'];
         }
         self::$cache = null;
         return ['ok' => true, 'message' => 'work directory cleared'];
@@ -67,6 +66,26 @@ final class SlotDisk
     public static function resetCache(): void
     {
         self::$cache = null;
+    }
+
+    private static function removeTree(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($items as $item) {
+            $target = $item->getPathname();
+            if ($item->isDir()) {
+                @rmdir($target);
+            } else {
+                @unlink($target);
+            }
+        }
+        @rmdir($path);
     }
 
     /**
