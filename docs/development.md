@@ -60,7 +60,9 @@ Security checks beyond linting: `.github/workflows/semgrep.yml` and
 every push/PR;
 `.github/workflows/dependency-review.yml` blocks a PR that introduces a
 known-vulnerable or newly license-incompatible dependency;
-`.github/workflows/scorecard.yml` runs an OpenSSF Scorecard pass. GitHub
+`.github/workflows/scorecard.yml` runs an OpenSSF Scorecard pass. `main` is
+protected with a **repository ruleset** (not classic branch protection) so
+Scorecard can read the rules with the default `GITHUB_TOKEN`. GitHub
 secret scanning + push protection and Dependabot security updates are both
 enabled on the repo itself (not something in this codebase to configure,
 but worth knowing they're on).
