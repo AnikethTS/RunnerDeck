@@ -11,6 +11,8 @@ on:
 permissions:
   contents: read
 
+# JavaScript only — this CodeQL pack does not ship a PHP extractor.
+# PHP is scanned on PRs by Semgrep (p/php + p/security-audit).
 jobs:
   analyze:
     name: Analyze (javascript-typescript)

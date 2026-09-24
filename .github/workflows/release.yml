@@ -12,11 +12,13 @@ jobs:
   release:
     name: Build and publish release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: write
+      packages: write
       attestations: write
       id-token: write
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -57,4 +59,23 @@ jobs:
             "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
-            --notes "Verify: \`sha256sum -c runnerdeck-${GITHUB_REF_NAME}.zip.sha256\`. Verify build provenance: \`gh attestation verify runnerdeck-${GITHUB_REF_NAME}.zip -o AnikethTS\` (or via the attached .sigstore.json bundle)."
+            --notes "Verify: \`sha256sum -c runnerdeck-${GITHUB_REF_NAME}.zip.sha256\`. Verify build provenance: \`gh attestation verify runnerdeck-${GITHUB_REF_NAME}.zip -o AnikethTS\` (or via the attached .sigstore.json bundle). Container: \`docker pull ghcr.io/anikethts/runnerdeck:${GITHUB_REF_NAME}\`."
+
+      - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish container image to GHCR
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/anikethts/runnerdeck:${{ github.ref_name }}
+            ghcr.io/anikethts/runnerdeck:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
