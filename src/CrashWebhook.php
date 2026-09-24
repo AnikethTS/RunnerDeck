@@ -13,19 +13,30 @@ final class CrashWebhook
         return str_starts_with($url, 'https://') || str_starts_with($url, 'http://');
     }
 
-    public static function notify(string $runnerId, string $agentName): void
-    {
+    public static function notify(
+        string $runnerId,
+        string $agentName,
+        string $event = 'crash_loop',
+        ?int $count = null,
+        ?int $threshold = null
+    ): void {
         $url = Config::crashWebhookUrl();
         if ($url === null) {
             return;
         }
 
-        $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
-        $payload = self::payloadFor($url, 'crash_loop', $message, $runnerId, $agentName);
+        if ($event === 'crash_threshold' && $count !== null && $threshold !== null) {
+            $message = "RunnerDeck: {$agentName} ({$runnerId}) reached {$count} crashes in 7 days "
+                . "(threshold {$threshold}).";
+        } else {
+            $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
+            $event = 'crash_loop';
+        }
+        $payload = self::payloadFor($url, $event, $message, $runnerId, $agentName, $count, $threshold);
         [$ok, $stderr] = self::post($url, $payload);
 
         if (!$ok) {
-            AppLog::errorThrottled('crash_webhook', 'failed to deliver crash-loop notification', [
+            AppLog::errorThrottled('crash_webhook', 'failed to deliver crash notification', [
                 'runner' => $runnerId,
                 'stderr' => $stderr,
             ]);
@@ -76,7 +87,9 @@ final class CrashWebhook
         string $event,
         string $message,
         ?string $runnerId,
-        ?string $agentName
+        ?string $agentName,
+        ?int $count = null,
+        ?int $threshold = null
     ): array {
         if (str_contains($url, 'hooks.slack.com')) {
             return ['text' => $message];
@@ -89,6 +102,12 @@ final class CrashWebhook
         if ($runnerId !== null) {
             $payload['runner'] = $runnerId;
             $payload['agent_name'] = $agentName;
+        }
+        if ($count !== null) {
+            $payload['crash_count_7d'] = $count;
+        }
+        if ($threshold !== null) {
+            $payload['threshold'] = $threshold;
         }
         return $payload;
     }

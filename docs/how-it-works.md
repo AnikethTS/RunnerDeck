@@ -73,6 +73,9 @@
   that's crashed 5 times but keeps getting auto-restarted still shows
   that count in the table, even though it's not currently flagged — the
   point is spotting a flaky runner before it becomes a real problem.
+  Clicking the badge lists the timestamps. The Local column can be sorted
+  by that 7-day count. An optional Settings threshold fires the same
+  webhook when the count first reaches N, not only on a crash-loop.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.

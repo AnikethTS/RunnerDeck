@@ -469,3 +469,35 @@ test('a runner with recent crash history shows a count badge, a healthy one show
   await expect(flakyRow.getByText('3 crashes (7d)')).toBeVisible();
   await expect(stableRow.getByText(/crashes? \(7d\)/)).toHaveCount(0);
 });
+
+test('clicking the crash-history badge lists timestamps', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'flaky',
+      crash_count_7d: 2,
+      crash_at_7d: [1700000000, 1699900000],
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('tr[data-runner="flaky"] button[data-action="crash-history"]').click();
+
+  await expect(page.locator('#crash-history-modal')).toBeVisible();
+  await expect(page.locator('#crash-history-list li')).toHaveCount(2);
+});
+
+test('crash count sort puts the flakiest runner first', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'stable', crash_count_7d: 0 }),
+    fixtureRunner({ id: 'flaky', crash_count_7d: 4 }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('button.sortable[data-sort="crashes"]').click();
+  await page.locator('button.sortable[data-sort="crashes"]').click();
+
+  const ids = await page.locator('tr[data-runner]').evaluateAll(
+    (rows) => rows.map((r) => r.getAttribute('data-runner')),
+  );
+  expect(ids[0]).toBe('flaky');
+});

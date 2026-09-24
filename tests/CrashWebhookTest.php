@@ -91,6 +91,25 @@ final class CrashWebhookTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testThresholdNotifyUsesDistinctEventAndCount(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1', 'crash_threshold', 5, 5);
+
+        $decoded = json_decode((string) $body, true);
+        $this->assertSame('crash_threshold', $decoded['event']);
+        $this->assertSame(5, $decoded['crash_count_7d']);
+        $this->assertSame(5, $decoded['threshold']);
+        $this->assertStringContainsString('5 crashes', $decoded['message']);
+    }
+
+    #[RunInSeparateProcess]
     public function testDoesNotThrowWhenCurlFails(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');

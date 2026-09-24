@@ -16,7 +16,8 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
 | `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Security & safety](security-and-safety.md#hosting-remotely) |
 | `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |
-| `RUNNERDECK_CRASH_WEBHOOK_URL` | no | off | POSTed once per crash-loop onset. Slack/Discord incoming webhook URLs are detected and get their native payload shape; anything else gets a plain JSON payload. Set from Settings |
+| `RUNNERDECK_CRASH_WEBHOOK_URL` | no | off | POSTed once per crash-loop onset, and also when a runner's 7-day crash count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` if that is set. Slack/Discord incoming webhook URLs are detected and get their native payload shape; anything else gets a plain JSON payload. Set from Settings |
+| `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1. When set, the crash webhook also fires once as a runner's 7-day crash count first reaches this value. Set from Settings |
 
 Optional: drop a `public/assets/logo.png` in to show a logo in the header —
 it's gitignored and entirely optional, the dashboard works fine without one.

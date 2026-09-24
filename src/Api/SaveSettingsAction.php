@@ -32,6 +32,7 @@ final class SaveSettingsAction
         $repo = trim((string) ($post['repo'] ?? ''));
         $label = trim((string) ($post['label'] ?? ''));
         $webhookUrl = trim((string) ($post['crash_webhook_url'] ?? ''));
+        $webhookThreshold = trim((string) ($post['crash_webhook_threshold'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -41,6 +42,9 @@ final class SaveSettingsAction
         }
         if ($webhookUrl !== '' && !CrashWebhook::isValidUrl($webhookUrl)) {
             return ['ok' => false, 'message' => 'crash webhook url must start with http:// or https://'];
+        }
+        if ($webhookThreshold !== '' && (!ctype_digit($webhookThreshold) || (int) $webhookThreshold < 1)) {
+            return ['ok' => false, 'message' => 'crash webhook threshold must be a whole number of 1 or more'];
         }
 
         Settings::save([
@@ -52,6 +56,7 @@ final class SaveSettingsAction
             'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
             'RUNNERDECK_AUTO_RESTART' => ($post['auto_restart'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,
+            'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
         ]);
 
         return ['ok' => true, 'message' => 'settings saved'];

@@ -141,6 +141,31 @@ function initDashboard() {
       openLogViewer(runner);
       return;
     }
+    if (action === 'crash-history') {
+      const row = lastSnapshot ? lastSnapshot.runners.find((r) => r.id === runner) : null;
+      const modal = document.getElementById('crash-history-modal');
+      const title = document.getElementById('crash-history-title');
+      const list = document.getElementById('crash-history-list');
+      const name = tr.dataset.agentName || runner;
+      title.textContent = `${name} — crashes (7 days)`;
+      list.replaceChildren();
+      const times = row && Array.isArray(row.crash_at_7d) ? row.crash_at_7d : [];
+      if (!times.length) {
+        const li = document.createElement('li');
+        li.className = 'muted';
+        li.textContent = 'No timestamps stored (history needs pdo_sqlite).';
+        list.append(li);
+      } else {
+        times.forEach((ts) => {
+          const li = document.createElement('li');
+          const d = new Date(ts * 1000);
+          li.textContent = Number.isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
+          list.append(li);
+        });
+      }
+      modal.hidden = false;
+      return;
+    }
     if (action === 'rename') {
       openRenameModal(runner, tr.dataset.agentName);
       return;
@@ -323,6 +348,10 @@ function initDashboard() {
 
   initModals(fetchStatus);
   checkForUpdates();
+
+  document.getElementById('crash-history-close').addEventListener('click', () => {
+    document.getElementById('crash-history-modal').hidden = true;
+  });
 
   if (window.__SNAPSHOT__) render(window.__SNAPSHOT__);
   else fetchStatus();

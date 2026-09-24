@@ -14,6 +14,7 @@ function sortValue(runner, key) {
   if (key === 'status') return runner.github ? (runner.github.busy ? 2 : runner.github.status === 'online' ? 1 : 0) : -1;
   if (key === 'cpu') return runner.cpu_percent ?? -1;
   if (key === 'uptime') return runner.uptime_seconds ?? -1;
+  if (key === 'crashes') return runner.crash_count_7d ?? 0;
   return '';
 }
 
@@ -78,7 +79,7 @@ function crashHistoryBadge(runner) {
   const n = runner.crash_count_7d;
   if (!n) return '';
   const text = n === 1 ? '1 crash (7d)' : `${n} crashes (7d)`;
-  return `<div class="row-flag">${badge(text, 'warning')}</div>`;
+  return `<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history" aria-label="Show crash times for the last 7 days">${badge(text, 'warning')}</button></div>`;
 }
 
 export function rowHtml(runner) {

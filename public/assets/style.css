@@ -333,7 +333,24 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .process-sort-controls { display: flex; gap: 8px; margin-top: 4px; }
 .sort-button { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .sort-button:hover { color: var(--text-primary); }
-.sort-caret { display: inline-block; width: 10px; color: var(--brand); }
+.crash-history-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.crash-history-btn:hover { opacity: 0.85; }
+.crash-history-list {
+  margin: 0;
+  padding-left: 1.2em;
+  max-height: min(50vh, 320px);
+  overflow: auto;
+  font-variant-numeric: tabular-nums;
+}
+.crash-history-list li { margin: 4px 0; }
 .runner-table tbody tr:last-child td { border-bottom: none; }
 .runner-table tbody tr:hover { background: var(--page-plane); }
 

@@ -234,6 +234,10 @@ Layout::topbarEnd();
                 <button type="button" class="sortable sort-button" data-sort="uptime" aria-label="Sort by uptime">
                   Uptime<span class="sort-caret" aria-hidden="true"></span>
                 </button>
+                <button type="button" class="sortable sort-button" data-sort="crashes"
+                        aria-label="Sort by crashes in 7 days">
+                  Crashes<span class="sort-caret" aria-hidden="true"></span>
+                </button>
               </div>
             </th>
             <th>Recent log</th>
@@ -292,6 +296,16 @@ Layout::topbarEnd();
           </div>
           <p id="add-runner-error" class="setup-error" hidden></p>
         </form>
+      </div>
+    </div>
+
+    <div id="crash-history-modal" class="modal" hidden>
+      <div class="modal-content modal-content-small">
+        <div class="modal-header">
+          <h2 id="crash-history-title">Crashes (7 days)</h2>
+          <button type="button" id="crash-history-close" class="btn">Close</button>
+        </div>
+        <ol id="crash-history-list" class="crash-history-list"></ol>
       </div>
     </div>
 

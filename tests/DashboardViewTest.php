@@ -48,6 +48,23 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="start"', $html);
     }
 
+    public function testRowHtmlCrashHistoryIsAButton(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => null,
+            'crash_count_7d' => 2,
+        ]);
+
+        $this->assertStringContainsString('2 crashes (7d)', $html);
+        $this->assertStringContainsString('data-action="crash-history"', $html);
+    }
+
     public function testStatsCardsIssueWhenGithubUnreachable(): void
     {
         $cards = \RunnerDeck\DashboardView::statsCards([

@@ -28,6 +28,7 @@ final class CrashStateTest extends TestCase
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTO_RESTART');
         putenv('RUNNERDECK_HISTORY_FILE');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD');
         @unlink($this->stateFile);
         @unlink($dir . '/settings.json');
         @rmdir($dir);
@@ -199,5 +200,28 @@ final class CrashStateTest extends TestCase
         \RunnerDeck\CrashState::track($this->runner(true));
         $second = \RunnerDeck\CrashState::track($this->runner(false));
         $this->assertSame(2, $second[0]['crash_count_7d']);
+        $this->assertCount(2, $second[0]['crash_at_7d']);
+        $this->assertFalse($second[0]['crash_threshold_crossed']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashThresholdCrossedOnlyOnThePollThatReachesN(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=2');
+
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $first = \RunnerDeck\CrashState::track($this->runner(false));
+        $this->assertFalse($first[0]['crash_threshold_crossed']);
+        $this->assertSame(1, $first[0]['crash_count_7d']);
+
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $second = \RunnerDeck\CrashState::track($this->runner(false));
+        $this->assertTrue($second[0]['crash_threshold_crossed']);
+        $this->assertSame(2, $second[0]['crash_count_7d']);
+
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $third = \RunnerDeck\CrashState::track($this->runner(false));
+        $this->assertFalse($third[0]['crash_threshold_crossed']);
+        $this->assertSame(3, $third[0]['crash_count_7d']);
     }
 }
