@@ -5,7 +5,8 @@
   pidfiles can go stale or get lost) a live scan of `/proc` matching on the
   actual `Runner.Listener` executable path. A runner is never silently
   "invisible" just because its pidfile disappeared.
-- **GitHub-reported state** comes from `gh api orgs/<org>/actions/runners`.
+- **GitHub-reported state** comes from `gh api --paginate …/actions/runners`
+  (`per_page=100`) so orgs with more than 30 runners are not truncated.
 - **Starting an unconfigured runner slot** downloads the official runner
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
@@ -41,9 +42,9 @@
   load" apart from "something else on this box is." Reuses the same `ps`
   scan the per-runner stats already do, plus `nproc`/`sysctl` for core
   count and total RAM; degrades to `—` rather than guessing if those
-  aren't available. These are pure local reads with no GitHub API cost,
-  so they poll independently on a faster 2s cadence rather than waiting
-  on the main 5s runner/GitHub poll.
+  aren't available. These are pure local reads with no GitHub API cost
+  and ride along on the 5s `action=status` snapshot so they do not
+  queue a second request on the single-threaded PHP built-in server.
 - If a runner's local process state and its GitHub-reported state
   **disagree for several polls in a row**, the row is flagged — a one-off
   mismatch during a status transition is normal and ignored, a persistent
@@ -75,12 +76,13 @@
   only thing in RunnerDeck that calls out to a repo other than the one
   you're managing runners for, which is why it's opt-in rather than on
   by default.
-- The dashboard **polls** `action=status` every 5s and `action=system`
-  every 2s only while the tab is visible. A hidden tab stops both timers
-  and fetches once when you come back — so a background tab is not a
-  second load on the same machine that is running the jobs. Client-side
-  auto-restart (POST `action=start` when `should_auto_restart` is set)
-  therefore also only runs from a visible dashboard tab.
+- The dashboard **polls** `action=status` every 5s only while the tab is
+  visible (whole-machine load is in that snapshot). A hidden tab stops
+  the timer and fetches once when you come back — so a background tab is
+  not a second load on the same machine that is running the jobs.
+  Client-side auto-restart (POST `action=start` when
+  `should_auto_restart` is set) therefore also only runs from a visible
+  dashboard tab.
 - **Recent errors** on the dashboard are the JSON lines already written to
   `storage/runnerdeck.log` (start/provision/`gh` failures, secrets
   redacted). The file is still there for SSH; the panel is so you do not

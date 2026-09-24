@@ -74,6 +74,71 @@ final class DashboardTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testSnapshotSkipsAuthStatusWhenListRunnersSucceeds(): void
+    {
+        $authCalled = false;
+        $listCalled = false;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, 'auth status')) {
+                $authCalled = true;
+                return ['code' => 0, 'stdout' => 'logged in', 'stderr' => ''];
+            }
+            if (str_contains($joined, '/actions/runners') && str_contains($joined, '--paginate')) {
+                $listCalled = true;
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([
+                        'id' => 1,
+                        'name' => 'acme-1',
+                        'status' => 'online',
+                        'busy' => false,
+                        'labels' => [],
+                    ]),
+                    'stderr' => '',
+                ];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+
+        $result = \RunnerDeck\Dashboard::snapshot();
+
+        $this->assertTrue($listCalled);
+        $this->assertFalse($authCalled);
+        $this->assertTrue($result['health']['logged_in']);
+        $this->assertTrue($result['health']['org_access_ok']);
+        $this->assertSame('online', $result['runners'][0]['github']['status']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotUsesAuthStatusOnlyAfterListRunnersFails(): void
+    {
+        $authCalled = false;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$authCalled): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, 'auth status')) {
+                $authCalled = true;
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+            }
+            if (str_contains($joined, '/actions/runners')) {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'HTTP 401'];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+
+        $result = \RunnerDeck\Dashboard::snapshot();
+
+        $this->assertTrue($authCalled);
+        $this->assertFalse($result['health']['logged_in']);
+        $this->assertFalse($result['health']['org_access_ok']);
+        $this->assertSame('not logged in', $result['health']['message']);
+    }
+
+    #[RunInSeparateProcess]
     public function testSnapshotFiresCrashWebhookOnRealCrash(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');

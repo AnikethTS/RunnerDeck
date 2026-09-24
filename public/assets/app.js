@@ -4,14 +4,13 @@ import { showToast } from './js/toast.js';
 import {
   sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, rowHtml, updateBulkActionsBar,
 } from './js/table.js';
-import { renderStats, renderLoadStat } from './js/stats.js';
+import { renderStats } from './js/stats.js';
 import {
   confirmModal, openLogViewer, openRenameModal, initModals,
 } from './js/modals.js';
 import './js/theme.js';
 
 const POLL_MS = 5000;
-const SYSTEM_POLL_MS = 2000;
 
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
@@ -19,6 +18,7 @@ function initDashboard() {
   const lastUpdatedEl = document.getElementById('last-updated');
   const exportBtn = document.getElementById('btn-export');
   let lastSnapshot = null;
+  let lastRowsKey = '';
 
   function visibleRows() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
@@ -51,8 +51,17 @@ function initDashboard() {
     });
 
     const visible = visibleRows();
-    rowsEl.innerHTML = visible.map(rowHtml).join('');
-    updateSortIndicators();
+    const rowsKey = JSON.stringify({
+      runners: snapshot.runners,
+      filter: document.getElementById('runner-filter').value,
+      sort: sortState,
+      selected: [...selectedRunners],
+    });
+    if (rowsKey !== lastRowsKey) {
+      lastRowsKey = rowsKey;
+      rowsEl.innerHTML = visible.map(rowHtml).join('');
+      updateSortIndicators();
+    }
     updateBulkActionsBar(visible);
     lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
   }
@@ -96,13 +105,6 @@ function initDashboard() {
     const res = await fetch('api.php?action=status&lines=5');
     if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
-  }
-
-  async function fetchSystemStats() {
-    const res = await fetch('api.php?action=system');
-    if (redirectIfUnauthenticated(res.status)) return;
-    const data = await res.json();
-    if (data.ok) renderLoadStat(data.system);
   }
 
   async function checkForUpdates() {
@@ -297,23 +299,17 @@ function initDashboard() {
   }
 
   let statusTimer = null;
-  let systemTimer = null;
 
   function stopPolling() {
     if (statusTimer !== null) {
       clearInterval(statusTimer);
       statusTimer = null;
     }
-    if (systemTimer !== null) {
-      clearInterval(systemTimer);
-      systemTimer = null;
-    }
   }
 
   function startPolling() {
     stopPolling();
     statusTimer = setInterval(fetchStatus, POLL_MS);
-    systemTimer = setInterval(fetchSystemStats, SYSTEM_POLL_MS);
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -322,7 +318,6 @@ function initDashboard() {
       return;
     }
     fetchStatus();
-    fetchSystemStats();
     startPolling();
   });
 
