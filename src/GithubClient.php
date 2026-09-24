@@ -38,9 +38,10 @@ final class GithubClient
 
     /**
      * A standalone login + org/repo-access health check for one-shot callers
-     * (bin/doctor.php). Dashboard::snapshot() does NOT use this — it already
-     * calls listRunners() on every poll, so probing access here first would
-     * mean hitting the same API endpoint twice per poll for no reason.
+     * (bin/doctor.php). Dashboard::snapshot() does NOT use this — on the
+     * happy path it only calls listRunners(), and falls back to checkLogin()
+     * when that fails so the health banner can tell "not logged in" apart
+     * from "logged in but cannot read runners."
      */
     public static function authStatus(): GithubAuthStatus
     {
@@ -49,11 +50,11 @@ final class GithubClient
             return new GithubAuthStatus(false, false, $login['message']);
         }
 
-        self::ensureGhEnv();
-        $probe = Shell::exec([Config::ghBinary(), 'api', self::accountBase() . '/actions/runners'], 15);
-        if ($probe['code'] !== 0) {
+        try {
+            self::listRunners();
+        } catch (\RuntimeException $e) {
             $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
-            $message = "Logged in, but cannot read {$scopeLabel} runners: " . trim($probe['stderr']);
+            $message = "Logged in, but cannot read {$scopeLabel} runners: " . $e->getMessage();
             return new GithubAuthStatus(true, false, $message);
         }
 
@@ -67,23 +68,93 @@ final class GithubClient
     public static function listRunners(): array
     {
         self::ensureGhEnv();
-        $result = Shell::exec([Config::ghBinary(), 'api', self::accountBase() . '/actions/runners'], 15);
+        $path = self::accountBase() . '/actions/runners?per_page=100';
+        $result = Shell::exec(
+            [Config::ghBinary(), 'api', '--paginate', $path, '-q', '.runners[]'],
+            30
+        );
         if ($result['code'] !== 0) {
             self::fail('gh.list_runners', 'gh api call failed: ' . trim($result['stderr']), $result['stderr'], true);
         }
 
-        $decoded = json_decode($result['stdout'], true);
-        if (!is_array($decoded)) {
-            self::fail('gh.list_runners', 'gh api returned unexpected output', $result['stdout'], true);
+        try {
+            return self::decodeRunnerList($result['stdout']);
+        } catch (\RuntimeException $e) {
+            self::fail('gh.list_runners', $e->getMessage(), $result['stdout'], true);
+        }
+    }
+
+    /**
+     * Accept a single GitHub page object, an array of runner objects, or
+     * newline-delimited runner objects from `gh api --paginate -q '.runners[]'`.
+     *
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}>
+     */
+    public static function decodeRunnerList(string $stdout): array
+    {
+        $trimmed = trim($stdout);
+        if ($trimmed === '') {
+            return [];
+        }
+
+        $decoded = json_decode($trimmed, true);
+        if (is_array($decoded)) {
+            if (isset($decoded['runners']) && is_array($decoded['runners'])) {
+                return self::indexRunners($decoded['runners']);
+            }
+            if ($decoded !== [] && array_is_list($decoded) && isset($decoded[0]['name'])) {
+                return self::indexRunners($decoded);
+            }
         }
 
         $runners = [];
-        foreach ($decoded['runners'] ?? [] as $r) {
+        foreach (preg_split('/\r?\n/', $trimmed) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            $row = json_decode($line, true);
+            if (!is_array($row)) {
+                throw new \RuntimeException('gh api returned unexpected output');
+            }
+            if (isset($row['runners']) && is_array($row['runners'])) {
+                $runners = array_merge($runners, self::indexRunners($row['runners']));
+                continue;
+            }
+            if (isset($row['name'])) {
+                $runners = array_merge($runners, self::indexRunners([$row]));
+                continue;
+            }
+            throw new \RuntimeException('gh api returned unexpected output');
+        }
+
+        return $runners;
+    }
+
+    /**
+     * @param array<int|string, mixed> $rows
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}>
+     */
+    private static function indexRunners(array $rows): array
+    {
+        $runners = [];
+        foreach ($rows as $r) {
+            if (!is_array($r) || !isset($r['name']) || !is_string($r['name']) || $r['name'] === '') {
+                continue;
+            }
+            $labels = [];
+            foreach ($r['labels'] ?? [] as $label) {
+                if (is_array($label) && isset($label['name']) && is_string($label['name'])) {
+                    $labels[] = $label['name'];
+                } elseif (is_string($label)) {
+                    $labels[] = $label;
+                }
+            }
             $runners[$r['name']] = [
-                'id' => (int) $r['id'],
-                'status' => $r['status'],
-                'busy' => (bool) $r['busy'],
-                'labels' => array_map(static fn($l) => $l['name'], $r['labels'] ?? []),
+                'id' => (int) ($r['id'] ?? 0),
+                'status' => is_string($r['status'] ?? null) ? $r['status'] : '',
+                'busy' => (bool) ($r['busy'] ?? false),
+                'labels' => $labels,
             ];
         }
         return $runners;

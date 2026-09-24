@@ -95,7 +95,8 @@ the same escape hatch the UI's confirmation dialogs use.
 ### `action=status`
 
 The full dashboard snapshot — this is what the UI polls every 5s while the
-tab is visible. Hidden tabs stop polling and fetch once on focus.
+tab is visible (including whole-machine `system` stats). Hidden tabs stop
+polling and fetch once on focus.
 
 - `lines` (optional, default `15`, max `500`) — log-tail lines per runner.
 - Returns `409` if RunnerDeck itself isn't configured yet (`{ok: false, message: "..."}`).
@@ -199,9 +200,9 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=history'
 ### `action=system`
 
 Whole-machine CPU/RAM (not just runners) — the same thing embedded in
-`action=status`'s `system` field, exposed on its own since the UI polls it
-independently every 2s while the tab is visible (no GitHub API cost, so no
-reason to wait on the slower runner poll). Hidden tabs skip this poll too.
+`action=status`'s `system` field, kept as its own action for scripts.
+The dashboard no longer polls this separately; a second request would
+queue behind `action=status` on PHP's single-threaded built-in server.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/api.php?action=system'

@@ -34,10 +34,18 @@ follows [SemVer](https://semver.org/).
 - The dashboard paints stats, health banner, and runner rows in PHP on the
   first response so the table is not empty until JavaScript runs.
 - PHPStan is at level 8.
-- Status (5s) and system-stats (2s) polls pause while the dashboard tab is
-  hidden, then fetch once when it becomes visible again. Auto-restart is
-  still a client `POST action=start` on those polls, so it also waits until
-  a dashboard tab is in the foreground.
+- Status polls (5s) pause while the dashboard tab is hidden, then fetch
+  once when it becomes visible again. Auto-restart is still a client
+  `POST action=start` on those polls, so it also waits until a dashboard
+  tab is in the foreground. Whole-machine CPU/RAM comes from the same
+  snapshot (`action=system` is still available for scripts).
+- Dashboard snapshots call `gh api --paginate` for runners first and only
+  run `gh auth status` when that fails, so a healthy poll is one GitHub
+  CLI process instead of two. Pages beyond GitHub's default 30 are
+  included (`per_page=100`).
+- The runner table is not rebuilt from `innerHTML` when the rows, filter,
+  sort, and selection have not changed, so a 5s poll does not steal
+  focus from the filter box.
 
 ### Fixed
 

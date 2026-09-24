@@ -8,20 +8,23 @@ final class Dashboard
 {
     public static function snapshot(int $logLines = 15): array
     {
-        $login = GithubClient::checkLogin();
-
         $ghRunners = [];
+        $loggedIn = false;
         $orgAccessOk = false;
-        $message = $login['message'];
+        $message = 'OK';
 
-        if ($login['logged_in']) {
-            try {
-                $ghRunners = GithubClient::listRunners();
-                $orgAccessOk = true;
-                $message = 'OK';
-            } catch (\RuntimeException $e) {
+        try {
+            $ghRunners = GithubClient::listRunners();
+            $loggedIn = true;
+            $orgAccessOk = true;
+        } catch (\RuntimeException $e) {
+            $login = GithubClient::checkLogin();
+            $loggedIn = $login['logged_in'];
+            if ($loggedIn) {
                 $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
                 $message = "Logged in, but cannot read {$scopeLabel} runners: " . $e->getMessage();
+            } else {
+                $message = $login['message'];
             }
         }
 
@@ -47,7 +50,7 @@ final class Dashboard
         return [
             'generated_at' => time(),
             'health' => [
-                'logged_in' => $login['logged_in'],
+                'logged_in' => $loggedIn,
                 'org_access_ok' => $orgAccessOk,
                 'message' => $message,
             ],
