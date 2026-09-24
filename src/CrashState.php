@@ -67,6 +67,7 @@ final class CrashState
     {
         $state = self::readState();
         $autoRestart = Config::autoRestartEnabled();
+        $crashCounts = CrashHistory::countsByRunner();
 
         foreach ($runners as &$r) {
             $s = self::runnerState($state, $r['id']);
@@ -87,6 +88,8 @@ final class CrashState
             $crashed = $s['wasRunning'] && !$r['local_running'] && $r['configured'] && !$s['justStopped'];
             $shouldAutoRestart = false;
             if ($crashed) {
+                CrashHistory::record((string) $r['id'], (string) ($r['agent_name'] ?? $r['id']));
+                $crashCounts[(string) $r['id']] = ($crashCounts[(string) $r['id']] ?? 0) + 1;
                 if ($autoRestart && $s['attempts'] < self::MAX_ATTEMPTS) {
                     $s['attempts']++;
                     $shouldAutoRestart = true;
@@ -112,6 +115,7 @@ final class CrashState
             $r['just_flagged'] = $justFlagged;
             $r['should_auto_restart'] = $shouldAutoRestart;
             $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
+            $r['crash_count_7d'] = $crashCounts[(string) $r['id']] ?? 0;
         }
 
         self::writeState($state);

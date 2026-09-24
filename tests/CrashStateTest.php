@@ -10,12 +10,16 @@ use PHPUnit\Framework\TestCase;
 final class CrashStateTest extends TestCase
 {
     private string $stateFile;
+    private string $historyFile;
 
     protected function setUp(): void
     {
         $settingsFile = sys_get_temp_dir() . '/runnerdeck-crash-test-' . uniqid() . '/settings.json';
         putenv('RUNNERDECK_SETTINGS_FILE=' . $settingsFile);
         $this->stateFile = dirname($settingsFile) . '/crash_state.json';
+
+        $this->historyFile = sys_get_temp_dir() . '/runnerdeck-crash-test-' . uniqid() . '/history.sqlite';
+        putenv('RUNNERDECK_HISTORY_FILE=' . $this->historyFile);
     }
 
     protected function tearDown(): void
@@ -23,9 +27,12 @@ final class CrashStateTest extends TestCase
         $dir = dirname((string) getenv('RUNNERDECK_SETTINGS_FILE'));
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTO_RESTART');
+        putenv('RUNNERDECK_HISTORY_FILE');
         @unlink($this->stateFile);
         @unlink($dir . '/settings.json');
         @rmdir($dir);
+        @unlink($this->historyFile);
+        @rmdir(dirname($this->historyFile));
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -170,5 +177,27 @@ final class CrashStateTest extends TestCase
         $result = \RunnerDeck\CrashState::track($this->runner(true));
 
         $this->assertFalse($result[0]['crash_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashCount7dStartsAtZero(): void
+    {
+        $result = \RunnerDeck\CrashState::track($this->runner(true));
+
+        $this->assertSame(0, $result[0]['crash_count_7d']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashCount7dIncrementsOnEachCrashRegardlessOfAutoRestart(): void
+    {
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $first = \RunnerDeck\CrashState::track($this->runner(false));
+        $this->assertSame(1, $first[0]['crash_count_7d']);
+
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $second = \RunnerDeck\CrashState::track($this->runner(false));
+        $this->assertSame(2, $second[0]['crash_count_7d']);
     }
 }

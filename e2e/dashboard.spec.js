@@ -455,3 +455,17 @@ test('dashboard shows recent errors from the status snapshot', async ({ page }) 
   await expect(page.locator('#app-log-body')).toContainText('process.start');
   await expect(page.locator('#app-log-body')).toContainText('nohup: failed');
 });
+
+test('a runner with recent crash history shows a count badge, a healthy one shows none', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'flaky', crash_count_7d: 3 }),
+    fixtureRunner({ id: 'stable', crash_count_7d: 0 }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+
+  const flakyRow = page.locator('tr[data-runner="flaky"]');
+  const stableRow = page.locator('tr[data-runner="stable"]');
+  await expect(flakyRow.getByText('3 crashes (7d)')).toBeVisible();
+  await expect(stableRow.getByText(/crashes? \(7d\)/)).toHaveCount(0);
+});

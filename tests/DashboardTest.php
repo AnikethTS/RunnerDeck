@@ -23,6 +23,7 @@ final class DashboardTest extends TestCase
 
         putenv('RUNNERDECK_POOL_DIR=' . $this->poolDir);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $this->root . '/storage/settings.json');
+        putenv('RUNNERDECK_HISTORY_FILE=' . $this->root . '/storage/db/history.sqlite');
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
     }
@@ -34,6 +35,7 @@ final class DashboardTest extends TestCase
         \RunnerDeck\RunnerPool::fakeCheckProcess(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_HISTORY_FILE');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_AUTO_RESTART');

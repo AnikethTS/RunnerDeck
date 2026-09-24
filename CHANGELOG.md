@@ -14,6 +14,11 @@ follows [SemVer](https://semver.org/).
   sends a clearly-labeled test notification to whatever's currently typed,
   without needing to save first, so Slack/Discord/generic delivery can be
   confirmed before relying on it.
+- Crash history: a small SQLite table (`src/CrashHistory.php`, same
+  database as CPU/RAM history) counts crashes per runner over the last 7
+  days, independent of the live `crash_flagged` state, so a flaky runner
+  that keeps getting auto-restarted still shows up. The dashboard table
+  shows it as a "N crashes (7d)" badge when non-zero.
 
 ### Security
 

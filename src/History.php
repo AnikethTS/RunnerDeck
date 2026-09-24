@@ -17,7 +17,7 @@ final class History
         return extension_loaded('pdo_sqlite');
     }
 
-    private static function path(): string
+    public static function path(): string
     {
         return getenv('RUNNERDECK_HISTORY_FILE') ?: dirname(__DIR__) . '/storage/db/history.sqlite';
     }
