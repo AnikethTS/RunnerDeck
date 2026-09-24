@@ -68,6 +68,8 @@ final class CrashState
         $state = self::readState();
         $autoRestart = Config::autoRestartEnabled();
         $crashCounts = CrashHistory::countsByRunner();
+        $crashTimes = CrashHistory::timestampsByRunner();
+        $threshold = Config::crashWebhookThreshold();
 
         foreach ($runners as &$r) {
             $s = self::runnerState($state, $r['id']);
@@ -87,14 +89,23 @@ final class CrashState
 
             $crashed = $s['wasRunning'] && !$r['local_running'] && $r['configured'] && !$s['justStopped'];
             $shouldAutoRestart = false;
+            $thresholdCrossed = false;
+            $id = (string) $r['id'];
             if ($crashed) {
-                CrashHistory::record((string) $r['id'], (string) ($r['agent_name'] ?? $r['id']));
-                $crashCounts[(string) $r['id']] = ($crashCounts[(string) $r['id']] ?? 0) + 1;
+                $before = $crashCounts[$id] ?? 0;
+                CrashHistory::record($id, (string) ($r['agent_name'] ?? $id));
+                $crashCounts[$id] = $before + 1;
+                $times = $crashTimes[$id] ?? [];
+                array_unshift($times, time());
+                $crashTimes[$id] = array_slice($times, 0, CrashHistory::LIST_LIMIT);
                 if ($autoRestart && $s['attempts'] < self::MAX_ATTEMPTS) {
                     $s['attempts']++;
                     $shouldAutoRestart = true;
                 } else {
                     $s['flagged'] = true;
+                }
+                if ($threshold !== null && $before < $threshold && $crashCounts[$id] >= $threshold) {
+                    $thresholdCrossed = true;
                 }
             }
 
@@ -115,7 +126,9 @@ final class CrashState
             $r['just_flagged'] = $justFlagged;
             $r['should_auto_restart'] = $shouldAutoRestart;
             $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
-            $r['crash_count_7d'] = $crashCounts[(string) $r['id']] ?? 0;
+            $r['crash_count_7d'] = $crashCounts[$id] ?? 0;
+            $r['crash_at_7d'] = $crashTimes[$id] ?? [];
+            $r['crash_threshold_crossed'] = $thresholdCrossed;
         }
 
         self::writeState($state);

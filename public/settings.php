@@ -38,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'checkUpdates' => ($_POST['check_updates'] ?? '') === '1',
         'autoRestart' => ($_POST['auto_restart'] ?? '') === '1',
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
+        'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
     ];
 } else {
     try {
@@ -53,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'checkUpdates' => Config::checkUpdatesEnabled(),
         'autoRestart' => Config::autoRestartEnabled(),
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
+        'crashWebhookThreshold' => Config::crashWebhookThreshold() !== null
+            ? (string) Config::crashWebhookThreshold()
+            : '',
     ];
 }
 
@@ -156,6 +160,24 @@ Layout::topbarEnd();
             Slack and Discord incoming webhook URLs are detected automatically;
             anything else gets a plain JSON payload. Testing sends whatever's
             typed above — it doesn't need to be saved first.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-crash-webhook-threshold">Also notify at N crashes in 7 days (optional)</label>
+          <input
+            type="number"
+            id="settings-crash-webhook-threshold"
+            name="crash_webhook_threshold"
+            min="1"
+            step="1"
+            placeholder="leave blank for crash-loop only"
+            value="<?= htmlspecialchars($current['crashWebhookThreshold']) ?>"
+          />
+          <p class="muted">
+            Uses the same URL. Fires once when a runner's 7-day crash count
+            first reaches this number — even if auto-restart keeps it up
+            so a crash-loop is never flagged.
           </p>
         </div>
       </section>

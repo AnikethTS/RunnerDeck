@@ -184,7 +184,8 @@ final class DashboardView
             $badge = self::badge('stopped', 'critical');
         }
         return $badge . self::resourceUsage($runner)
-            . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical');
+            . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
+            . self::crashHistoryBadge($runner);
     }
 
     /** @param array<string, mixed> $runner */
@@ -245,6 +246,20 @@ final class DashboardView
             return '';
         }
         return '<div class="row-flag">' . self::badge($text, $cls) . '</div>';
+    }
+
+    /** @param array<string, mixed> $runner */
+    private static function crashHistoryBadge(array $runner): string
+    {
+        $n = $runner['crash_count_7d'] ?? 0;
+        if (!is_numeric($n) || (int) $n < 1) {
+            return '';
+        }
+        $count = (int) $n;
+        $text = $count === 1 ? '1 crash (7d)' : $count . ' crashes (7d)';
+        return '<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history" '
+            . 'aria-label="Show crash times for the last 7 days">'
+            . self::badge($text, 'warning') . '</button></div>';
     }
 
     private static function badge(string $text, string $cls): string

@@ -164,6 +164,10 @@ polls where GitHub `online` and the local process disagree.
 days (`src/CrashHistory.php`, a small SQLite table in the same database
 as CPU/RAM history) — independent of `crash_flagged`, so it stays
 non-zero even after the runner's recovered and the flag has cleared.
+`crash_at_7d` is the newest timestamps for those events (unix seconds,
+capped at 100). `crash_threshold_crossed` is `true` on the poll where
+the 7-day count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD`
+(when that setting is on).
 
 When auto-restart is enabled, `should_auto_restart: true` means this runner
 just crashed and RunnerDeck wants it restarted — but `action=status` only

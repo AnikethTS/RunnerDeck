@@ -14,6 +14,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
+        'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD',
     ];
 
     protected function tearDown(): void
@@ -136,6 +137,28 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://hooks.slack.com/services/x');
         $this->assertSame('https://hooks.slack.com/services/x', \RunnerDeck\Config::crashWebhookUrl());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashWebhookThresholdDefaultsToNull(): void
+    {
+        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashWebhookThresholdParsesPositiveInt(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=5');
+        $this->assertSame(5, \RunnerDeck\Config::crashWebhookThreshold());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCrashWebhookThresholdRejectsZeroAndGarbage(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=0');
+        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=nope');
+        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
     }
 
     #[RunInSeparateProcess]

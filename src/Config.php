@@ -101,6 +101,19 @@ final class Config
         return $url !== false && $url !== '' ? $url : null;
     }
 
+    /** @return int|null 7-day crash count that also fires the webhook, or null if unset */
+    public static function crashWebhookThreshold(): ?int
+    {
+        $raw = getenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD');
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        if (!ctype_digit($raw) || (int) $raw < 1) {
+            return null;
+        }
+        return (int) $raw;
+    }
+
     /** @return string|null the base32 TOTP secret shared with an authenticator app, or null if login is off */
     public static function authTotpSecret(): ?string
     {

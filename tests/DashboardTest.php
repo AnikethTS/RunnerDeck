@@ -40,6 +40,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_AUTO_RESTART');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD');
         exec('rm -rf ' . escapeshellarg($this->root));
     }
 
@@ -164,5 +165,34 @@ final class DashboardTest extends TestCase
         $this->assertNotNull($webhookBody, 'expected a webhook POST for the crash-loop');
         $decoded = json_decode((string) $webhookBody, true);
         $this->assertSame('runner-1', $decoded['runner']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotFiresThresholdWebhookOnCrossingN(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=1');
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+
+        $bodies = [];
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$bodies): array {
+            if (($cmd[0] ?? '') === 'curl') {
+                $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+        });
+
+        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Dashboard::snapshot();
+
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Dashboard::snapshot();
+
+        $this->assertCount(1, $bodies);
+        $decoded = json_decode((string) $bodies[0], true);
+        $this->assertSame('crash_threshold', $decoded['event']);
+        $this->assertSame(1, $decoded['crash_count_7d']);
     }
 }

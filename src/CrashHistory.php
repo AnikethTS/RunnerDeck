@@ -7,6 +7,7 @@ namespace RunnerDeck;
 final class CrashHistory
 {
     private const RETENTION_SECONDS = 7 * 24 * 60 * 60;
+    public const LIST_LIMIT = 100;
 
     private static function db(): \PDO
     {
@@ -59,6 +60,37 @@ final class CrashHistory
                 $counts[(string) $row['runner_id']] = (int) $row['n'];
             }
             return $counts;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Newest first, capped. Empty list when sqlite is unavailable.
+     *
+     * @return array<string, list<int>> runner id => unix timestamps
+     */
+    public static function timestampsByRunner(): array
+    {
+        try {
+            $db = self::db();
+            $stmt = $db->prepare(
+                'SELECT runner_id, ts FROM crash_events WHERE ts >= ? ORDER BY ts DESC'
+            );
+            $stmt->execute([time() - self::RETENTION_SECONDS]);
+
+            $out = [];
+            foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+                $id = (string) $row['runner_id'];
+                if (!isset($out[$id])) {
+                    $out[$id] = [];
+                }
+                if (count($out[$id]) >= self::LIST_LIMIT) {
+                    continue;
+                }
+                $out[$id][] = (int) $row['ts'];
+            }
+            return $out;
         } catch (\Throwable) {
             return [];
         }

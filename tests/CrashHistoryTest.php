@@ -77,4 +77,18 @@ final class CrashHistoryTest extends TestCase
         $this->assertContains('samples', $tables);
         $this->assertContains('crash_events', $tables);
     }
+
+    #[RunInSeparateProcess]
+    public function testTimestampsByRunnerAreNewestFirst(): void
+    {
+        \RunnerDeck\CrashHistory::record('runner-1', 'acme-1');
+        \RunnerDeck\CrashHistory::record('runner-1', 'acme-1');
+        $db = new PDO('sqlite:' . $this->dbFile);
+        $db->exec('UPDATE crash_events SET ts = ts - 10 WHERE rowid = (SELECT MIN(rowid) FROM crash_events)');
+
+        $times = \RunnerDeck\CrashHistory::timestampsByRunner();
+
+        $this->assertCount(2, $times['runner-1']);
+        $this->assertGreaterThan($times['runner-1'][1], $times['runner-1'][0]);
+    }
 }

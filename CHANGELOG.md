@@ -18,7 +18,10 @@ follows [SemVer](https://semver.org/).
   database as CPU/RAM history) counts crashes per runner over the last 7
   days, independent of the live `crash_flagged` state, so a flaky runner
   that keeps getting auto-restarted still shows up. The dashboard table
-  shows it as a "N crashes (7d)" badge when non-zero.
+  shows it as a "N crashes (7d)" badge when non-zero. Clicking the badge
+  lists timestamps; the Local column can be sorted by that count. An
+  optional Settings threshold fires the same webhook when the count first
+  reaches N in 7 days, not only on a crash-loop.
 
 ### Security
 
