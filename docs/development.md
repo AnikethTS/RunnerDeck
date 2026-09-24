@@ -38,22 +38,26 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-across `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, a dedicated Alpine
-(musl) container, and the [Docker image](docker.md) itself (`docker build`
-+ boot + hit `action=status` through the real port mapping) for every
+on `ubuntu-latest` and `macos-latest` (PHP 8.1), a dedicated Alpine (musl)
+container (PHP 8.5, same digest as the Dockerfile), and the
+[Docker image](docker.md) itself (`docker build` + env/lib assertions +
+boot + hit `action=status` through the real port mapping) for every
 push/PR — see [Platform support](getting-started.md#platform-support) —
 with the default `GITHUB_TOKEN` scoped narrowly per job rather than
 workflow-wide, and third-party actions pinned to commit SHAs rather than
-mutable version tags. `.github/workflows/release.yml` publishes a zipped
-GitHub Release, with a checksum and a signed provenance bundle attached,
-whenever a `vX.Y.Z` tag is pushed — bump the root `VERSION` file to match
-in the same commit, before tagging; it's what the optional in-app update
-check compares against. Dependabot (`.github/dependabot.yml`) keeps the
-dev-tooling Composer/npm dependencies, the pinned Actions SHAs, and the
-Docker base image current on a weekly schedule.
+mutable version tags. PHP lint and JS lint run as parallel jobs; workflows
+are checked with `actionlint`. `.github/workflows/release.yml` publishes a
+zipped GitHub Release (checksum + signed provenance) and pushes
+`ghcr.io/anikethts/runnerdeck` whenever a `vX.Y.Z` tag is pushed — bump
+the root `VERSION` file to match in the same commit, before tagging; it's
+what the optional in-app update check compares against. Dependabot
+(`.github/dependabot.yml`) keeps the dev-tooling Composer/npm
+dependencies, the pinned Actions SHAs, and the Docker base image current
+on a weekly schedule.
 
 Security checks beyond linting: `.github/workflows/semgrep.yml` and
-`.github/workflows/codeql.yml` run static analysis on every push/PR;
+`.github/workflows/codeql.yml` (JavaScript and PHP) run static analysis on
+every push/PR;
 `.github/workflows/dependency-review.yml` blocks a PR that introduces a
 known-vulnerable or newly license-incompatible dependency;
 `.github/workflows/scorecard.yml` runs an OpenSSF Scorecard pass. GitHub

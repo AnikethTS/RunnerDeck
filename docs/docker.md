@@ -8,6 +8,10 @@ PHP directly:
 docker compose up --build
 ```
 
+Tagged releases also push `ghcr.io/anikethts/runnerdeck:<tag>` (and
+`:latest`). To run that image instead of building locally, set `image:`
+in `docker-compose.yml` and comment out `build:`.
+
 This builds from the included `Dockerfile` (PHP 8.5 on Alpine, with `gh`
 installed and checksum-verified) and starts the container per
 `docker-compose.yml`:

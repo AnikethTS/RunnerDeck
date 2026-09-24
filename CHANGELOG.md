@@ -46,6 +46,10 @@ follows [SemVer](https://semver.org/).
 - The runner table is not rebuilt from `innerHTML` when the rows, filter,
   sort, and selection have not changed, so a 5s poll does not steal
   focus from the filter box.
+- CI splits PHP/JS lint, trims the PHPUnit matrix to Ubuntu 8.1/8.5 and
+  macOS 8.5, smokes PHP 8.1 on the host and PHP 8.5 Alpine (same digest as
+  the Dockerfile), asserts Docker env/libs, runs `actionlint` and
+  `npm audit`, and publishes `ghcr.io/anikethts/runnerdeck` on version tags.
 
 ### Fixed
 

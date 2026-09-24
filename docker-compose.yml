@@ -1,6 +1,7 @@
 services:
   runnerdeck:
     build: .
+    # image: ghcr.io/anikethts/runnerdeck:latest  # comment out build: to use a release image
     ports:
       - "127.0.0.1:8090:8090"
     volumes:
