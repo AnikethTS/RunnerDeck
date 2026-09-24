@@ -23,6 +23,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # Branch-Protection is scored from repository rulesets (readable with
+      # GITHUB_TOKEN). Do not add classic branch protection: the default
+      # Actions token cannot read those rules and Scorecard reports an
+      # internal error. A SCORECARD_TOKEN with Administration:read is the
+      # other option; rulesets avoid storing a PAT.
       - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
         with:
           results_file: results.sarif
