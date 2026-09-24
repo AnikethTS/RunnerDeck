@@ -11,29 +11,26 @@ on:
 permissions:
   contents: read
 
-# JavaScript here; PHP is also scanned on PRs by Semgrep (p/php).
+# JavaScript only — this CodeQL pack does not ship a PHP extractor.
+# PHP is scanned on PRs by Semgrep (p/php + p/security-audit).
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze (javascript-typescript)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       security-events: write
       actions: read
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [javascript-typescript, php]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript-typescript
           build-mode: none
 
       - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:javascript-typescript"

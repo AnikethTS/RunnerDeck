@@ -56,7 +56,7 @@ dependencies, the pinned Actions SHAs, and the Docker base image current
 on a weekly schedule.
 
 Security checks beyond linting: `.github/workflows/semgrep.yml` and
-`.github/workflows/codeql.yml` (JavaScript and PHP) run static analysis on
+`.github/workflows/codeql.yml` (JavaScript; PHP is covered by Semgrep) run static analysis on
 every push/PR;
 `.github/workflows/dependency-review.yml` blocks a PR that introduces a
 known-vulnerable or newly license-incompatible dependency;

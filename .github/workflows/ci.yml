@@ -209,6 +209,8 @@ jobs:
       - name: Install git, bash, curl, and required PHP extensions
         run: |
           apk add --no-cache git bash curl tar sqlite-dev
+          # PHPIZE_DEPS is a space-separated package list from the PHP image.
+          # shellcheck disable=SC2086
           apk add --no-cache --virtual .build-deps $PHPIZE_DEPS
           docker-php-ext-install pcntl posix pdo_sqlite
           apk del .build-deps
