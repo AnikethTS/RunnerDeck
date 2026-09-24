@@ -63,7 +63,41 @@ final class CrashState
      * @param array<int, array<string, mixed>> $runners each with at least id/local_running/configured
      * @return array<int, array<string, mixed>> same runners, with crash/mismatch flags added
      */
-    public static function track(array $runners): array
+    public static function track(array $runners, bool $updateMismatch = true): array
+    {
+        $lock = self::lock();
+        try {
+            return self::trackLocked($runners, $updateMismatch);
+        } finally {
+            if ($lock !== null) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+        }
+    }
+
+    /** @return resource|null */
+    private static function lock()
+    {
+        $path = self::statePath() . '.lock';
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return null;
+        }
+        $fh = @fopen($path, 'c');
+        if ($fh === false) {
+            return null;
+        }
+        @chmod($path, 0600);
+        flock($fh, LOCK_EX);
+        return $fh;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $runners
+     * @return array<int, array<string, mixed>>
+     */
+    private static function trackLocked(array $runners, bool $updateMismatch): array
     {
         $state = self::readState();
         $autoRestart = Config::autoRestartEnabled();
@@ -114,9 +148,11 @@ final class CrashState
                 $s['notified'] = true;
             }
 
-            $ghOnline = is_array($r['github'] ?? null) && ($r['github']['status'] ?? '') === 'online';
-            $mismatched = is_array($r['github'] ?? null) && $ghOnline !== (bool) $r['local_running'];
-            $s['mismatchStreak'] = $mismatched ? ((int) ($s['mismatchStreak'] ?? 0)) + 1 : 0;
+            if ($updateMismatch) {
+                $ghOnline = is_array($r['github'] ?? null) && ($r['github']['status'] ?? '') === 'online';
+                $mismatched = is_array($r['github'] ?? null) && $ghOnline !== (bool) $r['local_running'];
+                $s['mismatchStreak'] = $mismatched ? ((int) ($s['mismatchStreak'] ?? 0)) + 1 : 0;
+            }
 
             $s['justStopped'] = false;
             $s['wasRunning'] = $r['local_running'];

@@ -17,6 +17,12 @@
   hand, done for you. No manual pre-setup step.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
   `/proc` fallback if the pidfile is missing) and waits for a graceful exit.
+- **Drain** waits until GitHub reports `busy: false` (timeout
+  `RUNNERDECK_DRAIN_TIMEOUT`, default 10 minutes) and then stops. The
+  dashboard polls status while waiting; `POST drain_stop` /
+  `drain_stop_all` / `bulk_drain_stop` wait on the server; `php
+  bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
+  `--timeout=`, `--force`).
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
@@ -57,11 +63,12 @@
   flagged with a toast notification and a row badge, not retried forever —
   and resets once the runner has stayed healthy for a couple of minutes.
   Crash tracking lives server-side, so the decision is consistent across
-  every browser tab and survives a page reload — but the actual restart
-  is still a CSRF-protected `POST action=start`, triggered by the client
-  when it sees the flag. `action=status` (a GET) only ever decides and
-  reports; it never spawns a process itself, deliberately — a GET has no
-  CSRF check by design, so it must stay side-effect-free.
+  every browser tab and survives a page reload. `action=status` (a GET)
+  only ever decides and reports; it never spawns a process itself. A
+  sibling loop (`bin/watch-auto-restart.php`, started from `run.sh`)
+  calls the same start path when auto-restart is on, so a crash is
+  restarted with no dashboard tab open. A visible tab may still POST
+  `start` as well; starting an already-running slot is a no-op.
 - An optional **crash-loop webhook** (Settings, `RUNNERDECK_CRASH_WEBHOOK_URL`)
   POSTs a notification the moment a crash-loop is flagged, so you find out
   even with no dashboard tab open. Slack and Discord incoming webhook URLs
@@ -76,6 +83,9 @@
   Clicking the badge lists the timestamps. The Local column can be sorted
   by that 7-day count. An optional Settings threshold fires the same
   webhook when the count first reaches N, not only on a crash-loop.
+- Each slot shows **best-effort disk** for `_work`, `_diag`, and
+  `runner.log` (sortable). **Clear work** on a stopped runner deletes
+  `_work` only. `runner.log` rotates to `runner.log.1` at 5 MB.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.
@@ -89,9 +99,8 @@
   visible (whole-machine load is in that snapshot). A hidden tab stops
   the timer and fetches once when you come back — so a background tab is
   not a second load on the same machine that is running the jobs.
-  Client-side auto-restart (POST `action=start` when
-  `should_auto_restart` is set) therefore also only runs from a visible
-  dashboard tab.
+  Auto-restart without a visible tab is the `watch-auto-restart.php`
+  process from `run.sh`, not the dashboard poll.
 - **Recent errors** on the dashboard are the JSON lines already written to
   `storage/runnerdeck.log` (start/provision/`gh` failures, secrets
   redacted). The file is still there for SSH; the panel is so you do not

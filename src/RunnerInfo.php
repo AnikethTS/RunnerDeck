@@ -17,6 +17,8 @@ final class RunnerInfo
         public readonly ?float $cpuPercent = null,
         public readonly ?int $rssKb = null,
         public readonly ?int $uptimeSeconds = null,
+        public readonly ?int $diskKb = null,
+        public readonly bool $canClearWork = false,
     ) {
     }
 
@@ -32,6 +34,8 @@ final class RunnerInfo
             'cpu_percent' => $this->cpuPercent,
             'rss_kb' => $this->rssKb,
             'uptime_seconds' => $this->uptimeSeconds,
+            'disk_kb' => $this->diskKb,
+            'can_clear_work' => $this->canClearWork,
         ];
     }
 }

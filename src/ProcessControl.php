@@ -45,6 +45,7 @@ final class ProcessControl
             return ['ok' => true, 'message' => "{$r->id} already running (pid {$resolved['pid']})"];
         }
 
+        RunnerLog::rotateIfOversized($r->dir);
         $result = Shell::exec(
             ['bash', '-c', self::CLOSE_FDS_PREFIX . 'nohup ./run.sh > runner.log 2>&1 & echo $!'],
             10,
@@ -95,6 +96,23 @@ final class ProcessControl
             return;
         }
         posix_kill($pid, SIGTERM);
+    }
+
+    public static function clearWorkDir(RunnerInfo $r): array
+    {
+        $resolved = ProcessDecision::resolveStop(
+            RunnerPool::checkProcess("{$r->dir}/runner.pid"),
+            RunnerPool::liveListenersByDir(),
+            $r->dir
+        );
+        if ($resolved['running']) {
+            return ['ok' => false, 'message' => "{$r->id} is running — stop it before clearing the work dir"];
+        }
+        $cleared = SlotDisk::clearWork($r->dir);
+        if (!$cleared['ok']) {
+            return self::fail('process.clear_work', $cleared['message'], $r->id);
+        }
+        return ['ok' => true, 'message' => "{$r->id} " . $cleared['message']];
     }
 
     public static function restartIndividual(RunnerInfo $r): array

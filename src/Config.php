@@ -94,6 +94,20 @@ final class Config
         return getenv('RUNNERDECK_AUTO_RESTART') === '1';
     }
 
+    /** Seconds to wait for GitHub busy=false before drain-stop gives up (1–3600, default 600). */
+    public static function drainTimeoutSeconds(): int
+    {
+        $raw = getenv('RUNNERDECK_DRAIN_TIMEOUT');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return 600;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return 600;
+        }
+        return min(3600, $n);
+    }
+
     /** @return string|null a URL to POST a crash-loop notification to, or null if unset */
     public static function crashWebhookUrl(): ?string
     {

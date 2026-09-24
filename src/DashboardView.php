@@ -119,6 +119,8 @@ final class DashboardView
         $running = (bool) ($runner['local_running'] ?? false);
         $startDis = $running ? ' disabled' : '';
         $stopDis = $running ? '' : ' disabled';
+        $drainDis = $running ? '' : ' disabled';
+        $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
 
         return ''
             . '    <tr data-runner="' . $id . '" data-agent-name="' . $name . '">' . "\n"
@@ -141,8 +143,12 @@ final class DashboardView
             . $startDis . '>Start</button>' . "\n"
             . '          <button class="btn btn-sm btn-critical" data-action="stop"'
             . $stopDis . '>Stop</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="drain"'
+            . $drainDis . '>Drain</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="restart">Restart</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="rename">Rename</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="clear-work"'
+            . $clearDis . '>Clear work</button>' . "\n"
             . '          <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>' . "\n"
             . '        </div>' . "\n"
             . '      </td>' . "\n"
@@ -183,7 +189,7 @@ final class DashboardView
         } else {
             $badge = self::badge('stopped', 'critical');
         }
-        return $badge . self::resourceUsage($runner)
+        return $badge . self::resourceUsage($runner) . self::diskUsage($runner)
             . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
             . self::crashHistoryBadge($runner);
     }
@@ -207,6 +213,19 @@ final class DashboardView
         return '<span class="resource-usage">' . self::miniBar($cpu)
             . htmlspecialchars(number_format($cpu, 1), ENT_QUOTES, 'UTF-8')
             . '% CPU &middot; ' . $mb . ' MB' . $uptimeText . '</span>';
+    }
+
+    /** @param array<string, mixed> $runner */
+    private static function diskUsage(array $runner): string
+    {
+        if (!array_key_exists('disk_kb', $runner) || $runner['disk_kb'] === null || !is_numeric($runner['disk_kb'])) {
+            return '';
+        }
+        $kb = (int) $runner['disk_kb'];
+        $text = $kb >= 1024
+            ? number_format($kb / 1024, 1) . ' MB disk'
+            : $kb . ' KB disk';
+        return '<span class="resource-usage disk-usage">' . self::e($text) . '</span>';
     }
 
     private static function miniBar(float $percent): string

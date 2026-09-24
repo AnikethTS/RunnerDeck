@@ -204,6 +204,7 @@ Layout::topbarEnd();
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>
         <button id="btn-stop-all" class="btn btn-critical">Stop All</button>
+        <button id="btn-drain-all" class="btn">Drain All</button>
         <form id="pool-size-form" class="pool-form">
           <label for="pool-size">Pool size</label>
           <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
@@ -216,6 +217,7 @@ Layout::topbarEnd();
         <span class="spacer"></span>
         <button id="btn-bulk-start" class="btn btn-sm btn-good">Start</button>
         <button id="btn-bulk-stop" class="btn btn-sm btn-critical">Stop</button>
+        <button id="btn-bulk-drain" class="btn btn-sm">Drain</button>
         <button id="btn-bulk-delete" class="btn btn-sm btn-critical">Delete</button>
         <button id="btn-bulk-clear" class="btn btn-sm">Clear</button>
       </div>
@@ -237,6 +239,10 @@ Layout::topbarEnd();
                 <button type="button" class="sortable sort-button" data-sort="crashes"
                         aria-label="Sort by crashes in 7 days">
                   Crashes<span class="sort-caret" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="sortable sort-button" data-sort="disk"
+                        aria-label="Sort by disk used">
+                  Disk<span class="sort-caret" aria-hidden="true"></span>
                 </button>
               </div>
             </th>
@@ -348,6 +354,7 @@ if ($needsSetup) {
     echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";
     echo '    window.__SNAPSHOT__ = ' . json_encode($snapshot, $jsonFlags) . ";\n";
     echo '    window.__CSRF__ = ' . json_encode($csrfToken, $jsonFlags) . ";\n";
+    echo '    window.__DRAIN_TIMEOUT__ = ' . json_encode(Config::drainTimeoutSeconds(), $jsonFlags) . ";\n";
     echo "  </script>\n";
     Layout::htmlClose(['assets/app.js']);
 }

@@ -6,11 +6,15 @@ namespace RunnerDeck;
 
 use RunnerDeck\Api\AddRunnerAction;
 use RunnerDeck\Api\BulkDeleteAction;
+use RunnerDeck\Api\BulkDrainStopAction;
 use RunnerDeck\Api\BulkStartAction;
 use RunnerDeck\Api\BulkStopAction;
 use RunnerDeck\Api\CheckUpdatesAction;
+use RunnerDeck\Api\ClearWorkAction;
 use RunnerDeck\Api\CsrfTokenAction;
 use RunnerDeck\Api\DeleteRunnerAction;
+use RunnerDeck\Api\DrainStopAction;
+use RunnerDeck\Api\DrainStopAllAction;
 use RunnerDeck\Api\HistoryAction;
 use RunnerDeck\Api\LogAction;
 use RunnerDeck\Api\LogoutAction;
@@ -54,10 +58,14 @@ final class Api
         'delete_runner' => DeleteRunnerAction::class,
         'start_all' => StartAllAction::class,
         'stop_all' => StopAllAction::class,
+        'drain_stop' => DrainStopAction::class,
+        'drain_stop_all' => DrainStopAllAction::class,
         'bulk_start' => BulkStartAction::class,
         'bulk_stop' => BulkStopAction::class,
+        'bulk_drain_stop' => BulkDrainStopAction::class,
         'bulk_delete' => BulkDeleteAction::class,
         'resize' => ResizeAction::class,
+        'clear_work' => ClearWorkAction::class,
     ];
 
     public static function run(): never
@@ -100,6 +108,15 @@ final class Api
         }
 
         self::respond(['ok' => false, 'message' => 'unknown action'], 404);
+    }
+
+    public static function drainTimeout(): int
+    {
+        $raw = (string) ($_POST['timeout'] ?? '');
+        if (ctype_digit($raw) && (int) $raw >= 1) {
+            return min(3600, (int) $raw);
+        }
+        return Config::drainTimeoutSeconds();
     }
 
     public static function respond(array $data, int $status = 200): never

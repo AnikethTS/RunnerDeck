@@ -96,6 +96,10 @@ runnerdeck/
     Provisioner.php       downloads, installs, and registers a runner
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop/restart, individual and pool-wide
+    Drain.php             wait for GitHub busy=false before stop
+    SlotDisk.php          best-effort slot disk + clear `_work`
+    AutoRestart.php       headless start for `should_auto_restart`
+    RunnerLog.php         rotate oversized `runner.log`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
     Layout.php            shared HTML chrome: theme cookie, topbar, assets
@@ -107,7 +111,9 @@ runnerdeck/
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           optional process-supervision examples (systemd, launchd)
-  run.sh            Linux/macOS entry point
+  run.sh            Linux/macOS entry point (also starts watch-auto-restart)
+  bin/watch-auto-restart.php  loop that auto-starts crashed runners
+  bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml

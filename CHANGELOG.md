@@ -22,6 +22,17 @@ follows [SemVer](https://semver.org/).
   lists timestamps; the Local column can be sorted by that count. An
   optional Settings threshold fires the same webhook when the count first
   reaches N in 7 days, not only on a crash-loop.
+- `run.sh` starts `bin/watch-auto-restart.php` beside the PHP server so
+  auto-restart still POSTs `start` when no dashboard tab is open.
+  `action=status` stays a GET that does not spawn processes.
+- **Drain** waits until GitHub `busy` is false (default 600s,
+  `RUNNERDECK_DRAIN_TIMEOUT`) then SIGTERM. Row/bulk/all buttons, API
+  `drain_stop` / `drain_stop_all` / `bulk_drain_stop`, and
+  `php bin/drain-stop.php`.
+- Per-slot disk (`_work`, `_diag`, `runner.log`) on the Local column,
+  sortable. **Clear work** on a stopped runner removes `_work`.
+- `runner.log` rotates to `runner.log.1` at 5 MB (on start and on each
+  status inspect) so slot logs do not grow forever.
 
 ### Security
 
@@ -43,10 +54,10 @@ follows [SemVer](https://semver.org/).
   first response so the table is not empty until JavaScript runs.
 - PHPStan is at level 8.
 - Status polls (5s) pause while the dashboard tab is hidden, then fetch
-  once when it becomes visible again. Auto-restart is still a client
-  `POST action=start` on those polls, so it also waits until a dashboard
-  tab is in the foreground. Whole-machine CPU/RAM comes from the same
-  snapshot (`action=system` is still available for scripts).
+  once when it becomes visible again. Headless auto-restart is a sibling
+  process from `run.sh`, not the hidden-tab poll. Whole-machine CPU/RAM
+  comes from the same snapshot (`action=system` is still available for
+  scripts).
 - Dashboard snapshots call `gh api --paginate` for runners first and only
   run `gh auth status` when that fails, so a healthy poll is one GitHub
   CLI process instead of two. Pages beyond GitHub's default 30 are

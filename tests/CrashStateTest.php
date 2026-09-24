@@ -30,6 +30,7 @@ final class CrashStateTest extends TestCase
         putenv('RUNNERDECK_HISTORY_FILE');
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD');
         @unlink($this->stateFile);
+        @unlink($this->stateFile . '.lock');
         @unlink($dir . '/settings.json');
         @rmdir($dir);
         @unlink($this->historyFile);
@@ -70,6 +71,26 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($first[0]['mismatch_flagged']);
         $this->assertFalse($second[0]['mismatch_flagged']);
         $this->assertTrue($third[0]['mismatch_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testHeadlessTrackDoesNotResetMismatchStreak(): void
+    {
+        $row = [
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'github' => ['status' => 'online', 'busy' => false, 'labels' => []],
+        ];
+        \RunnerDeck\CrashState::track([$row]);
+        \RunnerDeck\CrashState::track([$row]);
+        \RunnerDeck\CrashState::track([$row]);
+
+        $headless = $row;
+        $headless['github'] = null;
+        $result = \RunnerDeck\CrashState::track([$headless], false);
+
+        $this->assertTrue($result[0]['mismatch_flagged']);
     }
 
     #[RunInSeparateProcess]

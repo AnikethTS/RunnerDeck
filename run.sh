@@ -17,6 +17,17 @@ fi
 
 export PHP_CLI_SERVER_WORKERS=4
 
+WATCH_PID=""
+cleanup() {
+    if [ -n "${WATCH_PID}" ]; then
+        kill "${WATCH_PID}" 2>/dev/null || true
+        wait "${WATCH_PID}" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT INT TERM
+php "$DIR/bin/watch-auto-restart.php" &
+WATCH_PID=$!
+
 if [ "$HOST" = "127.0.0.1" ]; then
     echo "RunnerDeck on http://${HOST}:${PORT} (localhost only)"
 else
@@ -31,4 +42,4 @@ php -r '
     $state = is_file($file) ? "existing" : "not yet created";
     fwrite(STDOUT, "History DB: {$file} ({$ext}, {$state}, " . ($writable ? "writable" : "NOT WRITABLE") . ")\n");
 ' -- "$DIR"
-exec php -S "${HOST}:${PORT}" -t "$DIR/public"
+php -S "${HOST}:${PORT}" -t "$DIR/public"
