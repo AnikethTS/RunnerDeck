@@ -67,6 +67,12 @@
   even with no dashboard tab open. Slack and Discord incoming webhook URLs
   are detected automatically and get their native payload shape; anything
   else gets a plain JSON payload, e.g. for a webhook-to-email/push relay.
+- Every crash is recorded, not just flagged ones — a small SQLite table
+  (`src/CrashHistory.php`, the same database as CPU/RAM history) keeps a
+  7-day count per runner. It's independent of `crash_flagged`: a runner
+  that's crashed 5 times but keeps getting auto-restarted still shows
+  that count in the table, even though it's not currently flagged — the
+  point is spotting a flaky runner before it becomes a real problem.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.

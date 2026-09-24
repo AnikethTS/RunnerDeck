@@ -74,6 +74,13 @@ function flag(runner, key, text, cls) {
   return runner[key] ? `<div class="row-flag">${badge(text, cls)}</div>` : '';
 }
 
+function crashHistoryBadge(runner) {
+  const n = runner.crash_count_7d;
+  if (!n) return '';
+  const text = n === 1 ? '1 crash (7d)' : `${n} crashes (7d)`;
+  return `<div class="row-flag">${badge(text, 'warning')}</div>`;
+}
+
 export function rowHtml(runner) {
   const logPreview = (runner.log_tail || []).join('\n') || '(no log yet)';
   const checked = selectedRunners.has(runner.id) ? 'checked' : '';
@@ -87,7 +94,7 @@ export function rowHtml(runner) {
         <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
       </td>
       <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${flag(runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')}</td>
-      <td>${localBadge(runner)}${resourceUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}</td>
+      <td>${localBadge(runner)}${resourceUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}${crashHistoryBadge(runner)}</td>
       <td>
         <pre class="log-preview">${escapeHtml(logPreview)}</pre>
         <button class="log-link" data-action="view-log">View live log &rarr;</button>
