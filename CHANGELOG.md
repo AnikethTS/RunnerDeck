@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-26
+
 ### Added
 
 - The dashboard shows a **Recent errors** panel from `storage/runnerdeck.log`
