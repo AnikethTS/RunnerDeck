@@ -100,6 +100,7 @@ runnerdeck/
     ProcessControl.php    start/stop/restart, individual and pool-wide
     Drain.php             wait for GitHub busy=false before stop
     SlotDisk.php          best-effort slot disk + clear `_work`
+    DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
     AutoRestart.php       headless start for `should_auto_restart`
     RunnerLog.php         rotate oversized `runner.log`
     Dashboard.php         merges local + GitHub state into one snapshot

@@ -43,6 +43,30 @@ final class CrashWebhook
         }
     }
 
+    public static function notifyDisk(
+        string $event,
+        string $message,
+        ?string $runnerId,
+        ?string $agentName,
+        int $diskKb,
+        int $thresholdGb
+    ): void {
+        $url = Config::crashWebhookUrl();
+        if ($url === null) {
+            return;
+        }
+
+        $payload = self::payloadFor($url, $event, $message, $runnerId, $agentName, null, $thresholdGb, $diskKb);
+        [$ok, $stderr] = self::post($url, $payload);
+
+        if (!$ok) {
+            AppLog::errorThrottled('crash_webhook', 'failed to deliver disk notification', [
+                'runner' => $runnerId,
+                'stderr' => $stderr,
+            ]);
+        }
+    }
+
     /** @return array{ok: bool, message: string} */
     public static function sendTest(string $url): array
     {
@@ -89,7 +113,8 @@ final class CrashWebhook
         ?string $runnerId,
         ?string $agentName,
         ?int $count = null,
-        ?int $threshold = null
+        ?int $threshold = null,
+        ?int $diskKb = null
     ): array {
         if (str_contains($url, 'hooks.slack.com')) {
             return ['text' => $message];
@@ -108,6 +133,10 @@ final class CrashWebhook
         }
         if ($threshold !== null) {
             $payload['threshold'] = $threshold;
+        }
+        if ($diskKb !== null) {
+            $payload['disk_kb'] = $diskKb;
+            $payload['threshold_gb'] = $threshold;
         }
         return $payload;
     }

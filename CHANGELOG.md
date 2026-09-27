@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Drain timeout is a Settings field (`RUNNERDECK_DRAIN_TIMEOUT`, 1–3600
+  seconds, default 600) so a short drain wait is not a `.env` edit.
+- A **Pool disk** stat card sums per-slot `_work` / logs. An optional
+  Settings / `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` (GiB) fires the crash
+  webhook once when a slot or the pool first crosses that size.
+
 ## [1.4.0] - 2026-09-26
 
 ### Added

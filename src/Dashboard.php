@@ -45,6 +45,7 @@ final class Dashboard
         self::notifyCrashes($runners);
 
         $stats = self::computeStats($runners);
+        DiskAlert::check($runners, $stats['total_disk_kb']);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
 
         return [
@@ -92,12 +93,14 @@ final class Dashboard
         $notNull = static fn($v) => $v !== null;
         $cpuValues = array_values(array_filter(array_column($running, 'cpu_percent'), $notNull));
         $rssValues = array_values(array_filter(array_column($running, 'rss_kb'), $notNull));
+        $diskValues = array_values(array_filter(array_column($runners, 'disk_kb'), $notNull));
 
         return [
             'total' => count($runners),
             'running' => count($running),
             'avg_cpu_percent' => $cpuValues ? array_sum($cpuValues) / count($cpuValues) : null,
             'total_rss_kb' => $rssValues ? array_sum($rssValues) : null,
+            'total_disk_kb' => $diskValues ? array_sum($diskValues) : null,
         ];
     }
 

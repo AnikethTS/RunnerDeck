@@ -39,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'autoRestart' => ($_POST['auto_restart'] ?? '') === '1',
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
         'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
+        'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
+        'diskWebhookThreshold' => (string) ($_POST['disk_webhook_threshold'] ?? ''),
     ];
 } else {
     try {
@@ -56,6 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
         'crashWebhookThreshold' => Config::crashWebhookThreshold() !== null
             ? (string) Config::crashWebhookThreshold()
+            : '',
+        'drainTimeout' => (string) Config::drainTimeoutSeconds(),
+        'diskWebhookThreshold' => Config::diskWebhookThresholdGb() !== null
+            ? (string) Config::diskWebhookThresholdGb()
             : '',
     ];
 }
@@ -138,6 +144,23 @@ Layout::topbarEnd();
           />
           Auto-restart crashed runners
         </label>
+
+        <div class="settings-field">
+          <label for="settings-drain-timeout">Drain timeout (seconds)</label>
+          <input
+            type="number"
+            id="settings-drain-timeout"
+            name="drain_timeout"
+            min="1"
+            max="3600"
+            step="1"
+            value="<?= htmlspecialchars($current['drainTimeout']) ?>"
+          />
+          <p class="muted">
+            How long Drain waits for GitHub <code>busy</code> to clear before
+            asking to stop anyway. Default 600 (10 minutes). Range 1–3600.
+          </p>
+        </div>
       </section>
 
       <section class="settings-section">
@@ -178,6 +201,23 @@ Layout::topbarEnd();
             Uses the same URL. Fires once when a runner's 7-day crash count
             first reaches this number — even if auto-restart keeps it up
             so a crash-loop is never flagged.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-disk-webhook-threshold">Also notify at N GiB disk (optional)</label>
+          <input
+            type="number"
+            id="settings-disk-webhook-threshold"
+            name="disk_webhook_threshold"
+            min="1"
+            step="1"
+            placeholder="leave blank to skip"
+            value="<?= htmlspecialchars($current['diskWebhookThreshold']) ?>"
+          />
+          <p class="muted">
+            Uses the same URL. Fires once when a slot, or the pool total,
+            first reaches this many GiB of <code>_work</code> / logs.
           </p>
         </div>
       </section>

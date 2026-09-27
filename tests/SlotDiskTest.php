@@ -53,4 +53,12 @@ final class SlotDiskTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
     }
+
+    public function testFormatKbUsesGbThenMbThenKb(): void
+    {
+        $this->assertSame('—', \RunnerDeck\SlotDisk::formatKb(null));
+        $this->assertSame('500 KB', \RunnerDeck\SlotDisk::formatKb(500));
+        $this->assertSame('2 MB', \RunnerDeck\SlotDisk::formatKb(2048));
+        $this->assertSame('1.0 GB', \RunnerDeck\SlotDisk::formatKb(1024 * 1024));
+    }
 }

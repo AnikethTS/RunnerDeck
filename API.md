@@ -135,7 +135,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "crash_count_7d": 0
     }
   ],
-  "stats": { "total": 1, "running": 1, "avg_cpu_percent": 1.2, "total_rss_kb": 204800 },
+  "stats": { "total": 1, "running": 1, "avg_cpu_percent": 1.2, "total_rss_kb": 204800, "total_disk_kb": 4096 },
   "system": { "cpu_percent": 4.5, "cpu_cores": 8, "mem_used_kb": 3200000, "mem_total_kb": 16000000, "mem_percent": 20.0 },
   "history": {
     "available": true,
@@ -253,7 +253,7 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `crash_webhook_url` (optional, must start with `http://` or `https://`) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](docs/security-and-safety.md#hosting-remotely) |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |

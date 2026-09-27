@@ -93,6 +93,14 @@ final class DashboardView
             'sys_mem_sub' => $totalMb !== null
                 ? $usedMb . ' of ' . $totalMb . ' MB'
                 : $usedMb . ' MB used, total unknown',
+            'pool_disk' => SlotDisk::formatKb(
+                isset($s['total_disk_kb']) && is_numeric($s['total_disk_kb'])
+                    ? (int) $s['total_disk_kb']
+                    : null
+            ),
+            'pool_disk_sub' => $total > 0
+                ? 'across ' . $total . ' slot' . ($total === 1 ? '' : 's')
+                : 'no slots',
         ];
     }
 

@@ -33,6 +33,8 @@ final class SaveSettingsAction
         $label = trim((string) ($post['label'] ?? ''));
         $webhookUrl = trim((string) ($post['crash_webhook_url'] ?? ''));
         $webhookThreshold = trim((string) ($post['crash_webhook_threshold'] ?? ''));
+        $drainTimeout = trim((string) ($post['drain_timeout'] ?? ''));
+        $diskThreshold = trim((string) ($post['disk_webhook_threshold'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -46,6 +48,14 @@ final class SaveSettingsAction
         if ($webhookThreshold !== '' && (!ctype_digit($webhookThreshold) || (int) $webhookThreshold < 1)) {
             return ['ok' => false, 'message' => 'crash webhook threshold must be a whole number of 1 or more'];
         }
+        $drainOk = $drainTimeout === ''
+            || (ctype_digit($drainTimeout) && (int) $drainTimeout >= 1 && (int) $drainTimeout <= 3600);
+        if (!$drainOk) {
+            return ['ok' => false, 'message' => 'drain timeout must be a whole number between 1 and 3600 seconds'];
+        }
+        if ($diskThreshold !== '' && (!ctype_digit($diskThreshold) || (int) $diskThreshold < 1)) {
+            return ['ok' => false, 'message' => 'disk webhook threshold must be a whole number of 1 or more GiB'];
+        }
 
         Settings::save([
             'RUNNERDECK_SCOPE' => $scope,
@@ -57,6 +67,8 @@ final class SaveSettingsAction
             'RUNNERDECK_AUTO_RESTART' => ($post['auto_restart'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,
             'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
+            'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,
+            'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
         ]);
 
         return ['ok' => true, 'message' => 'settings saved'];
