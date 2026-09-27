@@ -108,6 +108,19 @@ final class Config
         return min(3600, $n);
     }
 
+    /** @return int|null GiB threshold for the disk webhook, or null if unset */
+    public static function diskWebhookThresholdGb(): ?int
+    {
+        $raw = getenv('RUNNERDECK_DISK_WEBHOOK_THRESHOLD');
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        if (!ctype_digit($raw) || (int) $raw < 1) {
+            return null;
+        }
+        return (int) $raw;
+    }
+
     /** @return string|null a URL to POST a crash-loop notification to, or null if unset */
     public static function crashWebhookUrl(): ?string
     {

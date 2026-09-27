@@ -110,6 +110,24 @@ final class CrashWebhookTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testDiskNotifyUsesDiskPayload(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\CrashWebhook::notifyDisk('disk_pool', 'pool full', null, null, 2048, 1);
+
+        $decoded = json_decode((string) $body, true);
+        $this->assertSame('disk_pool', $decoded['event']);
+        $this->assertSame(2048, $decoded['disk_kb']);
+        $this->assertSame(1, $decoded['threshold_gb']);
+    }
+
+    #[RunInSeparateProcess]
     public function testDoesNotThrowWhenCurlFails(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');

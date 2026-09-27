@@ -22,7 +22,7 @@
   dashboard polls status while waiting; `POST drain_stop` /
   `drain_stop_all` / `bulk_drain_stop` wait on the server; `php
   bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
-  `--timeout=`, `--force`).
+  `--timeout=`, `--force`). Timeout is also a Settings field.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
@@ -51,6 +51,9 @@
   aren't available. These are pure local reads with no GitHub API cost
   and ride along on the 5s `action=status` snapshot so they do not
   queue a second request on the single-threaded PHP built-in server.
+- A **Pool disk** card sums `_work` / `_diag` / `runner.log` across slots.
+  An optional Settings threshold fires the crash webhook once when a slot
+  or that pool total first reaches N GiB.
 - If a runner's local process state and its GitHub-reported state
   **disagree for several polls in a row**, the row is flagged — a one-off
   mismatch during a status transition is normal and ignored, a persistent

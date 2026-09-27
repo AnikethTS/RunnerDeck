@@ -106,4 +106,18 @@ final class SlotDisk
         }
         return $parsed ? $sum : null;
     }
+
+    public static function formatKb(?int $kb): string
+    {
+        if ($kb === null) {
+            return '—';
+        }
+        if ($kb >= 1024 * 1024) {
+            return number_format($kb / (1024 * 1024), 1) . ' GB';
+        }
+        if ($kb >= 1024) {
+            return (string) (int) round($kb / 1024) . ' MB';
+        }
+        return $kb . ' KB';
+    }
 }

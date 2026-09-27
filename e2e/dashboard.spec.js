@@ -43,6 +43,9 @@ function fixtureSnapshot(runners) {
       running: running.length,
       avg_cpu_percent: running.length ? 12.5 : null,
       total_rss_kb: running.length ? 204800 : null,
+      total_disk_kb: runners.some((r) => r.disk_kb != null)
+        ? runners.reduce((sum, r) => sum + (r.disk_kb || 0), 0)
+        : null,
     },
   };
 }
@@ -516,6 +519,8 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await page.locator('#btn-refresh').click();
 
   await expect(page.getByText('2.0 MB disk')).toBeVisible();
+  await expect(page.locator('#stat-pool-disk')).toHaveText('2 MB');
+  await expect(page.locator('#stat-pool-disk-sub')).toHaveText('across 1 slot');
   await expect(page.locator('tr[data-runner="fat"] button[data-action="drain"]')).toBeDisabled();
   await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
   await expect(page.locator('#btn-drain-all')).toBeVisible();

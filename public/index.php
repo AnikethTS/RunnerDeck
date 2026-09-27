@@ -178,6 +178,14 @@ Layout::topbarEnd();
           ><?= htmlspecialchars((string) $stats['sys_mem']) ?></span>
           <span class="stat-sub" id="stat-sys-mem-sub"><?= htmlspecialchars((string) $stats['sys_mem_sub']) ?></span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">Pool disk</span>
+          <span class="stat-value" id="stat-pool-disk"><?= htmlspecialchars((string) $stats['pool_disk']) ?></span>
+          <span
+            class="stat-sub"
+            id="stat-pool-disk-sub"
+          ><?= htmlspecialchars((string) $stats['pool_disk_sub']) ?></span>
+        </div>
       </div>
 
       <div class="history-grid">

@@ -102,6 +102,30 @@ final class DashboardViewTest extends TestCase
         $this->assertSame('Issue', $cards['github']);
         $this->assertSame('denied', $cards['github_sub']);
         $this->assertStringContainsString('stat-warning', $cards['sys_mem_class']);
+        $this->assertSame('—', $cards['pool_disk']);
+    }
+
+    public function testStatsCardsShowPoolDisk(): void
+    {
+        $cards = \RunnerDeck\DashboardView::statsCards([
+            'stats' => [
+                'running' => 1,
+                'total' => 2,
+                'avg_cpu_percent' => 1.0,
+                'total_rss_kb' => 1024,
+                'total_disk_kb' => 2048,
+            ],
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'system' => [
+                'cpu_percent' => 1.0,
+                'cpu_cores' => 1,
+                'mem_used_kb' => 1024,
+                'mem_total_kb' => 2048,
+                'mem_percent' => 50.0,
+            ],
+        ]);
+        $this->assertSame('2 MB', $cards['pool_disk']);
+        $this->assertSame('across 2 slots', $cards['pool_disk_sub']);
     }
 
     public function testErrorsPanelEscapesAndListsNewestFirst(): void

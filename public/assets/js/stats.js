@@ -5,6 +5,13 @@ function loadClass(percent) {
   return '';
 }
 
+function formatDiskKb(kb) {
+  if (kb == null) return '—';
+  if (kb >= 1024 * 1024) return `${(kb / (1024 * 1024)).toFixed(1)} GB`;
+  if (kb >= 1024) return `${Math.round(kb / 1024)} MB`;
+  return `${kb} KB`;
+}
+
 export function renderLoadStat(sys) {
   if (!sys) return;
 
@@ -50,6 +57,14 @@ export function renderStats(snapshot) {
   const mb = s.total_rss_kb != null ? (s.total_rss_kb / 1024).toFixed(0) : null;
   document.getElementById('stat-mem').textContent = mb != null ? `${mb} MB` : '—';
   document.getElementById('stat-mem-sub').textContent = s.running ? `across ${s.running} running` : 'no runners active';
+
+  const diskEl = document.getElementById('stat-pool-disk');
+  if (diskEl) {
+    diskEl.textContent = formatDiskKb(s.total_disk_kb);
+    document.getElementById('stat-pool-disk-sub').textContent = s.total
+      ? `across ${s.total} slot${s.total === 1 ? '' : 's'}`
+      : 'no slots';
+  }
 
   renderLoadStat(snapshot.system);
   renderHistory(snapshot);
