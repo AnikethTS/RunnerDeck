@@ -3,10 +3,24 @@ import { escapeHtml, badge, miniBar, formatUptime } from './utils.js';
 export const sortState = { key: null, dir: 1 };
 export const selectedRunners = new Set();
 
+export function matchesState(runner, state) {
+  if (!state) return true;
+  if (state === 'idle') return Boolean(runner.github) && !runner.github.busy;
+  if (state === 'busy') return Boolean(runner.github && runner.github.busy);
+  if (state === 'crashed') return Boolean(runner.crash_flagged);
+  if (state === 'mismatch') return Boolean(runner.mismatch_flagged);
+  return true;
+}
+
 export function filteredRunners(runners) {
   const q = (document.getElementById('runner-filter').value || '').trim().toLowerCase();
-  if (!q) return runners;
-  return runners.filter((r) => r.id.toLowerCase().includes(q) || r.agent_name.toLowerCase().includes(q));
+  const stateEl = document.getElementById('runner-state-filter');
+  const state = stateEl ? stateEl.value : '';
+  return runners.filter((r) => {
+    if (!matchesState(r, state)) return false;
+    if (!q) return true;
+    return r.id.toLowerCase().includes(q) || r.agent_name.toLowerCase().includes(q);
+  });
 }
 
 function sortValue(runner, key) {

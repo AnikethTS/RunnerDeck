@@ -39,8 +39,10 @@
   file (`storage/db/history.sqlite`). This is best-effort: if the `pdo_sqlite`
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
-- A **filter box** narrows the table by runner ID or registered name, and
-  each runner's log can be **downloaded in full**, not just tailed — or
+- A **filter box** narrows the table by runner ID or registered name. A
+  **state** dropdown (idle / busy / crashed / mismatch) stacks on that
+  name filter from the same snapshot. Each runner's log can be
+  **downloaded in full**, not just tailed — or
   narrowed to a time range first, using whatever timestamps the runner's
   own console output includes.
 - Two **System CPU/RAM** stat cards show whole-machine usage (all

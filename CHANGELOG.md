@@ -13,6 +13,8 @@ follows [SemVer](https://semver.org/).
 - A **Pool disk** stat card sums per-slot `_work` / logs. An optional
   Settings / `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` (GiB) fires the crash
   webhook once when a slot or the pool first crosses that size.
+- The runner table can be filtered by **idle / busy / crashed /
+  mismatch** in addition to the name box, using the status snapshot.
 
 ## [1.4.0] - 2026-09-26
 
