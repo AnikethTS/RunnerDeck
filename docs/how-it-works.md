@@ -106,7 +106,8 @@
   visible (whole-machine load is in that snapshot). A hidden tab stops
   the timer and fetches once when you come back — so a background tab is
   not a second load on the same machine that is running the jobs.
-  Auto-restart without a visible tab is the `watch-auto-restart.php`
+  An optional TOTP **idle timeout** (Settings → Login) therefore treats a
+  hidden tab as idle. Auto-restart without a visible tab is the `watch-auto-restart.php`
   process from `run.sh`, not the dashboard poll.
 - **Recent errors** on the dashboard are the JSON lines already written to
   `storage/runnerdeck.log` (start/provision/`gh` failures, secrets

@@ -89,7 +89,7 @@ runnerdeck/
     AppLog.php             JSON error log at storage/runnerdeck.log (rotated)
     History.php            best-effort CPU/RAM history + SVG chart markup
     Csrf.php              session-bound CSRF token minting/verification
-    Auth.php              optional TOTP login gate, lockout tracking
+    Auth.php              optional TOTP login gate, lockout, idle timeout
     Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
     AgentVersion.php      local GitHub Actions runner agent version
