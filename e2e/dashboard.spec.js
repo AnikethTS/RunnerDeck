@@ -97,6 +97,60 @@ test('the filter box narrows the table to matching runners', async ({ page }) =>
   await expect(page.locator('tr[data-runner="runner-1"]')).toBeVisible();
 });
 
+test('the state filter narrows idle, busy, crashed, and mismatch rows', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'idle-one',
+      agent_name: 'idle-one',
+      github: { status: 'online', busy: false, labels: [] },
+    }),
+    fixtureRunner({
+      id: 'busy-one',
+      agent_name: 'busy-one',
+      github: { status: 'online', busy: true, labels: [] },
+    }),
+    fixtureRunner({
+      id: 'crash-one',
+      agent_name: 'crash-one',
+      local_running: false,
+      pid: null,
+      crash_flagged: true,
+      github: { status: 'offline', busy: false, labels: [] },
+    }),
+    fixtureRunner({
+      id: 'mismatch-one',
+      agent_name: 'mismatch-one',
+      mismatch_flagged: true,
+      github: { status: 'offline', busy: false, labels: [] },
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('tr[data-runner]')).toHaveCount(4);
+
+  await page.locator('#runner-state-filter').selectOption('busy');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="busy-one"]')).toBeVisible();
+
+  await page.locator('#runner-state-filter').selectOption('idle');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(3);
+  await expect(page.locator('tr[data-runner="busy-one"]')).toHaveCount(0);
+
+  await page.locator('#runner-state-filter').selectOption('crashed');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="crash-one"]')).toBeVisible();
+
+  await page.locator('#runner-state-filter').selectOption('mismatch');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="mismatch-one"]')).toBeVisible();
+
+  await page.locator('#runner-state-filter').selectOption('');
+  await page.locator('#runner-filter').fill('crash');
+  await page.locator('#runner-state-filter').selectOption('crashed');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="crash-one"]')).toBeVisible();
+});
+
 test('clicking a sortable column header reorders the table', async ({ page }) => {
   await mockStatus(page, [
     fixtureRunner({ id: 'runner-2', agent_name: 'zzz-last' }),

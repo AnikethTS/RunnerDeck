@@ -208,6 +208,13 @@ Layout::topbarEnd();
         <button id="btn-export" type="button" class="btn">Export JSON</button>
         <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
         <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
+        <select id="runner-state-filter" class="filter-input filter-select" aria-label="Filter by state">
+          <option value="">All states</option>
+          <option value="idle">Idle</option>
+          <option value="busy">Busy</option>
+          <option value="crashed">Crashed</option>
+          <option value="mismatch">Mismatch</option>
+        </select>
         <span class="spacer"></span>
         <button id="btn-add-runner" class="btn">+ Add Runner</button>
         <button id="btn-start-all" class="btn btn-good">Start All</button>

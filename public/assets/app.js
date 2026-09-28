@@ -54,6 +54,7 @@ function initDashboard() {
     const rowsKey = JSON.stringify({
       runners: snapshot.runners,
       filter: document.getElementById('runner-filter').value,
+      state: document.getElementById('runner-state-filter').value,
       sort: sortState,
       selected: [...selectedRunners],
     });
@@ -75,9 +76,12 @@ function initDashboard() {
     }
   }
 
-  document.getElementById('runner-filter').addEventListener('input', () => {
+  function rerenderFromFilters() {
     if (lastSnapshot) render(lastSnapshot);
-  });
+  }
+
+  document.getElementById('runner-filter').addEventListener('input', rerenderFromFilters);
+  document.getElementById('runner-state-filter').addEventListener('change', rerenderFromFilters);
 
   document.addEventListener('keydown', (event) => {
     if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.isComposing || event.repeat) return;
