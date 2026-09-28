@@ -15,6 +15,9 @@ follows [SemVer](https://semver.org/).
   webhook once when a slot or the pool first crosses that size.
 - The runner table can be filtered by **idle / busy / crashed /
   mismatch** in addition to the name box, using the status snapshot.
+- Each runner row shows the **local agent version** (from `.runner` or
+  `Runner.Listener.deps.json`) so a stale binary next to a healthy
+  process is visible without extra GitHub calls.
 
 ## [1.4.0] - 2026-09-26
 

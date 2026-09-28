@@ -19,7 +19,10 @@ final class DashboardTest extends TestCase
         $this->poolDir = $this->root . '/pool';
         $this->runnerDir = $this->poolDir . '/runner-1';
         mkdir($this->runnerDir, 0755, true);
-        file_put_contents($this->runnerDir . '/.runner', json_encode(['agentName' => 'acme-1']));
+        file_put_contents($this->runnerDir . '/.runner', json_encode([
+            'agentName' => 'acme-1',
+            'agentVersion' => '2.321.0',
+        ]));
 
         putenv('RUNNERDECK_POOL_DIR=' . $this->poolDir);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $this->root . '/storage/settings.json');
@@ -113,6 +116,7 @@ final class DashboardTest extends TestCase
         $this->assertTrue($result['health']['logged_in']);
         $this->assertTrue($result['health']['org_access_ok']);
         $this->assertSame('online', $result['runners'][0]['github']['status']);
+        $this->assertSame('2.321.0', $result['runners'][0]['agent_version']);
     }
 
     #[RunInSeparateProcess]

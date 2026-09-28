@@ -3,7 +3,9 @@
 - **Local process state** comes from reading each runner directory directly
   — its `.runner` config, its `runner.pid` file, and (as a fallback, since
   pidfiles can go stale or get lost) a live scan of `/proc` matching on the
-  actual `Runner.Listener` executable path. A runner is never silently
+  actual `Runner.Listener` executable path. Each slot's **agent version** is
+  read locally from `.runner` (`agentVersion`) or, if that field is missing,
+  `bin/Runner.Listener.deps.json` — no extra GitHub call. A runner is never silently
   "invisible" just because its pidfile disappeared.
 - **GitHub-reported state** comes from `gh api --paginate …/actions/runners`
   (`per_page=100`) so orgs with more than 30 runners are not truncated.

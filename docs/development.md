@@ -92,6 +92,7 @@ runnerdeck/
     Auth.php              optional TOTP login gate, lockout tracking
     Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
+    AgentVersion.php      local GitHub Actions runner agent version
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
     UpdateCheck.php        opt-in check against this project's own GitHub Releases

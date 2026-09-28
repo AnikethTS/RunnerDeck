@@ -19,6 +19,7 @@ final class RunnerInfo
         public readonly ?int $uptimeSeconds = null,
         public readonly ?int $diskKb = null,
         public readonly bool $canClearWork = false,
+        public readonly ?string $agentVersion = null,
     ) {
     }
 
@@ -36,6 +37,7 @@ final class RunnerInfo
             'uptime_seconds' => $this->uptimeSeconds,
             'disk_kb' => $this->diskKb,
             'can_clear_work' => $this->canClearWork,
+            'agent_version' => $this->agentVersion,
         ];
     }
 }

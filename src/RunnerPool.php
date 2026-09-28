@@ -93,6 +93,7 @@ final class RunnerPool
             $fromJson = is_array($json) ? ($json['agentName'] ?? null) : null;
             $agentName = is_string($fromJson) ? $fromJson : null;
         }
+        $agentVersion = AgentVersion::read($dir);
 
         [$running, $pid] = self::checkProcess("$dir/runner.pid");
 
@@ -123,6 +124,7 @@ final class RunnerPool
             uptimeSeconds: $stats['uptime_seconds'] ?? null,
             diskKb: $disk['kb'],
             canClearWork: $disk['can_clear'] && !$running,
+            agentVersion: $agentVersion,
         );
     }
 
