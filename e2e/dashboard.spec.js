@@ -579,3 +579,19 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
   await expect(page.locator('#btn-drain-all')).toBeVisible();
 });
+
+test('runner rows show the local agent version', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'runner-base', agent_name: 'e2e-runner-base', agent_version: '2.321.0' }),
+    fixtureRunner({ id: 'runner-old', agent_name: 'stale-box', agent_version: '2.300.0' }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+
+  await expect(page.locator('tr[data-runner="runner-base"] .agent-version')).toHaveText('v2.321.0');
+  await expect(page.locator('tr[data-runner="runner-old"] .agent-version')).toHaveText('v2.300.0');
+
+  await page.locator('#runner-filter').fill('2.300');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="runner-old"]')).toBeVisible();
+});

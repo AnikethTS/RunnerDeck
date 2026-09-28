@@ -38,11 +38,13 @@ final class DashboardViewTest extends TestCase
             'github' => null,
             'crash_flagged' => true,
             'mismatch_flagged' => true,
+            'agent_version' => '2.<script>0',
         ]);
 
         $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt;', $html);
         $this->assertStringContainsString('&lt;b&gt;log&lt;/b&gt;', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);
+        $this->assertStringContainsString('v2.&lt;script&gt;0', $html);
         $this->assertStringContainsString('crashed unexpectedly', $html);
         $this->assertStringContainsString('local/GitHub status disagree', $html);
         $this->assertStringContainsString('data-action="start"', $html);
@@ -83,6 +85,20 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="drain"', $html);
         $this->assertStringContainsString('data-action="clear-work"', $html);
         $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
+    }
+
+    public function testRowHtmlOmitsAgentVersionWhenMissing(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => [],
+            'github' => null,
+        ]);
+        $this->assertStringNotContainsString('agent-version', $html);
     }
 
     public function testStatsCardsIssueWhenGithubUnreachable(): void

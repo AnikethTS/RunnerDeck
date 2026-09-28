@@ -361,6 +361,7 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 
 .runner-name { font-weight: 600; font-variant-numeric: tabular-nums; }
 .agent-name { color: var(--text-muted); font-size: 12px; display: block; }
+.agent-version { color: var(--text-muted); font-size: 12px; display: block; font-variant-numeric: tabular-nums; }
 .resource-usage { color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px; }
 
 .mini-bar {

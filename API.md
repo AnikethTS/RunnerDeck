@@ -119,6 +119,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "id": "runner-base",
       "configured": true,
       "agent_name": "self-hosted-runnerdeck",
+      "agent_version": "2.321.0",
       "local_running": true,
       "pid": 4242,
       "log_tail": ["Listening for Jobs"],
@@ -156,6 +157,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
 
 `runners[].github` is `null` if GitHub has no record under that runner's
 registered name yet (still provisioning, or access issue — see `health`).
+`agent_version` is the local GitHub Actions runner agent version (`null`
+if `.runner` and `bin/Runner.Listener.deps.json` do not have one).
 
 `crash_flagged`/`just_flagged`/`should_auto_restart`/`mismatch_flagged` are
 server-tracked bookkeeping (`src/CrashState.php`) — reading/updating a small

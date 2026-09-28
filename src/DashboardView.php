@@ -138,6 +138,7 @@ final class DashboardView
             . '      <td>' . "\n"
             . '        <span class="runner-name">' . $id . '</span>' . "\n"
             . '        <span class="agent-name">' . $name . '</span>' . "\n"
+            . self::agentVersionHtml($runner)
             . '      </td>' . "\n"
             . '      <td>' . self::githubCell($runner) . '</td>' . "\n"
             . '      <td>' . self::localCell($runner) . '</td>' . "\n"
@@ -161,6 +162,16 @@ final class DashboardView
             . '        </div>' . "\n"
             . '      </td>' . "\n"
             . '    </tr>' . "\n";
+    }
+
+    /** @param array<string, mixed> $runner */
+    private static function agentVersionHtml(array $runner): string
+    {
+        $version = $runner['agent_version'] ?? null;
+        if (!is_string($version) || $version === '') {
+            return '';
+        }
+        return '        <span class="agent-version">v' . self::e($version) . '</span>' . "\n";
     }
 
     /** @param array<string, mixed> $runner */

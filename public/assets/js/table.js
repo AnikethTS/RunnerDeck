@@ -19,7 +19,10 @@ export function filteredRunners(runners) {
   return runners.filter((r) => {
     if (!matchesState(r, state)) return false;
     if (!q) return true;
-    return r.id.toLowerCase().includes(q) || r.agent_name.toLowerCase().includes(q);
+    const version = (r.agent_version || '').toLowerCase();
+    return r.id.toLowerCase().includes(q)
+      || r.agent_name.toLowerCase().includes(q)
+      || version.includes(q);
   });
 }
 
@@ -107,6 +110,9 @@ function crashHistoryBadge(runner) {
 export function rowHtml(runner) {
   const logPreview = (runner.log_tail || []).join('\n') || '(no log yet)';
   const checked = selectedRunners.has(runner.id) ? 'checked' : '';
+  const version = runner.agent_version
+    ? `<span class="agent-version">v${escapeHtml(runner.agent_version)}</span>`
+    : '';
   return `
     <tr data-runner="${runner.id}" data-agent-name="${escapeHtml(runner.agent_name)}">
       <td class="select-col">
@@ -115,6 +121,7 @@ export function rowHtml(runner) {
       <td>
         <span class="runner-name">${escapeHtml(runner.id)}</span>
         <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
+        ${version}
       </td>
       <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${flag(runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')}</td>
       <td>${localBadge(runner)}${resourceUsage(runner)}${diskUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}${crashHistoryBadge(runner)}</td>
