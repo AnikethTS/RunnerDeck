@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
         'diskWebhookThreshold' => (string) ($_POST['disk_webhook_threshold'] ?? ''),
+        'sessionIdleMinutes' => (string) ($_POST['session_idle_minutes'] ?? ''),
     ];
 } else {
     try {
@@ -62,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'drainTimeout' => (string) Config::drainTimeoutSeconds(),
         'diskWebhookThreshold' => Config::diskWebhookThresholdGb() !== null
             ? (string) Config::diskWebhookThresholdGb()
+            : '',
+        'sessionIdleMinutes' => Config::sessionIdleMinutes() !== null
+            ? (string) Config::sessionIdleMinutes()
             : '',
     ];
 }
@@ -232,6 +236,26 @@ Layout::topbarEnd();
         <a href="totp_setup.php" class="btn btn-sm">
           <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
         </a>
+
+        <div class="settings-field">
+          <label for="settings-session-idle">Idle timeout (minutes, optional)</label>
+          <input
+            type="number"
+            id="settings-session-idle"
+            name="session_idle_minutes"
+            min="1"
+            max="1440"
+            step="1"
+            placeholder="leave blank to keep the browser session"
+            value="<?= htmlspecialchars($current['sessionIdleMinutes']) ?>"
+          />
+          <p class="muted">
+            When login is on, sign out after this many minutes with no
+            requests. Hidden dashboard tabs do not poll, so they count as
+            idle. Range 1–1440. Blank keeps the cookie until the browser
+            closes.
+          </p>
+        </div>
       </section>
 
       <button type="submit" class="btn btn-good">Save</button>

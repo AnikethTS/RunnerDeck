@@ -17,7 +17,10 @@ supported, but it's opt-in and has two parts, both required together:
    until you enter a valid 6-digit code. Five wrong codes in a row locks
    login out for 5 minutes. Re-run either path any time to replace the
    secret (**Settings → Login → Replace secret**) — the old one stops
-   working immediately.
+   working immediately. Optional: **Settings → Login → Idle timeout**
+   (`RUNNERDECK_SESSION_IDLE_MINUTES`, 1–1440) ends the session after that
+   many minutes with no requests. Hidden dashboard tabs do not poll, so
+   they count as idle. Blank keeps the cookie until the browser closes.
 2. **Put a TLS-terminating reverse proxy in front** (Caddy, nginx, Tailscale,
    etc.) — RunnerDeck itself stays plain HTTP, no certificate handling
    built in. Without TLS, the login code and session cookie both travel
@@ -68,6 +71,8 @@ do that). Auto-restart still goes through that same `POST action=start`;
 Session cookies always go through one helper: `HttpOnly`, `SameSite=Lax`,
 and `Secure` when the request is HTTPS (including `X-Forwarded-Proto`
 behind a TLS proxy). Successful TOTP login regenerates the session id.
+An optional idle timeout (Settings) expires that session after N minutes
+without a request.
 PHP responses also send `X-Frame-Options: DENY`, `X-Content-Type-Options:
 nosniff`, `Referrer-Policy: no-referrer`, and a CSP limited to same-origin
 assets plus a per-request script nonce.

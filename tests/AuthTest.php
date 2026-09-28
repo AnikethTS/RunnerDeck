@@ -23,6 +23,7 @@ final class AuthTest extends TestCase
         $dir = dirname((string) getenv('RUNNERDECK_SETTINGS_FILE'));
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTH_TOTP_SECRET');
+        putenv('RUNNERDECK_SESSION_IDLE_MINUTES');
         @unlink($this->lockoutFile);
         @unlink($dir . '/settings.json');
         @rmdir($dir);
@@ -190,5 +191,26 @@ final class AuthTest extends TestCase
         $loaded = \RunnerDeck\Settings::load();
         $this->assertSame('my-org', $loaded['RUNNERDECK_ORG']);
         $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', $loaded['RUNNERDECK_AUTH_TOTP_SECRET']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testIdleTimeoutLogsOutAfterInactivity(): void
+    {
+        $secret = $this->setSecret();
+        putenv('RUNNERDECK_SESSION_IDLE_MINUTES=1');
+        \RunnerDeck\Auth::attempt(\RunnerDeck\Totp::code($secret));
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+
+        $_SESSION['last_activity'] = time() - 61;
+        $this->assertFalse(\RunnerDeck\Auth::isLoggedIn());
+    }
+
+    #[RunInSeparateProcess]
+    public function testIdleTimeoutOffKeepsOldActivity(): void
+    {
+        $secret = $this->setSecret();
+        \RunnerDeck\Auth::attempt(\RunnerDeck\Totp::code($secret));
+        $_SESSION['last_activity'] = time() - 86400;
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
     }
 }

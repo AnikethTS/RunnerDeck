@@ -15,7 +15,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
-        'RUNNERDECK_DISK_WEBHOOK_THRESHOLD',
+        'RUNNERDECK_DISK_WEBHOOK_THRESHOLD', 'RUNNERDECK_SESSION_IDLE_MINUTES',
     ];
 
     protected function tearDown(): void
@@ -186,6 +186,19 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_DISK_WEBHOOK_THRESHOLD=10');
         $this->assertSame(10, \RunnerDeck\Config::diskWebhookThresholdGb());
+    }
+
+    #[RunInSeparateProcess]
+    public function testSessionIdleMinutesDefaultsToNull(): void
+    {
+        $this->assertNull(\RunnerDeck\Config::sessionIdleMinutes());
+    }
+
+    #[RunInSeparateProcess]
+    public function testSessionIdleMinutesCapsAt1440(): void
+    {
+        putenv('RUNNERDECK_SESSION_IDLE_MINUTES=9999');
+        $this->assertSame(1440, \RunnerDeck\Config::sessionIdleMinutes());
     }
 
     #[RunInSeparateProcess]

@@ -35,6 +35,7 @@ final class SaveSettingsAction
         $webhookThreshold = trim((string) ($post['crash_webhook_threshold'] ?? ''));
         $drainTimeout = trim((string) ($post['drain_timeout'] ?? ''));
         $diskThreshold = trim((string) ($post['disk_webhook_threshold'] ?? ''));
+        $sessionIdle = trim((string) ($post['session_idle_minutes'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -56,6 +57,14 @@ final class SaveSettingsAction
         if ($diskThreshold !== '' && (!ctype_digit($diskThreshold) || (int) $diskThreshold < 1)) {
             return ['ok' => false, 'message' => 'disk webhook threshold must be a whole number of 1 or more GiB'];
         }
+        $idleOk = $sessionIdle === ''
+            || (ctype_digit($sessionIdle) && (int) $sessionIdle >= 1 && (int) $sessionIdle <= 1440);
+        if (!$idleOk) {
+            return [
+                'ok' => false,
+                'message' => 'session idle timeout must be a whole number between 1 and 1440 minutes',
+            ];
+        }
 
         Settings::save([
             'RUNNERDECK_SCOPE' => $scope,
@@ -69,6 +78,7 @@ final class SaveSettingsAction
             'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,
             'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
+            'RUNNERDECK_SESSION_IDLE_MINUTES' => $sessionIdle,
         ]);
 
         return ['ok' => true, 'message' => 'settings saved'];

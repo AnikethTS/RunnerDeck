@@ -18,6 +18,9 @@ follows [SemVer](https://semver.org/).
 - Each runner row shows the **local agent version** (from `.runner` or
   `Runner.Listener.deps.json`) so a stale binary next to a healthy
   process is visible without extra GitHub calls.
+- Optional **idle session timeout** when TOTP login is on
+  (`RUNNERDECK_SESSION_IDLE_MINUTES`, Settings → Login). Hidden tabs
+  do not poll, so they count as idle.
 
 ## [1.4.0] - 2026-09-26
 

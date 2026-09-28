@@ -7,6 +7,7 @@ namespace RunnerDeck;
 final class Auth
 {
     private const SESSION_KEY = 'authenticated';
+    private const LAST_ACTIVITY_KEY = 'last_activity';
     private const PENDING_SECRET_KEY = 'pending_totp_secret';
     private const LOCKOUT_FILE = 'auth_lockout.json';
     private const MAX_FAILURES = 5;
@@ -55,7 +56,21 @@ final class Auth
     public static function isLoggedIn(): bool
     {
         self::ensureSession();
-        return ($_SESSION[self::SESSION_KEY] ?? false) === true;
+        if (($_SESSION[self::SESSION_KEY] ?? false) !== true) {
+            return false;
+        }
+
+        $idleMinutes = Config::sessionIdleMinutes();
+        if ($idleMinutes !== null) {
+            $last = (int) ($_SESSION[self::LAST_ACTIVITY_KEY] ?? 0);
+            if ($last > 0 && (time() - $last) > ($idleMinutes * 60)) {
+                self::logout();
+                return false;
+            }
+        }
+
+        $_SESSION[self::LAST_ACTIVITY_KEY] = time();
+        return true;
     }
 
     /** @return array{locked: bool, retryAfter?: int} */
@@ -89,6 +104,7 @@ final class Auth
         self::ensureSession();
         session_regenerate_id(true);
         $_SESSION[self::SESSION_KEY] = true;
+        $_SESSION[self::LAST_ACTIVITY_KEY] = time();
     }
 
     public static function logout(): void

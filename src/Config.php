@@ -153,6 +153,19 @@ final class Config
         return self::authTotpSecret() !== null;
     }
 
+    /** @return int|null idle minutes before a TOTP session expires, or null if unset */
+    public static function sessionIdleMinutes(): ?int
+    {
+        $raw = getenv('RUNNERDECK_SESSION_IDLE_MINUTES');
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+        if (!ctype_digit($raw) || (int) $raw < 1) {
+            return null;
+        }
+        return min(1440, (int) $raw);
+    }
+
     public static function version(): string
     {
         static $version = null;
