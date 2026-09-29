@@ -86,7 +86,7 @@ runnerdeck/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Config.php           env-based configuration
     Settings.php          reads/writes storage/settings.json (UI setup/Settings)
-    AppLog.php             JSON error log at storage/runnerdeck.log (rotated)
+    AppLog.php             JSON error + operator audit log at storage/runnerdeck.log
     History.php            best-effort CPU/RAM history + SVG chart markup
     Csrf.php              session-bound CSRF token minting/verification
     Auth.php              optional TOTP login gate, lockout, idle timeout

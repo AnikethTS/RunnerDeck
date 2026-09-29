@@ -33,7 +33,17 @@ final class AppLog
      */
     public static function error(string $action, string $message, array $context = []): void
     {
-        self::write($action, $message, $context);
+        self::write($action, $message, $context, 'error');
+    }
+
+    /**
+     * Successful fleet mutations (start/stop/delete) — no secrets.
+     *
+     * @param array{runner?: ?string, stderr?: string} $context
+     */
+    public static function info(string $action, string $message, array $context = []): void
+    {
+        self::write($action, $message, $context, 'info');
     }
 
     /**
@@ -50,7 +60,7 @@ final class AppLog
             return;
         }
         self::$lastWriteAt[$action] = $now;
-        self::write($action, $message, $context);
+        self::write($action, $message, $context, 'error');
     }
 
     public static function redact(string $text): string
@@ -69,7 +79,7 @@ final class AppLog
     /**
      * @param array{runner?: ?string, stderr?: string} $context
      */
-    private static function write(string $action, string $message, array $context): void
+    private static function write(string $action, string $message, array $context, string $level): void
     {
         $dir = Settings::storageDir();
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
@@ -84,6 +94,7 @@ final class AppLog
 
         $record = [
             'time' => gmdate('c'),
+            'level' => $level === 'info' ? 'info' : 'error',
             'action' => $action,
             'message' => self::redact($message),
         ];
@@ -114,7 +125,9 @@ final class AppLog
     /**
      * Newest last. Includes the rotated file so a just-rotated line is not lost.
      *
-     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     * @return list<array{
+     *     time: string, action: string, message: string, level: string, runner?: string, stderr?: string
+     * }>
      */
     public static function recent(int $limit = 30): array
     {
@@ -131,7 +144,9 @@ final class AppLog
     }
 
     /**
-     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     * @return list<array{
+     *     time: string, action: string, message: string, level: string, runner?: string, stderr?: string
+     * }>
      */
     private static function readRecords(string $path): array
     {
@@ -162,6 +177,7 @@ final class AppLog
                 'time' => $time,
                 'action' => $action,
                 'message' => $message,
+                'level' => ($decoded['level'] ?? '') === 'info' ? 'info' : 'error',
             ];
             $runner = $decoded['runner'] ?? null;
             if (is_string($runner) && $runner !== '') {

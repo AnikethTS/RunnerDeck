@@ -161,6 +161,7 @@ final class DashboardViewTest extends TestCase
             ],
         ]);
         $this->assertStringContainsString('open', $html);
+        $this->assertStringContainsString('Recent log', $html);
         $this->assertStringContainsString('(2)', $html);
         $this->assertStringContainsString('failed &lt;one&gt;', $html);
         $this->assertStringContainsString('&lt;b&gt;nope&lt;/b&gt;', $html);
@@ -174,7 +175,23 @@ final class DashboardViewTest extends TestCase
     public function testErrorsPanelEmptyState(): void
     {
         $html = \RunnerDeck\DashboardView::errorsPanel([]);
-        $this->assertStringContainsString('No errors logged yet.', $html);
+        $this->assertStringContainsString('Nothing logged yet.', $html);
+        $this->assertStringNotContainsString(' open', $html);
+    }
+
+    public function testErrorsPanelInfoOnlyDoesNotAutoOpen(): void
+    {
+        $html = \RunnerDeck\DashboardView::errorsPanel([
+            [
+                'time' => '2026-09-22T18:00:00+00:00',
+                'action' => 'process.start',
+                'message' => 'runner-1 started',
+                'level' => 'info',
+                'runner' => 'runner-1',
+            ],
+        ]);
+        $this->assertStringContainsString('app-log-info', $html);
+        $this->assertStringContainsString('(1)', $html);
         $this->assertStringNotContainsString(' open', $html);
     }
 }

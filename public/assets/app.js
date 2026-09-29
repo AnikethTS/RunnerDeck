@@ -357,7 +357,7 @@ function initDashboard() {
     if (!list.length) {
       const empty = document.createElement('p');
       empty.className = 'muted';
-      empty.textContent = 'No errors logged yet.';
+      empty.textContent = 'Nothing logged yet.';
       body.append(empty);
       return;
     }
@@ -365,7 +365,8 @@ function initDashboard() {
     ol.className = 'app-log-list';
     [...list].reverse().forEach((entry) => {
       const li = document.createElement('li');
-      li.className = 'app-log-item';
+      const level = entry.level === 'info' ? 'info' : 'error';
+      li.className = `app-log-item app-log-${level}`;
       const meta = document.createElement('div');
       meta.className = 'app-log-meta';
       const when = formatErrorTime(entry.time);

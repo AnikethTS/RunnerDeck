@@ -53,6 +53,7 @@ final class AppLogTest extends TestCase
         $this->assertSame('failed to start runner-1', $record['message']);
         $this->assertSame('runner-1', $record['runner']);
         $this->assertSame('nohup: failed', $record['stderr']);
+        $this->assertSame('error', $record['level']);
         $this->assertArrayHasKey('time', $record);
         $this->assertFileExists(\RunnerDeck\AppLog::path());
     }
@@ -94,6 +95,17 @@ final class AppLogTest extends TestCase
         $this->assertStringNotContainsString('ghs_abcdefghijklmnopqrstuvwxyz', $raw);
         $this->assertStringNotContainsString('JBSWY3DPEHPK3PXP', $raw);
         $this->assertStringContainsString('[redacted]', $raw);
+    }
+
+    #[RunInSeparateProcess]
+    public function testInfoWritesLevelWithoutStderr(): void
+    {
+        \RunnerDeck\AppLog::info('process.stop', 'runner-1 stopped (pid 1)', ['runner' => 'runner-1']);
+
+        $record = $this->lastRecord();
+        $this->assertSame('info', $record['level']);
+        $this->assertSame('process.stop', $record['action']);
+        $this->assertArrayNotHasKey('stderr', $record);
     }
 
     #[RunInSeparateProcess]
@@ -157,5 +169,6 @@ final class AppLogTest extends TestCase
         $this->assertCount(1, $recent);
         $this->assertSame('gh.list_runners', $recent[0]['action']);
         $this->assertSame('ok-two', $recent[0]['message']);
+        $this->assertSame('error', $recent[0]['level']);
     }
 }

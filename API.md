@@ -148,6 +148,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "time": "2026-09-22T18:00:00+00:00",
       "action": "process.start",
       "message": "failed to start runner-1",
+      "level": "error",
       "runner": "runner-1",
       "stderr": "nohup: failed"
     }
@@ -193,8 +194,9 @@ generated in PHP. `action=history` still returns the raw samples if you want
 to draw your own chart.
 
 `errors` is the newest 30 lines from `storage/runnerdeck.log` (plus the
-rotated `.1` file if present), already redacted. Entries are oldest-first.
-`runner` and `stderr` are omitted when empty.
+rotated `.1` file if present), already redacted. Entries are oldest-first
+and include `level` (`error` or `info`). Successful start/stop/delete/rename
+are `info`. `runner` and `stderr` are omitted when empty.
 
 ### `action=log`
 

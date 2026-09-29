@@ -507,6 +507,14 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   border-top: 1px solid var(--gridline);
   font-size: 12px;
 }
+.app-log-error {
+  border-left: 3px solid var(--status-critical);
+  padding-left: 8px;
+}
+.app-log-info {
+  border-left: 3px solid var(--gridline);
+  padding-left: 8px;
+}
 .app-log-meta {
   color: var(--text-muted);
   font-size: 11px;
