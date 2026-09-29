@@ -21,6 +21,9 @@ follows [SemVer](https://semver.org/).
 - Optional **idle session timeout** when TOTP login is on
   (`RUNNERDECK_SESSION_IDLE_MINUTES`, Settings → Login). Hidden tabs
   do not poll, so they count as idle.
+- Successful **start / stop / delete / rename** are written to
+  `storage/runnerdeck.log` (`level: info`) so the dashboard log can
+  answer who stopped a runner without scraping PHP logs.
 
 ## [1.4.0] - 2026-09-26
 

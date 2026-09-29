@@ -311,9 +311,16 @@ final class DashboardView
         $normalized = self::normalizeErrors($entries);
         $count = count($normalized);
         $countText = $count > 0 ? ' (' . $count . ')' : '';
-        $open = $count > 0 ? ' open' : '';
+        $hasError = false;
+        foreach ($normalized as $entry) {
+            if ($entry['level'] !== 'info') {
+                $hasError = true;
+                break;
+            }
+        }
+        $open = $hasError ? ' open' : '';
         return '      <details id="app-log" class="app-log"' . $open . ">\n"
-            . '        <summary>Recent errors<span id="app-log-count" class="muted">'
+            . '        <summary>Recent log<span id="app-log-count" class="muted">'
             . self::e($countText) . "</span></summary>\n"
             . '        <div id="app-log-body">' . self::errorsBody($normalized) . "</div>\n"
             . "      </details>\n";
@@ -324,15 +331,16 @@ final class DashboardView
     {
         $normalized = self::normalizeErrors($entries);
         if ($normalized === []) {
-            return '<p class="muted">No errors logged yet.</p>';
+            return '<p class="muted">Nothing logged yet.</p>';
         }
         $html = '<ol class="app-log-list">';
         foreach (array_reverse($normalized) as $entry) {
+            $level = $entry['level'] === 'info' ? 'info' : 'error';
             $meta = self::formatErrorTime($entry['time']) . ' &middot; ' . self::e($entry['action']);
             if (isset($entry['runner'])) {
                 $meta .= ' &middot; ' . self::e($entry['runner']);
             }
-            $html .= '<li class="app-log-item"><div class="app-log-meta">' . $meta
+            $html .= '<li class="app-log-item app-log-' . $level . '"><div class="app-log-meta">' . $meta
                 . '</div><div>' . self::e($entry['message']) . '</div>';
             if (isset($entry['stderr'])) {
                 $html .= '<pre class="app-log-stderr">' . self::e($entry['stderr']) . '</pre>';
@@ -344,7 +352,9 @@ final class DashboardView
 
     /**
      * @param array<int|string, mixed> $entries
-     * @return list<array{time: string, action: string, message: string, runner?: string, stderr?: string}>
+     * @return list<array{
+     *     time: string, action: string, message: string, level: string, runner?: string, stderr?: string
+     * }>
      */
     private static function normalizeErrors(array $entries): array
     {
@@ -363,6 +373,7 @@ final class DashboardView
                 'time' => $time,
                 'action' => $action,
                 'message' => $message,
+                'level' => ($entry['level'] ?? '') === 'info' ? 'info' : 'error',
             ];
             $runner = $entry['runner'] ?? null;
             if (is_string($runner) && $runner !== '') {

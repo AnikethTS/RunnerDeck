@@ -58,6 +58,7 @@ final class ProcessControl
         }
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
+        AppLog::info('process.start', "{$r->id} started (pid {$newPid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} started (pid {$newPid})"];
     }
 
@@ -77,6 +78,7 @@ final class ProcessControl
         $pid = (int) $resolved['pid'];
         self::terminate($pid);
         @unlink($pidFile);
+        AppLog::info('process.stop', "{$r->id} stopped (pid {$pid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} stopped (pid {$pid})"];
     }
 
@@ -173,7 +175,11 @@ final class ProcessControl
             pid: null,
             logTail: [],
         );
-        return self::startIndividual($fresh, $newName);
+        $result = self::startIndividual($fresh, $newName);
+        if ($result['ok']) {
+            AppLog::info('process.rename', "{$r->id} renamed to {$newName}", ['runner' => $r->id]);
+        }
+        return $result;
     }
 
     /**
@@ -193,6 +199,7 @@ final class ProcessControl
             return self::fail('process.delete', $removed['message'], $r->id, $removed['stderr']);
         }
 
+        AppLog::info('process.delete', "{$r->id} deleted", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} deleted"];
     }
 

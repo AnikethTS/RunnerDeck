@@ -109,10 +109,10 @@
   An optional TOTP **idle timeout** (Settings → Login) therefore treats a
   hidden tab as idle. Auto-restart without a visible tab is the `watch-auto-restart.php`
   process from `run.sh`, not the dashboard poll.
-- **Recent errors** on the dashboard are the JSON lines already written to
-  `storage/runnerdeck.log` (start/provision/`gh` failures, secrets
-  redacted). The file is still there for SSH; the panel is so you do not
-  have to.
+- **Recent log** on the dashboard is `storage/runnerdeck.log` (start/stop/
+  delete/rename plus provision/`gh` failures, secrets redacted). The panel
+  auto-opens only when there is an error-level line. The file is still
+  there for SSH; the panel is so you do not have to.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

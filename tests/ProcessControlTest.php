@@ -49,6 +49,16 @@ final class ProcessControlTest extends TestCase
             . ' ' . escapeshellarg($this->storageDir));
     }
 
+    private function lastLog(): array
+    {
+        $path = $this->storageDir . '/runnerdeck.log';
+        $this->assertFileExists($path);
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents($path))));
+        $decoded = json_decode($lines[count($lines) - 1], true);
+        $this->assertIsArray($decoded);
+        return $decoded;
+    }
+
     private function runner(bool $configured = true): \RunnerDeck\RunnerInfo
     {
         return new \RunnerDeck\RunnerInfo(
@@ -78,6 +88,7 @@ final class ProcessControlTest extends TestCase
         $this->assertSame('runner-1 already running (pid 4242)', $result['message']);
         $this->assertFalse($spawned);
         $this->assertFileDoesNotExist($this->dir . '/runner.pid');
+        $this->assertFileDoesNotExist($this->storageDir . '/runnerdeck.log');
     }
 
     #[RunInSeparateProcess]
@@ -90,6 +101,7 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 already running (pid 99)', $result['message']);
         $this->assertSame('99', trim((string) file_get_contents($this->dir . '/runner.pid')));
+        $this->assertFileDoesNotExist($this->storageDir . '/runnerdeck.log');
     }
 
     #[RunInSeparateProcess]
@@ -106,6 +118,8 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 started (pid 5555)', $result['message']);
         $this->assertSame('5555', trim((string) file_get_contents($this->dir . '/runner.pid')));
+        $this->assertSame('info', $this->lastLog()['level']);
+        $this->assertSame('process.start', $this->lastLog()['action']);
     }
 
     #[RunInSeparateProcess]
@@ -143,6 +157,7 @@ final class ProcessControlTest extends TestCase
         $this->assertSame('runner-1 not running', $result['message']);
         $this->assertSame([], $this->killed);
         $this->assertFileExists($this->dir . '/runner.pid');
+        $this->assertFileDoesNotExist($this->storageDir . '/runnerdeck.log');
     }
 
     #[RunInSeparateProcess]
@@ -157,6 +172,8 @@ final class ProcessControlTest extends TestCase
         $this->assertSame('runner-1 stopped (pid 777)', $result['message']);
         $this->assertSame([777], $this->killed);
         $this->assertFileDoesNotExist($this->dir . '/runner.pid');
+        $this->assertSame('process.stop', $this->lastLog()['action']);
+        $this->assertSame('info', $this->lastLog()['level']);
     }
 
     #[RunInSeparateProcess]
@@ -169,6 +186,7 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 stopped (pid 888)', $result['message']);
         $this->assertSame([888], $this->killed);
+        $this->assertSame('process.stop', $this->lastLog()['action']);
     }
 
     #[RunInSeparateProcess]
@@ -189,6 +207,7 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 deleted', $result['message']);
         $this->assertDirectoryDoesNotExist($this->dir);
+        $this->assertSame('process.delete', $this->lastLog()['action']);
     }
 
     #[RunInSeparateProcess]

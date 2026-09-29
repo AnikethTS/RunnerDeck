@@ -508,6 +508,7 @@ test('dashboard shows recent errors from the status snapshot', async ({ page }) 
   await page.locator('#btn-refresh').click();
   await page.locator('#app-log').evaluate((el) => { el.open = true; });
 
+  await expect(page.locator('#app-log summary')).toContainText('Recent log');
   await expect(page.locator('#app-log-count')).toContainText('(1)');
   await expect(page.locator('#app-log-body')).toContainText('failed to start <runner-1>');
   await expect(page.locator('#app-log-body')).toContainText('process.start');
