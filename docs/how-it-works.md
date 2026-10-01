@@ -92,7 +92,9 @@
   webhook when the count first reaches N, not only on a crash-loop.
 - Each slot shows **best-effort disk** for `_work`, `_diag`, and
   `runner.log` (sortable). **Clear work** on a stopped runner deletes
-  `_work` only. `runner.log` rotates to `runner.log.1` at 5 MB.
+  `_work` only. `runner.log` rotates to `runner.log.1` at 5 MB on start
+  or stop (not while the process is running). Tails and downloads include
+  the rotated file so a cap does not hide the previous chunk.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for
   the current filter) and started, stopped, or deleted together — the busy
   check for Stop/Delete is done once for the whole selection, not per runner.

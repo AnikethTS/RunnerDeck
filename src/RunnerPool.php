@@ -108,7 +108,12 @@ final class RunnerPool
 
         $stats = ($running && $pid !== null) ? (self::allProcessStats()[$pid] ?? null) : null;
         $logTail = self::tailLog("$dir/runner.log", $logLines);
-        RunnerLog::rotateIfOversized($dir);
+        // A running listener keeps its FD after rename, so rotating mid-job
+        // would leave the UI following an empty `runner.log` while writes
+        // continue on `runner.log.1`. Cap the file on start/stop instead.
+        if (!$running) {
+            RunnerLog::rotateIfOversized($dir);
+        }
         $disk = SlotDisk::inspect($dir);
 
         return new RunnerInfo(
@@ -284,31 +289,9 @@ final class RunnerPool
 
     public static function tailLog(string $path, int $lines): array
     {
-        if (!is_file($path) || $lines <= 0) {
-            return [];
+        if (basename($path) === RunnerLog::FILE) {
+            return RunnerLog::tail(dirname($path), $lines);
         }
-        $size = filesize($path);
-        if ($size === 0) {
-            return [];
-        }
-
-        $fh = fopen($path, 'r');
-        if ($fh === false) {
-            return [];
-        }
-
-        $chunkSize = 8192;
-        $pos = $size;
-        $data = '';
-        while ($pos > 0 && substr_count($data, "\n") <= $lines) {
-            $read = min($chunkSize, $pos);
-            $pos -= $read;
-            fseek($fh, $pos);
-            $data = fread($fh, $read) . $data;
-        }
-        fclose($fh);
-
-        $allLines = explode("\n", rtrim($data, "\n"));
-        return array_slice($allLines, -$lines);
+        return RunnerLog::tailFile($path, $lines);
     }
 }
