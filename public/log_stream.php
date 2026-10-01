@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Auth;
+use RunnerDeck\RunnerLog;
 use RunnerDeck\RunnerPool;
 
 if (Auth::isEnabled() && !Auth::isLoggedIn()) {
@@ -34,9 +35,10 @@ while (ob_get_level() > 0) {
 // $id is whitelisted above via isKnownId()'s ^runner-(base|[0-9]+)$ regex
 // plus a directory-existence check — not attacker-controlled by this point.
 // nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
-$logFile = RunnerPool::dirFor($id) . '/runner.log';
+$dir = RunnerPool::dirFor($id);
+$logFile = $dir . '/' . RunnerLog::FILE;
 
-foreach (RunnerPool::tailLog($logFile, 50) as $line) {
+foreach (RunnerLog::tail($dir, 50) as $line) {
     // SSE data, read via textContent in app.js (never innerHTML) — HTML-
     // escaping here would corrupt the log text for a client that doesn't
     // decode entities.

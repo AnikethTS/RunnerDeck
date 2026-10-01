@@ -24,6 +24,9 @@ follows [SemVer](https://semver.org/).
 - Successful **start / stop / delete / rename** are written to
   `storage/runnerdeck.log` (`level: info`) so the dashboard log can
   answer who stopped a runner without scraping PHP logs.
+- Live tails and log downloads include `runner.log.1` after rotation.
+  Oversized `runner.log` is rotated on start/stop, not while the listener
+  is still writing to the file.
 
 ## [1.4.0] - 2026-09-26
 

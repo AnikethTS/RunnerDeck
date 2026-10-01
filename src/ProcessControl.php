@@ -78,6 +78,7 @@ final class ProcessControl
         $pid = (int) $resolved['pid'];
         self::terminate($pid);
         @unlink($pidFile);
+        RunnerLog::rotateIfOversized($r->dir);
         AppLog::info('process.stop', "{$r->id} stopped (pid {$pid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} stopped (pid {$pid})"];
     }

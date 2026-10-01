@@ -201,6 +201,7 @@ are `info`. `runner` and `stderr` are omitted when empty.
 ### `action=log`
 
 A runner's log tail (not the live stream — see `log_stream.php` below).
+Includes `runner.log.1` when the current file is shorter than `lines`.
 
 - `runner` (required) — a runner id (`runner-base`, `runner-1`, ...).
 - `lines` (optional, default `200`, max `2000`).
@@ -303,11 +304,12 @@ request gets a plain `401 unauthorized` body instead of a stream.
 
 ### `GET /download_log.php?runner=<id>&from=<epoch>&to=<epoch>`
 
-The full log file, or a slice of it. `from`/`to` are optional Unix epoch
-seconds; omit both for the complete file. See the log viewer's "Download
-from / to" fields for the UI equivalent, and `public/download_log.php`
-for exactly how partial-timestamp lines are handled. Same `401` behavior
-as `log_stream.php` above when TOTP login is enabled and unauthenticated.
+The full log (`runner.log.1` then `runner.log` when both exist), or a
+slice of it. `from`/`to` are optional Unix epoch seconds; omit both for
+the complete file. See the log viewer's "Download from / to" fields for
+the UI equivalent, and `public/download_log.php` for exactly how
+partial-timestamp lines are handled. Same `401` behavior as
+`log_stream.php` above when TOTP login is enabled and unauthenticated.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/download_log.php?runner=runner-base' -o runner-base.log

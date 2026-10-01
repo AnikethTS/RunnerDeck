@@ -94,6 +94,17 @@ final class RunnerPoolTest extends TestCase
         $this->assertSame([], \RunnerDeck\RunnerPool::tailLog($path, 0));
     }
 
+    public function testTailLogIncludesRotatedSibling(): void
+    {
+        file_put_contents($this->poolDir . '/runner.log.1', "old-a\nold-b\n");
+        file_put_contents($this->poolDir . '/runner.log', "new-a\n");
+
+        $this->assertSame(
+            ['old-b', 'new-a'],
+            \RunnerDeck\RunnerPool::tailLog($this->poolDir . '/runner.log', 2)
+        );
+    }
+
     #[RunInSeparateProcess]
     public function testNextAvailableIdFillsBaseFirst(): void
     {
