@@ -21,9 +21,11 @@ follows [SemVer](https://semver.org/).
 - Optional **idle session timeout** when TOTP login is on
   (`RUNNERDECK_SESSION_IDLE_MINUTES`, Settings → Login). Hidden tabs
   do not poll, so they count as idle.
-- Successful **start / stop / delete / rename** are written to
-  `storage/runnerdeck.log` (`level: info`) so the dashboard log can
-  answer who stopped a runner without scraping PHP logs.
+- Successful **start / stop / delete / rename** (and drain / clear-work /
+  settings saves, without secrets) are written to `storage/runnerdeck.log`
+  (`level: info`).
+- **Stop** waits for the process to exit after SIGTERM, then SIGKILL.
+- A persistent local/GitHub **mismatch** fires the crash webhook once.
 - Live tails and log downloads include `runner.log.1` after rotation.
   Oversized `runner.log` is rotated on start/stop, not while the listener
   is still writing to the file.

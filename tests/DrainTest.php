@@ -22,6 +22,7 @@ final class DrainTest extends TestCase
         \RunnerDeck\Drain::fakeNow(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_SETTINGS_FILE');
     }
 
     #[RunInSeparateProcess]
@@ -82,5 +83,23 @@ final class DrainTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertTrue($result['timed_out'] ?? false);
         $this->assertTrue($result['busy'] ?? false);
+    }
+
+    #[RunInSeparateProcess]
+    public function testAuditWritesInfoWithoutSecrets(): void
+    {
+        $dir = sys_get_temp_dir() . '/runnerdeck-drain-audit-' . uniqid();
+        mkdir($dir, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $dir . '/settings.json');
+
+        \RunnerDeck\Drain::audit(['runner-1'], false);
+
+        $raw = (string) file_get_contents($dir . '/runnerdeck.log');
+        $this->assertStringContainsString('process.drain', $raw);
+        $this->assertStringContainsString('drain-stop runner-1', $raw);
+        $this->assertStringContainsString('"level":"info"', $raw);
+
+        exec('rm -rf ' . escapeshellarg($dir));
+        putenv('RUNNERDECK_SETTINGS_FILE');
     }
 }

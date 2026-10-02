@@ -110,6 +110,23 @@ final class CrashWebhookTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testMismatchNotifyUsesDistinctEvent(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1', 'mismatch');
+
+        $decoded = json_decode((string) $body, true);
+        $this->assertSame('mismatch', $decoded['event']);
+        $this->assertStringContainsString('disagree', $decoded['message']);
+    }
+
+    #[RunInSeparateProcess]
     public function testDiskNotifyUsesDiskPayload(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');

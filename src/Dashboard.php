@@ -70,6 +70,13 @@ final class Dashboard
             if (!empty($r['just_flagged'])) {
                 CrashWebhook::notify((string) $r['id'], (string) ($r['agent_name'] ?? $r['id']));
             }
+            if (!empty($r['just_mismatch_flagged'])) {
+                CrashWebhook::notify(
+                    (string) $r['id'],
+                    (string) ($r['agent_name'] ?? $r['id']),
+                    'mismatch'
+                );
+            }
             if (!empty($r['crash_threshold_crossed'])) {
                 $count = (int) ($r['crash_count_7d'] ?? 0);
                 $n = Config::crashWebhookThreshold();

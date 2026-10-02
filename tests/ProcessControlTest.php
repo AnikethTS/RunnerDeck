@@ -16,6 +16,9 @@ final class ProcessControlTest extends TestCase
     /** @var list<int> */
     private array $killed = [];
 
+    /** @var list<int> */
+    private array $signals = [];
+
     protected function setUp(): void
     {
         $this->dir = sys_get_temp_dir() . '/runnerdeck-pc-test-' . uniqid();
@@ -29,10 +32,12 @@ final class ProcessControlTest extends TestCase
 
         \RunnerDeck\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\ProcessControl::fakeKill(function (int $pid): bool {
+        \RunnerDeck\ProcessControl::fakeKill(function (int $pid, int $signal): bool {
             $this->killed[] = $pid;
+            $this->signals[] = $signal;
             return true;
         });
+        \RunnerDeck\ProcessControl::fakeTermWait(0);
     }
 
     protected function tearDown(): void
@@ -41,6 +46,8 @@ final class ProcessControlTest extends TestCase
         \RunnerDeck\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\RunnerPool::fakeCheckProcess(null);
         \RunnerDeck\ProcessControl::fakeKill(null);
+        \RunnerDeck\ProcessControl::fakeAlive(null);
+        \RunnerDeck\ProcessControl::fakeTermWait(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
@@ -171,6 +178,7 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 stopped (pid 777)', $result['message']);
         $this->assertSame([777], $this->killed);
+        $this->assertSame([SIGTERM], $this->signals);
         $this->assertFileDoesNotExist($this->dir . '/runner.pid');
         $this->assertSame('process.stop', $this->lastLog()['action']);
         $this->assertSame('info', $this->lastLog()['level']);
@@ -186,6 +194,7 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertSame('runner-1 stopped (pid 888)', $result['message']);
         $this->assertSame([888], $this->killed);
+        $this->assertSame([SIGTERM], $this->signals);
         $this->assertSame('process.stop', $this->lastLog()['action']);
     }
 
@@ -301,5 +310,45 @@ final class ProcessControlTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
+        $this->assertSame('process.clear_work', $this->lastLog()['action']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStopSendsKillWhenProcessIgnoresTerm(): void
+    {
+        file_put_contents($this->dir . '/runner.pid', '777');
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 777]);
+        $alive = true;
+        \RunnerDeck\ProcessControl::fakeAlive(function () use (&$alive): bool {
+            return $alive;
+        });
+        \RunnerDeck\ProcessControl::fakeKill(function (int $pid, int $signal) use (&$alive): bool {
+            $this->killed[] = $pid;
+            $this->signals[] = $signal;
+            if ($signal === SIGKILL) {
+                $alive = false;
+            }
+            return true;
+        });
+
+        $result = \RunnerDeck\ProcessControl::stopIndividual($this->runner());
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame([SIGTERM, SIGKILL], $this->signals);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStopFailsWhenProcessSurvivesKill(): void
+    {
+        file_put_contents($this->dir . '/runner.pid', '777');
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 777]);
+        \RunnerDeck\ProcessControl::fakeAlive(fn () => true);
+
+        $result = \RunnerDeck\ProcessControl::stopIndividual($this->runner());
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('still running after SIGKILL', $result['message']);
+        $this->assertSame([SIGTERM, SIGKILL], $this->signals);
+        $this->assertFileExists($this->dir . '/runner.pid');
     }
 }

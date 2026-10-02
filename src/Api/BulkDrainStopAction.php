@@ -24,6 +24,11 @@ final class BulkDrainStopAction
         }
 
         JsonApi::markExplicitlyStopped($runners);
+        $ids = [];
+        foreach ($runners as $r) {
+            $ids[] = $r->id;
+        }
+        Drain::audit($ids, JsonApi::force());
         JsonApi::respond(ProcessControl::bulkStop($runners));
     }
 }

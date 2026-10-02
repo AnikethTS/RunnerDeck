@@ -55,7 +55,7 @@ final class CrashState
         return $state[$id] ?? [
             'wasRunning' => false, 'attempts' => 0, 'healthySince' => 0,
             'flagged' => false, 'notified' => false, 'justStopped' => false,
-            'mismatchStreak' => 0,
+            'mismatchStreak' => 0, 'mismatchNotified' => false,
         ];
     }
 
@@ -148,10 +148,17 @@ final class CrashState
                 $s['notified'] = true;
             }
 
+            $justMismatch = false;
             if ($updateMismatch) {
                 $ghOnline = is_array($r['github'] ?? null) && ($r['github']['status'] ?? '') === 'online';
                 $mismatched = is_array($r['github'] ?? null) && $ghOnline !== (bool) $r['local_running'];
                 $s['mismatchStreak'] = $mismatched ? ((int) ($s['mismatchStreak'] ?? 0)) + 1 : 0;
+                if ($s['mismatchStreak'] < self::MISMATCH_THRESHOLD) {
+                    $s['mismatchNotified'] = false;
+                } elseif (!($s['mismatchNotified'] ?? false)) {
+                    $justMismatch = true;
+                    $s['mismatchNotified'] = true;
+                }
             }
 
             $s['justStopped'] = false;
@@ -162,6 +169,7 @@ final class CrashState
             $r['just_flagged'] = $justFlagged;
             $r['should_auto_restart'] = $shouldAutoRestart;
             $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
+            $r['just_mismatch_flagged'] = $justMismatch;
             $r['crash_count_7d'] = $crashCounts[$id] ?? 0;
             $r['crash_at_7d'] = $crashTimes[$id] ?? [];
             $r['crash_threshold_crossed'] = $thresholdCrossed;

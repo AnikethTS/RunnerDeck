@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RunnerDeck\Api;
 
 use RunnerDeck\Api as JsonApi;
+use RunnerDeck\AppLog;
 use RunnerDeck\Config;
 use RunnerDeck\CrashWebhook;
 use RunnerDeck\Settings;
@@ -80,6 +81,16 @@ final class SaveSettingsAction
             'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
             'RUNNERDECK_SESSION_IDLE_MINUTES' => $sessionIdle,
         ]);
+
+        $bits = ['scope=' . $scope];
+        if ($scope === 'org') {
+            $bits[] = 'org=' . $org;
+        } else {
+            $bits[] = 'repo=' . $repo;
+        }
+        $bits[] = 'auto_restart=' . (($post['auto_restart'] ?? '') === '1' ? '1' : '0');
+        $bits[] = 'webhook=' . ($webhookUrl !== '' ? 'set' : 'off');
+        AppLog::info('settings.save', 'settings saved (' . implode(' ', $bits) . ')');
 
         return ['ok' => true, 'message' => 'settings saved'];
     }

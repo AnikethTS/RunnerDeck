@@ -52,6 +52,7 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($result[0]['just_flagged']);
         $this->assertFalse($result[0]['should_auto_restart']);
         $this->assertFalse($result[0]['mismatch_flagged']);
+        $this->assertFalse($result[0]['just_mismatch_flagged']);
     }
 
     #[RunInSeparateProcess]
@@ -69,8 +70,15 @@ final class CrashStateTest extends TestCase
         $third = \RunnerDeck\CrashState::track([$row]);
 
         $this->assertFalse($first[0]['mismatch_flagged']);
+        $this->assertFalse($first[0]['just_mismatch_flagged']);
         $this->assertFalse($second[0]['mismatch_flagged']);
+        $this->assertFalse($second[0]['just_mismatch_flagged']);
         $this->assertTrue($third[0]['mismatch_flagged']);
+        $this->assertTrue($third[0]['just_mismatch_flagged']);
+
+        $fourth = \RunnerDeck\CrashState::track([$row]);
+        $this->assertTrue($fourth[0]['mismatch_flagged']);
+        $this->assertFalse($fourth[0]['just_mismatch_flagged']);
     }
 
     #[RunInSeparateProcess]
