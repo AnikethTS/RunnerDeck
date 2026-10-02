@@ -54,6 +54,12 @@ if (!$force) {
     }
 }
 
+$auditIds = [];
+foreach ($targets as $r) {
+    $auditIds[] = $r->id;
+}
+Drain::audit($auditIds, $force);
+
 foreach ($targets as $r) {
     CrashState::markExplicitlyStopped($r->id);
     $result = ProcessControl::stopIndividual($r);

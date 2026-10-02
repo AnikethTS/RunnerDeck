@@ -98,6 +98,20 @@ final class Drain
         }
     }
 
+    /**
+     * @param list<string> $ids
+     */
+    public static function audit(array $ids, bool $forced): void
+    {
+        if ($ids === []) {
+            return;
+        }
+        $suffix = $forced ? ' (forced)' : '';
+        $listed = implode(', ', $ids);
+        $context = count($ids) === 1 ? ['runner' => $ids[0]] : [];
+        AppLog::info('process.drain', 'drain-stop ' . $listed . $suffix, $context);
+    }
+
     private static function now(): int
     {
         return self::$nowFake !== null ? (self::$nowFake)() : time();

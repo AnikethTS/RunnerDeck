@@ -111,6 +111,24 @@ final class SettingsTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testSaveSettingsActionLogsWithoutWebhookUrl(): void
+    {
+        $result = \RunnerDeck\Api\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'crash_webhook_url' => 'https://example.com/secret-hook',
+            'auto_restart' => '1',
+        ]);
+        $this->assertTrue($result['ok']);
+
+        $raw = (string) file_get_contents(dirname($this->settingsFile) . '/runnerdeck.log');
+        $this->assertStringContainsString('settings.save', $raw);
+        $this->assertStringContainsString('webhook=set', $raw);
+        $this->assertStringNotContainsString('secret-hook', $raw);
+        $this->assertStringNotContainsString('https://example.com', $raw);
+    }
+
+    #[RunInSeparateProcess]
     public function testSaveThrowsWhenPathIsUnwritable(): void
     {
         putenv('RUNNERDECK_SETTINGS_FILE=/nonexistent-root-only-path/settings.json');

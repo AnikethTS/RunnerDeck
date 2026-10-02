@@ -28,6 +28,8 @@ final class CrashWebhook
         if ($event === 'crash_threshold' && $count !== null && $threshold !== null) {
             $message = "RunnerDeck: {$agentName} ({$runnerId}) reached {$count} crashes in 7 days "
                 . "(threshold {$threshold}).";
+        } elseif ($event === 'mismatch') {
+            $message = "RunnerDeck: {$agentName} ({$runnerId}) local process and GitHub status disagree.";
         } else {
             $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
             $event = 'crash_loop';

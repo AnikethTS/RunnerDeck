@@ -11,17 +11,36 @@ final class ProcessControl
     private const CLOSE_FDS_PREFIX =
         'for fd in /dev/fd/*; do n=${fd##*/}; [ "$n" -gt 2 ] 2>/dev/null && eval "exec $n<&-" 2>/dev/null; done; ';
 
-    /** @var (callable(int): bool)|null */
+    private const TERM_WAIT_SECONDS = 20;
+
+    /** @var (callable(int, int): bool)|null */
     private static $killFake = null;
 
+    /** @var (callable(int): bool)|null */
+    private static $aliveFake = null;
+
+    private static ?int $termWaitFake = null;
+
     /**
-     * Test seam: intercept SIGTERM. Pass null to restore posix_kill.
+     * Test seam: intercept signals. Pass null to restore posix_kill.
      *
-     * @param (callable(int): bool)|null $handler
+     * @param (callable(int, int): bool)|null $handler
      */
     public static function fakeKill(?callable $handler): void
     {
         self::$killFake = $handler;
+    }
+
+    /** @param (callable(int): bool)|null $handler */
+    public static function fakeAlive(?callable $handler): void
+    {
+        self::$aliveFake = $handler;
+    }
+
+    /** Test seam: seconds to wait after SIGTERM. Pass 0 to skip sleeps. */
+    public static function fakeTermWait(?int $seconds): void
+    {
+        self::$termWaitFake = $seconds;
     }
 
     public static function startIndividual(RunnerInfo $r, ?string $desiredName = null): array
@@ -76,7 +95,13 @@ final class ProcessControl
         }
 
         $pid = (int) $resolved['pid'];
-        self::terminate($pid);
+        if (!self::terminate($pid)) {
+            return self::fail(
+                'process.stop',
+                "failed to stop {$r->id}: process {$pid} still running after SIGKILL",
+                $r->id
+            );
+        }
         @unlink($pidFile);
         RunnerLog::rotateIfOversized($r->dir);
         AppLog::info('process.stop', "{$r->id} stopped (pid {$pid})", ['runner' => $r->id]);
@@ -92,13 +117,47 @@ final class ProcessControl
         return ['ok' => false, 'message' => $message];
     }
 
-    private static function terminate(int $pid): void
+    private static function terminate(int $pid): bool
+    {
+        self::signal($pid, SIGTERM);
+        $wait = self::$termWaitFake ?? self::TERM_WAIT_SECONDS;
+        $deadline = time() + max(0, $wait);
+        while (self::isAlive($pid) && time() < $deadline) {
+            self::pause(100000);
+        }
+        if (self::isAlive($pid)) {
+            self::signal($pid, SIGKILL);
+            self::pause(200000);
+        }
+        return !self::isAlive($pid);
+    }
+
+    private static function signal(int $pid, int $signal): void
     {
         if (self::$killFake !== null) {
-            (self::$killFake)($pid);
+            (self::$killFake)($pid, $signal);
             return;
         }
-        posix_kill($pid, SIGTERM);
+        posix_kill($pid, $signal);
+    }
+
+    private static function isAlive(int $pid): bool
+    {
+        if (self::$aliveFake !== null) {
+            return (self::$aliveFake)($pid);
+        }
+        if (self::$killFake !== null) {
+            return false;
+        }
+        return posix_kill($pid, 0);
+    }
+
+    private static function pause(int $microseconds): void
+    {
+        if ((self::$termWaitFake ?? 1) === 0) {
+            return;
+        }
+        usleep($microseconds);
     }
 
     public static function clearWorkDir(RunnerInfo $r): array
@@ -115,6 +174,7 @@ final class ProcessControl
         if (!$cleared['ok']) {
             return self::fail('process.clear_work', $cleared['message'], $r->id);
         }
+        AppLog::info('process.clear_work', "{$r->id} " . $cleared['message'], ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} " . $cleared['message']];
     }
 

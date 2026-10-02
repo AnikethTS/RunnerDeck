@@ -98,7 +98,7 @@ runnerdeck/
     UpdateCheck.php        opt-in check against this project's own GitHub Releases
     Provisioner.php       downloads, installs, and registers a runner
     ProcessDecision.php   pidfile vs live-process start/stop decisions
-    ProcessControl.php    start/stop/restart, individual and pool-wide
+    ProcessControl.php    start/stop (wait + SIGKILL)/restart, individual and pool-wide
     Drain.php             wait for GitHub busy=false before stop
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB

@@ -170,6 +170,8 @@ crash-loop is first detected — use it to fire a one-shot notification, not
 `crash_flagged` (which stays `true` until the runner's been healthy again
 for a couple of minutes). `mismatch_flagged` is `true` after three consecutive
 polls where GitHub `online` and the local process disagree.
+`just_mismatch_flagged` is `true` on the poll that first crosses that
+threshold (the crash webhook URL is notified once, `event: mismatch`).
 
 `crash_count_7d` is how many times this runner has crashed in the last 7
 days (`src/CrashHistory.php`, a small SQLite table in the same database

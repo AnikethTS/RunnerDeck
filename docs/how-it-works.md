@@ -18,7 +18,9 @@
   org registration token, and runs `config.sh` — the same flow you'd do by
   hand, done for you. No manual pre-setup step.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
-  `/proc` fallback if the pidfile is missing) and waits for a graceful exit.
+  `/proc` fallback if the pidfile is missing) and waits up to 20s for it
+  to exit, then `SIGKILL` if it is still alive. Stop fails if the process
+  is still running after that.
 - **Drain** waits until GitHub reports `busy: false` (timeout
   `RUNNERDECK_DRAIN_TIMEOUT`, default 10 minutes) and then stops. The
   dashboard polls status while waiting; `POST drain_stop` /
@@ -81,6 +83,8 @@
   even with no dashboard tab open. Slack and Discord incoming webhook URLs
   are detected automatically and get their native payload shape; anything
   else gets a plain JSON payload, e.g. for a webhook-to-email/push relay.
+  The same URL also fires once when a local/GitHub **mismatch** is first
+  flagged (three disagreeing polls).
 - Every crash is recorded, not just flagged ones — a small SQLite table
   (`src/CrashHistory.php`, the same database as CPU/RAM history) keeps a
   7-day count per runner. It's independent of `crash_flagged`: a runner
