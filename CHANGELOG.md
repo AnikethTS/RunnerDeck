@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-06
+
 ### Security
 
 - Document that `gh`, runner dirs, and `_work` live on the host: a VPS
