@@ -74,7 +74,7 @@ jobs:
         run: npm ci
 
       - name: npm audit (known CVEs in dependencies)
-        run: npm audit
+        run: node scripts/npm-audit.mjs
 
       - name: eslint
         run: npm run lint:js

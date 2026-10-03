@@ -16,6 +16,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
         'RUNNERDECK_DISK_WEBHOOK_THRESHOLD', 'RUNNERDECK_SESSION_IDLE_MINUTES',
+        'RUNNERDECK_TRUST_PROXY',
     ];
 
     protected function tearDown(): void
@@ -221,5 +222,18 @@ final class ConfigTest extends TestCase
     {
         $expected = trim((string) file_get_contents(dirname(__DIR__) . '/VERSION'));
         $this->assertSame($expected, \RunnerDeck\Config::version());
+    }
+
+    #[RunInSeparateProcess]
+    public function testTrustProxyDefaultsOff(): void
+    {
+        $this->assertFalse(\RunnerDeck\Config::trustProxy());
+    }
+
+    #[RunInSeparateProcess]
+    public function testTrustProxyEnabledWhenSet(): void
+    {
+        putenv('RUNNERDECK_TRUST_PROXY=1');
+        $this->assertTrue(\RunnerDeck\Config::trustProxy());
     }
 }

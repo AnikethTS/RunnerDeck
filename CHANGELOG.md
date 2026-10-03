@@ -6,7 +6,20 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- CI `npm audit` no longer fails solely on [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+  (`braces` through 3.0.3, no patched npm release). `npm audit fix --force`
+  would install stylelint 7.7.0. Drop the allowlist in
+  `scripts/npm-audit.mjs` once a fixed `braces` can be pinned.
+
 ### Added
+
+- **TLS reverse proxy** examples for Caddy and nginx (`deploy/`,
+  [docs/hosting.md](docs/hosting.md)). `GET /health.php` is a probe that
+  skips TOTP. `X-Forwarded-Proto` is trusted from loopback; set
+  `RUNNERDECK_TRUST_PROXY=1` when the proxy is not on loopback. HTTPS
+  responses send HSTS.
 
 - Drain timeout is a Settings field (`RUNNERDECK_DRAIN_TIMEOUT`, 1–3600
   seconds, default 600) so a short drain wait is not a `.env` edit.

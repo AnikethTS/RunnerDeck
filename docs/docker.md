@@ -42,8 +42,9 @@ installed and checksum-verified) and starts the container per
   before. `docker-compose.yml`'s port mapping is pinned to
   `127.0.0.1:8090:8090` on the host side so the container stays
   loopback-only end to end, matching [Security & safety](security-and-safety.md);
-  don't widen that mapping unless you specifically intend to expose this
-  beyond your own machine.
+Do not map `0.0.0.0:8090:8090` unless you specifically intend to expose this
+beyond your own machine — and then only with TOTP plus a TLS proxy
+([Hosting](hosting.md)).
 
 **Runner jobs that need Docker of their own** (a workflow with `docker
 build`/`docker run` steps) won't work out of the box: the runner processes

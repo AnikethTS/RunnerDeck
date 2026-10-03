@@ -28,6 +28,7 @@ any more than it needs `vendor/`:
 npm install       # pulls in eslint, stylelint, Playwright (dev-only)
 npm run lint:js   # eslint on public/assets/app.js and public/assets/js/
 npm run lint:css  # stylelint on public/assets/style.css
+npm run audit     # npm audit (see scripts/npm-audit.mjs)
 npm run e2e       # Playwright — see e2e/dashboard.spec.js
 ```
 
@@ -81,6 +82,7 @@ runnerdeck/
     login.php       optional TOTP login screen (see Security & safety)
     settings.php    scope/org/repo/label, auto-restart, crash webhook, login setup
     totp_setup.php  optional TOTP enroll / rotate
+    health.php      unauthenticated JSON probe for load balancers
     assets/         app.js (dashboard), js/theme.js, style.css, optional logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
@@ -114,7 +116,7 @@ runnerdeck/
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
-  deploy/           optional process-supervision examples (systemd, launchd)
+  deploy/           Caddy/nginx reverse-proxy examples; systemd/launchd units
   run.sh            Linux/macOS entry point (also starts watch-auto-restart)
   bin/watch-auto-restart.php  loop that auto-starts crashed runners
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
