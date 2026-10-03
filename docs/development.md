@@ -116,8 +116,8 @@ runnerdeck/
     Shell.php             timeout-guarded subprocess helper
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
-  deploy/           Caddy/nginx reverse-proxy examples; systemd/launchd units
-  run.sh            Linux/macOS entry point (also starts watch-auto-restart)
+  deploy/           php-fpm + Caddy/nginx examples; systemd/launchd units
+  run.sh            local php -S entry (also starts watch-auto-restart)
   bin/watch-auto-restart.php  loop that auto-starts crashed runners
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)

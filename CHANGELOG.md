@@ -15,6 +15,10 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **php-fpm** examples for a TLS hostname (`deploy/php-fpm.conf`,
+  Caddy/nginx FastCGI, systemd watch + fpm units). `./run.sh` stays
+  `php -S` (four workers; a live log occupies one) for one operator.
+
 - **TLS reverse proxy** examples for Caddy and nginx (`deploy/`,
   [docs/hosting.md](docs/hosting.md)). `GET /health.php` is a probe that
   skips TOTP. `X-Forwarded-Proto` is trusted from loopback; set

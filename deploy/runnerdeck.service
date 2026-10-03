@@ -1,7 +1,7 @@
-# Optional: process supervision for RunnerDeck itself (Linux, systemd
-# user unit). Not required — `./run.sh` works fine run by hand — this is
-# only useful if you want it to survive a logout/reboot.
-# Reverse proxy (Caddy/nginx) in front: see docs/hosting.md.
+# Optional: process supervision for ./run.sh (php -S, Linux systemd user
+# unit). Not required — `./run.sh` works by hand. For a TLS hostname use
+# php-fpm + watch instead: deploy/runnerdeck-php-fpm.service and
+# deploy/runnerdeck-watch.service (docs/hosting.md).
 #
 # Install:
 #   mkdir -p ~/.config/systemd/user

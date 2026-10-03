@@ -1,0 +1,25 @@
+# php-fpm as the operator (loopback :9000). Pair with
+# deploy/runnerdeck-watch.service — php-fpm does not start the auto-restart
+# loop. TLS: deploy/Caddyfile.php-fpm or deploy/nginx-php-fpm.conf.example.
+#
+# Install (edit WorkingDirectory / ExecStart paths and the php-fpm binary):
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/runnerdeck-php-fpm.service ~/.config/systemd/user/
+#   cp deploy/runnerdeck-watch.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now runnerdeck-php-fpm runnerdeck-watch
+#   loginctl enable-linger "$USER"
+
+[Unit]
+Description=RunnerDeck php-fpm (operator UI)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Github-Actions-SelfHost
+ExecStart=/usr/sbin/php-fpm --nodaemonize --fpm-config %h/Github-Actions-SelfHost/deploy/php-fpm.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

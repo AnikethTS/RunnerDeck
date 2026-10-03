@@ -1,0 +1,60 @@
+# nginx + php-fpm for RunnerDeck. TLS here; PHP on 127.0.0.1:9000.
+# Enable TOTP first. Pool: deploy/php-fpm.conf (operator user, not www-data).
+#
+# Replace root, server_name, and certificate paths, then:
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Same-machine: X-Forwarded-Proto is trusted (REMOTE_ADDR is loopback).
+# Set RUNNERDECK_TRUST_PROXY=1 if nginx is not on 127.0.0.1/::1.
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name runnerdeck.example.com;
+
+    # ssl_certificate     /etc/letsencrypt/live/runnerdeck.example.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/runnerdeck.example.com/privkey.pem;
+
+    root /home/YOU/Github-Actions-SelfHost/public;
+    index index.php;
+
+    location = /health.php {
+        access_log off;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
+        fastcgi_param HTTPS on;
+        fastcgi_pass 127.0.0.1:9000;
+    }
+
+    location = /log_stream.php {
+        gzip off;
+        fastcgi_buffering off;
+        fastcgi_read_timeout 2100s;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
+        fastcgi_param HTTPS on;
+        fastcgi_pass 127.0.0.1:9000;
+    }
+
+    location ~ \.php$ {
+        fastcgi_read_timeout 120s;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_X_FORWARDED_PROTO $scheme;
+        fastcgi_param HTTPS on;
+        fastcgi_pass 127.0.0.1:9000;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name runnerdeck.example.com;
+    return 301 https://$host$request_uri;
+}
