@@ -28,6 +28,7 @@ any more than it needs `vendor/`:
 npm install       # pulls in eslint, stylelint, Playwright (dev-only)
 npm run lint:js   # eslint on public/assets/app.js and public/assets/js/
 npm run lint:css  # stylelint on public/assets/style.css
+npm run audit     # npm audit (see scripts/npm-audit.mjs)
 npm run e2e       # Playwright — see e2e/dashboard.spec.js
 ```
 

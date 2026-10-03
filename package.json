@@ -6,6 +6,7 @@
   "scripts": {
     "lint:js": "eslint public/assets/app.js public/assets/js",
     "lint:css": "stylelint public/assets/style.css",
+    "audit": "node scripts/npm-audit.mjs",
     "e2e": "playwright test"
   },
   "devDependencies": {

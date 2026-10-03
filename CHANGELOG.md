@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- CI `npm audit` no longer fails solely on [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+  (`braces` through 3.0.3, no patched npm release). `npm audit fix --force`
+  would install stylelint 7.7.0. Drop the allowlist in
+  `scripts/npm-audit.mjs` once a fixed `braces` can be pinned.
+
 ### Added
 
 - **TLS reverse proxy** examples for Caddy and nginx (`deploy/`,
