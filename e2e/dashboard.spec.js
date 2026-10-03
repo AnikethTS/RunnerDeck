@@ -97,6 +97,18 @@ test('the filter box narrows the table to matching runners', async ({ page }) =>
   await expect(page.locator('tr[data-runner="runner-1"]')).toBeVisible();
 });
 
+test('the filter box matches GitHub labels', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'runner-base', agent_name: 'ci-worker', github: { status: 'online', busy: false, labels: ['self-hosted-runnerdeck'] } }),
+    fixtureRunner({ id: 'runner-1', agent_name: 'deploy-box', github: { status: 'online', busy: false, labels: ['gpu'] } }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#runner-filter').fill('gpu');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(1);
+  await expect(page.locator('tr[data-runner="runner-1"]')).toBeVisible();
+});
+
 test('the state filter narrows idle, busy, crashed, and mismatch rows', async ({ page }) => {
   await mockStatus(page, [
     fixtureRunner({
@@ -509,6 +521,7 @@ test('dashboard shows recent errors from the status snapshot', async ({ page }) 
   await page.locator('#app-log').evaluate((el) => { el.open = true; });
 
   await expect(page.locator('#app-log summary')).toContainText('Recent log');
+  await expect(page.locator('#app-log-download')).toHaveAttribute('href', 'download_applog.php');
   await expect(page.locator('#app-log-count')).toContainText('(1)');
   await expect(page.locator('#app-log-body')).toContainText('failed to start <runner-1>');
   await expect(page.locator('#app-log-body')).toContainText('process.start');

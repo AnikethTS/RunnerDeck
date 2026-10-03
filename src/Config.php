@@ -84,6 +84,52 @@ final class Config
         return getenv('RUNNERDECK_LABEL') ?: 'self-hosted-runnerdeck';
     }
 
+    /**
+     * Extra GitHub runner labels from RUNNERDECK_EXTRA_LABELS. Applied on
+     * add/rename (config.sh). Invalid env is ignored so a typo cannot
+     * block the shared label.
+     *
+     * @return list<string>
+     */
+    public static function extraLabels(): array
+    {
+        return self::parseLabels((string) (getenv('RUNNERDECK_EXTRA_LABELS') ?: '')) ?? [];
+    }
+
+    /** Comma-separated labels passed to config.sh --labels. */
+    public static function provisionLabels(): string
+    {
+        $labels = array_values(array_unique(array_merge([self::label()], self::extraLabels())));
+        return implode(',', $labels);
+    }
+
+    /**
+     * @return list<string>|null null when the raw value is invalid
+     */
+    public static function parseLabels(string $raw): ?array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+        $parts = [];
+        foreach (explode(',', $raw) as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            if (strlen($part) > 50 || preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $part) !== 1) {
+                return null;
+            }
+            $parts[] = $part;
+        }
+        $parts = array_values(array_unique($parts));
+        if (count($parts) > 12) {
+            return null;
+        }
+        return $parts;
+    }
+
     public static function checkUpdatesEnabled(): bool
     {
         return getenv('RUNNERDECK_CHECK_UPDATES') === '1';

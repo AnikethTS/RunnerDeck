@@ -78,7 +78,7 @@ final class Provisioner
             '--url', $registrationUrl,
             '--token', $token,
             '--name', $name,
-            '--labels', Config::label(),
+            '--labels', Config::provisionLabels(),
             '--work', '_work',
             '--unattended',
             '--replace',

@@ -496,6 +496,13 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#app-log-download {
+  font-weight: 500;
 }
 .app-log-list {
   list-style: none;

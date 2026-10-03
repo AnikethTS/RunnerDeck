@@ -320,8 +320,10 @@ final class DashboardView
         }
         $open = $hasError ? ' open' : '';
         return '      <details id="app-log" class="app-log"' . $open . ">\n"
-            . '        <summary>Recent log<span id="app-log-count" class="muted">'
-            . self::e($countText) . "</span></summary>\n"
+            . '        <summary><span>Recent log<span id="app-log-count" class="muted">'
+            . self::e($countText) . '</span></span>'
+            . '<a id="app-log-download" class="btn btn-sm" href="download_applog.php"'
+            . ' download="runnerdeck.log">Download</a></summary>' . "\n"
             . '        <div id="app-log-body">' . self::errorsBody($normalized) . "</div>\n"
             . "      </details>\n";
     }

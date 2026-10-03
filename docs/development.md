@@ -80,7 +80,9 @@ runnerdeck/
     api.php         JSON API front controller (`action=` handlers in src/Api/)
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
-    settings.php    scope/org/repo/label, auto-restart, crash webhook, login setup
+    settings.php    scope/org/repo/label/extra labels, auto-restart, crash webhook, login setup
+    download_log.php      runner.log (+ rotated) download
+    download_applog.php   storage/runnerdeck.log download
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version)
     assets/         app.js (dashboard), js/theme.js, style.css, optional logo.png

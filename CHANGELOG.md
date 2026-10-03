@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on
+  add and rename (comma-separated, next to the shared pool label).
+- The runner filter matches GitHub labels as well as name and agent version.
+- **Download** on the dashboard Recent log panel saves `runnerdeck.log`
+  (and `runnerdeck.log.1` after rotation).
+
 ## [1.5.0] - 2026-10-06
 
 ### Security
