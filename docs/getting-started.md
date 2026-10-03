@@ -56,9 +56,12 @@ a setup script too.
 1. **Run it** — no `.env` required to get started:
 
    ```bash
-   ./run.sh          # binds 127.0.0.1:8090
+   ./run.sh          # binds 127.0.0.1:8090 (php -S, one operator)
    ./run.sh 9000     # or pick your own port
    ```
+
+   That built-in server has four workers; a live log holds one of them.
+   A TLS hostname should use php-fpm instead — [Hosting](hosting.md).
 
    On Windows, run this from PowerShell instead (see [Platform
    support](#platform-support) above):
@@ -74,7 +77,7 @@ a setup script too.
    save — no restart needed. Change it later anytime from the **Settings**
    button in the header. This is saved to a small local, gitignored file
    (`storage/settings.json`), not `.env`. Putting this on a public hostname
-   needs TOTP plus a TLS reverse proxy — see [Hosting](hosting.md).
+   needs TOTP plus TLS (php-fpm preferred) — see [Hosting](hosting.md).
 
 3. Click **Start All** (or set a **Pool size** and **Apply**). Everything —
    downloading the runner binaries, registering with GitHub, and launching

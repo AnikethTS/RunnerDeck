@@ -14,7 +14,8 @@ in `docker-compose.yml` and comment out `build:`.
 
 This builds from the included `Dockerfile` (PHP 8.5 on Alpine, with `gh`
 installed and checksum-verified) and starts the container per
-`docker-compose.yml`:
+`docker-compose.yml`. The image runs `./run.sh` (`php -S`, four workers)
+inside the container — same one-operator limits as a local install.
 
 - **`./data`** is mounted to `/data` inside the container and holds
   everything RunnerDeck would otherwise put in `<repo>/../runners` and

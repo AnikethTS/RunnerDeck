@@ -114,7 +114,9 @@
   not a second load on the same machine that is running the jobs.
   An optional TOTP **idle timeout** (Settings → Login) therefore treats a
   hidden tab as idle. Auto-restart without a visible tab is the `watch-auto-restart.php`
-  process from `run.sh`, not the dashboard poll.
+  process from `run.sh`, not the dashboard poll. `./run.sh` is `php -S`
+  (a handful of workers; a live log holds one). php-fpm is documented in
+  [Hosting](hosting.md).
 - **Recent log** on the dashboard is `storage/runnerdeck.log` (start/stop/
   delete/rename plus provision/`gh` failures, secrets redacted). The panel
   auto-opens only when there is an error-level line. The file is still

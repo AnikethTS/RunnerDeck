@@ -1,0 +1,24 @@
+# Caddy + php-fpm for RunnerDeck (https://caddyserver.com/).
+# TLS is automatic for a public hostname. PHP listens on 127.0.0.1:9000.
+#
+#   1. Enable TOTP (Settings → Login or php bin/setup-totp.php)
+#   2. php-fpm --nodaemonize --fpm-config deploy/php-fpm.conf
+#      (or systemctl --user enable --now runnerdeck-php-fpm runnerdeck-watch)
+#   3. Edit root below, then: caddy run --config deploy/Caddyfile.php-fpm
+#
+# Same-machine proxies do not need RUNNERDECK_TRUST_PROXY.
+# Set RUNNERDECK_TRUST_PROXY=1 if Caddy is not on 127.0.0.1/::1.
+
+runnerdeck.example.com {
+	root * /home/YOU/Github-Actions-SelfHost/public
+
+	@notSse not path /log_stream.php*
+	encode @notSse gzip
+
+	php_fastcgi 127.0.0.1:9000 {
+		dial_timeout 5s
+		read_timeout 35m
+	}
+
+	file_server
+}

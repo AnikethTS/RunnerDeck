@@ -1,6 +1,5 @@
-<!-- Optional: process supervision for RunnerDeck itself (macOS launchd
-     user agent). Not required — `./run.sh` works fine run by hand — this is
-     only useful if you want it to survive a logout/reboot.
+<!-- Optional: process supervision for ./run.sh (php -S, macOS launchd
+     user agent). Not required. TLS hostname: php-fpm, see docs/hosting.md.
 
      Install:
        cp deploy/com.runnerdeck.plist ~/Library/LaunchAgents/

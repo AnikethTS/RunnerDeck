@@ -23,6 +23,9 @@ if (!RunnerPool::isKnownId($id)) {
     exit;
 }
 
+// Holds this PHP worker until the client drops or 30 minutes elapse.
+// php -S has a handful of workers; php-fpm must allow ~2100s
+// (see deploy/php-fpm.conf). Proxies need a matching read timeout.
 header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('X-Accel-Buffering: no');

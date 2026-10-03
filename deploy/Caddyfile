@@ -1,5 +1,6 @@
-# Reverse-proxy example for Caddy (https://caddyserver.com/).
-# TLS is automatic for a public hostname. RunnerDeck stays HTTP on loopback.
+# Reverse-proxy in front of ./run.sh (php -S on 127.0.0.1:8090).
+# php -S is a four-worker dev server; a live log holds one worker.
+# For php-fpm (recommended on a TLS hostname) see deploy/Caddyfile.php-fpm.
 #
 #   1. Enable TOTP (Settings → Login or php bin/setup-totp.php)
 #   2. ./run.sh 8090   # still 127.0.0.1

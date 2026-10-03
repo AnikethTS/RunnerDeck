@@ -301,9 +301,12 @@ These aren't under `api.php` — they're their own front controllers.
 
 Server-Sent Events. No auth beyond a valid `runner` id — this is a
 long-lived `text/event-stream` connection (the UI's live log viewer uses
-it directly via `EventSource`), not something most scripts need over the
-plain `action=log` tail. If TOTP login is enabled, an unauthenticated
-request gets a plain `401 unauthorized` body instead of a stream.
+it directly via `EventSource`) and it occupies one PHP worker for up to
+30 minutes. php -S has four workers; php-fpm must not kill the request
+at the default 30s `max_execution_time` (see `deploy/php-fpm.conf`).
+Not something most scripts need over the plain `action=log` tail. If TOTP
+login is enabled, an unauthenticated request gets a plain `401 unauthorized`
+body instead of a stream.
 
 ### `GET /download_log.php?runner=<id>&from=<epoch>&to=<epoch>`
 

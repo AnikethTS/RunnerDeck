@@ -21,22 +21,22 @@ supported, but it's opt-in and has two parts, both required together:
    (`RUNNERDECK_SESSION_IDLE_MINUTES`, 1–1440) ends the session after that
    many minutes with no requests. Hidden dashboard tabs do not poll, so
    they count as idle. Blank keeps the cookie until the browser closes.
-2. **Put a TLS-terminating reverse proxy in front** (Caddy, nginx, Traefik,
-   Tailscale, etc.) — RunnerDeck itself stays plain HTTP. Copy
-   [deploy/Caddyfile](../deploy/Caddyfile) or
-   [deploy/nginx.conf.example](../deploy/nginx.conf.example). Full steps:
-   **[Hosting](hosting.md)**. Without TLS, the login code and session cookie
-   both travel the network in the clear, which defeats the point of requiring
-   a login at all.
+2. **Terminate TLS in front** (Caddy, nginx, Traefik, Tailscale, etc.) —
+   RunnerDeck itself stays plain HTTP. Prefer **php-fpm** on loopback
+   ([deploy/Caddyfile.php-fpm](../deploy/Caddyfile.php-fpm),
+   [deploy/nginx-php-fpm.conf.example](../deploy/nginx-php-fpm.conf.example)).
+   Proxying `./run.sh` (`php -S`) is the same TLS story with a four-worker
+   cap. Full steps: **[Hosting](hosting.md)**. Without TLS, the login code
+   and session cookie both travel the network in the clear, which defeats
+   the point of requiring a login at all.
 
-`run.sh` still binds `127.0.0.1` even for this setup — the reverse proxy
-runs on the *same machine* and forwards `proxy:443 → 127.0.0.1:8090`, so
-there's no bind-address change needed (unlike the [Docker](docker.md)
-image, which genuinely needs to listen on `0.0.0.0` inside its own
-container). Same-machine proxies can send `X-Forwarded-Proto` and the
-session cookie will be `Secure`. If the proxy is not on loopback, set
-`RUNNERDECK_TRUST_PROXY=1` (see [Hosting](hosting.md)). HTTPS responses
-also send `Strict-Transport-Security`.
+`./run.sh` is PHP’s built-in server on `127.0.0.1` — four workers, a live
+log occupying one of them, no php-fpm isolation. Fine for one operator.
+A same-machine proxy can still forward `443 → 127.0.0.1:8090`, or FastCGI
+to `127.0.0.1:9000`. Same-machine proxies can send `X-Forwarded-Proto`
+and the session cookie will be `Secure`. If the proxy is not on loopback,
+set `RUNNERDECK_TRUST_PROXY=1` (see [Hosting](hosting.md)). HTTPS
+responses also send `Strict-Transport-Security`.
 
 Login is still single-user — there's no concept of separate accounts or
 permissions. If you need that, this feature isn't it.

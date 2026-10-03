@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Binds to 127.0.0.1 only by default — see docs/hosting.md for Caddy/nginx.
-# RUNNERDECK_BIND_HOST overrides that (Dockerfile uses 0.0.0.0 inside the container).
+# Local / one-operator entry: PHP's built-in server (php -S). Four workers;
+# a live log (SSE) occupies one of them for ~30 minutes. No php-fpm isolation.
+# TLS hostname: docs/hosting.md (php-fpm + Caddy/nginx).
+# Binds 127.0.0.1 by default. RUNNERDECK_BIND_HOST overrides that
+# (Dockerfile uses 0.0.0.0 inside the container).
 set -euo pipefail
 
 PORT="${1:-8090}"
@@ -15,7 +18,7 @@ if ! command -v php >/dev/null 2>&1; then
     exit 1
 fi
 
-export PHP_CLI_SERVER_WORKERS=4
+export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
 
 WATCH_PID=""
 cleanup() {

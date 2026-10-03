@@ -1,5 +1,8 @@
-# Reverse-proxy example for nginx. TLS is terminated here; RunnerDeck stays
-# HTTP on 127.0.0.1:8090 (./run.sh). Enable TOTP first.
+# Reverse-proxy in front of ./run.sh (php -S on 127.0.0.1:8090).
+# php -S is a four-worker dev server; a live log holds one worker.
+# For php-fpm (recommended on a TLS hostname) see deploy/nginx-php-fpm.conf.example.
+#
+# TLS is terminated here; RunnerDeck stays HTTP. Enable TOTP first.
 #
 # Same-machine proxy: X-Forwarded-Proto is trusted because REMOTE_ADDR is
 # loopback. Set RUNNERDECK_TRUST_PROXY=1 if nginx is not on 127.0.0.1/::1.

@@ -1,0 +1,16 @@
+# Auto-restart loop only. Use this when HTTP is php-fpm (not ./run.sh).
+# ./run.sh already starts bin/watch-auto-restart.php beside php -S.
+
+[Unit]
+Description=RunnerDeck auto-restart watch
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Github-Actions-SelfHost
+ExecStart=/usr/bin/php %h/Github-Actions-SelfHost/bin/watch-auto-restart.php
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
