@@ -82,6 +82,7 @@ Curious exactly how any of that works under the hood? See
   support, first-time setup, Add to Home Screen
 - [How it works](docs/how-it-works.md) — the full behavior reference
 - [Docker](docs/docker.md) — running RunnerDeck in a container (or Podman)
+- [Hosting](docs/hosting.md) — Caddy/nginx TLS reverse proxy, health check
 - [Configuration](docs/configuration.md) — every environment variable
 - [Security & safety](docs/security-and-safety.md) — hosting remotely,
   what this trusts, what it doesn't

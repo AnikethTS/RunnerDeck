@@ -1,0 +1,45 @@
+# Reverse-proxy example for nginx. TLS is terminated here; RunnerDeck stays
+# HTTP on 127.0.0.1:8090 (./run.sh). Enable TOTP first.
+#
+# Same-machine proxy: X-Forwarded-Proto is trusted because REMOTE_ADDR is
+# loopback. Set RUNNERDECK_TRUST_PROXY=1 if nginx is not on 127.0.0.1/::1.
+#
+# Copy, replace server_name / certificate paths, then:
+#   sudo nginx -t && sudo systemctl reload nginx
+
+upstream runnerdeck {
+    server 127.0.0.1:8090;
+    keepalive 8;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name runnerdeck.example.com;
+
+    # ssl_certificate     /etc/letsencrypt/live/runnerdeck.example.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/runnerdeck.example.com/privkey.pem;
+
+    location = /health.php {
+        proxy_pass http://runnerdeck;
+        access_log off;
+    }
+
+    location / {
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 2100s;
+        proxy_buffering off;
+        proxy_pass http://runnerdeck;
+    }
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name runnerdeck.example.com;
+    return 301 https://$host$request_uri;
+}

@@ -8,6 +8,12 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **TLS reverse proxy** examples for Caddy and nginx (`deploy/`,
+  [docs/hosting.md](docs/hosting.md)). `GET /health.php` is a probe that
+  skips TOTP. `X-Forwarded-Proto` is trusted from loopback; set
+  `RUNNERDECK_TRUST_PROXY=1` when the proxy is not on loopback. HTTPS
+  responses send HSTS.
+
 - Drain timeout is a Settings field (`RUNNERDECK_DRAIN_TIMEOUT`, 1–3600
   seconds, default 600) so a short drain wait is not a `.env` edit.
 - A **Pool disk** stat card sums per-slot `_work` / logs. An optional

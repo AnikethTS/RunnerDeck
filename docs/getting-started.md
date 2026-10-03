@@ -73,7 +73,8 @@ a setup script too.
    repo scope (needs a repo you own), fill in the org or `owner/repo`, and
    save — no restart needed. Change it later anytime from the **Settings**
    button in the header. This is saved to a small local, gitignored file
-   (`storage/settings.json`), not `.env`.
+   (`storage/settings.json`), not `.env`. Putting this on a public hostname
+   needs TOTP plus a TLS reverse proxy — see [Hosting](hosting.md).
 
 3. Click **Start All** (or set a **Pool size** and **Apply**). Everything —
    downloading the runner binaries, registering with GitHub, and launching

@@ -166,6 +166,16 @@ final class Config
         return min(1440, (int) $raw);
     }
 
+    /**
+     * Honor X-Forwarded-Proto from a reverse proxy that is not on loopback
+     * (Caddy/nginx on another host, Docker published ports, Cloudflare).
+     * Loopback REMOTE_ADDR already trusts that header without this flag.
+     */
+    public static function trustProxy(): bool
+    {
+        return getenv('RUNNERDECK_TRUST_PROXY') === '1';
+    }
+
     public static function version(): string
     {
         static $version = null;

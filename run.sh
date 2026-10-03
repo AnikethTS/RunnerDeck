@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Binds to 127.0.0.1 only — never expose this beyond localhost.
-# RUNNERDECK_BIND_HOST overrides that; only Dockerfile sets it, to 0.0.0.0.
+# Binds to 127.0.0.1 only by default — see docs/hosting.md for Caddy/nginx.
+# RUNNERDECK_BIND_HOST overrides that (Dockerfile uses 0.0.0.0 inside the container).
 set -euo pipefail
 
 PORT="${1:-8090}"
@@ -28,10 +28,11 @@ trap cleanup EXIT INT TERM
 php "$DIR/bin/watch-auto-restart.php" &
 WATCH_PID=$!
 
-if [ "$HOST" = "127.0.0.1" ]; then
+if [ "$HOST" = "127.0.0.1" ] || [ "$HOST" = "::1" ]; then
     echo "RunnerDeck on http://${HOST}:${PORT} (localhost only)"
 else
     echo "RunnerDeck on http://${HOST}:${PORT}"
+    echo "Warning: this bind is not loopback. Enable TOTP and put TLS in front (docs/hosting.md)." >&2
 fi
 php -r '
     $dir = $argv[1];

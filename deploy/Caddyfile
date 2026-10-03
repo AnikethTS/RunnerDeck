@@ -1,0 +1,23 @@
+# Reverse-proxy example for Caddy (https://caddyserver.com/).
+# TLS is automatic for a public hostname. RunnerDeck stays HTTP on loopback.
+#
+#   1. Enable TOTP (Settings → Login or php bin/setup-totp.php)
+#   2. ./run.sh 8090   # still 127.0.0.1
+#   3. caddy run --config deploy/Caddyfile
+#
+# Replace the site address. Same-machine proxies do not need
+# RUNNERDECK_TRUST_PROXY (loopback REMOTE_ADDR is enough). Set
+# RUNNERDECK_TRUST_PROXY=1 if Caddy is not on 127.0.0.1/::1 (Docker, another
+# host, Cloudflare in front).
+
+runnerdeck.example.com {
+	encode gzip
+
+	reverse_proxy 127.0.0.1:8090 {
+		# Live log is Server-Sent Events (~30 minutes).
+		flush_interval -1
+		transport http {
+			read_timeout 35m
+		}
+	}
+}

@@ -2,7 +2,8 @@
 
 RunnerDeck's UI is just a client of its own API — `public/api.php`, plus two
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`)
-for streaming and downloading logs. Everything here is `127.0.0.1`-only by
+for streaming and downloading logs, and `public/health.php` for load-balancer
+probes (no TOTP). Everything here is `127.0.0.1`-only by
 default (see [Safety notes](docs/security-and-safety.md#safety-notes)); by default there's no
 API key or user account, so "who can call this" is exactly "who can reach
 this port" — unless you've enabled the optional TOTP login (see

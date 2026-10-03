@@ -37,12 +37,16 @@ final class SecurityHeaders
             "form-action 'self'",
             "frame-ancestors 'none'",
         ]);
-        return [
+        $lines = [
             'X-Frame-Options: DENY',
             'X-Content-Type-Options: nosniff',
             'Referrer-Policy: no-referrer',
             'Content-Security-Policy: ' . $csp,
         ];
+        if (Session::requestIsHttps()) {
+            $lines[] = 'Strict-Transport-Security: max-age=15552000; includeSubDomains';
+        }
+        return $lines;
     }
 
     public static function send(): void
