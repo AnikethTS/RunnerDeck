@@ -41,5 +41,11 @@ if (!Totp::verify($secret, $code)) {
 }
 
 Auth::saveTotpSecret($secret);
+$codes = Auth::issueRecoveryCodes();
 
 echo "\n" . paint('32', '[ OK ]', $color) . " Saved. RunnerDeck will now ask for a code at login.\n";
+echo "Store these recovery codes offline. Each works once if you lose the app:\n\n";
+foreach ($codes as $item) {
+    echo '  ' . $item . "\n";
+}
+echo "\n";

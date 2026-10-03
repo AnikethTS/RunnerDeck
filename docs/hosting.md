@@ -96,17 +96,16 @@ PHP on loopback so random clients never reach it.
 
 ## Health check
 
-`GET /health.php` returns `{"ok":true,"version":"..."}` without TOTP and
-without calling GitHub. Use it for a local uptime probe. It does not mean
-the runner pool is healthy, and it does not make RunnerDeck a clustered
-app.
+`GET /health.php` returns `{"ok":true}` without TOTP and without the
+version string. Use it for a local uptime probe, not as a fingerprint
+of which release you run.
 
 ## Docker
 
-The image still uses `./run.sh` (`php -S` inside the container). For a
-public hostname, put Caddy/nginx on the host (or a sibling container) and
-keep the host publish as loopback, or set `RUNNERDECK_TRUST_PROXY=1` and
-TOTP if the published port is only reachable through that TLS proxy.
-Do not map `0.0.0.0:8090:8090` without login and TLS.
+The image still uses `./run.sh` (`php -S` inside the container) and
+requires TOTP because it binds `0.0.0.0`. For a public hostname, put
+Caddy/nginx on the host and keep the host publish as loopback, or set
+`RUNNERDECK_TRUST_PROXY=1` if the published port is only reachable
+through that TLS proxy.
 
 See [Security & safety](security-and-safety.md) and [Docker](docker.md).

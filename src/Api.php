@@ -17,6 +17,7 @@ use RunnerDeck\Api\DrainStopAction;
 use RunnerDeck\Api\DrainStopAllAction;
 use RunnerDeck\Api\HistoryAction;
 use RunnerDeck\Api\LogAction;
+use RunnerDeck\Api\LoginAction;
 use RunnerDeck\Api\LogoutAction;
 use RunnerDeck\Api\RenameAction;
 use RunnerDeck\Api\ResizeAction;
@@ -79,9 +80,11 @@ final class Api
             CsrfTokenAction::handle();
         }
 
-        if (Auth::isEnabled() && !Auth::isLoggedIn()) {
-            self::respond(['ok' => false, 'message' => 'authentication required'], 401);
+        if ($action === 'login' && $method === 'POST') {
+            LoginAction::handle();
         }
+
+        Auth::rejectApiIfProtected();
 
         if ($method === 'GET') {
             $class = self::GET_ACTIONS[$action] ?? null;

@@ -8,12 +8,7 @@ use RunnerDeck\Auth;
 use RunnerDeck\RunnerLog;
 use RunnerDeck\RunnerPool;
 
-if (Auth::isEnabled() && !Auth::isLoggedIn()) {
-    http_response_code(401);
-    header('Content-Type: text/plain');
-    echo 'unauthorized';
-    exit;
-}
+Auth::rejectPlainIfProtected();
 
 $id = $_GET['runner'] ?? '';
 if (!RunnerPool::isKnownId($id)) {

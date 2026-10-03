@@ -14,6 +14,6 @@ final class TotpConfirmAction
         if (!Auth::confirmTotpSetup((string) ($_POST['code'] ?? ''))) {
             JsonApi::respond(['ok' => false, 'message' => 'Invalid code'], 422);
         }
-        JsonApi::respond(['ok' => true]);
+        JsonApi::respond(['ok' => true, 'recovery_codes' => Auth::takeIssuedRecoveryCodes()]);
     }
 }

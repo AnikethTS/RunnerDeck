@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Non-loopback binds and non-loopback requests require TOTP in code
+  (`run.sh` exits; PHP returns 403 except `/health.php`). Recovery codes
+  and **Sign out other sessions** cover a lost authenticator and a stolen
+  cookie. `/health.php` no longer includes the version string.
+
 ### Fixed
 
 - CI `npm audit` no longer fails solely on [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
@@ -21,7 +28,7 @@ follows [SemVer](https://semver.org/).
 
 - **TLS reverse proxy** examples for Caddy and nginx (`deploy/`,
   [docs/hosting.md](docs/hosting.md)). `GET /health.php` is a probe that
-  skips TOTP. `X-Forwarded-Proto` is trusted from loopback; set
+  skips TOTP and does not include the version. `X-Forwarded-Proto` is trusted from loopback; set
   `RUNNERDECK_TRUST_PROXY=1` when the proxy is not on loopback. HTTPS
   responses send HSTS.
 

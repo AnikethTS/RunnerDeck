@@ -72,4 +72,15 @@ final class SessionTest extends TestCase
 
         $this->assertFalse(\RunnerDeck\Session::requestIsHttps());
     }
+
+    #[RunInSeparateProcess]
+    public function testRemoteIsLoopback(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $this->assertTrue(\RunnerDeck\Session::remoteIsLoopback());
+        $_SERVER['REMOTE_ADDR'] = '::1';
+        $this->assertTrue(\RunnerDeck\Session::remoteIsLoopback());
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $this->assertFalse(\RunnerDeck\Session::remoteIsLoopback());
+    }
 }
