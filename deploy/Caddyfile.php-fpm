@@ -6,8 +6,9 @@
 #      (or systemctl --user enable --now runnerdeck-php-fpm runnerdeck-watch)
 #   3. Edit root below, then: caddy run --config deploy/Caddyfile.php-fpm
 #
+# TOTP on a public 443 is not enough. Prefer Tailscale, or use
+# deploy/Caddyfile.restricted (IP allowlist and/or mTLS).
 # Same-machine proxies do not need RUNNERDECK_TRUST_PROXY.
-# Set RUNNERDECK_TRUST_PROXY=1 if Caddy is not on 127.0.0.1/::1.
 
 runnerdeck.example.com {
 	root * /home/YOU/Github-Actions-SelfHost/public

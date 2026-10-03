@@ -1,12 +1,10 @@
-# nginx + php-fpm for RunnerDeck. TLS here; PHP on 127.0.0.1:9000.
-# Enable TOTP first. Pool: deploy/php-fpm.conf (operator user, not www-data).
+# Internet-facing nginx + php-fpm. TOTP on 443 is not enough: anyone who
+# can reach login can try codes, and a VPS root shell still has `gh` plus
+# the runner pool. Pick at least one of: Tailscale (no public 443), IP
+# allowlist, client certificates (mTLS). See docs/hosting.md.
 #
-# Replace root, server_name, and certificate paths, then:
+# Replace root, server_name, allowlist, and certificate paths, then:
 #   sudo nginx -t && sudo systemctl reload nginx
-#
-# TOTP on a public 443 is not enough. Prefer Tailscale, or use
-# deploy/nginx-restricted.conf.example (IP allowlist and/or mTLS).
-# Same-machine: X-Forwarded-Proto is trusted (REMOTE_ADDR is loopback).
 
 server {
     listen 443 ssl;
@@ -15,6 +13,15 @@ server {
 
     # ssl_certificate     /etc/letsencrypt/live/runnerdeck.example.com/fullchain.pem;
     # ssl_certificate_key /etc/letsencrypt/live/runnerdeck.example.com/privkey.pem;
+
+    # --- IP allowlist (uncomment and replace) ---
+    # allow 203.0.113.10;
+    # allow 2001:db8::/32;
+    # deny all;
+
+    # --- mTLS: require a client cert you issued (uncomment) ---
+    # ssl_client_certificate /etc/nginx/runnerdeck-clients.pem;
+    # ssl_verify_client on;
 
     root /home/YOU/Github-Actions-SelfHost/public;
     index index.php;

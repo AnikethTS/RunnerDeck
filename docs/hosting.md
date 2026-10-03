@@ -14,6 +14,12 @@ substitute for `gh` + runner binaries on that same host.
 3. **Do not publish PHP on the internet.** Keep php-fpm on
    `127.0.0.1:9000` or `./run.sh` on `127.0.0.1:8090`. Docker’s compose
    file similarly maps `127.0.0.1:8090:8090` unless you change it.
+4. **Do not leave TOTP as the only gate on 443.** The UI drives `gh` and
+   the runner pool on this host. A public login page is a guessable
+   door; a VPS compromise is an org/repo compromise. Prefer no public
+   443 (Tailscale, WireGuard, SSH tunnel). If 443 must be public, add
+   an IP allowlist and/or client certificates — see
+   [Beyond TOTP](#beyond-totp-on-443).
 
 Skipping login or TLS while the UI is reachable beyond loopback means
 anyone who can hit the port can start and stop runners.
@@ -54,6 +60,8 @@ Internet --443/TLS--> Caddy or nginx  -->  127.0.0.1:9000  php-fpm
 4. Point Caddy or nginx at `public/` and FastCGI `127.0.0.1:9000`:
    - [deploy/Caddyfile.php-fpm](../deploy/Caddyfile.php-fpm)
    - [deploy/nginx-php-fpm.conf.example](../deploy/nginx-php-fpm.conf.example)
+   - Public 443: [deploy/Caddyfile.restricted](../deploy/Caddyfile.restricted)
+     or [deploy/nginx-restricted.conf.example](../deploy/nginx-restricted.conf.example)
 
 The pool is `ondemand` with 16 children. A live log still occupies one
 worker for up to 30 minutes; `max_execution_time` and
@@ -80,6 +88,38 @@ Examples (same four-worker / SSE limits as local `./run.sh`):
 Live logs use Server-Sent Events for about 30 minutes; those examples
 disable proxy buffering / set a long read timeout so the stream is not
 cut off. `run.sh` does not change bind address for this.
+
+## Beyond TOTP on 443
+
+The dashboard is another way to drive this machine’s `gh` token, runner
+directories, and `_work`. Root on the VPS is GitHub org/repo admin for
+whatever that token can do. TOTP stops strangers who find the hostname;
+it does not replace network policy.
+
+**Best:** do not publish 443. Put the host on a tailnet (Tailscale,
+Headscale, WireGuard) and open the UI only there. SSH remains how you
+recover a lost authenticator.
+
+**If 443 is on the internet**, uncomment an IP allowlist and/or mTLS in:
+
+- [deploy/Caddyfile.restricted](../deploy/Caddyfile.restricted)
+- [deploy/nginx-restricted.conf.example](../deploy/nginx-restricted.conf.example)
+
+Allowlist your home/office/VPN egress, not `0.0.0.0/0`. mTLS means a
+client cert you issue (one operator):
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+  -keyout operator.key -out operator.crt \
+  -subj "/CN=runnerdeck-operator"
+# trust operator.crt in Caddy/nginx (runnerdeck-clients.pem)
+# curl --cert operator.crt --key operator.key https://runnerdeck.example.com/
+```
+
+A CDN/WAF (Cloudflare and similar) can sit in front as well. That is
+an extra hop you configure there; this repo does not ship WAF rules.
+If PHP then sees a non-loopback proxy, set `RUNNERDECK_TRUST_PROXY=1`
+only for that hop.
 
 ## Proxy not on loopback
 

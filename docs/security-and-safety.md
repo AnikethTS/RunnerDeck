@@ -32,7 +32,9 @@ supported, but it's opt-in and has two parts, both required together:
    Proxying `./run.sh` (`php -S`) is the same TLS story with a four-worker
    cap. Full steps: **[Hosting](hosting.md)**. Without TLS, the login code
    and session cookie both travel the network in the clear, which defeats
-   the point of requiring a login at all.
+   the point of requiring a login at all. TOTP on public 443 is still
+   only one factor — add an IP allowlist, mTLS, or skip public 443
+   ([Beyond TOTP](hosting.md#beyond-totp-on-443)).
 
 `./run.sh` is PHP’s built-in server on `127.0.0.1` — four workers, a live
 log occupying one of them, no php-fpm isolation. Fine for one operator.
@@ -48,6 +50,17 @@ session cookie (XSS in another app on this origin, unlocked laptop)
 can still start and stop runners until idle timeout, user-agent
 mismatch, logout, or **Sign out other sessions**. JWT-style API keys
 and a second operator account are out of scope.
+
+## What lives on the host
+
+The UI is not the asset. On this machine sit the `gh` token
+(`~/.config/gh` or the container mount), the runner pool, and each
+slot’s `_work` (job checkout, sometimes workflow secrets on disk).
+Anyone with a shell as the operator — or root on the VPS — can drive
+GitHub as that token and read the same files the dashboard can. Treat a
+compromised host as a compromised org or repo, rotate the token, and
+check runner registrations. Network gates in [Hosting](hosting.md)
+reduce who can reach the login page; they do not sandbox `gh`.
 
 ## Safety notes
 

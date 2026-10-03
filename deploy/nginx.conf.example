@@ -1,6 +1,7 @@
 # Reverse-proxy in front of ./run.sh (php -S on 127.0.0.1:8090).
 # php -S is a four-worker dev server; a live log holds one worker.
 # For php-fpm (recommended on a TLS hostname) see deploy/nginx-php-fpm.conf.example.
+# TOTP on a public 443 is not enough — deploy/nginx-restricted.conf.example.
 #
 # TLS is terminated here; RunnerDeck stays HTTP. Enable TOTP first.
 #

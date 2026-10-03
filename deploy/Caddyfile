@@ -6,10 +6,9 @@
 #   2. ./run.sh 8090   # still 127.0.0.1
 #   3. caddy run --config deploy/Caddyfile
 #
-# Replace the site address. Same-machine proxies do not need
-# RUNNERDECK_TRUST_PROXY (loopback REMOTE_ADDR is enough). Set
-# RUNNERDECK_TRUST_PROXY=1 if Caddy is not on 127.0.0.1/::1 (Docker, another
-# host, Cloudflare in front).
+# TOTP on a public 443 is not enough. Prefer Tailscale, or lock Caddy
+# with an IP allowlist / mTLS like deploy/Caddyfile.restricted.
+# Same-machine proxies do not need RUNNERDECK_TRUST_PROXY.
 
 runnerdeck.example.com {
 	encode gzip
