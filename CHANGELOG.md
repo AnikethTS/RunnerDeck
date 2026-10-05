@@ -8,6 +8,12 @@ follows [SemVer](https://semver.org/).
 
 ### Security
 
+- Document that `gh`, runner dirs, and `_work` live on the host: a VPS
+  compromise is an org/repo compromise. TOTP is not the only gate on
+  443 — Tailscale, or [deploy/Caddyfile.restricted](deploy/Caddyfile.restricted)
+  / [deploy/nginx-restricted.conf.example](deploy/nginx-restricted.conf.example)
+  (IP allowlist and/or mTLS).
+
 - Non-loopback binds and non-loopback requests require TOTP in code
   (`run.sh` exits; PHP returns 403 except `/health.php`). Recovery codes
   and **Sign out other sessions** cover a lost authenticator and a stolen

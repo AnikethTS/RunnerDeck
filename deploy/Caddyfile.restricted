@@ -1,0 +1,38 @@
+# Internet-facing Caddy + php-fpm. TOTP on 443 is not enough: anyone who
+# can reach login can try codes, and a VPS root shell still has `gh` plus
+# the runner pool. Pick at least one of: Tailscale (no public 443), IP
+# allowlist, client certificates (mTLS). See docs/hosting.md.
+#
+# Copy, set the hostname, root, and allowlist/mTLS, then:
+#   caddy run --config deploy/Caddyfile.restricted
+
+runnerdeck.example.com {
+	root * /home/YOU/Github-Actions-SelfHost/public
+
+	# --- IP allowlist (uncomment and replace) ---
+	# @blocked not remote_ip 203.0.113.10 2001:db8::/32
+	# respond @blocked "forbidden" 403
+
+	# --- mTLS: require a client cert you issued (uncomment) ---
+	# tls {
+	# 	client_auth {
+	# 		mode require
+	# 		# Caddy 2.6–2.9:
+	# 		trusted_ca_cert_file /etc/caddy/runnerdeck-clients.pem
+	# 		# Caddy 2.10+: use this instead of trusted_ca_cert_file
+	# 		# trust_pool file {
+	# 		# 	pem_file /etc/caddy/runnerdeck-clients.pem
+	# 		# }
+	# 	}
+	# }
+
+	@notSse not path /log_stream.php*
+	encode @notSse gzip
+
+	php_fastcgi 127.0.0.1:9000 {
+		dial_timeout 5s
+		read_timeout 35m
+	}
+
+	file_server
+}
