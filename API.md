@@ -2,13 +2,12 @@
 
 RunnerDeck's UI is just a client of its own API — `public/api.php`, plus two
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`)
-for streaming and downloading logs, and `public/health.php` for load-balancer
-probes (no TOTP). Everything here is `127.0.0.1`-only by
-default (see [Safety notes](docs/security-and-safety.md#safety-notes)); by default there's no
-API key or user account, so "who can call this" is exactly "who can reach
-this port" — unless you've enabled the optional TOTP login (see
-[Hosting remotely](docs/security-and-safety.md#hosting-remotely)), in which case every action
-below needs an authenticated session first (see **Auth**).
+for streaming and downloading logs, and `public/health.php` for an unauthenticated
+uptime probe (`{"ok":true}`, no version). Everything here is `127.0.0.1`-only by
+default (see [Safety notes](docs/security-and-safety.md#safety-notes)). Off
+loopback, TOTP is required in code — not only as a warning. On loopback with
+login off, "who can call this" is "who can reach this port". With TOTP on,
+every action below needs an authenticated session first (see **Auth**).
 
 ## Stability
 
@@ -47,21 +46,23 @@ The token is session-bound and doesn't expire on its own, but a fresh
 
 ### If TOTP login is enabled
 
-Every action except `action=csrf_token` returns `401` until the session is
-logged in — get a token, log in with it, then reuse the same cookie jar for
-everything else:
+Every action except `action=csrf_token` and `action=login` returns `401`
+until the session is logged in. Off loopback with TOTP not configured,
+actions return `403` instead — set up login with `php bin/setup-totp.php`.
+Get a CSRF token, then `POST action=login`:
 
 ```bash
 curl -sS -c cookies.txt 'http://127.0.0.1:8090/api.php?action=csrf_token'
 # {"ok":true,"token":"<64 hex chars>"}
 
-curl -sS -b cookies.txt -c cookies.txt -X POST 'http://127.0.0.1:8090/login.php' \
-  --data-urlencode "csrf_token=$TOKEN" \
+curl -sS -b cookies.txt -c cookies.txt -X POST 'http://127.0.0.1:8090/api.php?action=login' \
+  -H "X-CSRF-Token: $TOKEN" \
   --data-urlencode "code=$(totp-code-from-your-authenticator-app)"
-# 302 to index.php on success; re-renders the login form (200) with an error on failure
+# {"ok":true}
+
+# Phone gone: --data-urlencode "recovery_code=XXXX-XXXX" instead of code=
 
 curl -sS -b cookies.txt 'http://127.0.0.1:8090/api.php?action=status'
-# now works — the session is authenticated
 ```
 
 Five wrong codes in a row locks login out for 5 minutes, same as the UI
@@ -78,10 +79,11 @@ failure reason, not just 200-vs-not:
 |---|---|
 | `200` | success |
 | `401` | TOTP login is enabled and this session isn't logged in — see **Auth** |
-| `403` | missing/invalid CSRF token, or an opt-in feature (update checks) is disabled |
+| `403` | missing/invalid CSRF token, TOTP required off loopback and not configured, or an opt-in feature (update checks) is disabled |
 | `404` | unknown action, or an unknown runner id |
 | `409` | the target runner(s) are busy (see **Busy checks** below), or the app isn't configured yet |
 | `422` | bad input (missing/malformed required field) |
+| `429` | login lockout after five failures |
 
 ### Busy checks
 
@@ -251,8 +253,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=check_updates'
 ### `action=csrf_token`
 
 See **Auth** above. The one action that stays reachable even when TOTP
-login is enabled — it's how a script bootstraps into `login.php` in the
-first place.
+login is enabled — it's how a script bootstraps `action=login`.
 
 ## POST actions
 
@@ -264,8 +265,9 @@ ids for the `bulk_*` actions).
 |---|---|---|
 | `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
-| `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Reachable without login only while login isn't enabled yet — see [Hosting remotely](docs/security-and-safety.md#hosting-remotely) |
-| `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success, saves it and logs the session in. `422` on a wrong code |
+| `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
+| `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
+| `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success saves it, logs in, and returns one-time `recovery_codes`. `422` on a wrong code |
 | `start` | `runner` | No busy check — starting is never destructive |
 | `stop` | `runner` | Busy-checked |
 | `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
@@ -304,9 +306,9 @@ long-lived `text/event-stream` connection (the UI's live log viewer uses
 it directly via `EventSource`) and it occupies one PHP worker for up to
 30 minutes. php -S has four workers; php-fpm must not kill the request
 at the default 30s `max_execution_time` (see `deploy/php-fpm.conf`).
-Not something most scripts need over the plain `action=log` tail. If TOTP
-login is enabled, an unauthenticated request gets a plain `401 unauthorized`
-body instead of a stream.
+Not something most scripts need over the plain `action=log` tail. Same
+auth as the rest of the UI: loopback without TOTP is open; otherwise
+`401`/`403` instead of a stream.
 
 ### `GET /download_log.php?runner=<id>&from=<epoch>&to=<epoch>`
 
@@ -314,8 +316,7 @@ The full log (`runner.log.1` then `runner.log` when both exist), or a
 slice of it. `from`/`to` are optional Unix epoch seconds; omit both for
 the complete file. See the log viewer's "Download from / to" fields for
 the UI equivalent, and `public/download_log.php` for exactly how
-partial-timestamp lines are handled. Same `401` behavior as
-`log_stream.php` above when TOTP login is enabled and unauthenticated.
+partial-timestamp lines are handled. Same auth as `log_stream.php`.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/download_log.php?runner=runner-base' -o runner-base.log

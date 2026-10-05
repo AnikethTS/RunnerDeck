@@ -9,8 +9,11 @@ use RunnerDeck\Csrf;
 use RunnerDeck\Layout;
 
 if (!Auth::isEnabled()) {
-    header('Location: index.php');
-    exit;
+    if (Auth::anonymousAccessAllowed()) {
+        header('Location: index.php');
+        exit;
+    }
+    Auth::sendSetupRequired();
 }
 if (Auth::isLoggedIn() && $_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Location: index.php');
@@ -19,6 +22,7 @@ if (Auth::isLoggedIn() && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
 $error = null;
 $lockout = Auth::lockoutStatus();
+$usingRecovery = isset($_POST['recovery_code']);
 
 if ($lockout['locked']) {
     $retryAfter = $lockout['retryAfter'] ?? 0;
@@ -28,6 +32,12 @@ if ($lockout['locked']) {
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::verifyRequest()) {
         $error = 'Session expired — reload and try again.';
+    } elseif ($usingRecovery) {
+        if (Auth::attemptRecovery((string) ($_POST['recovery_code'] ?? ''))) {
+            header('Location: index.php');
+            exit;
+        }
+        $error = 'Invalid recovery code.';
     } elseif (Auth::attempt((string) ($_POST['code'] ?? ''))) {
         header('Location: index.php');
         exit;
@@ -63,7 +73,24 @@ Layout::topbarEnd();
           required
         />
         <button type="submit" class="btn btn-good">Log in</button>
-        <?php if ($error !== null) : ?>
+        <?php if ($error !== null && !$usingRecovery) : ?>
+          <p class="setup-error"><?= htmlspecialchars($error) ?></p>
+        <?php endif; ?>
+      </form>
+      <p class="muted">Phone gone? Use a one-time recovery code from setup.</p>
+      <form method="post" class="settings-form">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+        <label for="recovery_code">Recovery code</label>
+        <input
+          type="text"
+          id="recovery_code"
+          name="recovery_code"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+        <button type="submit" class="btn btn-sm">Use recovery code</button>
+        <?php if ($error !== null && $usingRecovery) : ?>
           <p class="setup-error"><?= htmlspecialchars($error) ?></p>
         <?php endif; ?>
       </form>

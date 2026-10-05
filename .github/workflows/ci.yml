@@ -269,8 +269,10 @@ jobs:
           docker run -d --name runnerdeck-ci \
             -p 127.0.0.1:8090:8090 \
             -e RUNNERDECK_ORG=smoke-test-org \
+            -e RUNNERDECK_AUTH_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ \
             -e GITHUB_TOKEN="${GITHUB_TOKEN}" \
             runnerdeck:ci
           trap 'docker rm -f runnerdeck-ci >/dev/null 2>&1 || true' EXIT
-          bash bin/ci-smoke-status.sh
+          RUNNERDECK_SMOKE_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ \
+            bash bin/ci-smoke-status.sh
           docker logs runnerdeck-ci

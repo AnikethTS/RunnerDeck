@@ -82,7 +82,7 @@ runnerdeck/
     login.php       optional TOTP login screen (see Security & safety)
     settings.php    scope/org/repo/label, auto-restart, crash webhook, login setup
     totp_setup.php  optional TOTP enroll / rotate
-    health.php      unauthenticated JSON probe for load balancers
+    health.php      unauthenticated `{"ok":true}` probe (no version)
     assets/         app.js (dashboard), js/theme.js, style.css, optional logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
@@ -91,7 +91,7 @@ runnerdeck/
     AppLog.php             JSON error + operator audit log at storage/runnerdeck.log
     History.php            best-effort CPU/RAM history + SVG chart markup
     Csrf.php              session-bound CSRF token minting/verification
-    Auth.php              optional TOTP login gate, lockout, idle timeout
+    Auth.php              TOTP login, recovery codes, lockout, idle timeout
     Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
     AgentVersion.php      local GitHub Actions runner agent version

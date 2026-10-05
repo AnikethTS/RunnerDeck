@@ -8,19 +8,23 @@ your OS's own network isolation. If you want to reach your instance from
 another device (a VPS, a home server you SSH into from your phone), that's
 supported, but it's opt-in and has two parts, both required together:
 
-1. **Require a login.** Either run `php bin/setup-totp.php`, or open
-   **Settings → Login → Set up login** in the dashboard itself — both do
-   the same thing: generate a TOTP secret, show it for you to add to an
+1. **Require a login.** Off loopback this is enforced: `./run.sh` will
+   not bind `0.0.0.0` without TOTP, and PHP refuses the dashboard/API
+   (except `/health.php`) until you run `php bin/setup-totp.php` on the
+   machine. On loopback you can still open **Settings → Login → Set up
+   login** in the dashboard. Both paths generate a TOTP secret for an
    authenticator app (Google Authenticator, Authy, 1Password, etc.) via
-   manual/text entry, and ask for a code back to confirm before saving
-   anything. Once set, every page and API call redirects to a login screen
-   until you enter a valid 6-digit code. Five wrong codes in a row locks
-   login out for 5 minutes. Re-run either path any time to replace the
-   secret (**Settings → Login → Replace secret**) — the old one stops
-   working immediately. Optional: **Settings → Login → Idle timeout**
-   (`RUNNERDECK_SESSION_IDLE_MINUTES`, 1–1440) ends the session after that
-   many minutes with no requests. Hidden dashboard tabs do not poll, so
-   they count as idle. Blank keeps the cookie until the browser closes.
+   manual/text entry, and ask for a code back to confirm before saving.
+   You also get **one-time recovery codes** (store them offline). Once
+   set, every page and API call needs a valid 6-digit code or a recovery
+   code. Five wrong tries lock login out for 5 minutes. Replace the
+   secret from Settings; the old one and unused recovery codes stop
+   working. Optional idle timeout (`RUNNERDECK_SESSION_IDLE_MINUTES`,
+   1–1440) ends the session after that many minutes with no requests.
+   **Sign out other sessions** on Settings invalidates stolen cookies
+   from other browsers. Hidden dashboard tabs do not poll, so they count
+   as idle. Blank idle keeps the cookie until the browser closes. There
+   is still one operator secret, not a second user.
 2. **Terminate TLS in front** (Caddy, nginx, Traefik, Tailscale, etc.) —
    RunnerDeck itself stays plain HTTP. Prefer **php-fpm** on loopback
    ([deploy/Caddyfile.php-fpm](../deploy/Caddyfile.php-fpm),
@@ -38,8 +42,12 @@ and the session cookie will be `Secure`. If the proxy is not on loopback,
 set `RUNNERDECK_TRUST_PROXY=1` (see [Hosting](hosting.md)). HTTPS
 responses also send `Strict-Transport-Security`.
 
-Login is still single-user — there's no concept of separate accounts or
-permissions. If you need that, this feature isn't it.
+Login is still single-user — one TOTP secret, recovery codes if the
+phone is gone, SSH/`php bin/setup-totp.php` to replace it. A stolen
+session cookie (XSS in another app on this origin, unlocked laptop)
+can still start and stop runners until idle timeout, user-agent
+mismatch, logout, or **Sign out other sessions**. JWT-style API keys
+and a second operator account are out of scope.
 
 ## Safety notes
 
@@ -53,13 +61,13 @@ point of view instead. Don't widen that mapping, same as you wouldn't
 change `run.sh`'s bind address. The backend shells out to `gh` with
 whatever scope your login token has (real admin access to your org's
 runners in org scope, or to that one repo's runners in repo scope), and it
-can start and stop real processes on the machine it runs on. Don't put
-this behind a reverse proxy or expose the port on any network interface
-beyond loopback — **unless** you've enabled login (`php bin/setup-totp.php`)
-**and** that reverse proxy terminates TLS, the two required-together
-preconditions covered in [Hosting remotely](#hosting-remotely) above.
-Skipping either one turns "reachable beyond your machine" into "reachable
-by anyone," which is exactly what this default posture exists to prevent.
+can start and stop real processes on the machine it runs on. Don't put this behind a reverse proxy or expose the port on any network
+interface beyond loopback — **unless** you've enabled login
+(`php bin/setup-totp.php`) **and** that reverse proxy terminates TLS.
+`RUNNERDECK_BIND_HOST=0.0.0.0` without TOTP now exits. Publishing
+Docker as `-p 8090:8090` (all interfaces) still needs TOTP inside the
+container because the image binds `0.0.0.0`. Skipping TLS while login
+is on still sends the session cookie in the clear.
 It also downloads and executes GitHub's official runner package on first
 use of each runner slot — the same binary GitHub's own setup page would
 have you download by hand, checksum-verified before extraction.

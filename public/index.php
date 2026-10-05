@@ -13,10 +13,7 @@ use RunnerDeck\DashboardView;
 use RunnerDeck\Layout;
 use RunnerDeck\SecurityHeaders;
 
-if (Auth::isEnabled() && !Auth::isLoggedIn()) {
-    header('Location: login.php');
-    exit;
-}
+Auth::requirePageAccess();
 
 $needsSetup = !Config::isConfigured();
 $setupError = null;

@@ -5,8 +5,14 @@ Windows, or just a self-contained way to run RunnerDeck without installing
 PHP directly:
 
 ```bash
+docker compose run --rm -it runnerdeck php bin/setup-totp.php
 docker compose up --build
 ```
+
+The image binds `0.0.0.0` inside the container so port mapping works.
+`run.sh` will not start without TOTP on that bind — enroll first (codes
+land in `./data`). Mapping `-p 8090:8090` without TOTP no longer serves
+an open dashboard.
 
 Tagged releases also push `ghcr.io/anikethts/runnerdeck:<tag>` (and
 `:latest`). To run that image instead of building locally, set `image:`
@@ -42,10 +48,9 @@ inside the container — same one-operator limits as a local install.
   mapping) — every other install still binds `127.0.0.1` exactly as
   before. `docker-compose.yml`'s port mapping is pinned to
   `127.0.0.1:8090:8090` on the host side so the container stays
-  loopback-only end to end, matching [Security & safety](security-and-safety.md);
-Do not map `0.0.0.0:8090:8090` unless you specifically intend to expose this
-beyond your own machine — and then only with TOTP plus a TLS proxy
-([Hosting](hosting.md)).
+  loopback-only end to end, matching [Security & safety](security-and-safety.md).
+  Do not map `0.0.0.0:8090:8090` without TLS in front; TOTP is already
+  required to start the process.
 
 **Runner jobs that need Docker of their own** (a workflow with `docker
 build`/`docker run` steps) won't work out of the box: the runner processes

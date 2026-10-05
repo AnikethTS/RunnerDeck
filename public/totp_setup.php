@@ -8,12 +8,10 @@ use RunnerDeck\Auth;
 use RunnerDeck\Csrf;
 use RunnerDeck\Layout;
 
-if (Auth::isEnabled() && !Auth::isLoggedIn()) {
-    header('Location: login.php');
-    exit;
-}
+Auth::requirePageAccess();
 
 $error = null;
+$recoveryCodes = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::verifyRequest()) {
         $error = 'Session expired — reload and try again.';
@@ -21,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         Auth::beginTotpSetup();
     } elseif (isset($_POST['code'])) {
         if (Auth::confirmTotpSetup((string) $_POST['code'])) {
-            header('Location: index.php');
-            exit;
+            $recoveryCodes = Auth::takeIssuedRecoveryCodes();
+        } else {
+            $error = 'Invalid code.';
         }
-        $error = 'Invalid code.';
     }
 }
 
@@ -39,7 +37,19 @@ Layout::topbarEnd();
 
   <main class="setup-main">
     <div class="setup-card">
-      <?php if ($secret === null) : ?>
+      <?php if ($recoveryCodes !== []) : ?>
+        <h2>Save these recovery codes</h2>
+        <p class="muted">
+          Each code works once if you lose the authenticator. Store them
+          offline. They are not shown again.
+        </p>
+        <ul>
+            <?php foreach ($recoveryCodes as $code) : ?>
+              <li><code><?= htmlspecialchars($code) ?></code></li>
+            <?php endforeach; ?>
+        </ul>
+        <p class="muted"><a href="index.php">Back to dashboard</a></p>
+      <?php elseif ($secret === null) : ?>
         <h2><?= Auth::isEnabled() ? 'Replace login secret' : 'Set up login' ?></h2>
         <p class="muted">
             <?= Auth::isEnabled()

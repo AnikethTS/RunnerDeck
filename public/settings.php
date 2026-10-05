@@ -10,15 +10,28 @@ use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\Layout;
 
-if (Auth::isEnabled() && !Auth::isLoggedIn()) {
-    header('Location: login.php');
-    exit;
-}
+Auth::requirePageAccess();
 
 $error = null;
+$notice = null;
+$recoveryCodes = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::verifyRequest()) {
         $error = 'Session expired — reload and try again.';
+    } elseif (isset($_POST['regenerate_recovery'])) {
+        if (!Auth::isEnabled()) {
+            $error = 'Set up login before creating recovery codes.';
+        } else {
+            Auth::issueRecoveryCodes();
+            $recoveryCodes = Auth::takeIssuedRecoveryCodes();
+        }
+    } elseif (isset($_POST['revoke_sessions'])) {
+        if (!Auth::isEnabled()) {
+            $error = 'Login is not enabled.';
+        } else {
+            Auth::revokeOtherSessions();
+            $notice = 'Other sessions are signed out. This one stays open.';
+        }
     } else {
         $result = SaveSettingsAction::save($_POST);
         if ($result['ok']) {
@@ -29,7 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+    && !isset($_POST['regenerate_recovery'])
+    && !isset($_POST['revoke_sessions'])
+) {
     $current = [
         'scope' => (string) ($_POST['scope'] ?? 'org'),
         'org' => (string) ($_POST['org'] ?? ''),
@@ -81,6 +98,20 @@ Layout::topbarEnd();
   <main class="settings-main">
     <h2>Settings</h2>
     <p class="muted"><a href="index.php">&larr; Back to dashboard</a></p>
+    <?php if ($notice !== null) : ?>
+      <p class="muted"><?= htmlspecialchars($notice) ?></p>
+    <?php endif; ?>
+    <?php if ($recoveryCodes !== []) : ?>
+      <section class="settings-section">
+        <h3>New recovery codes</h3>
+        <p class="muted">Store these offline. Each works once. They are not shown again.</p>
+        <ul>
+          <?php foreach ($recoveryCodes as $code) : ?>
+            <li><code><?= htmlspecialchars($code) ?></code></li>
+          <?php endforeach; ?>
+        </ul>
+      </section>
+    <?php endif; ?>
 
     <form method="post" class="settings-form">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
@@ -231,11 +262,30 @@ Layout::topbarEnd();
         <p class="muted">
           <?= Auth::isEnabled()
             ? 'Enabled — an authenticator app code is required to sign in.'
-            : 'Disabled — anyone who can reach this port has full access.' ?>
+            : 'Off on loopback. Requests that are not from 127.0.0.1/::1 are refused until you set up login.' ?>
         </p>
         <a href="totp_setup.php" class="btn btn-sm">
           <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
         </a>
+        <?php if (Auth::isEnabled()) : ?>
+          <p class="muted">
+            <?= Auth::recoveryCodesRemaining() ?> recovery code(s) left.
+            A stolen session cookie can still start and stop runners until
+            it expires — set an idle timeout or sign out other sessions.
+          </p>
+          <form method="post" class="settings-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+            <button type="submit" name="regenerate_recovery" value="1" class="btn btn-sm">
+              Regenerate recovery codes
+            </button>
+          </form>
+          <form method="post" class="settings-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+            <button type="submit" name="revoke_sessions" value="1" class="btn btn-sm">
+              Sign out other sessions
+            </button>
+          </form>
+        <?php endif; ?>
 
         <div class="settings-field">
           <label for="settings-session-idle">Idle timeout (minutes, optional)</label>

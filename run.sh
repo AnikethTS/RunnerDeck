@@ -20,6 +20,16 @@ fi
 
 export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
 
+if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
+    if ! php -r '
+        require $argv[1] . "/src/bootstrap.php";
+        exit(\RunnerDeck\Config::authEnabled() ? 0 : 1);
+    ' -- "$DIR"; then
+        echo "Non-loopback bind requires TOTP login. Run: php bin/setup-totp.php" >&2
+        exit 1
+    fi
+fi
+
 WATCH_PID=""
 cleanup() {
     if [ -n "${WATCH_PID}" ]; then
@@ -35,7 +45,6 @@ if [ "$HOST" = "127.0.0.1" ] || [ "$HOST" = "::1" ]; then
     echo "RunnerDeck on http://${HOST}:${PORT} (localhost only)"
 else
     echo "RunnerDeck on http://${HOST}:${PORT}"
-    echo "Warning: this bind is not loopback. Enable TOTP and put TLS in front (docs/hosting.md)." >&2
 fi
 php -r '
     $dir = $argv[1];

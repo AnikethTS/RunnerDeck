@@ -37,7 +37,7 @@ final class Session
         return Config::trustProxy() || self::remoteIsLoopback();
     }
 
-    private static function remoteIsLoopback(): bool
+    public static function remoteIsLoopback(): bool
     {
         $addr = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
         return $addr === '127.0.0.1' || $addr === '::1' || $addr === '::ffff:127.0.0.1';

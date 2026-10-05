@@ -25,6 +25,8 @@ final class AuthTest extends TestCase
         putenv('RUNNERDECK_AUTH_TOTP_SECRET');
         putenv('RUNNERDECK_SESSION_IDLE_MINUTES');
         @unlink($this->lockoutFile);
+        @unlink($dir . '/auth_recovery.json');
+        @unlink($dir . '/auth_session.json');
         @unlink($dir . '/settings.json');
         @rmdir($dir);
     }
@@ -212,5 +214,61 @@ final class AuthTest extends TestCase
         \RunnerDeck\Auth::attempt(\RunnerDeck\Totp::code($secret));
         $_SESSION['last_activity'] = time() - 86400;
         $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAnonymousAccessAllowedOnlyOnLoopbackWithoutTotp(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $this->assertTrue(\RunnerDeck\Auth::anonymousAccessAllowed());
+
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $this->assertFalse(\RunnerDeck\Auth::anonymousAccessAllowed());
+
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $this->setSecret();
+        $this->assertFalse(\RunnerDeck\Auth::anonymousAccessAllowed());
+    }
+
+    #[RunInSeparateProcess]
+    public function testRecoveryCodeWorksOnce(): void
+    {
+        $secret = \RunnerDeck\Auth::beginTotpSetup();
+        $this->assertTrue(\RunnerDeck\Auth::confirmTotpSetup(\RunnerDeck\Totp::code($secret)));
+        $codes = \RunnerDeck\Auth::takeIssuedRecoveryCodes();
+        $this->assertCount(8, $codes);
+        \RunnerDeck\Auth::logout();
+
+        $this->assertTrue(\RunnerDeck\Auth::attemptRecovery($codes[0]));
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+        \RunnerDeck\Auth::logout();
+        $this->assertFalse(\RunnerDeck\Auth::attemptRecovery($codes[0]));
+        $this->assertSame(7, \RunnerDeck\Auth::recoveryCodesRemaining());
+    }
+
+    #[RunInSeparateProcess]
+    public function testRevokeOtherSessionsInvalidatesOldEpoch(): void
+    {
+        $secret = $this->setSecret();
+        \RunnerDeck\Auth::attempt(\RunnerDeck\Totp::code($secret));
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+
+        \RunnerDeck\Auth::revokeOtherSessions();
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+
+        $_SESSION['session_epoch'] = 0;
+        $this->assertFalse(\RunnerDeck\Auth::isLoggedIn());
+    }
+
+    #[RunInSeparateProcess]
+    public function testUserAgentMismatchLogsOut(): void
+    {
+        $secret = $this->setSecret();
+        $_SERVER['HTTP_USER_AGENT'] = 'operator';
+        \RunnerDeck\Auth::attempt(\RunnerDeck\Totp::code($secret));
+        $this->assertTrue(\RunnerDeck\Auth::isLoggedIn());
+
+        $_SERVER['HTTP_USER_AGENT'] = 'other';
+        $this->assertFalse(\RunnerDeck\Auth::isLoggedIn());
     }
 }
