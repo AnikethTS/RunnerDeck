@@ -32,6 +32,7 @@ final class SaveSettingsAction
         $org = trim((string) ($post['org'] ?? ''));
         $repo = trim((string) ($post['repo'] ?? ''));
         $label = trim((string) ($post['label'] ?? ''));
+        $extraLabelsRaw = trim((string) ($post['extra_labels'] ?? ''));
         $webhookUrl = trim((string) ($post['crash_webhook_url'] ?? ''));
         $webhookThreshold = trim((string) ($post['crash_webhook_threshold'] ?? ''));
         $drainTimeout = trim((string) ($post['drain_timeout'] ?? ''));
@@ -43,6 +44,14 @@ final class SaveSettingsAction
         }
         if ($scope === 'repo' && !str_contains($repo, '/')) {
             return ['ok' => false, 'message' => "repo must be in 'owner/repo' format"];
+        }
+        $extraLabels = Config::parseLabels($extraLabelsRaw);
+        if ($extraLabels === null) {
+            return [
+                'ok' => false,
+                'message' => 'extra labels must be up to 12 comma-separated names '
+                    . '(letters, digits, dot, underscore, hyphen)',
+            ];
         }
         if ($webhookUrl !== '' && !CrashWebhook::isValidUrl($webhookUrl)) {
             return ['ok' => false, 'message' => 'crash webhook url must start with http:// or https://'];
@@ -72,6 +81,7 @@ final class SaveSettingsAction
             'RUNNERDECK_ORG' => $scope === 'org' ? $org : '',
             'RUNNERDECK_REPO' => $scope === 'repo' ? $repo : '',
             'RUNNERDECK_LABEL' => $label,
+            'RUNNERDECK_EXTRA_LABELS' => implode(',', $extraLabels),
             'RUNNERDECK_CHECK_UPDATES' => ($post['check_updates'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
             'RUNNERDECK_AUTO_RESTART' => ($post['auto_restart'] ?? '') === '1' ? '1' : '',

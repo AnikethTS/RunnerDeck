@@ -6,6 +6,21 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on
+  add and rename (comma-separated, next to the shared pool label).
+- The runner filter matches GitHub labels as well as name and agent version.
+- **Download** on the dashboard Recent log panel saves `runnerdeck.log`
+  (and `runnerdeck.log.1` after rotation).
+
+### Fixed
+
+- Pin `source-map-js` 1.2.2 for
+  [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
+  `npm audit fix --force` is still not used (it would install stylelint 7.7.0
+  for the unpatched `braces` advisory).
+
 ## [1.5.0] - 2026-10-06
 
 ### Security

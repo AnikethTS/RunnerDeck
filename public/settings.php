@@ -52,6 +52,7 @@ if (
         'org' => (string) ($_POST['org'] ?? ''),
         'repo' => (string) ($_POST['repo'] ?? ''),
         'label' => (string) ($_POST['label'] ?? ''),
+        'extraLabels' => (string) ($_POST['extra_labels'] ?? ''),
         'checkUpdates' => ($_POST['check_updates'] ?? '') === '1',
         'autoRestart' => ($_POST['auto_restart'] ?? '') === '1',
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
@@ -71,6 +72,7 @@ if (
         'org' => (string) getenv('RUNNERDECK_ORG'),
         'repo' => (string) getenv('RUNNERDECK_REPO'),
         'label' => Config::label(),
+        'extraLabels' => implode(',', Config::extraLabels()),
         'checkUpdates' => Config::checkUpdatesEnabled(),
         'autoRestart' => Config::autoRestartEnabled(),
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
@@ -155,6 +157,20 @@ Layout::topbarEnd();
           placeholder="self-hosted-runnerdeck"
           value="<?= htmlspecialchars($current['label']) ?>"
         />
+
+        <label for="settings-extra-labels">Extra labels (optional)</label>
+        <input
+          type="text"
+          id="settings-extra-labels"
+          name="extra_labels"
+          placeholder="linux,gpu"
+          value="<?= htmlspecialchars($current['extraLabels']) ?>"
+        />
+        <p class="muted">
+          Comma-separated. Added next to the shared label when a runner is
+          registered or renamed. Existing slots keep their current labels until
+          then.
+        </p>
       </section>
 
       <section class="settings-section">

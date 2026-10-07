@@ -29,6 +29,25 @@ final class AppLog
     }
 
     /**
+     * Existing files, oldest first (`runnerdeck.log.1` then `runnerdeck.log`).
+     *
+     * @return list<string>
+     */
+    public static function files(): array
+    {
+        $out = [];
+        $rotated = Settings::storageDir() . '/' . self::ROTATED;
+        if (is_file($rotated)) {
+            $out[] = $rotated;
+        }
+        $path = self::path();
+        if (is_file($path)) {
+            $out[] = $path;
+        }
+        return $out;
+    }
+
+    /**
      * @param array{runner?: ?string, stderr?: string} $context
      */
     public static function error(string $action, string $message, array $context = []): void

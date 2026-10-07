@@ -145,6 +145,10 @@ final class AppLogTest extends TestCase
         $this->assertCount(2, $recent);
         $this->assertStringContainsString('first-failure', $recent[0]['message']);
         $this->assertStringContainsString('second-failure', $recent[1]['message']);
+        $files = \RunnerDeck\AppLog::files();
+        $this->assertCount(2, $files);
+        $this->assertSame($this->dir . '/runnerdeck.log.1', $files[0]);
+        $this->assertSame(\RunnerDeck\AppLog::path(), $files[1]);
     }
 
     #[RunInSeparateProcess]

@@ -20,9 +20,13 @@ export function filteredRunners(runners) {
     if (!matchesState(r, state)) return false;
     if (!q) return true;
     const version = (r.agent_version || '').toLowerCase();
+    const labels = r.github && Array.isArray(r.github.labels)
+      ? r.github.labels.join(' ').toLowerCase()
+      : '';
     return r.id.toLowerCase().includes(q)
       || r.agent_name.toLowerCase().includes(q)
-      || version.includes(q);
+      || version.includes(q)
+      || labels.includes(q);
   });
 }
 

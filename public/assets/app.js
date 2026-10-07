@@ -416,6 +416,11 @@ function initDashboard() {
     startPolling();
   });
 
+  const appLogDownload = document.getElementById('app-log-download');
+  if (appLogDownload) {
+    appLogDownload.addEventListener('click', (e) => e.stopPropagation());
+  }
+
   initModals(fetchStatus);
   checkForUpdates();
 

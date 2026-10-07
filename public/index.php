@@ -204,7 +204,8 @@ Layout::topbarEnd();
         <button id="btn-refresh" class="btn">Refresh</button>
         <button id="btn-export" type="button" class="btn">Export JSON</button>
         <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
-        <input type="search" id="runner-filter" class="filter-input" placeholder="Filter runners…" />
+        <input type="search" id="runner-filter" class="filter-input"
+               placeholder="Filter by name, label, or version…" />
         <select id="runner-state-filter" class="filter-input filter-select" aria-label="Filter by state">
           <option value="">All states</option>
           <option value="idle">Idle</option>

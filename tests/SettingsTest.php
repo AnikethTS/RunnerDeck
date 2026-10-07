@@ -25,6 +25,7 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_REPO');
         putenv('RUNNERDECK_LABEL');
+        putenv('RUNNERDECK_EXTRA_LABELS');
         putenv('RUNNERDECK_CHECK_UPDATES');
         @unlink($this->settingsFile);
         @rmdir(dirname($this->settingsFile));
@@ -126,6 +127,31 @@ final class SettingsTest extends TestCase
         $this->assertStringContainsString('webhook=set', $raw);
         $this->assertStringNotContainsString('secret-hook', $raw);
         $this->assertStringNotContainsString('https://example.com', $raw);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionRejectsInvalidExtraLabels(): void
+    {
+        $result = \RunnerDeck\Api\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'extra_labels' => 'not a label',
+        ]);
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('extra labels', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionStoresNormalizedExtraLabels(): void
+    {
+        $result = \RunnerDeck\Api\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'extra_labels' => 'gpu, linux,gpu',
+        ]);
+        $this->assertTrue($result['ok']);
+        $loaded = \RunnerDeck\Settings::load();
+        $this->assertSame('gpu,linux', $loaded['RUNNERDECK_EXTRA_LABELS']);
     }
 
     #[RunInSeparateProcess]

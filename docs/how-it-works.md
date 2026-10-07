@@ -31,7 +31,9 @@
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
 - **Add Runner** allocates the next free slot and lets you give it its own
-  GitHub-registered name. **Rename** stops a runner, deregisters it from
+  GitHub-registered name. New and renamed runners get the shared pool
+  label plus optional **extra labels** (`RUNNERDECK_EXTRA_LABELS` /
+  Settings). **Rename** stops a runner, deregisters it from
   GitHub, and re-registers it fresh under the new name — same busy-flag
   confirmation as Stop, since it interrupts any in-progress job. **Delete**
   does the same deregistration, then renames the slot out of the pool and
@@ -43,12 +45,14 @@
   file (`storage/db/history.sqlite`). This is best-effort: if the `pdo_sqlite`
   PHP extension isn't installed, the rest of the dashboard works exactly
   the same, you just don't get the chart.
-- A **filter box** narrows the table by runner ID or registered name. A
+- A **filter box** narrows the table by runner ID, registered name,
+  agent version, or GitHub label. A
   **state** dropdown (idle / busy / crashed / mismatch) stacks on that
   name filter from the same snapshot. Each runner's log can be
   **downloaded in full**, not just tailed — or
   narrowed to a time range first, using whatever timestamps the runner's
-  own console output includes.
+  own console output includes. The dashboard **Recent log** panel can
+  download `storage/runnerdeck.log` the same way.
 - Two **System CPU/RAM** stat cards show whole-machine usage (all
   processes, not just runners) — useful for telling "my runners are the
   load" apart from "something else on this box is." Reuses the same `ps`

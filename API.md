@@ -1,7 +1,8 @@
 # API reference
 
-RunnerDeck's UI is just a client of its own API — `public/api.php`, plus two
-standalone endpoints (`public/log_stream.php`, `public/download_log.php`)
+RunnerDeck's UI is just a client of its own API — `public/api.php`, plus
+standalone endpoints (`public/log_stream.php`, `public/download_log.php`,
+`public/download_applog.php`)
 for streaming and downloading logs, and `public/health.php` for an unauthenticated
 uptime probe (`{"ok":true}`, no version). Everything here is `127.0.0.1`-only by
 default (see [Safety notes](docs/security-and-safety.md#safety-notes)). Off
@@ -320,4 +321,14 @@ partial-timestamp lines are handled. Same auth as `log_stream.php`.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/download_log.php?runner=runner-base' -o runner-base.log
+```
+
+### `GET /download_applog.php`
+
+The operator log (`storage/runnerdeck.log.1` then `storage/runnerdeck.log`
+when both exist). Same auth as `download_log.php`. `404` if neither file
+exists yet.
+
+```bash
+curl -sS 'http://127.0.0.1:8090/download_applog.php' -o runnerdeck.log
 ```

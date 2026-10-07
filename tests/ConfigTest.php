@@ -11,7 +11,7 @@ use RuntimeException;
 final class ConfigTest extends TestCase
 {
     private const ENV_KEYS = [
-        'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL',
+        'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL', 'RUNNERDECK_EXTRA_LABELS',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_CRASH_WEBHOOK_URL',
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
@@ -51,6 +51,20 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_LABEL=custom-label');
         $this->assertSame('custom-label', \RunnerDeck\Config::label());
+    }
+
+    #[RunInSeparateProcess]
+    public function testProvisionLabelsMergesExtrasAndIgnoresInvalidEnv(): void
+    {
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::provisionLabels());
+        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Config::parseLabels(' gpu, linux,gpu '));
+        $this->assertNull(\RunnerDeck\Config::parseLabels('not a label'));
+        putenv('RUNNERDECK_EXTRA_LABELS=gpu, linux');
+        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Config::extraLabels());
+        $this->assertSame('self-hosted-runnerdeck,gpu,linux', \RunnerDeck\Config::provisionLabels());
+        putenv('RUNNERDECK_EXTRA_LABELS=bad label');
+        $this->assertSame([], \RunnerDeck\Config::extraLabels());
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::provisionLabels());
     }
 
     #[RunInSeparateProcess]
