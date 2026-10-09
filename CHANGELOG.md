@@ -24,6 +24,8 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- CI pins `setup-php` 2.40.0 so macOS jobs can install PHP again
+  (`macos-latest` no longer works with 2.37.2).
 - Pin `source-map-js` 1.2.2 for
   [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
   `npm audit fix --force` is still not used (it would install stylelint 7.7.0
