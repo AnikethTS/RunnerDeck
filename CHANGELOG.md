@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Dashboard rows, stats, and the recent-log panel are painted in PHP. Polls
+  request `action=status&view=1` and swap that markup in; JavaScript no
+  longer duplicates the table HTML. Log out is a POST form (`logout.php`).
+- Settings is a narrower card layout with a sticky Save bar. Login session
+  actions are separate forms (no longer nested in Save).
+
 ### Added
 
 - Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on
@@ -16,6 +24,8 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- CI pins `setup-php` 2.40.0 so macOS jobs can install PHP again
+  (`macos-latest` no longer works with 2.37.2).
 - Pin `source-map-js` 1.2.2 for
   [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
   `npm audit fix --force` is still not used (it would install stylelint 7.7.0

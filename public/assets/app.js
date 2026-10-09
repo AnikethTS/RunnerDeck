@@ -2,7 +2,7 @@ import { post, redirectIfUnauthenticated } from './js/api.js';
 import { setLoading, clearLoading } from './js/utils.js';
 import { showToast } from './js/toast.js';
 import {
-  sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, rowHtml, updateBulkActionsBar,
+  sortState, selectedRunners, filteredRunners, sortRunners, updateSortIndicators, paintRows, updateBulkActionsBar,
 } from './js/table.js';
 import { renderStats } from './js/stats.js';
 import {
@@ -28,7 +28,11 @@ function initDashboard() {
     lastSnapshot = snapshot;
     exportBtn.disabled = false;
     const h = snapshot.health;
-    if (!h.logged_in || !h.org_access_ok) {
+    if (snapshot.view && typeof snapshot.view.banner_text === 'string') {
+      bannerEl.hidden = Boolean(snapshot.view.banner_hidden);
+      bannerEl.className = 'banner';
+      bannerEl.textContent = snapshot.view.banner_text;
+    } else if (!h.logged_in || !h.org_access_ok) {
       bannerEl.hidden = false;
       bannerEl.className = 'banner';
       bannerEl.textContent = !h.logged_in
@@ -39,7 +43,7 @@ function initDashboard() {
     }
 
     renderStats(snapshot);
-    renderErrors(snapshot.errors);
+    renderErrors(snapshot);
     snapshot.runners.forEach((r) => {
       if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
       if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
@@ -52,7 +56,7 @@ function initDashboard() {
 
     const visible = visibleRows();
     const rowsKey = JSON.stringify({
-      runners: snapshot.runners,
+      runners: snapshot.view && snapshot.view.rows_html ? snapshot.view.rows_html : snapshot.runners,
       filter: document.getElementById('runner-filter').value,
       state: document.getElementById('runner-state-filter').value,
       sort: sortState,
@@ -60,11 +64,13 @@ function initDashboard() {
     });
     if (rowsKey !== lastRowsKey) {
       lastRowsKey = rowsKey;
-      rowsEl.innerHTML = visible.map(rowHtml).join('');
+      paintRows(rowsEl, snapshot, visible);
       updateSortIndicators();
     }
     updateBulkActionsBar(visible);
-    lastUpdatedEl.textContent = `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
+    lastUpdatedEl.textContent = snapshot.view && snapshot.view.updated
+      ? snapshot.view.updated
+      : `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
   }
 
   async function withLoading(btn, label, fn) {
@@ -106,7 +112,7 @@ function initDashboard() {
   });
 
   async function fetchStatus() {
-    const res = await fetch('api.php?action=status&lines=5');
+    const res = await fetch('api.php?action=status&lines=5&view=1');
     if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
   }
@@ -347,11 +353,17 @@ function initDashboard() {
     });
   });
 
-  function renderErrors(entries) {
+  function renderErrors(snapshot) {
     const countEl = document.getElementById('app-log-count');
     const body = document.getElementById('app-log-body');
     if (!countEl || !body) return;
-    const list = Array.isArray(entries) ? entries : [];
+    const view = snapshot.view;
+    if (view && typeof view.errors_html === 'string') {
+      countEl.textContent = view.errors_count || '';
+      body.innerHTML = view.errors_html;
+      return;
+    }
+    const list = Array.isArray(snapshot.errors) ? snapshot.errors : [];
     countEl.textContent = list.length ? ` (${list.length})` : '';
     body.replaceChildren();
     if (!list.length) {

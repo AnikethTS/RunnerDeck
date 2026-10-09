@@ -61,6 +61,9 @@ $stats = DashboardView::statsCards($dash);
 $banner = DashboardView::healthBanner($dash);
 $updated = DashboardView::lastUpdated($dash);
 $rowsHtml = DashboardView::rowsHtml(is_array($dash['runners'] ?? null) ? $dash['runners'] : []);
+if ($rowsHtml === '') {
+    $rowsHtml = DashboardView::emptyRowsHtml('No runners in the pool yet.');
+}
 
 Layout::htmlOpen('RunnerDeck', manifest: true);
 ?>
@@ -80,9 +83,7 @@ Layout::topbarEndStart();
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
       <a href="settings.php" class="btn btn-sm">Settings</a>
-        <?php if (Auth::isEnabled()) : ?>
-        <button id="btn-logout" class="btn btn-sm">Log out</button>
-        <?php endif; ?>
+        <?php Layout::logoutForm($csrfToken); ?>
     <?php endif; ?>
 <?php
 Layout::topbarEnd();
@@ -130,9 +131,16 @@ Layout::topbarEnd();
       </div>
     </main>
   <?php else : ?>
+    <a class="skip-link" href="#runner-filter">Skip to runners</a>
     <div id="health-banner" class="banner"<?= $banner['hidden'] ? ' hidden' : '' ?>>
       <?= htmlspecialchars($banner['text']) ?>
     </div>
+    <noscript>
+      <p class="banner banner-info">
+        Status on this page is from the last load. Refresh to update.
+        Start, stop, and live logs need JavaScript.
+      </p>
+    </noscript>
 
     <main>
       <div class="stat-grid">
@@ -235,6 +243,7 @@ Layout::topbarEnd();
         <button id="btn-bulk-clear" class="btn btn-sm">Clear</button>
       </div>
 
+      <div class="runner-table-wrap">
       <table class="runner-table">
         <thead>
           <tr>
@@ -265,6 +274,7 @@ Layout::topbarEnd();
         </thead>
         <tbody id="runner-rows"><?= $rowsHtml ?></tbody>
       </table>
+      </div>
       <?= DashboardView::errorsPanel(is_array($dash['errors'] ?? null) ? $dash['errors'] : []) ?>
     </main>
 

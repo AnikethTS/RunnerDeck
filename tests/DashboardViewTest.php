@@ -173,6 +173,30 @@ final class DashboardViewTest extends TestCase
         );
     }
 
+    public function testPollViewIncludesPhpRowMarkup(): void
+    {
+        $view = \RunnerDeck\DashboardView::pollView([
+            'generated_at' => 1789160000,
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'runners' => [[
+                'id' => 'runner-1',
+                'agent_name' => 'acme-1',
+                'configured' => true,
+                'local_running' => false,
+                'pid' => null,
+                'log_tail' => [],
+                'github' => null,
+            ]],
+            'stats' => ['running' => 0, 'total' => 1],
+            'errors' => [],
+        ]);
+        $this->assertStringContainsString('data-runner="runner-1"', $view['rows_html']);
+        $this->assertStringContainsString('Nothing logged yet.', $view['errors_html']);
+        $this->assertSame('', $view['errors_count']);
+        $this->assertTrue($view['banner_hidden']);
+        $this->assertSame('0', $view['stats']['active']);
+    }
+
     public function testErrorsPanelEmptyState(): void
     {
         $html = \RunnerDeck\DashboardView::errorsPanel([]);

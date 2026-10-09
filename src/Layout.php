@@ -65,6 +65,18 @@ final class Layout
         echo '    <div class="topbar-end">' . "\n";
     }
 
+    public static function logoutForm(string $csrfToken): void
+    {
+        if (!Auth::isEnabled()) {
+            return;
+        }
+        echo '      <form method="post" action="logout.php" class="logout-form">' . "\n";
+        echo '        <input type="hidden" name="csrf_token" value="'
+            . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />' . "\n";
+        echo '        <button type="submit" class="btn btn-sm">Log out</button>' . "\n";
+        echo "      </form>\n";
+    }
+
     public static function topbarEnd(): void
     {
         $theme = self::cookieTheme();

@@ -1,5 +1,3 @@
-import { escapeHtml, badge, miniBar, formatUptime } from './utils.js';
-
 export const sortState = { key: null, dir: 1 };
 export const selectedRunners = new Set();
 
@@ -67,84 +65,31 @@ export function updateSortIndicators() {
   }
 }
 
-function githubBadges(gh) {
-  if (!gh) return badge('unknown', 'muted');
-  const statusCls = gh.status === 'online' ? 'good' : 'critical';
-  return `${badge(gh.status, statusCls)} ${badge(gh.busy ? 'busy' : 'idle', gh.busy ? 'warning' : 'good')}`;
-}
-
-function githubLabels(gh) {
-  if (!gh || !gh.labels || !gh.labels.length) return '';
-  const chips = gh.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('');
-  return `<div class="label-chips">${chips}</div>`;
-}
-
-function localBadge(runner) {
-  if (!runner.configured) return badge('not configured', 'muted');
-  if (runner.local_running) return badge(`running (pid ${runner.pid})`, 'good');
-  return badge('stopped', 'critical');
-}
-
-function resourceUsage(runner) {
-  if (!runner.local_running || runner.cpu_percent == null || runner.rss_kb == null) return '';
-  const mb = (runner.rss_kb / 1024).toFixed(0);
-  const uptime = formatUptime(runner.uptime_seconds);
-  const uptimeText = uptime ? ` &middot; up ${uptime}` : '';
-  return `<span class="resource-usage">${miniBar(runner.cpu_percent)}${runner.cpu_percent.toFixed(1)}% CPU &middot; ${mb} MB${uptimeText}</span>`;
-}
-
-function diskUsage(runner) {
-  if (runner.disk_kb == null) return '';
-  const kb = runner.disk_kb;
-  const text = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB disk` : `${kb} KB disk`;
-  return `<span class="resource-usage disk-usage">${escapeHtml(text)}</span>`;
-}
-
-function flag(runner, key, text, cls) {
-  return runner[key] ? `<div class="row-flag">${badge(text, cls)}</div>` : '';
-}
-
-function crashHistoryBadge(runner) {
-  const n = runner.crash_count_7d;
-  if (!n) return '';
-  const text = n === 1 ? '1 crash (7d)' : `${n} crashes (7d)`;
-  return `<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history" aria-label="Show crash times for the last 7 days">${badge(text, 'warning')}</button></div>`;
-}
-
-export function rowHtml(runner) {
-  const logPreview = (runner.log_tail || []).join('\n') || '(no log yet)';
-  const checked = selectedRunners.has(runner.id) ? 'checked' : '';
-  const version = runner.agent_version
-    ? `<span class="agent-version">v${escapeHtml(runner.agent_version)}</span>`
+export function paintRows(rowsEl, snapshot, visibleRunners) {
+  const html = snapshot.view && typeof snapshot.view.rows_html === 'string'
+    ? snapshot.view.rows_html
     : '';
-  return `
-    <tr data-runner="${runner.id}" data-agent-name="${escapeHtml(runner.agent_name)}">
-      <td class="select-col">
-        <input type="checkbox" class="row-select" data-runner="${runner.id}" ${checked} />
-      </td>
-      <td>
-        <span class="runner-name">${escapeHtml(runner.id)}</span>
-        <span class="agent-name">${escapeHtml(runner.agent_name)}</span>
-        ${version}
-      </td>
-      <td>${githubBadges(runner.github)}${githubLabels(runner.github)}${flag(runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')}</td>
-      <td>${localBadge(runner)}${resourceUsage(runner)}${diskUsage(runner)}${flag(runner, 'crash_flagged', 'crashed unexpectedly', 'critical')}${crashHistoryBadge(runner)}</td>
-      <td>
-        <pre class="log-preview">${escapeHtml(logPreview)}</pre>
-        <button class="log-link" data-action="view-log">View live log &rarr;</button>
-      </td>
-      <td>
-        <div class="row-actions">
-          <button class="btn btn-sm btn-good" data-action="start" ${runner.local_running ? 'disabled' : ''}>Start</button>
-          <button class="btn btn-sm btn-critical" data-action="stop" ${runner.local_running ? '' : 'disabled'}>Stop</button>
-          <button class="btn btn-sm" data-action="drain" ${runner.local_running ? '' : 'disabled'}>Drain</button>
-          <button class="btn btn-sm" data-action="restart">Restart</button>
-          <button class="btn btn-sm" data-action="rename">Rename</button>
-          <button class="btn btn-sm" data-action="clear-work" ${runner.can_clear_work ? '' : 'disabled'}>Clear work</button>
-          <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
-        </div>
-      </td>
-    </tr>`;
+  const wrap = document.createElement('tbody');
+  wrap.innerHTML = html || rowsEl.innerHTML;
+  const byId = new Map();
+  wrap.querySelectorAll('tr[data-runner]').forEach((tr) => {
+    byId.set(tr.dataset.runner, tr);
+  });
+  const nodes = visibleRunners.map((r) => {
+    const tr = byId.get(r.id);
+    if (!tr) return null;
+    const box = tr.querySelector('.row-select');
+    if (box) box.checked = selectedRunners.has(r.id);
+    return tr;
+  }).filter(Boolean);
+  if (!nodes.length) {
+    const msg = (snapshot.runners && snapshot.runners.length)
+      ? 'No runners match this filter.'
+      : 'No runners in the pool yet.';
+    rowsEl.innerHTML = `<tr class="empty-row"><td colspan="6" class="muted">${msg}</td></tr>`;
+    return;
+  }
+  rowsEl.replaceChildren(...nodes);
 }
 
 export function updateBulkActionsBar(visibleRunners) {
