@@ -40,6 +40,35 @@ export function renderHistory(snapshot) {
 }
 
 export function renderStats(snapshot) {
+  const cards = snapshot.view && snapshot.view.stats;
+  if (cards) {
+    document.getElementById('stat-active').textContent = cards.active;
+    document.getElementById('stat-active-sub').textContent = cards.active_sub;
+    const githubEl = document.getElementById('stat-github');
+    githubEl.textContent = cards.github;
+    githubEl.className = cards.github_class;
+    document.getElementById('stat-github-sub').textContent = cards.github_sub;
+    document.getElementById('stat-cpu').textContent = cards.cpu;
+    document.getElementById('stat-cpu-sub').textContent = cards.cpu_sub;
+    document.getElementById('stat-mem').textContent = cards.mem;
+    document.getElementById('stat-mem-sub').textContent = cards.mem_sub;
+    const diskEl = document.getElementById('stat-pool-disk');
+    if (diskEl) {
+      diskEl.textContent = cards.pool_disk;
+      document.getElementById('stat-pool-disk-sub').textContent = cards.pool_disk_sub;
+    }
+    const cpuEl = document.getElementById('stat-sys-cpu');
+    cpuEl.textContent = cards.sys_cpu;
+    cpuEl.className = cards.sys_cpu_class;
+    document.getElementById('stat-sys-cpu-sub').textContent = cards.sys_cpu_sub;
+    const memEl = document.getElementById('stat-sys-mem');
+    memEl.textContent = cards.sys_mem;
+    memEl.className = cards.sys_mem_class;
+    document.getElementById('stat-sys-mem-sub').textContent = cards.sys_mem_sub;
+    renderHistory(snapshot);
+    return;
+  }
+
   const s = snapshot.stats;
   document.getElementById('stat-active').textContent = String(s.running);
   document.getElementById('stat-active-sub').textContent = `of ${s.total} configured`;
