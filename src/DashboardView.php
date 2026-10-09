@@ -114,6 +114,44 @@ final class DashboardView
         return $html;
     }
 
+    public static function emptyRowsHtml(string $message): string
+    {
+        return '    <tr class="empty-row"><td colspan="6" class="muted">' . self::e($message) . "</td></tr>\n";
+    }
+
+    /**
+     * Markup the dashboard swaps in on poll — one PHP template, not a second
+     * copy in JavaScript.
+     *
+     * @param array<string, mixed> $snapshot
+     * @return array{
+     *     rows_html: string,
+     *     errors_html: string,
+     *     errors_count: string,
+     *     banner_hidden: bool,
+     *     banner_text: string,
+     *     updated: string,
+     *     stats: array<string, string>
+     * }
+     */
+    public static function pollView(array $snapshot): array
+    {
+        $runners = is_array($snapshot['runners'] ?? null) ? $snapshot['runners'] : [];
+        $errors = is_array($snapshot['errors'] ?? null) ? $snapshot['errors'] : [];
+        $normalized = self::normalizeErrors($errors);
+        $banner = self::healthBanner($snapshot);
+        $count = count($normalized);
+        return [
+            'rows_html' => self::rowsHtml($runners),
+            'errors_html' => self::errorsBody($normalized),
+            'errors_count' => $count > 0 ? ' (' . $count . ')' : '',
+            'banner_hidden' => $banner['hidden'],
+            'banner_text' => $banner['text'],
+            'updated' => self::lastUpdated($snapshot),
+            'stats' => self::statsCards($snapshot),
+        ];
+    }
+
     /** @param array<string, mixed> $runner */
     public static function rowHtml(array $runner): string
     {

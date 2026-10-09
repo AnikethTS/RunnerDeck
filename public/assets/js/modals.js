@@ -135,14 +135,6 @@ export function initModals(fetchStatus) {
   document.getElementById('log-range-from').addEventListener('input', updateLogDownloadHref);
   document.getElementById('log-range-to').addEventListener('input', updateLogDownloadHref);
 
-  const logoutBtn = document.getElementById('btn-logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      await post('logout');
-      window.location.href = 'login.php';
-    });
-  }
-
   const addRunnerModal = document.getElementById('add-runner-modal');
 
   function closeAddRunnerModal() {

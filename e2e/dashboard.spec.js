@@ -5,7 +5,8 @@ import { readFile } from 'node:fs/promises';
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
 // so GithubClient degrades to health.logged_in === false, same as any fresh
 // machine. Runner data for the richer UI tests (filter/sort/bulk/mismatch)
-// is supplied by mocking `action=status` responses at the network level —
+// is supplied by mocking `action=status` responses at the network level
+// (`view.rows_html` is the PHP table markup the UI swaps in) —
 // see mockStatus() below. Mismatch badges require `mismatch_flagged: true`
 // on that payload (the streak itself is counted in PHP). First-run setup and Settings, by contrast, hit
 // the real Settings::save() code path with no mocking at all.
@@ -32,6 +33,69 @@ function fixtureRunner(overrides = {}) {
   };
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+function fixtureRowHtml(r) {
+  const id = escapeHtml(r.id);
+  const name = escapeHtml(r.agent_name || '');
+  const version = r.agent_version
+    ? `<span class="agent-version">v${escapeHtml(r.agent_version)}</span>`
+    : '';
+  let github = '<span class="badge badge-muted">unknown</span>';
+  if (r.github) {
+    const st = r.github.status === 'online' ? 'good' : 'critical';
+    github = `<span class="badge badge-${st}">${escapeHtml(r.github.status)}</span> `
+      + `<span class="badge badge-${r.github.busy ? 'warning' : 'good'}">${r.github.busy ? 'busy' : 'idle'}</span>`;
+    if (r.github.labels && r.github.labels.length) {
+      github += `<div class="label-chips">${r.github.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('')}</div>`;
+    }
+  }
+  if (r.mismatch_flagged) {
+    github += '<div class="row-flag"><span class="badge badge-warning">local/GitHub status disagree</span></div>';
+  }
+  let local = !r.configured
+    ? '<span class="badge badge-muted">not configured</span>'
+    : r.local_running
+      ? `<span class="badge badge-good">running (pid ${r.pid})</span>`
+      : '<span class="badge badge-critical">stopped</span>';
+  if (r.disk_kb != null) {
+    const text = r.disk_kb >= 1024 ? `${(r.disk_kb / 1024).toFixed(1)} MB disk` : `${r.disk_kb} KB disk`;
+    local += `<span class="resource-usage disk-usage">${text}</span>`;
+  }
+  if (r.crash_flagged) {
+    local += '<div class="row-flag"><span class="badge badge-critical">crashed unexpectedly</span></div>';
+  }
+  if (r.crash_count_7d) {
+    const text = r.crash_count_7d === 1 ? '1 crash (7d)' : `${r.crash_count_7d} crashes (7d)`;
+    local += `<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history">${text}</button></div>`;
+  }
+  const startDis = r.local_running ? ' disabled' : '';
+  const stopDis = r.local_running ? '' : ' disabled';
+  const drainDis = r.local_running ? '' : ' disabled';
+  const clearDis = r.can_clear_work ? '' : ' disabled';
+  const log = escapeHtml((r.log_tail || []).join('\n') || '(no log yet)');
+  return `<tr data-runner="${id}" data-agent-name="${name}">
+    <td class="select-col"><input type="checkbox" class="row-select" data-runner="${id}" /></td>
+    <td><span class="runner-name">${id}</span><span class="agent-name">${name}</span>${version}</td>
+    <td>${github}</td>
+    <td>${local}</td>
+    <td><pre class="log-preview">${log}</pre><button class="log-link" data-action="view-log">View live log</button></td>
+    <td><div class="row-actions">
+      <button class="btn btn-sm btn-good" data-action="start"${startDis}>Start</button>
+      <button class="btn btn-sm btn-critical" data-action="stop"${stopDis}>Stop</button>
+      <button class="btn btn-sm" data-action="drain"${drainDis}>Drain</button>
+      <button class="btn btn-sm" data-action="restart">Restart</button>
+      <button class="btn btn-sm" data-action="rename">Rename</button>
+      <button class="btn btn-sm" data-action="clear-work"${clearDis}>Clear work</button>
+      <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
+    </div></td>
+  </tr>`;
+}
+
 function fixtureSnapshot(runners) {
   const running = runners.filter((r) => r.local_running);
   return {
@@ -47,6 +111,7 @@ function fixtureSnapshot(runners) {
         ? runners.reduce((sum, r) => sum + (r.disk_kb || 0), 0)
         : null,
     },
+    view: { rows_html: runners.map(fixtureRowHtml).join('') },
   };
 }
 
@@ -462,7 +527,7 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await expect(page.locator('#settings-repo-field')).toBeVisible();
 
   await page.locator('#settings-repo').fill('e2e-org/e2e-repo');
-  await page.locator('button[type="submit"]').click();
+  await page.locator('#settings-save').click();
 
   await expect(page).toHaveURL(/index\.php$/);
   await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
@@ -476,7 +541,7 @@ test('settings page shows a validation error and keeps entered values', async ({
   // doesn't block the submit) but that our own scheme allowlist rejects —
   // this exercises the server-side check, not the browser's.
   await page.locator('#settings-crash-webhook-url').fill('ftp://example.com');
-  await page.locator('button[type="submit"]').click();
+  await page.locator('#settings-save').click();
 
   await expect(page).toHaveURL(/settings\.php$/);
   await expect(page.locator('.setup-error')).toContainText('crash webhook url must start with');

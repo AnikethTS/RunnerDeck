@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Dashboard rows, stats, and the recent-log panel are painted in PHP. Polls
+  request `action=status&view=1` and swap that markup in; JavaScript no
+  longer duplicates the table HTML. Log out is a POST form (`logout.php`).
+- Settings is a narrower card layout with a sticky Save bar. Login session
+  actions are separate forms (no longer nested in Save).
+
 ### Added
 
 - Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on

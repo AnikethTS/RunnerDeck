@@ -112,8 +112,10 @@
   only thing in RunnerDeck that calls out to a repo other than the one
   you're managing runners for, which is why it's opt-in rather than on
   by default.
-- The dashboard **polls** `action=status` every 5s only while the tab is
-  visible (whole-machine load is in that snapshot). A hidden tab stops
+- The dashboard **polls** `action=status&view=1` every 5s only while the tab is
+  visible (whole-machine load is in that snapshot). Row HTML, stats, and
+  the recent-log panel come from PHP; JS swaps that markup in and handles
+  filter/sort, bulk actions, and live logs. A hidden tab stops
   the timer and fetches once when you come back — so a background tab is
   not a second load on the same machine that is running the jobs.
   An optional TOTP **idle timeout** (Settings → Login) therefore treats a

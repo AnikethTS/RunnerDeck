@@ -108,6 +108,10 @@ tab is visible (including whole-machine `system` stats). Hidden tabs stop
 polling and fetch once on focus.
 
 - `lines` (optional, default `15`, max `500`) — log-tail lines per runner.
+- `view=1` (optional) — include `view` with PHP-rendered `rows_html`,
+  `errors_html`, `stats`, and banner/updated strings. The dashboard uses
+  this so table markup is not duplicated in JavaScript. Scripts can omit
+  it.
 - Returns `409` if RunnerDeck itself isn't configured yet (`{ok: false, message: "..."}`).
 
 ```bash
@@ -265,7 +269,7 @@ ids for the `bulk_*` actions).
 | Action | Required fields | Notes |
 |---|---|---|
 | `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
-| `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled |
+| `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled. The dashboard uses `POST /logout.php` (CSRF + redirect to `login.php`) instead |
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success saves it, logs in, and returns one-time `recovery_codes`. `422` on a wrong code |
