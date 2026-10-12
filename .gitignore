@@ -7,9 +7,6 @@
 # docker-compose's bind-mounted runner pool/settings/history volume
 /data/
 
-# Custom branding — drop your own logo.png here, it's optional at runtime
-public/assets/logo.png
-
 # Editor/OS cruft
 .DS_Store
 *.swp

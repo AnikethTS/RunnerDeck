@@ -47,6 +47,7 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('<html lang="en" data-theme="dark">', $html);
         $this->assertStringContainsString('<title>RunnerDeck — Settings</title>', $html);
         $this->assertStringContainsString('assets/style.css?v=', $html);
+        $this->assertStringContainsString('rel="icon" href="assets/logo.png"', $html);
         $this->assertStringNotContainsString('manifest.webmanifest', $html);
     }
 
@@ -64,5 +65,8 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('id="theme-icon-sun"', $html);
         $this->assertStringContainsString('id="theme-icon-moon"', $html);
         $this->assertStringContainsString('<h1>RunnerDeck</h1>', $html);
+        $this->assertTrue(\RunnerDeck\Layout::hasLogo());
+        $this->assertStringContainsString('src="assets/logo.png"', $html);
+        $this->assertStringContainsString('class="logo"', $html);
     }
 }
