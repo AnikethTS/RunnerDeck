@@ -28,7 +28,7 @@ function fixtureRunner(overrides = {}) {
     cpu_percent: 12.5,
     rss_kb: 204800,
     uptime_seconds: 305,
-    github: { status: 'online', busy: false, labels: ['self-hosted-runnerdeck'] },
+    github: { status: 'online', busy: false, labels: ['self-hosted-runnerdeck'], os: 'Linux' },
     ...overrides,
   };
 }
@@ -50,6 +50,9 @@ function fixtureRowHtml(r) {
     const st = r.github.status === 'online' ? 'good' : 'critical';
     github = `<span class="badge badge-${st}">${escapeHtml(r.github.status)}</span> `
       + `<span class="badge badge-${r.github.busy ? 'warning' : 'good'}">${r.github.busy ? 'busy' : 'idle'}</span>`;
+    if (r.github.os) {
+      github += ` <span class="os-chip">${escapeHtml(r.github.os)}</span>`;
+    }
     if (r.github.labels && r.github.labels.length) {
       github += `<div class="label-chips">${r.github.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('')}</div>`;
     }
@@ -591,6 +594,13 @@ test('dashboard shows recent errors from the status snapshot', async ({ page }) 
   await expect(page.locator('#app-log-body')).toContainText('failed to start <runner-1>');
   await expect(page.locator('#app-log-body')).toContainText('process.start');
   await expect(page.locator('#app-log-body')).toContainText('nohup: failed');
+});
+
+test('github OS chip is on the row', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('tr[data-runner="runner-base"] .os-chip')).toHaveText('Linux');
 });
 
 test('a runner with recent crash history shows a count badge, a healthy one shows none', async ({ page }) => {

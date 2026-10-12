@@ -127,6 +127,9 @@
   delete/rename plus provision/`gh` failures, secrets redacted). The panel
   auto-opens only when there is an error-level line. The file is still
   there for SSH; the panel is so you do not have to.
+- The GitHub column shows online/busy plus the `os` field already on
+  GitHub's runner list (`Linux` / `macOS` / `Windows`) — same poll, no
+  extra `gh` call.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

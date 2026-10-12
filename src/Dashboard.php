@@ -37,6 +37,7 @@ final class Dashboard
                 'status' => $gh['status'],
                 'busy' => $gh['busy'],
                 'labels' => $gh['labels'],
+                'os' => $gh['os'],
             ];
             $runners[] = $row;
         }

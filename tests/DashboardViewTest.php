@@ -50,6 +50,26 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="start"', $html);
     }
 
+    public function testRowHtmlShowsGithubOsChip(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => [
+                'status' => 'online',
+                'busy' => false,
+                'labels' => [],
+                'os' => 'Linux',
+            ],
+        ]);
+        $this->assertStringContainsString('os-chip', $html);
+        $this->assertStringContainsString('Linux', $html);
+    }
+
     public function testRowHtmlCrashHistoryIsAButton(): void
     {
         $html = \RunnerDeck\DashboardView::rowHtml([

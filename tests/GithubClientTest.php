@@ -30,6 +30,7 @@ final class GithubClientTest extends TestCase
             'status' => 'online',
             'busy' => false,
             'labels' => [['name' => 'self-hosted']],
+            'os' => 'Linux',
         ]);
         $page2 = json_encode([
             'id' => 2,
@@ -45,6 +46,8 @@ final class GithubClientTest extends TestCase
         $this->assertSame(1, $runners['acme-1']['id']);
         $this->assertTrue($runners['acme-2']['busy']);
         $this->assertSame(['linux'], $runners['acme-2']['labels']);
+        $this->assertSame('Linux', $runners['acme-1']['os']);
+        $this->assertSame('', $runners['acme-2']['os']);
     }
 
     public function testDecodeRunnerListAcceptsSinglePageObject(): void
