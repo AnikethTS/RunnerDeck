@@ -100,6 +100,7 @@ final class DashboardTest extends TestCase
                         'status' => 'online',
                         'busy' => false,
                         'labels' => [],
+                        'os' => 'Linux',
                     ]),
                     'stderr' => '',
                 ];
@@ -116,6 +117,7 @@ final class DashboardTest extends TestCase
         $this->assertTrue($result['health']['logged_in']);
         $this->assertTrue($result['health']['org_access_ok']);
         $this->assertSame('online', $result['runners'][0]['github']['status']);
+        $this->assertSame('Linux', $result['runners'][0]['github']['os']);
         $this->assertSame('2.321.0', $result['runners'][0]['agent_version']);
     }
 

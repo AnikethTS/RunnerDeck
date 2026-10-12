@@ -62,7 +62,8 @@ final class GithubClient
     }
 
     /**
-     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}> keyed by runner name
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>
+     *     keyed by runner name
      * @throws \RuntimeException if the gh call fails
      */
     public static function listRunners(): array
@@ -88,7 +89,7 @@ final class GithubClient
      * Accept a single GitHub page object, an array of runner objects, or
      * newline-delimited runner objects from `gh api --paginate -q '.runners[]'`.
      *
-     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}>
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>
      */
     public static function decodeRunnerList(string $stdout): array
     {
@@ -133,7 +134,7 @@ final class GithubClient
 
     /**
      * @param array<int|string, mixed> $rows
-     * @return array<string, array{id: int, status: string, busy: bool, labels: string[]}>
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>
      */
     private static function indexRunners(array $rows): array
     {
@@ -155,6 +156,7 @@ final class GithubClient
                 'status' => is_string($r['status'] ?? null) ? $r['status'] : '',
                 'busy' => (bool) ($r['busy'] ?? false),
                 'labels' => $labels,
+                'os' => is_string($r['os'] ?? null) ? $r['os'] : '',
             ];
         }
         return $runners;

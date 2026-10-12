@@ -225,6 +225,10 @@ final class DashboardView
         $busy = (bool) ($gh['busy'] ?? false);
         $html = self::badge($status, $statusCls)
             . ' ' . self::badge($busy ? 'busy' : 'idle', $busy ? 'warning' : 'good');
+        $os = $gh['os'] ?? null;
+        if (is_string($os) && $os !== '') {
+            $html .= ' <span class="os-chip">' . self::e($os) . '</span>';
+        }
         $labels = $gh['labels'] ?? [];
         if (is_array($labels) && $labels !== []) {
             $chips = '';

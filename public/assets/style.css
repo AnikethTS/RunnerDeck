@@ -436,6 +436,16 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
 .badge-critical { color: var(--status-critical); background: color-mix(in srgb, var(--status-critical) 14%, transparent); }
 .badge-muted { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 14%, transparent); }
 
+.os-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
 .label-chips { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px; }
 .label-chip {
   font-size: 10px;

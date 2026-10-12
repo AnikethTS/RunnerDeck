@@ -16,6 +16,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Dashboard GitHub cell shows the runner OS from the existing list-runners
+  payload (no extra API call).
 - Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on
   add and rename (comma-separated, next to the shared pool label).
 - The runner filter matches GitHub labels as well as name and agent version.
