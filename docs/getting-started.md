@@ -94,8 +94,8 @@ RunnerDeck includes a web app manifest and bundled icons derived from
 `.github/logo.png`. Where supported, use the browser's **Install app** or
 **Add to Home Screen** action to open it in a standalone window. The manifest
 uses the default light palette's `--brand` and `--surface-1` colors from
-`public/assets/style.css`; installed icons are separate from the optional
-header logo override.
+`public/assets/style.css`; installed icons match the same art as the
+header logo (`public/assets/logo.png`).
 
 Installation options vary by browser. Chrome's install promotion requires
 HTTPS (with a localhost/loopback exception for development); visiting another

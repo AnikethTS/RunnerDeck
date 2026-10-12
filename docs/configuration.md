@@ -24,5 +24,5 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1 (GiB). When set, the crash webhook also fires once as a slot or the pool total first reaches this size. Set from Settings |
 | `RUNNERDECK_TRUST_PROXY` | no | off | `1` to honor `X-Forwarded-Proto` from a non-loopback reverse proxy. Same-machine proxy to `127.0.0.1:8090` or php-fpm on `:9000` already trusts that header. See [Hosting](hosting.md) |
 
-Optional: drop a `public/assets/logo.png` in to show a logo in the header —
-it's gitignored and entirely optional, the dashboard works fine without one.
+The header uses `public/assets/logo.png` (shipped with the repo, same art as
+`.github/logo.png`). Replace that file if you want your own mark.

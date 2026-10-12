@@ -29,6 +29,9 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- Header logo ships in the repo (`public/assets/logo.png`). A fresh clone
+  shows it next to RunnerDeck; it was gitignored so clone-and-run had no
+  image.
 - CI pins `setup-php` 2.40.0 so macOS jobs can install PHP again
   (`macos-latest` no longer works with 2.37.2).
 - Pin `source-map-js` 1.2.2 for

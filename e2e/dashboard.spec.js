@@ -135,6 +135,7 @@ test('first-run setup configures the app and reaches the dashboard', async ({ pa
 
   await expect(page.locator('.stat-grid')).toBeVisible();
   await expect(page.locator('.org-tag')).toContainText('e2e-org');
+  await expect(page.locator('header.topbar img.logo')).toBeVisible();
 });
 
 test('refresh renders runner rows from the API', async ({ page }) => {

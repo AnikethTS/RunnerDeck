@@ -86,7 +86,7 @@ runnerdeck/
     download_applog.php   storage/runnerdeck.log download
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version)
-    assets/         app.js (dashboard), js/theme.js, style.css, optional logo.png
+    assets/         app.js (dashboard), js/theme.js, style.css, logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Config.php           env-based configuration
