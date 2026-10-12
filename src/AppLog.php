@@ -162,6 +162,28 @@ final class AppLog
         return $lines;
     }
 
+    /** Truncates current and rotated files, then writes one info line. */
+    public static function clear(): void
+    {
+        $dir = Settings::storageDir();
+        $rotated = $dir . '/' . self::ROTATED;
+        if (is_file($rotated)) {
+            @unlink($rotated);
+        }
+        $path = self::path();
+        if (is_file($path)) {
+            $fh = @fopen($path, 'c');
+            if ($fh !== false) {
+                ftruncate($fh, 0);
+                fclose($fh);
+            } else {
+                @unlink($path);
+            }
+        }
+        self::$lastWriteAt = [];
+        self::info('log.cleared', 'Operator log cleared');
+    }
+
     /**
      * @return list<array{
      *     time: string, action: string, message: string, level: string, runner?: string, stderr?: string

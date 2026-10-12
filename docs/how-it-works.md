@@ -125,8 +125,9 @@
   [Hosting](hosting.md).
 - **Recent log** on the dashboard is `storage/runnerdeck.log` (start/stop/
   delete/rename plus provision/`gh` failures, secrets redacted). The panel
-  auto-opens only when there is an error-level line. The file is still
-  there for SSH; the panel is so you do not have to.
+  auto-opens only when there is an error-level line. Filter by level and
+  **Clear** (CSRF) wipes the current plus rotated files, then writes one
+  `log.cleared` info line. Download is still there; SSH is optional.
 - The GitHub column shows online/busy plus the `os` field already on
   GitHub's runner list (`Linux` / `macOS` / `Windows`) — same poll, no
   extra `gh` call.
