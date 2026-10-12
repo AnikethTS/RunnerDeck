@@ -10,6 +10,7 @@ use RunnerDeck\Api\BulkDrainStopAction;
 use RunnerDeck\Api\BulkStartAction;
 use RunnerDeck\Api\BulkStopAction;
 use RunnerDeck\Api\CheckUpdatesAction;
+use RunnerDeck\Api\ClearApplogAction;
 use RunnerDeck\Api\ClearWorkAction;
 use RunnerDeck\Api\CsrfTokenAction;
 use RunnerDeck\Api\DeleteRunnerAction;
@@ -67,6 +68,7 @@ final class Api
         'bulk_delete' => BulkDeleteAction::class,
         'resize' => ResizeAction::class,
         'clear_work' => ClearWorkAction::class,
+        'clear_applog' => ClearApplogAction::class,
     ];
 
     public static function run(): never

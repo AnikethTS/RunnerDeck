@@ -175,4 +175,19 @@ final class AppLogTest extends TestCase
         $this->assertSame('ok-two', $recent[0]['message']);
         $this->assertSame('error', $recent[0]['level']);
     }
+
+    #[RunInSeparateProcess]
+    public function testClearWipesRotatedFilesAndWritesInfoLine(): void
+    {
+        file_put_contents($this->dir . '/runnerdeck.log.1', "{\"action\":\"old\"}\n");
+        file_put_contents(\RunnerDeck\AppLog::path(), "{\"action\":\"current\"}\n");
+
+        \RunnerDeck\AppLog::clear();
+
+        $this->assertFileDoesNotExist($this->dir . '/runnerdeck.log.1');
+        $recent = \RunnerDeck\AppLog::recent(10);
+        $this->assertCount(1, $recent);
+        $this->assertSame('info', $recent[0]['level']);
+        $this->assertSame('log.cleared', $recent[0]['action']);
+    }
 }

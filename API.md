@@ -289,6 +289,7 @@ ids for the `bulk_*` actions).
 | `bulk_delete` | `runners` | Busy-checked; no undo |
 | `resize` | `count` (optional, default `10`, max `30`) | Same as `start_all` |
 | `clear_work` | `runner` | Deletes `_work` in the slot; `409` if the process is running |
+| `clear_applog` | — | Truncates `storage/runnerdeck.log` and `.1`, then writes `log.cleared` |
 
 Every action here responds `{"ok": true, "message": "..."}` on success (or
 `{"ok": true, "id": "runner-2", "message": "..."}` for `add_runner`

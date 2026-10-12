@@ -366,6 +366,15 @@ final class DashboardView
             . self::e($countText) . '</span></span>'
             . '<a id="app-log-download" class="btn btn-sm" href="download_applog.php"'
             . ' download="runnerdeck.log">Download</a></summary>' . "\n"
+            . '        <div class="app-log-toolbar">' . "\n"
+            . '          <label class="app-log-filter" for="app-log-level">Level'
+            . ' <select id="app-log-level">'
+            . '<option value="all">All</option>'
+            . '<option value="error">Error</option>'
+            . '<option value="info">Info</option>'
+            . '</select></label>' . "\n"
+            . '          <button type="button" id="btn-clear-applog" class="btn btn-sm">Clear</button>' . "\n"
+            . "        </div>\n"
             . '        <div id="app-log-body">' . self::errorsBody($normalized) . "</div>\n"
             . "      </details>\n";
     }
@@ -384,7 +393,8 @@ final class DashboardView
             if (isset($entry['runner'])) {
                 $meta .= ' &middot; ' . self::e($entry['runner']);
             }
-            $html .= '<li class="app-log-item app-log-' . $level . '"><div class="app-log-meta">' . $meta
+            $html .= '<li class="app-log-item app-log-' . $level . '" data-level="' . $level
+                . '"><div class="app-log-meta">' . $meta
                 . '</div><div>' . self::e($entry['message']) . '</div>';
             if (isset($entry['stderr'])) {
                 $html .= '<pre class="app-log-stderr">' . self::e($entry['stderr']) . '</pre>';

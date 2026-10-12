@@ -183,6 +183,9 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('open', $html);
         $this->assertStringContainsString('Recent log', $html);
         $this->assertStringContainsString('download_applog.php', $html);
+        $this->assertStringContainsString('id="app-log-level"', $html);
+        $this->assertStringContainsString('id="btn-clear-applog"', $html);
+        $this->assertStringContainsString('data-level="error"', $html);
         $this->assertStringContainsString('(2)', $html);
         $this->assertStringContainsString('failed &lt;one&gt;', $html);
         $this->assertStringContainsString('&lt;b&gt;nope&lt;/b&gt;', $html);

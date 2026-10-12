@@ -594,6 +594,35 @@ test('dashboard shows recent errors from the status snapshot', async ({ page }) 
   await expect(page.locator('#app-log-body')).toContainText('failed to start <runner-1>');
   await expect(page.locator('#app-log-body')).toContainText('process.start');
   await expect(page.locator('#app-log-body')).toContainText('nohup: failed');
+  await expect(page.locator('#app-log-level')).toBeVisible();
+  await expect(page.locator('#btn-clear-applog')).toBeVisible();
+});
+
+test('recent log level filter hides info lines', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner()], {
+    errors: [
+      {
+        time: '2026-09-22T18:00:00+00:00',
+        action: 'process.start',
+        message: 'failed to start',
+        level: 'error',
+      },
+      {
+        time: '2026-09-22T18:01:00+00:00',
+        action: 'process.stop',
+        message: 'stopped ok',
+        level: 'info',
+      },
+    ],
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#app-log').evaluate((el) => { el.open = true; });
+  await expect(page.locator('#app-log-body')).toContainText('failed to start');
+  await expect(page.locator('#app-log-body')).toContainText('stopped ok');
+  await page.locator('#app-log-level').selectOption('error');
+  await expect(page.locator('#app-log-body .app-log-item[data-level="error"]')).toBeVisible();
+  await expect(page.locator('#app-log-body .app-log-item[data-level="info"]')).toBeHidden();
 });
 
 test('github OS chip is on the row', async ({ page }) => {

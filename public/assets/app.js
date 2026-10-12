@@ -271,6 +271,23 @@ function initDashboard() {
     withLoading(e.currentTarget, 'Refreshing…', fetchStatus);
   });
 
+  const appLogLevel = document.getElementById('app-log-level');
+  if (appLogLevel) {
+    appLogLevel.addEventListener('change', applyAppLogFilter);
+  }
+  const clearApplogBtn = document.getElementById('btn-clear-applog');
+  if (clearApplogBtn) {
+    clearApplogBtn.addEventListener('click', async (e) => {
+      const sure = await confirmModal('Clear the operator log on this host? Rotated files are wiped too.');
+      if (!sure) return;
+      await withLoading(e.currentTarget, 'Clearing…', async () => {
+        const { data } = await post('clear_applog');
+        if (!data.ok) showToast(data.message);
+        await fetchStatus();
+      });
+    });
+  }
+
   document.getElementById('btn-start-all').addEventListener('click', (e) => {
     const count = document.getElementById('pool-size').value || 10;
     withLoading(e.currentTarget, 'Starting All…', async () => {
@@ -361,6 +378,7 @@ function initDashboard() {
     if (view && typeof view.errors_html === 'string') {
       countEl.textContent = view.errors_count || '';
       body.innerHTML = view.errors_html;
+      applyAppLogFilter();
       return;
     }
     const list = Array.isArray(snapshot.errors) ? snapshot.errors : [];
@@ -379,6 +397,7 @@ function initDashboard() {
       const li = document.createElement('li');
       const level = entry.level === 'info' ? 'info' : 'error';
       li.className = `app-log-item app-log-${level}`;
+      li.dataset.level = level;
       const meta = document.createElement('div');
       meta.className = 'app-log-meta';
       const when = formatErrorTime(entry.time);
@@ -397,6 +416,17 @@ function initDashboard() {
       ol.append(li);
     });
     body.append(ol);
+    applyAppLogFilter();
+  }
+
+  function applyAppLogFilter() {
+    const select = document.getElementById('app-log-level');
+    const level = select ? select.value : 'all';
+    document.querySelectorAll('#app-log-body .app-log-item').forEach((li) => {
+      const itemLevel = li.dataset.level
+        || (li.classList.contains('app-log-info') ? 'info' : 'error');
+      li.hidden = level !== 'all' && itemLevel !== level;
+    });
   }
 
   function formatErrorTime(iso) {

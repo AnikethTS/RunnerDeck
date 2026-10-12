@@ -16,6 +16,9 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Recent log can filter by level (all / error / info) and clear the file
+  (`action=clear_applog`, CSRF). Clear truncates current plus rotated
+  logs and writes one `log.cleared` info line.
 - Dashboard GitHub cell shows the runner OS from the existing list-runners
   payload (no extra API call).
 - Settings / `RUNNERDECK_EXTRA_LABELS` adds extra GitHub runner labels on
