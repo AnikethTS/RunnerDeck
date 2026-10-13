@@ -112,7 +112,17 @@ final class Dashboard
         ];
     }
 
-    /** @return array{available: bool, cpu_svg: string, mem_svg: string} */
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * }
+     */
     public static function historyView(): array
     {
         $unavailable = !History::isAvailable();
@@ -123,11 +133,17 @@ final class Dashboard
             $samples
         ));
         $memMax = $mem === [] ? 10.0 : (float) max(10.0, ...$mem);
+        $cpuSummary = History::summary($cpu, '%', 1);
+        $memSummary = History::summary($mem, ' MB', 0);
 
         return [
             'available' => !$unavailable,
-            'cpu_svg' => History::polylineSvg($cpu, 0.0, 100.0, $unavailable),
-            'mem_svg' => History::polylineSvg($mem, 0.0, $memMax, $unavailable),
+            'cpu_svg' => History::polylineSvg($cpu, 0.0, 100.0, $unavailable, '%', 0),
+            'mem_svg' => History::polylineSvg($mem, 0.0, $memMax, $unavailable, ' MB', 0),
+            'cpu_now' => $cpuSummary['now'],
+            'cpu_span' => $cpuSummary['span'],
+            'mem_now' => $memSummary['now'],
+            'mem_span' => $memSummary['span'],
         ];
     }
 

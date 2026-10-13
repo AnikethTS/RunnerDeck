@@ -42,9 +42,10 @@
 - Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
   cross-platform, read-only — nothing is capped or throttled), with a
   rolling one-hour pool-wide history chart backed by a small local SQLite
-  file (`storage/db/history.sqlite`). This is best-effort: if the `pdo_sqlite`
-  PHP extension isn't installed, the rest of the dashboard works exactly
-  the same, you just don't get the chart.
+  file (`storage/db/history.sqlite`). The charts label the axis (CPU 0–100%,
+  RAM in MB), the latest sample, and min–max for the hour. This is
+  best-effort: if the `pdo_sqlite` PHP extension isn't installed, the rest
+  of the dashboard works exactly the same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID, registered name,
   agent version, or GitHub label. A
   **state** dropdown (idle / busy / crashed / mismatch) stacks on that

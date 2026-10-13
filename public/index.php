@@ -195,14 +195,42 @@ Layout::topbarEnd();
 
       <div class="history-grid">
         <div class="history-card">
-          <span class="stat-label">CPU % &middot; last hour</span>
-          <svg id="chart-cpu" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
+          <div class="history-head">
+            <span class="stat-label">CPU % &middot; last hour</span>
+            <span id="chart-cpu-now" class="history-now"><?=
+                htmlspecialchars((string) ($history['cpu_now'] ?? '—'))
+            ?></span>
+          </div>
+            <span id="chart-cpu-span" class="stat-sub"><?=
+                htmlspecialchars((string) ($history['cpu_span'] ?? ''))
+            ?></span>
+          <svg
+            id="chart-cpu"
+            class="history-chart"
+            viewBox="0 0 400 110"
+            role="img"
+            aria-label="CPU percent last hour"
+          >
             <?= (string) ($history['cpu_svg'] ?? '') ?>
           </svg>
         </div>
         <div class="history-card">
-          <span class="stat-label">Memory MB &middot; last hour</span>
-          <svg id="chart-mem" class="history-chart" viewBox="0 0 300 60" preserveAspectRatio="none">
+          <div class="history-head">
+            <span class="stat-label">Memory MB &middot; last hour</span>
+            <span id="chart-mem-now" class="history-now"><?=
+                htmlspecialchars((string) ($history['mem_now'] ?? '—'))
+            ?></span>
+          </div>
+            <span id="chart-mem-span" class="stat-sub"><?=
+                htmlspecialchars((string) ($history['mem_span'] ?? ''))
+            ?></span>
+          <svg
+            id="chart-mem"
+            class="history-chart"
+            viewBox="0 0 400 110"
+            role="img"
+            aria-label="Memory MB last hour"
+          >
             <?= (string) ($history['mem_svg'] ?? '') ?>
           </svg>
         </div>

@@ -37,6 +37,14 @@ export function renderHistory(snapshot) {
   const memChart = document.getElementById('chart-mem');
   if (cpuChart) cpuChart.innerHTML = history.cpu_svg;
   if (memChart) memChart.innerHTML = history.mem_svg;
+  const cpuNow = document.getElementById('chart-cpu-now');
+  const cpuSpan = document.getElementById('chart-cpu-span');
+  const memNow = document.getElementById('chart-mem-now');
+  const memSpan = document.getElementById('chart-mem-span');
+  if (cpuNow) cpuNow.textContent = history.cpu_now || '—';
+  if (cpuSpan) cpuSpan.textContent = history.cpu_span || '';
+  if (memNow) memNow.textContent = history.mem_now || '—';
+  if (memSpan) memSpan.textContent = history.mem_span || '';
 }
 
 export function renderStats(snapshot) {
