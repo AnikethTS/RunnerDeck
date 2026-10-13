@@ -80,9 +80,25 @@ final class HistoryTest extends TestCase
 
     public function testPolylineSvgPointsScaleToViewBox(): void
     {
-        $svg = \RunnerDeck\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false);
-        $this->assertStringContainsString('0.0,60.0', $svg);
-        $this->assertStringContainsString('300.0,0.0', $svg);
+        $svg = \RunnerDeck\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false, '%', 0);
+        $this->assertStringContainsString('42.0,92.0', $svg);
+        $this->assertStringContainsString('390.0,10.0', $svg);
         $this->assertStringContainsString('<polyline', $svg);
+        $this->assertStringContainsString('100%', $svg);
+        $this->assertStringContainsString('0%', $svg);
+        $this->assertStringContainsString('history-rule', $svg);
+        $this->assertStringContainsString('now', $svg);
+    }
+
+    public function testSummaryFormatsNowAndRange(): void
+    {
+        $sum = \RunnerDeck\History::summary([8.0, 12.5, 10.0], '%', 1);
+        $this->assertSame('10.0%', $sum['now']);
+        $this->assertSame('8.0%–12.5% this hour', $sum['span']);
+    }
+
+    public function testSummaryEmpty(): void
+    {
+        $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\History::summary([], '%', 1));
     }
 }

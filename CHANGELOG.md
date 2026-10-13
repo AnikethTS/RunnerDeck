@@ -13,6 +13,8 @@ follows [SemVer](https://semver.org/).
   longer duplicates the table HTML. Log out is a POST form (`logout.php`).
 - Settings is a narrower card layout with a sticky Save bar. Login session
   actions are separate forms (no longer nested in Save).
+- Last-hour CPU/RAM charts show axis ticks (% or MB), the latest sample,
+  and the hour's min–max — not only an unlabeled line.
 
 ### Added
 
