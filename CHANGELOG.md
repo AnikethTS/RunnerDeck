@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-13
+
 ### Changed
 
 - Dashboard rows, stats, and the recent-log panel are painted in PHP. Polls
