@@ -34,7 +34,8 @@ supported, but it's opt-in and has two parts, both required together:
    and session cookie both travel the network in the clear, which defeats
    the point of requiring a login at all. TOTP on public 443 is still
    only one factor — add an IP allowlist, mTLS, or skip public 443
-   ([Beyond TOTP](hosting.md#beyond-totp-on-443)).
+   ([Beyond TOTP](hosting.md#beyond-totp-on-443)). The UI repeats those
+   as banners when Host is not localhost or the request is HTTPS.
 
 `./run.sh` is PHP’s built-in server on `127.0.0.1` — four workers, a live
 log occupying one of them, no php-fpm isolation. Fine for one operator.

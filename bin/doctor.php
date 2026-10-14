@@ -128,6 +128,34 @@ if (!Config::isConfigured()) {
     }
 }
 
+echo "\nHosting\n";
+$bind = getenv('RUNNERDECK_BIND_HOST') ?: '127.0.0.1';
+if ($bind === '127.0.0.1' || $bind === '::1') {
+    ok('bind', $bind . ' (loopback)', $color);
+} else {
+    $warnings += warn(
+        'bind',
+        "{$bind} — TOTP required; put TLS in front and do not leave TOTP as the only gate on 443 (docs/hosting.md)",
+        $color
+    );
+}
+if (Config::authEnabled()) {
+    ok('TOTP', 'enabled', $color);
+} elseif ($bind === '127.0.0.1' || $bind === '::1') {
+    ok('TOTP', 'off (loopback only)', $color);
+} else {
+    $failures += fail('TOTP', 'non-loopback bind requires php bin/setup-totp.php', $color);
+}
+if (Config::trustProxy()) {
+    $warnings += warn(
+        'TRUST_PROXY',
+        'on — anyone who can reach PHP can forge X-Forwarded-Proto; keep PHP on loopback',
+        $color
+    );
+} else {
+    ok('TRUST_PROXY', 'off', $color);
+}
+
 echo "\nFilesystem\n";
 $poolDir = Config::poolDir();
 if (is_dir($poolDir) && is_writable($poolDir)) {

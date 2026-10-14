@@ -8,6 +8,7 @@ use RunnerDeck\Api\SaveSettingsAction;
 use RunnerDeck\Auth;
 use RunnerDeck\Config;
 use RunnerDeck\Csrf;
+use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
 
 Auth::requirePageAccess();
@@ -96,6 +97,7 @@ Layout::topbarStart();
 Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
+echo HostingWarnings::html();
 ?>
 
   <main class="settings-main">

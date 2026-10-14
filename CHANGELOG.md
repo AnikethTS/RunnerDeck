@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Dashboard, Settings, and login show hosting warnings when the Host is
+  not localhost or the request is HTTPS: missing TLS, TOTP as the only
+  gate, `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a
+  non-loopback client. `php bin/doctor.php` warns on a non-loopback bind.
+
 ## [1.6.0] - 2026-10-13
 
 ### Changed

@@ -10,6 +10,7 @@ use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\Dashboard;
 use RunnerDeck\DashboardView;
+use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
 use RunnerDeck\SecurityHeaders;
 
@@ -135,6 +136,7 @@ Layout::topbarEnd();
     <div id="health-banner" class="banner"<?= $banner['hidden'] ? ' hidden' : '' ?>>
       <?= htmlspecialchars($banner['text']) ?>
     </div>
+      <?= HostingWarnings::html() ?>
     <noscript>
       <p class="banner banner-info">
         Status on this page is from the last load. Refresh to update.

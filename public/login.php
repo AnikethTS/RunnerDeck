@@ -6,6 +6,7 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Auth;
 use RunnerDeck\Csrf;
+use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
 
 if (!Auth::isEnabled()) {
@@ -52,6 +53,7 @@ Layout::htmlOpen('RunnerDeck — Log in');
 Layout::topbarStart();
 Layout::topbarEndStart();
 Layout::topbarEnd();
+echo HostingWarnings::html();
 ?>
 
   <main class="setup-main">
