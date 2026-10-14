@@ -48,6 +48,7 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('crashed unexpectedly', $html);
         $this->assertStringContainsString('local/GitHub status disagree', $html);
         $this->assertStringContainsString('data-action="start"', $html);
+        $this->assertStringContainsString('data-action="rolling-restart"', $html);
     }
 
     public function testRowHtmlShowsGithubOsChip(): void

@@ -7,6 +7,7 @@ namespace RunnerDeck;
 use RunnerDeck\Api\AddRunnerAction;
 use RunnerDeck\Api\BulkDeleteAction;
 use RunnerDeck\Api\BulkDrainStopAction;
+use RunnerDeck\Api\BulkRollingRestartAction;
 use RunnerDeck\Api\BulkStartAction;
 use RunnerDeck\Api\BulkStopAction;
 use RunnerDeck\Api\CheckUpdatesAction;
@@ -23,6 +24,7 @@ use RunnerDeck\Api\LogoutAction;
 use RunnerDeck\Api\RenameAction;
 use RunnerDeck\Api\ResizeAction;
 use RunnerDeck\Api\RestartAction;
+use RunnerDeck\Api\RollingRestartAction;
 use RunnerDeck\Api\SaveSettingsAction;
 use RunnerDeck\Api\StartAction;
 use RunnerDeck\Api\StartAllAction;
@@ -55,6 +57,7 @@ final class Api
         'start' => StartAction::class,
         'stop' => StopAction::class,
         'restart' => RestartAction::class,
+        'rolling_restart' => RollingRestartAction::class,
         'rename' => RenameAction::class,
         'add_runner' => AddRunnerAction::class,
         'delete_runner' => DeleteRunnerAction::class,
@@ -65,6 +68,7 @@ final class Api
         'bulk_start' => BulkStartAction::class,
         'bulk_stop' => BulkStopAction::class,
         'bulk_drain_stop' => BulkDrainStopAction::class,
+        'bulk_rolling_restart' => BulkRollingRestartAction::class,
         'bulk_delete' => BulkDeleteAction::class,
         'resize' => ResizeAction::class,
         'clear_work' => ClearWorkAction::class,

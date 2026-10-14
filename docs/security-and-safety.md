@@ -86,8 +86,8 @@ It also downloads and executes GitHub's official runner package on first
 use of each runner slot — the same binary GitHub's own setup page would
 have you download by hand, checksum-verified before extraction.
 
-All state-changing API calls (`start`, `stop`, `restart`, `start_all`,
-`stop_all`, `resize`) require a session-bound CSRF token minted by
+All state-changing API calls (`start`, `stop`, `restart`, `rolling_restart`,
+`start_all`, `stop_all`, `resize`) require a session-bound CSRF token minted by
 `index.php` and sent back by `assets/app.js` — this stops a malicious page
 open in another tab from silently driving the dashboard, but on its own it
 is not a substitute for keeping this off any network beyond loopback (see

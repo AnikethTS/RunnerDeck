@@ -92,6 +92,7 @@ function fixtureRowHtml(r) {
       <button class="btn btn-sm btn-critical" data-action="stop"${stopDis}>Stop</button>
       <button class="btn btn-sm" data-action="drain"${drainDis}>Drain</button>
       <button class="btn btn-sm" data-action="restart">Restart</button>
+      <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>
       <button class="btn btn-sm" data-action="rename">Rename</button>
       <button class="btn btn-sm" data-action="clear-work"${clearDis}>Clear work</button>
       <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
@@ -701,6 +702,42 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('tr[data-runner="fat"] button[data-action="drain"]')).toBeDisabled();
   await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
   await expect(page.locator('#btn-drain-all')).toBeVisible();
+  await expect(page.locator('#btn-rolling-restart-all')).toBeVisible();
+  await expect(page.locator('tr[data-runner="fat"] button[data-action="rolling-restart"]')).toBeVisible();
+});
+
+test('rolling restart posts the selected slots', async ({ page }) => {
+  const runners = [
+    fixtureRunner({ id: 'runner-1', agent_name: 'e2e-1' }),
+    fixtureRunner({ id: 'runner-2', agent_name: 'e2e-2' }),
+  ];
+  await mockStatus(page, runners);
+  const posts = [];
+  await page.route('**/api.php*action=*rolling_restart*', async (route) => {
+    posts.push({
+      url: route.request().url(),
+      body: route.request().postData() || '',
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, message: 'restarted' }),
+    });
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('tr[data-runner="runner-1"] button[data-action="rolling-restart"]').click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0].url).toContain('action=rolling_restart');
+  expect(posts[0].body).toContain('runner=runner-1');
+  expect(posts[0].body).toContain('timeout=');
+
+  await page.locator('tr[data-runner="runner-1"] input.row-select').check();
+  await page.locator('tr[data-runner="runner-2"] input.row-select').check();
+  await page.locator('#btn-bulk-rolling-restart').click();
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1].url).toContain('action=bulk_rolling_restart');
+  expect(posts[1].body).toMatch(/runners=runner-1%2Crunner-2|runners=runner-2%2Crunner-1/);
 });
 
 test('runner rows show the local agent version', async ({ page }) => {

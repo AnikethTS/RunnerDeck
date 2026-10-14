@@ -256,6 +256,7 @@ Layout::topbarEnd();
         <button id="btn-start-all" class="btn btn-good">Start All</button>
         <button id="btn-stop-all" class="btn btn-critical">Stop All</button>
         <button id="btn-drain-all" class="btn">Drain All</button>
+        <button id="btn-rolling-restart-all" class="btn">Rolling Restart</button>
         <form id="pool-size-form" class="pool-form">
           <label for="pool-size">Pool size</label>
           <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
@@ -269,6 +270,7 @@ Layout::topbarEnd();
         <button id="btn-bulk-start" class="btn btn-sm btn-good">Start</button>
         <button id="btn-bulk-stop" class="btn btn-sm btn-critical">Stop</button>
         <button id="btn-bulk-drain" class="btn btn-sm">Drain</button>
+        <button id="btn-bulk-rolling-restart" class="btn btn-sm">Roll restart</button>
         <button id="btn-bulk-delete" class="btn btn-sm btn-critical">Delete</button>
         <button id="btn-bulk-clear" class="btn btn-sm">Clear</button>
       </div>

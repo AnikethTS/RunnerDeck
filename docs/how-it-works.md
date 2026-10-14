@@ -26,7 +26,9 @@
   dashboard polls status while waiting; `POST drain_stop` /
   `drain_stop_all` / `bulk_drain_stop` wait on the server; `php
   bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
-  `--timeout=`, `--force`). Timeout is also a Settings field.
+  `--timeout=`, `--force`). Timeout is also a Settings field. **Rolling
+  restart** does that drain-stop then start, one configured slot at a
+  time, so this host is not all-offline at once.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
