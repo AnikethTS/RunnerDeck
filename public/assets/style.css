@@ -97,6 +97,14 @@ svg[hidden] {
 .banner-info {
   background: var(--brand);
 }
+.banner-warning {
+  background: var(--status-warning);
+  color: #1a1a19;
+}
+#hosting-warnings {
+  display: flex;
+  flex-direction: column;
+}
 
 * { box-sizing: border-box; }
 

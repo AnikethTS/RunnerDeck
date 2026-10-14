@@ -138,6 +138,7 @@ test('first-run setup configures the app and reaches the dashboard', async ({ pa
   await expect(page.locator('header.topbar img.logo')).toBeVisible();
   await expect(page.locator('#chart-cpu-now')).toBeVisible();
   await expect(page.locator('#chart-cpu')).toBeVisible();
+  await expect(page.locator('#hosting-warnings')).toHaveCount(0);
 });
 
 test('refresh renders runner rows from the API', async ({ page }) => {
