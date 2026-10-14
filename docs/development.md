@@ -105,6 +105,7 @@ runnerdeck/
     ProcessDecision.php   pidfile vs live-process start/stop decisions
     ProcessControl.php    start/stop (wait + SIGKILL)/restart, individual and pool-wide
     Drain.php             wait for GitHub busy=false before stop
+    RollingRestart.php    sequential drain-stop then start per slot
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
     AutoRestart.php       headless start for `should_auto_restart`

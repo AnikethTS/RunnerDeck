@@ -8,6 +8,9 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Rolling restart: drain-stop then start one configured slot at a time
+  (row, selected, or all). Honors drain timeout; `force=1` skips the wait.
+
 - Dashboard, Settings, and login show hosting warnings when the Host is
   not localhost or the request is HTTPS: missing TLS, TOTP as the only
   gate, `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a

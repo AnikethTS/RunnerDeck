@@ -277,6 +277,8 @@ ids for the `bulk_*` actions).
 | `stop` | `runner` | Busy-checked |
 | `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
 | `restart` | `runner` | Busy-checked |
+| `rolling_restart` | `runner` | Drain then restart one slot; `timeout` optional; `409` if still busy unless `force=1` |
+| `bulk_rolling_restart` | `runners` | One slot at a time (drain-stop then start); skips unconfigured; `timeout` optional |
 | `rename` | `runner`, `name` | Busy-checked; deregisters and re-registers under the new name |
 | `add_runner` | `name` (optional — auto-named if blank) | |
 | `delete_runner` | `runner` | Busy-checked; deletes local files, deregisters from GitHub — no undo |

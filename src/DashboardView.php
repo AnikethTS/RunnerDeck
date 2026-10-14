@@ -193,6 +193,7 @@ final class DashboardView
             . '          <button class="btn btn-sm" data-action="drain"'
             . $drainDis . '>Drain</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="restart">Restart</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="rename">Rename</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="clear-work"'
             . $clearDis . '>Clear work</button>' . "\n"

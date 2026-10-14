@@ -127,9 +127,17 @@ function initDashboard() {
     badge.hidden = false;
   }
 
-  function drainTimeoutMs() {
+  function drainTimeoutSeconds() {
     const n = Number(window.__DRAIN_TIMEOUT__);
-    return (Number.isFinite(n) && n >= 1 ? n : 600) * 1000;
+    return Number.isFinite(n) && n >= 1 ? n : 600;
+  }
+
+  function drainTimeoutMs() {
+    return drainTimeoutSeconds() * 1000;
+  }
+
+  function rollingParams(params) {
+    return { ...params, timeout: String(drainTimeoutSeconds()) };
   }
 
   function idsStillBusy(ids) {
@@ -235,6 +243,12 @@ function initDashboard() {
       await withLoading(btn, 'Draining…', () => drainThenStop('stop', { runner }, [runner]));
       return;
     }
+    if (action === 'rolling-restart') {
+      await withLoading(btn, 'Rolling…', () =>
+        runWithBusyGuard('rolling_restart', rollingParams({ runner })),
+      );
+      return;
+    }
     if (action === 'clear-work') {
       await withLoading(btn, 'Clearing…', async () => {
         const { data } = await post('clear_work', { runner });
@@ -306,6 +320,14 @@ function initDashboard() {
     withLoading(e.currentTarget, 'Draining…', () => drainThenStop('stop_all', {}, ids));
   });
 
+  document.getElementById('btn-rolling-restart-all').addEventListener('click', (e) => {
+    const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
+    if (!ids.length) return;
+    withLoading(e.currentTarget, 'Rolling…', () =>
+      runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
+    );
+  });
+
   rowsEl.addEventListener('change', (e) => {
     const checkbox = e.target.closest('input.row-select');
     if (!checkbox) return;
@@ -344,6 +366,13 @@ function initDashboard() {
       e.currentTarget,
       'Draining…',
       () => drainThenStop('bulk_stop', { runners: ids.join(',') }, ids),
+    );
+  });
+
+  document.getElementById('btn-bulk-rolling-restart').addEventListener('click', (e) => {
+    const ids = [...selectedRunners];
+    withLoading(e.currentTarget, 'Rolling…', () =>
+      runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
     );
   });
 

@@ -20,7 +20,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |
 | `RUNNERDECK_CRASH_WEBHOOK_URL` | no | off | POSTed once per crash-loop onset, when a runner's 7-day crash count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` if that is set, and when disk first reaches `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` GiB. Slack/Discord incoming webhook URLs are detected and get their native payload shape; anything else gets a plain JSON payload. Set from Settings |
 | `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1. When set, the crash webhook also fires once as a runner's 7-day crash count first reaches this value. Set from Settings |
-| `RUNNERDECK_DRAIN_TIMEOUT` | no | `600` | Seconds to wait for GitHub `busy=false` before drain-stop gives up (1–3600). Settings → Automation, `drain_stop` API actions, and `php bin/drain-stop.php` |
+| `RUNNERDECK_DRAIN_TIMEOUT` | no | `600` | Seconds to wait for GitHub `busy=false` before drain-stop or rolling restart gives up (1–3600). Settings → Automation, `drain_stop` / `rolling_restart` API actions, and `php bin/drain-stop.php` |
 | `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1 (GiB). When set, the crash webhook also fires once as a slot or the pool total first reaches this size. Set from Settings |
 | `RUNNERDECK_TRUST_PROXY` | no | off | `1` to honor `X-Forwarded-Proto` from a non-loopback reverse proxy. Same-machine proxy to `127.0.0.1:8090` or php-fpm on `:9000` already trusts that header. See [Hosting](hosting.md) |
 
