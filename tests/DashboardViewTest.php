@@ -49,6 +49,8 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('local/GitHub status disagree', $html);
         $this->assertStringContainsString('data-action="start"', $html);
         $this->assertStringContainsString('data-action="rolling-restart"', $html);
+        $this->assertStringContainsString('data-action="pause-auto-restart"', $html);
+        $this->assertStringContainsString('Pause AR', $html);
     }
 
     public function testRowHtmlShowsGithubOsChip(): void
@@ -69,6 +71,22 @@ final class DashboardViewTest extends TestCase
         ]);
         $this->assertStringContainsString('os-chip', $html);
         $this->assertStringContainsString('Linux', $html);
+    }
+
+    public function testRowHtmlShowsPausedAutoRestart(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => [],
+            'github' => null,
+            'auto_restart_paused' => true,
+        ]);
+        $this->assertStringContainsString('auto-restart paused', $html);
+        $this->assertStringContainsString('Resume AR', $html);
     }
 
     public function testRowHtmlCrashHistoryIsAButton(): void

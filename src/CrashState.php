@@ -49,6 +49,22 @@ final class CrashState
         self::writeState($state);
     }
 
+    public static function setAutoRestartPaused(string $id, bool $paused): void
+    {
+        $lock = self::lock();
+        try {
+            $state = self::readState();
+            $state[$id] = self::runnerState($state, $id);
+            $state[$id]['autoRestartPaused'] = $paused;
+            self::writeState($state);
+        } finally {
+            if ($lock !== null) {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+        }
+    }
+
     /** @param array<string, array<string, mixed>> $state */
     private static function runnerState(array $state, string $id): array
     {
@@ -56,6 +72,7 @@ final class CrashState
             'wasRunning' => false, 'attempts' => 0, 'healthySince' => 0,
             'flagged' => false, 'notified' => false, 'justStopped' => false,
             'mismatchStreak' => 0, 'mismatchNotified' => false,
+            'autoRestartPaused' => false,
         ];
     }
 
@@ -125,6 +142,7 @@ final class CrashState
             $shouldAutoRestart = false;
             $thresholdCrossed = false;
             $id = (string) $r['id'];
+            $paused = !empty($s['autoRestartPaused']);
             if ($crashed) {
                 $before = $crashCounts[$id] ?? 0;
                 CrashHistory::record($id, (string) ($r['agent_name'] ?? $id));
@@ -132,7 +150,7 @@ final class CrashState
                 $times = $crashTimes[$id] ?? [];
                 array_unshift($times, time());
                 $crashTimes[$id] = array_slice($times, 0, CrashHistory::LIST_LIMIT);
-                if ($autoRestart && $s['attempts'] < self::MAX_ATTEMPTS) {
+                if ($autoRestart && !$paused && $s['attempts'] < self::MAX_ATTEMPTS) {
                     $s['attempts']++;
                     $shouldAutoRestart = true;
                 } else {
@@ -168,6 +186,7 @@ final class CrashState
             $r['crash_flagged'] = $s['flagged'];
             $r['just_flagged'] = $justFlagged;
             $r['should_auto_restart'] = $shouldAutoRestart;
+            $r['auto_restart_paused'] = $paused;
             $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
             $r['just_mismatch_flagged'] = $justMismatch;
             $r['crash_count_7d'] = $crashCounts[$id] ?? 0;

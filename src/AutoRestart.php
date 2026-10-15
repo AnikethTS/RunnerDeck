@@ -39,7 +39,7 @@ final class AutoRestart
     {
         $out = [];
         foreach ($runners as $row) {
-            if (empty($row['should_auto_restart'])) {
+            if (empty($row['should_auto_restart']) || !empty($row['auto_restart_paused'])) {
                 continue;
             }
             $id = (string) ($row['id'] ?? '');

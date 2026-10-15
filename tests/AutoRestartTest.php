@@ -66,4 +66,33 @@ final class AutoRestartTest extends TestCase
         $this->assertNotSame([], $spawned);
         $this->assertFileExists($this->dir . '/runner.pid');
     }
+
+    #[RunInSeparateProcess]
+    public function testStartFlaggedSkipsPausedRunners(): void
+    {
+        $spawned = [];
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+            $spawned[] = $cmd;
+            return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
+        });
+
+        $info = new \RunnerDeck\RunnerInfo(
+            id: 'runner-1',
+            dir: $this->dir,
+            configured: true,
+            agentName: 'acme-1',
+            localRunning: false,
+            pid: null,
+            logTail: [],
+        );
+        $started = \RunnerDeck\AutoRestart::startFlagged([
+            array_merge($info->toArray(), [
+                'should_auto_restart' => true,
+                'auto_restart_paused' => true,
+            ]),
+        ]);
+
+        $this->assertSame([], $started);
+        $this->assertSame([], $spawned);
+    }
 }

@@ -140,6 +140,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "crash_flagged": false,
       "just_flagged": false,
       "should_auto_restart": false,
+      "auto_restart_paused": false,
       "mismatch_flagged": false,
       "crash_count_7d": 0
     }
@@ -169,7 +170,7 @@ registered name yet (still provisioning, or access issue — see `health`).
 `agent_version` is the local GitHub Actions runner agent version (`null`
 if `.runner` and `bin/Runner.Listener.deps.json` do not have one).
 
-`crash_flagged`/`just_flagged`/`should_auto_restart`/`mismatch_flagged` are
+`crash_flagged`/`just_flagged`/`should_auto_restart`/`auto_restart_paused`/`mismatch_flagged` are
 server-tracked bookkeeping (`src/CrashState.php`) — reading/updating a small
 state file on every poll, the same category of side effect as
 `History::record()` already writing a stats sample from within this same GET
@@ -191,6 +192,10 @@ the 7-day count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD`
 (when that setting is on). `disk_kb` is best-effort `_work` + `_diag` +
 `runner.log` size; `can_clear_work` is true when `_work` exists and the
 local process is not running.
+
+`auto_restart_paused` is true when an operator has held auto-restart on
+that slot (`POST pause_auto_restart`). A paused slot is never
+`should_auto_restart: true`.
 
 When auto-restart is enabled, `should_auto_restart: true` means this runner
 just crashed and RunnerDeck wants it restarted — but `action=status` only
@@ -278,6 +283,7 @@ ids for the `bulk_*` actions).
 | `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
 | `restart` | `runner` | Busy-checked |
 | `rolling_restart` | `runner` | Drain then restart one slot; `timeout` optional; `409` if still busy unless `force=1` |
+| `pause_auto_restart` | `runner`, `paused` (`1` or `0`) | Holds or resumes auto-restart for one slot; manual Start still works |
 | `bulk_rolling_restart` | `runners` | One slot at a time (drain-stop then start); skips unconfigured; `timeout` optional |
 | `rename` | `runner`, `name` | Busy-checked; deregisters and re-registers under the new name |
 | `add_runner` | `name` (optional — auto-named if blank) | |

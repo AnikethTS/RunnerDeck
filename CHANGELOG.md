@@ -8,6 +8,12 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Per-slot **Pause AR** so a flaky runner stays down while pool-wide
+  auto-restart stays on. Resume from the same button.
+
+- Drain buttons show remaining seconds and busy/idle from the existing
+  GitHub poll while waiting.
+
 - Rolling restart: drain-stop then start one configured slot at a time
   (row, selected, or all). Honors drain timeout; `force=1` skips the wait.
 

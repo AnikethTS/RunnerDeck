@@ -46,7 +46,7 @@ function initDashboard() {
     renderErrors(snapshot);
     snapshot.runners.forEach((r) => {
       if (r.just_flagged) showToast(`${r.agent_name || r.id} crashed and needs attention`);
-      if (r.should_auto_restart) post('start', { runner: r.id }).catch(() => {});
+      if (r.should_auto_restart && !r.auto_restart_paused) post('start', { runner: r.id }).catch(() => {});
     });
 
     const liveIds = new Set(snapshot.runners.map((r) => r.id));
@@ -67,6 +67,7 @@ function initDashboard() {
       paintRows(rowsEl, snapshot, visible);
       updateSortIndicators();
     }
+    applyDrainWaitUi();
     updateBulkActionsBar(visible);
     lastUpdatedEl.textContent = snapshot.view && snapshot.view.updated
       ? snapshot.view.updated
@@ -150,6 +151,48 @@ function initDashboard() {
     });
   }
 
+  const drainWait = new Map();
+  let drainTick = null;
+
+  function beginDrainWait(ids) {
+    const deadline = Date.now() + drainTimeoutMs();
+    ids.forEach((id) => drainWait.set(id, deadline));
+    ensureDrainTick();
+    applyDrainWaitUi();
+  }
+
+  function endDrainWait(ids) {
+    ids.forEach((id) => drainWait.delete(id));
+    ensureDrainTick();
+    if (lastSnapshot) {
+      lastRowsKey = '';
+      render(lastSnapshot);
+    }
+  }
+
+  function ensureDrainTick() {
+    if (drainWait.size && !drainTick) {
+      drainTick = window.setInterval(applyDrainWaitUi, 1000);
+    }
+    if (!drainWait.size && drainTick) {
+      window.clearInterval(drainTick);
+      drainTick = null;
+    }
+  }
+
+  function applyDrainWaitUi() {
+    drainWait.forEach((deadline, id) => {
+      const tr = [...rowsEl.querySelectorAll('tr[data-runner]')].find((row) => row.dataset.runner === id);
+      const btn = tr && tr.querySelector('[data-action="drain"]');
+      if (!btn) return;
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      const row = lastSnapshot ? lastSnapshot.runners.find((r) => r.id === id) : null;
+      const busy = !row || !row.github || !!row.github.busy;
+      btn.disabled = true;
+      btn.textContent = busy ? `Busy · ${remaining}s` : `Idle · ${remaining}s`;
+    });
+  }
+
   function sleep(ms) {
     return new Promise((resolve) => {
       window.setTimeout(resolve, ms);
@@ -157,21 +200,26 @@ function initDashboard() {
   }
 
   async function drainThenStop(action, params, ids) {
-    const deadline = Date.now() + drainTimeoutMs();
-    while (idsStillBusy(ids) && Date.now() < deadline) {
-      await fetchStatus();
-      if (!idsStillBusy(ids)) break;
-      await sleep(2000);
+    beginDrainWait(ids);
+    try {
+      const deadline = Date.now() + drainTimeoutMs();
+      while (idsStillBusy(ids) && Date.now() < deadline) {
+        await fetchStatus();
+        if (!idsStillBusy(ids)) break;
+        await sleep(2000);
+      }
+      if (idsStillBusy(ids)) {
+        const proceed = await confirmModal(
+          'Still busy after waiting for the job to finish. Stop anyway and interrupt it?',
+        );
+        if (!proceed) return;
+        await runWithBusyGuard(action, { ...params, force: '1' });
+        return;
+      }
+      await runWithBusyGuard(action, params);
+    } finally {
+      endDrainWait(ids);
     }
-    if (idsStillBusy(ids)) {
-      const proceed = await confirmModal(
-        'Still busy after waiting for the job to finish. Stop anyway and interrupt it?',
-      );
-      if (!proceed) return;
-      await runWithBusyGuard(action, { ...params, force: '1' });
-      return;
-    }
-    await runWithBusyGuard(action, params);
   }
 
   async function runWithBusyGuard(action, params) {
@@ -240,7 +288,17 @@ function initDashboard() {
       return;
     }
     if (action === 'drain') {
-      await withLoading(btn, 'Draining…', () => drainThenStop('stop', { runner }, [runner]));
+      await drainThenStop('stop', { runner }, [runner]);
+      return;
+    }
+    if (action === 'pause-auto-restart') {
+      const row = lastSnapshot ? lastSnapshot.runners.find((r) => r.id === runner) : null;
+      const paused = row && row.auto_restart_paused ? '0' : '1';
+      await withLoading(btn, paused === '1' ? 'Pausing…' : 'Resuming…', async () => {
+        const { data } = await post('pause_auto_restart', { runner, paused });
+        if (!data.ok) showToast(data.message);
+        await fetchStatus();
+      });
       return;
     }
     if (action === 'rolling-restart') {

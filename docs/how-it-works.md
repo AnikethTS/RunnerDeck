@@ -26,9 +26,11 @@
   dashboard polls status while waiting; `POST drain_stop` /
   `drain_stop_all` / `bulk_drain_stop` wait on the server; `php
   bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
-  `--timeout=`, `--force`). Timeout is also a Settings field. **Rolling
-  restart** does that drain-stop then start, one configured slot at a
-  time, so this host is not all-offline at once.
+  `--timeout=`, `--force`). Timeout is also a Settings field. While the
+  dashboard waits, the row button shows remaining seconds and busy/idle
+  from that same poll (`Busy · 12s`). **Rolling restart** does that
+  drain-stop then start, one configured slot at a time, so this host is
+  not all-offline at once.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
@@ -84,7 +86,9 @@
   sibling loop (`bin/watch-auto-restart.php`, started from `run.sh`)
   calls the same start path when auto-restart is on, so a crash is
   restarted with no dashboard tab open. A visible tab may still POST
-  `start` as well; starting an already-running slot is a no-op.
+  `start` as well; starting an already-running slot is a no-op. **Pause AR**
+  on a row holds auto-restart for that slot only (crash still flags) so
+  you can debug a flaky runner without turning the pool setting off.
 - An optional **crash-loop webhook** (Settings, `RUNNERDECK_CRASH_WEBHOOK_URL`)
   POSTs a notification the moment a crash-loop is flagged, so you find out
   even with no dashboard tab open. Slack and Discord incoming webhook URLs
