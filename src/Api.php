@@ -21,6 +21,7 @@ use RunnerDeck\Api\HistoryAction;
 use RunnerDeck\Api\LogAction;
 use RunnerDeck\Api\LoginAction;
 use RunnerDeck\Api\LogoutAction;
+use RunnerDeck\Api\PauseAutoRestartAction;
 use RunnerDeck\Api\RenameAction;
 use RunnerDeck\Api\ResizeAction;
 use RunnerDeck\Api\RestartAction;
@@ -58,6 +59,7 @@ final class Api
         'stop' => StopAction::class,
         'restart' => RestartAction::class,
         'rolling_restart' => RollingRestartAction::class,
+        'pause_auto_restart' => PauseAutoRestartAction::class,
         'rename' => RenameAction::class,
         'add_runner' => AddRunnerAction::class,
         'delete_runner' => DeleteRunnerAction::class,

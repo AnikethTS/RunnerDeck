@@ -167,6 +167,7 @@ final class DashboardView
         $stopDis = $running ? '' : ' disabled';
         $drainDis = $running ? '' : ' disabled';
         $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
+        $pauseLabel = !empty($runner['auto_restart_paused']) ? 'Resume AR' : 'Pause AR';
 
         return ''
             . '    <tr data-runner="' . $id . '" data-agent-name="' . $name . '">' . "\n"
@@ -194,6 +195,8 @@ final class DashboardView
             . $drainDis . '>Drain</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="restart">Restart</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="pause-auto-restart">'
+            . $pauseLabel . '</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="rename">Rename</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="clear-work"'
             . $clearDis . '>Clear work</button>' . "\n"
@@ -253,6 +256,7 @@ final class DashboardView
         }
         return $badge . self::resourceUsage($runner) . self::diskUsage($runner)
             . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
+            . self::flag($runner, 'auto_restart_paused', 'auto-restart paused', 'warning')
             . self::crashHistoryBadge($runner);
     }
 

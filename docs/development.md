@@ -108,7 +108,7 @@ runnerdeck/
     RollingRestart.php    sequential drain-stop then start per slot
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
-    AutoRestart.php       headless start for `should_auto_restart`
+    AutoRestart.php       headless start for `should_auto_restart` (honors per-slot pause)
     RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows

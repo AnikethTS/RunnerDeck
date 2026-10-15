@@ -51,6 +51,7 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($result[0]['crash_flagged']);
         $this->assertFalse($result[0]['just_flagged']);
         $this->assertFalse($result[0]['should_auto_restart']);
+        $this->assertFalse($result[0]['auto_restart_paused']);
         $this->assertFalse($result[0]['mismatch_flagged']);
         $this->assertFalse($result[0]['just_mismatch_flagged']);
     }
@@ -171,6 +172,19 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($result[0]['should_auto_restart']);
         $this->assertTrue($result[0]['crash_flagged']);
         $this->assertTrue($result[0]['just_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testPausedSlotDoesNotAutoRestart(): void
+    {
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+        \RunnerDeck\CrashState::setAutoRestartPaused('runner-base', true);
+        \RunnerDeck\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\CrashState::track($this->runner(false));
+
+        $this->assertTrue($result[0]['auto_restart_paused']);
+        $this->assertFalse($result[0]['should_auto_restart']);
+        $this->assertTrue($result[0]['crash_flagged']);
     }
 
     #[RunInSeparateProcess]

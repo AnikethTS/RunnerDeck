@@ -72,6 +72,9 @@ function fixtureRowHtml(r) {
   if (r.crash_flagged) {
     local += '<div class="row-flag"><span class="badge badge-critical">crashed unexpectedly</span></div>';
   }
+  if (r.auto_restart_paused) {
+    local += '<div class="row-flag"><span class="badge badge-warning">auto-restart paused</span></div>';
+  }
   if (r.crash_count_7d) {
     const text = r.crash_count_7d === 1 ? '1 crash (7d)' : `${r.crash_count_7d} crashes (7d)`;
     local += `<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history">${text}</button></div>`;
@@ -93,6 +96,7 @@ function fixtureRowHtml(r) {
       <button class="btn btn-sm" data-action="drain"${drainDis}>Drain</button>
       <button class="btn btn-sm" data-action="restart">Restart</button>
       <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>
+      <button class="btn btn-sm" data-action="pause-auto-restart">${r.auto_restart_paused ? 'Resume AR' : 'Pause AR'}</button>
       <button class="btn btn-sm" data-action="rename">Rename</button>
       <button class="btn btn-sm" data-action="clear-work"${clearDis}>Clear work</button>
       <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
@@ -738,6 +742,45 @@ test('rolling restart posts the selected slots', async ({ page }) => {
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1].url).toContain('action=bulk_rolling_restart');
   expect(posts[1].body).toMatch(/runners=runner-1%2Crunner-2|runners=runner-2%2Crunner-1/);
+});
+
+test('pause auto-restart posts the slot flag', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner({ id: 'runner-1', agent_name: 'e2e-1' })]);
+  const posts = [];
+  await page.route('**/api.php*action=pause_auto_restart*', async (route) => {
+    posts.push(route.request().postData() || '');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, paused: true, message: 'paused' }),
+    });
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('tr[data-runner="runner-1"] button[data-action="pause-auto-restart"]').click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]).toContain('runner=runner-1');
+  expect(posts[0]).toContain('paused=1');
+});
+
+test('drain wait shows remaining seconds from the status poll', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'runner-1',
+      github: { status: 'online', busy: true, labels: [], os: 'Linux' },
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.evaluate(() => {
+    window.__DRAIN_TIMEOUT__ = 4;
+  });
+  await page.locator('tr[data-runner="runner-1"] button[data-action="drain"]').click();
+  await expect(page.locator('tr[data-runner="runner-1"] button[data-action="drain"]'))
+    .toHaveText(/Busy · \d+s/);
+  await expect(page.locator('#confirm-modal')).toBeVisible({ timeout: 8000 });
+  await page.locator('#confirm-modal-cancel').click();
+  await expect(page.locator('tr[data-runner="runner-1"] button[data-action="drain"]')).toHaveText('Drain');
 });
 
 test('runner rows show the local agent version', async ({ page }) => {
