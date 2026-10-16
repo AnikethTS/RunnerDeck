@@ -8,6 +8,12 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Pull requests run ChangeRadar 0.1.0 (`base.sha`..`head.sha`): upload
+  `report.md` / `report.json` and post a sticky bot comment with the
+  report and logo. Fail-open (no `--policy`). Pinned to
+  `AnikethTS/ChangeRadar@38b9ae98fd47ae15f679ca442dc0af0d17f9954a`
+  (`v0.1.0`).
+
 - Per-slot **Pause AR** so a flaky runner stays down while pool-wide
   auto-restart stays on. Resume from the same button.
 
