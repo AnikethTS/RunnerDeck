@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: AnikethTS/ChangeRadar
-          ref: 6c953c29d6bb97f560135578cc97bf967faa47a5
+          ref: 38b9ae98fd47ae15f679ca442dc0af0d17f9954a
           path: .changeradar-tool
           persist-credentials: false
 
@@ -58,3 +58,62 @@ jobs:
           path: build/changeradar/
           if-no-files-found: warn
           retention-days: 14
+
+  comment:
+    name: Comment report
+    needs: impact
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: changeradar-report
+          path: build/changeradar
+
+      - name: Post or update report comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          LOGO_URL: https://raw.githubusercontent.com/AnikethTS/ChangeRadar/v0.1.0/.github/logo.png
+        run: |
+          set -euo pipefail
+          test -s build/changeradar/report.md
+          python3 - "$RUN_URL" "$LOGO_URL" <<'PY'
+          import json, pathlib, sys
+          run_url = sys.argv[1]
+          logo_url = sys.argv[2]
+          marker = "<!-- changeradar-report -->"
+          report = pathlib.Path("build/changeradar/report.md").read_text()
+          header = (
+              marker
+              + "\n\n"
+              + '<img src="' + logo_url + '" alt="ChangeRadar" width="220" />\n\n'
+              + "Full Markdown and JSON: "
+              + run_url
+              + "\n\n"
+          )
+          limit = 65000 - len(header)
+          body = header + report
+          if len(body) > 65000:
+              body = header + report[: max(0, limit - 80)] + "\n\n_Report truncated. Download the `changeradar-report` artifact._\n"
+          pathlib.Path("/tmp/changeradar-comment.json").write_text(json.dumps({"body": body}))
+          PY
+          COMMENT_ID="$(
+            gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
+              --jq '.[] | select(.user.login=="github-actions[bot]" and (.body | contains("<!-- changeradar-report -->"))) | .id' \
+              | awk 'NF { print; exit }'
+          )"
+          if [ -n "${COMMENT_ID}" ]; then
+            gh api --method PATCH "repos/${GH_REPO}/issues/comments/${COMMENT_ID}" \
+              --input /tmp/changeradar-comment.json
+          else
+            gh api --method POST "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
+              --input /tmp/changeradar-comment.json
+          fi
