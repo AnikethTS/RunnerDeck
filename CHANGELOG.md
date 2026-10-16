@@ -8,6 +8,11 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Pull requests run a fail-open ChangeRadar impact job (`base.sha`..`head.sha`)
+  and upload `report.md` / `report.json`. Pinned to
+  `AnikethTS/ChangeRadar@6c953c29d6bb97f560135578cc97bf967faa47a5`
+  (`feat/php-analyzer`) until that lands on ChangeRadar `main`.
+
 - Per-slot **Pause AR** so a flaky runner stays down while pool-wide
   auto-restart stays on. Resume from the same button.
 
