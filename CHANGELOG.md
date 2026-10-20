@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-20
+
 ### Added
 
 - Busy rows show the **live GitHub job** (name, repo, link) from the
