@@ -120,11 +120,16 @@
   you're managing runners for, which is why it's opt-in rather than on
   by default.
 - The dashboard **polls** `action=status&view=1` every 5s only while the tab is
-  visible (whole-machine load is in that snapshot). Row HTML, stats, and
-  the recent-log panel come from PHP; JS swaps that markup in and handles
-  filter/sort, bulk actions, and live logs. A hidden tab stops
-  the timer and fetches once when you come back — so a background tab is
-  not a second load on the same machine that is running the jobs.
+  visible (whole-machine load is in that snapshot). **Queued jobs** for
+  this pool's label are a separate `action=queue` poll (~20s) with a
+  ~25s disk cache — GitHub has no org-wide waiting-jobs API, so org
+  scope only looks at a few recently pushed repos. The panel is a
+  hint (start idle slots / add a runner); it never auto-starts. Row
+  HTML, stats, and the recent-log panel come from PHP; JS swaps that
+  markup in and handles filter/sort, bulk actions, and live logs. A
+  hidden tab stops the timer and fetches once when you come back — so
+  a background tab is not a second load on the same machine that is
+  running the jobs.
   An optional TOTP **idle timeout** (Settings → Login) therefore treats a
   hidden tab as idle. Auto-restart without a visible tab is the `watch-auto-restart.php`
   process from `run.sh`, not the dashboard poll. `./run.sh` is `php -S`

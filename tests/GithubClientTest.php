@@ -99,4 +99,20 @@ final class GithubClientTest extends TestCase
         );
         $this->assertSame(1, $runners['acme-1']['id']);
     }
+
+    #[RunInSeparateProcess]
+    public function testGetJsonDecodesGhApiStdout(): void
+    {
+        $seen = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$seen): array {
+            $seen = $cmd;
+            return ['code' => 0, 'stdout' => '{"ok":true}', 'stderr' => ''];
+        });
+
+        $decoded = \RunnerDeck\GithubClient::getJson('repos/acme/app/actions/runs');
+
+        $this->assertSame(['ok' => true], $decoded);
+        $this->assertContains('api', $seen);
+        $this->assertContains('repos/acme/app/actions/runs', $seen);
+    }
 }

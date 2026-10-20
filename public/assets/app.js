@@ -11,6 +11,7 @@ import {
 import './js/theme.js';
 
 const POLL_MS = 5000;
+const QUEUE_MS = 20000;
 
 function initDashboard() {
   const rowsEl = document.getElementById('runner-rows');
@@ -116,6 +117,75 @@ function initDashboard() {
     const res = await fetch('api.php?action=status&lines=5&view=1');
     if (redirectIfUnauthenticated(res.status)) return;
     render(await res.json());
+  }
+
+  function renderQueue(data) {
+    const panel = document.getElementById('queue-panel');
+    const countEl = document.getElementById('queue-count');
+    const subEl = document.getElementById('queue-subtitle');
+    const hintEl = document.getElementById('queue-hint');
+    const hintBtn = document.getElementById('queue-hint-btn');
+    const listEl = document.getElementById('queue-jobs');
+    const errorEl = document.getElementById('queue-error');
+    if (!panel || !countEl || !subEl || !hintEl || !hintBtn || !listEl || !errorEl) return;
+
+    const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+    const count = Number(data.count) || jobs.length;
+    const failed = data.ok === false;
+    const show = failed || count > 0;
+    panel.hidden = !show;
+    if (!show) return;
+
+    const label = data.label || 'self-hosted-runnerdeck';
+    countEl.textContent = failed ? '—' : String(count);
+    subEl.textContent = data.truncated
+      ? `Waiting on ${label} (capped list)`
+      : `Waiting on ${label}`;
+
+    errorEl.hidden = !failed;
+    errorEl.textContent = failed ? (data.message || 'Could not read queued jobs') : '';
+
+    hintEl.hidden = !data.hint;
+    hintEl.textContent = data.hint || '';
+    if (data.hint_action === 'start') {
+      hintBtn.hidden = false;
+      hintBtn.textContent = 'Start idle slots';
+      hintBtn.dataset.queueHint = 'start';
+    } else if (data.hint_action === 'add') {
+      hintBtn.hidden = false;
+      hintBtn.textContent = 'Add runner';
+      hintBtn.dataset.queueHint = 'add';
+    } else {
+      hintBtn.hidden = true;
+      delete hintBtn.dataset.queueHint;
+    }
+
+    listEl.replaceChildren();
+    jobs.forEach((job) => {
+      const li = document.createElement('li');
+      const title = document.createElement(job.html_url ? 'a' : 'span');
+      title.textContent = job.name || 'job';
+      if (job.html_url) {
+        title.href = job.html_url;
+        title.target = '_blank';
+        title.rel = 'noopener noreferrer';
+      }
+      const meta = document.createElement('span');
+      meta.className = 'muted';
+      meta.textContent = [job.repo, job.workflow, job.waited].filter(Boolean).join(' · ');
+      li.append(title, ' ', meta);
+      listEl.append(li);
+    });
+  }
+
+  async function fetchQueue() {
+    try {
+      const res = await fetch('api.php?action=queue');
+      if (redirectIfUnauthenticated(res.status)) return;
+      renderQueue(await res.json());
+    } catch {
+      /* keep last paint */
+    }
   }
 
   async function checkForUpdates() {
@@ -340,7 +410,16 @@ function initDashboard() {
   });
 
   document.getElementById('btn-refresh').addEventListener('click', (e) => {
-    withLoading(e.currentTarget, 'Refreshing…', fetchStatus);
+    withLoading(e.currentTarget, 'Refreshing…', async () => {
+      await fetchStatus();
+      await fetchQueue();
+    });
+  });
+
+  document.getElementById('queue-hint-btn').addEventListener('click', () => {
+    const action = document.getElementById('queue-hint-btn').dataset.queueHint;
+    if (action === 'start') document.getElementById('btn-start-all').click();
+    if (action === 'add') document.getElementById('btn-add-runner').click();
   });
 
   const appLogLevel = document.getElementById('app-log-level');
@@ -523,17 +602,23 @@ function initDashboard() {
   }
 
   let statusTimer = null;
+  let queueTimer = null;
 
   function stopPolling() {
     if (statusTimer !== null) {
       clearInterval(statusTimer);
       statusTimer = null;
     }
+    if (queueTimer !== null) {
+      clearInterval(queueTimer);
+      queueTimer = null;
+    }
   }
 
   function startPolling() {
     stopPolling();
     statusTimer = setInterval(fetchStatus, POLL_MS);
+    queueTimer = setInterval(fetchQueue, QUEUE_MS);
   }
 
   document.addEventListener('visibilitychange', () => {
@@ -542,6 +627,7 @@ function initDashboard() {
       return;
     }
     fetchStatus();
+    fetchQueue();
     startPolling();
   });
 
@@ -559,6 +645,7 @@ function initDashboard() {
 
   if (window.__SNAPSHOT__) render(window.__SNAPSHOT__);
   else fetchStatus();
+  fetchQueue();
   if (!document.hidden) startPolling();
 }
 

@@ -238,6 +238,18 @@ Layout::topbarEnd();
         </div>
       </div>
 
+      <section id="queue-panel" class="queue-panel" hidden>
+        <div class="history-head">
+          <span class="stat-label">Queued jobs for this label</span>
+          <span id="queue-count" class="history-now"></span>
+        </div>
+        <p id="queue-subtitle" class="stat-sub"></p>
+        <p id="queue-hint" class="queue-hint" hidden></p>
+        <button type="button" id="queue-hint-btn" class="btn btn-sm" hidden></button>
+        <ul id="queue-jobs" class="queue-jobs"></ul>
+        <p id="queue-error" class="muted" hidden></p>
+      </section>
+
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
         <button id="btn-export" type="button" class="btn">Export JSON</button>

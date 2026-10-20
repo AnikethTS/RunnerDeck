@@ -277,6 +277,33 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   .history-grid { grid-template-columns: 1fr; }
 }
 
+.queue-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--gridline);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.queue-hint {
+  margin: 8px 0 6px;
+  font-size: 13px;
+}
+.queue-jobs {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.queue-jobs li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
