@@ -82,6 +82,17 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('os-chip', $html);
         $this->assertStringContainsString('Linux', $html);
         $this->assertStringContainsString('live-job', $html);
+        $this->assertStringContainsString('last-jobs', $html);
+    }
+
+    public function testOrphansHtmlListsRemoveButton(): void
+    {
+        $html = \RunnerDeck\DashboardView::orphansHtml([
+            ['name' => 'gone-box', 'id' => 9, 'status' => 'offline', 'busy' => false],
+        ]);
+        $this->assertStringContainsString('gone-box', $html);
+        $this->assertStringContainsString('remove-orphan', $html);
+        $this->assertSame('', \RunnerDeck\DashboardView::orphansHtml([]));
     }
 
     public function testRowHtmlShowsEphemeralFlag(): void
@@ -263,6 +274,7 @@ final class DashboardViewTest extends TestCase
         $this->assertSame('', $view['errors_count']);
         $this->assertTrue($view['banner_hidden']);
         $this->assertSame('0', $view['stats']['active']);
+        $this->assertSame('', $view['orphans_html']);
     }
 
     public function testErrorsPanelEmptyState(): void

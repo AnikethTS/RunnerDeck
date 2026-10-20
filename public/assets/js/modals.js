@@ -145,6 +145,8 @@ export function initModals(fetchStatus) {
     document.getElementById('add-runner-name').value = '';
     const ephemeral = document.getElementById('add-runner-ephemeral');
     if (ephemeral) ephemeral.checked = false;
+    const labels = document.getElementById('add-runner-labels');
+    if (labels) labels.value = '';
     document.getElementById('add-runner-error').hidden = true;
     addRunnerModal.hidden = false;
   });
@@ -163,9 +165,11 @@ export function initModals(fetchStatus) {
     setLoading(submitBtn, 'Adding…');
     try {
       const ephemeralEl = document.getElementById('add-runner-ephemeral');
+      const labelsEl = document.getElementById('add-runner-labels');
       const { data } = await post('add_runner', {
         name,
         ephemeral: ephemeralEl && ephemeralEl.checked ? '1' : '0',
+        extra_labels: labelsEl ? labelsEl.value.trim() : '',
       });
       if (!data.ok) {
         errorEl.textContent = data.message || 'failed to add runner';

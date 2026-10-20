@@ -76,7 +76,7 @@ function fixtureRowHtml(r) {
       github += `<div class="label-chips">${r.github.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('')}</div>`;
     }
   }
-  github += '<div class="live-job" hidden></div>';
+  github += '<div class="live-job" hidden></div><div class="last-jobs" hidden></div>';
   if (r.mismatch_flagged) {
     github += '<div class="row-flag"><span class="badge badge-warning">local/GitHub status disagree</span></div>';
   }
@@ -855,6 +855,16 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
         html_url: 'https://example.test/job/10',
         runner_name: 'e2e-runner-base',
       }],
+      recent: [{
+        id: 8,
+        name: 'unit',
+        workflow: 'CI',
+        repo: 'acme/app',
+        html_url: 'https://example.test/job/8',
+        runner_name: 'e2e-runner-base',
+        conclusion: 'success',
+        duration: '1m',
+      }],
       message: '',
     }),
   }));
@@ -867,4 +877,6 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
   await expect(page.locator('#queue-hint')).toContainText('stopped slot');
   await expect(page.locator('#queue-hint-btn')).toHaveText('Start idle slots');
   await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('build');
+  await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('unit');
+  await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('success');
 });

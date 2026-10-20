@@ -303,13 +303,33 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   align-items: baseline;
   font-size: 13px;
 }
-.live-job {
+.live-job,
+.last-jobs {
   margin-top: 6px;
   font-size: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: baseline;
+}
+.last-jobs {
+  flex-direction: column;
+  gap: 2px;
+}
+.orphan-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.orphan-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
 }
 
 .toolbar {

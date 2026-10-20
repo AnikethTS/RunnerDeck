@@ -338,6 +338,35 @@ final class ProcessControlTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testStartRefusesWhenPoolCapReached(): void
+    {
+        putenv('RUNNERDECK_POOL_CAP=1');
+        $pool = $this->storageDir . '/pool';
+        mkdir($pool, 0755, true);
+        putenv('RUNNERDECK_POOL_DIR=' . $pool);
+        $busy = $pool . '/runner-base';
+        mkdir($busy, 0755, true);
+        file_put_contents($busy . '/runner.pid', '88');
+        \RunnerDeck\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
+            return str_contains($pidFile, 'runner-base') ? [true, 88] : [false, null];
+        });
+        $spawned = false;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+            if (($cmd[0] ?? '') === 'bash') {
+                $spawned = true;
+            }
+            return ['code' => 0, 'stdout' => "1\n", 'stderr' => ''];
+        });
+
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('Pool cap', $result['message']);
+        $this->assertFalse($spawned);
+        putenv('RUNNERDECK_POOL_CAP');
+    }
+
+    #[RunInSeparateProcess]
     public function testStopFailsWhenProcessSurvivesKill(): void
     {
         file_put_contents($this->dir . '/runner.pid', '777');

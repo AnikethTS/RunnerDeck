@@ -21,6 +21,7 @@ function initDashboard() {
   let lastSnapshot = null;
   let lastRowsKey = '';
   let lastLiveJobs = [];
+  let lastRecentJobs = [];
 
   function visibleRows() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
@@ -71,6 +72,12 @@ function initDashboard() {
     }
     applyDrainWaitUi();
     applyLiveJobs();
+    applyLastJobs();
+    const orphanPanel = document.getElementById('orphan-panel');
+    if (orphanPanel && snapshot.view && typeof snapshot.view.orphans_html === 'string') {
+      orphanPanel.innerHTML = snapshot.view.orphans_html;
+      orphanPanel.hidden = snapshot.view.orphans_html === '';
+    }
     updateBulkActionsBar(visible);
     const maintBtn = document.getElementById('btn-maintenance');
     if (maintBtn) {
@@ -167,7 +174,9 @@ function initDashboard() {
     }
 
     lastLiveJobs = Array.isArray(data.live) ? data.live : [];
+    lastRecentJobs = Array.isArray(data.recent) ? data.recent : [];
     applyLiveJobs();
+    applyLastJobs();
 
     listEl.replaceChildren();
     jobs.forEach((job) => {
@@ -239,6 +248,47 @@ function initDashboard() {
       meta.className = 'muted';
       meta.textContent = [job.repo, job.workflow].filter(Boolean).join(' · ');
       host.append(title, ' ', meta);
+    });
+  }
+
+  function applyLastJobs() {
+    const byName = {};
+    lastRecentJobs.forEach((job) => {
+      if (!job || !job.runner_name) return;
+      if (!byName[job.runner_name]) byName[job.runner_name] = [];
+      if (byName[job.runner_name].length < 2) byName[job.runner_name].push(job);
+    });
+    rowsEl.querySelectorAll('tr[data-runner]').forEach((tr) => {
+      let host = tr.querySelector('.last-jobs');
+      if (!host) {
+        const td = tr.children[2];
+        if (!td) return;
+        host = document.createElement('div');
+        host.className = 'last-jobs';
+        td.append(host);
+      }
+      const jobs = byName[tr.getAttribute('data-agent-name') || ''] || [];
+      host.replaceChildren();
+      if (!jobs.length) {
+        host.hidden = true;
+        return;
+      }
+      host.hidden = false;
+      jobs.forEach((job) => {
+        const line = document.createElement('div');
+        const title = document.createElement(job.html_url ? 'a' : 'span');
+        title.textContent = job.name || 'job';
+        if (job.html_url) {
+          title.href = job.html_url;
+          title.target = '_blank';
+          title.rel = 'noopener noreferrer';
+        }
+        const meta = document.createElement('span');
+        meta.className = 'muted';
+        meta.textContent = [job.conclusion, job.duration, job.repo].filter(Boolean).join(' · ');
+        line.append(title, ' ', meta);
+        host.append(line);
+      });
     });
   }
 
@@ -465,6 +515,17 @@ function initDashboard() {
     if (action === 'start') document.getElementById('btn-start-all').click();
     if (action === 'add') document.getElementById('btn-add-runner').click();
   });
+
+  const orphanPanelEl = document.getElementById('orphan-panel');
+  if (orphanPanelEl) {
+    orphanPanelEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action="remove-orphan"]');
+      if (!btn) return;
+      const name = btn.getAttribute('data-name') || '';
+      if (!name) return;
+      await withLoading(btn, 'Removing…', () => runWithBusyGuard('remove_orphan', { name }));
+    });
+  }
 
   const appLogLevel = document.getElementById('app-log-level');
   if (appLogLevel) {

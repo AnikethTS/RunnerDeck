@@ -250,6 +250,15 @@ Layout::topbarEnd();
         <p id="queue-error" class="muted" hidden></p>
       </section>
 
+      <?php
+        $orphanHtml = DashboardView::orphansHtml(
+            is_array($dash['orphans'] ?? null) ? $dash['orphans'] : []
+        );
+        ?>
+      <section id="orphan-panel" class="queue-panel"<?= $orphanHtml === '' ? ' hidden' : '' ?>>
+        <?= $orphanHtml ?>
+      </section>
+
       <div class="toolbar">
         <button id="btn-refresh" class="btn">Refresh</button>
         <button id="btn-export" type="button" class="btn">Export JSON</button>
@@ -369,6 +378,8 @@ Layout::topbarEnd();
             <input type="checkbox" id="add-runner-ephemeral" value="1" />
             Ephemeral (one job, then re-register)
           </label>
+          <label for="add-runner-labels">Extra labels (optional)</label>
+          <input type="text" id="add-runner-labels" name="extra_labels" placeholder="gpu, linux" />
           <div class="modal-actions">
             <button type="button" id="add-runner-cancel" class="btn">Cancel</button>
             <button type="submit" class="btn btn-good">Add</button>

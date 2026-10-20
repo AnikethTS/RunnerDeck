@@ -57,6 +57,8 @@ if (
         'checkUpdates' => ($_POST['check_updates'] ?? '') === '1',
         'autoRestart' => ($_POST['auto_restart'] ?? '') === '1',
         'scaleToQueue' => ($_POST['scale_to_queue'] ?? '') === '1',
+        'poolCap' => (string) ($_POST['pool_cap'] ?? ''),
+        'idleStopMinutes' => (string) ($_POST['idle_stop_minutes'] ?? ''),
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
         'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
@@ -78,6 +80,10 @@ if (
         'checkUpdates' => Config::checkUpdatesEnabled(),
         'autoRestart' => Config::autoRestartEnabled(),
         'scaleToQueue' => Config::scaleToQueueEnabled(),
+        'poolCap' => Config::poolCap() !== null ? (string) Config::poolCap() : '',
+        'idleStopMinutes' => Config::idleStopMinutes() !== null
+            ? (string) Config::idleStopMinutes()
+            : '',
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
         'crashWebhookThreshold' => Config::crashWebhookThreshold() !== null
             ? (string) Config::crashWebhookThreshold()
@@ -220,6 +226,41 @@ echo HostingWarnings::html();
           />
           Start stopped slots when jobs are waiting on this label
         </label>
+
+        <div class="settings-field">
+          <label for="settings-pool-cap">Pool cap (optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-pool-cap"
+            name="pool_cap"
+            min="1"
+            max="30"
+            step="1"
+            value="<?= htmlspecialchars($current['poolCap']) ?>"
+            placeholder="no cap"
+          />
+          <p class="settings-hint">Never start more than this many slots (1–30). Leave blank for no cap.</p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-idle-stop">Idle stop after (minutes, optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-idle-stop"
+            name="idle_stop_minutes"
+            min="1"
+            max="1440"
+            step="1"
+            value="<?= htmlspecialchars($current['idleStopMinutes']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Stop a slot that has been GitHub-idle this long. Off while jobs are queued.
+            Needs watch-auto-restart.
+          </p>
+        </div>
 
         <div class="settings-field">
           <label for="settings-drain-timeout">Drain timeout (seconds)</label>

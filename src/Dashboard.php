@@ -30,8 +30,11 @@ final class Dashboard
 
         $discovered = RunnerPool::discover($logLines);
         $runners = [];
+        $localNames = [];
         foreach ($discovered as $info) {
             $row = $info->toArray();
+            $localNames[] = $info->agentName;
+            AgentRoster::remember($info->agentName);
             $gh = $ghRunners[$info->agentName] ?? null;
             $row['github'] = $gh === null ? null : [
                 'status' => $gh['status'],
@@ -52,6 +55,7 @@ final class Dashboard
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
+            'orphans' => AgentRoster::orphans($ghRunners, $localNames),
             'health' => [
                 'logged_in' => $loggedIn,
                 'org_access_ok' => $orgAccessOk,

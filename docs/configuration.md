@@ -11,7 +11,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_ORG` | only if `scope=org` | — | GitHub org the runners belong to |
 | `RUNNERDECK_REPO` | only if `scope=repo` | — | `owner/repo` the runners belong to |
 | `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name. The dashboard queued-jobs panel counts GitHub jobs whose labels include this value |
-| `RUNNERDECK_EXTRA_LABELS` | no | off | Comma-separated extra GitHub labels applied with the shared label on add/rename. Settings → Repository. Existing slots keep current labels until then |
+| `RUNNERDECK_EXTRA_LABELS` | no | off | Comma-separated extra GitHub labels applied with the shared label on add/rename. Per-slot extras on Add runner are stored in the slot and merged on `config.sh`. Settings → Repository |
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
@@ -19,6 +19,8 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_SESSION_IDLE_MINUTES` | no | off | Whole number 1–1440. When login is on, the session ends after this many minutes with no requests. Hidden dashboard tabs do not poll, so they count as idle. Settings → Login |
 | `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |
 | `RUNNERDECK_SCALE_TO_QUEUE` | no | off | `1` to start stopped slots when GitHub jobs are waiting on this label (`bin/watch-auto-restart.php`). Settings → Automation |
+| `RUNNERDECK_POOL_CAP` | no | off | Whole number 1–30. Never start more running slots than this (Start, Start All, add, scale-to-queue). Settings → Automation |
+| `RUNNERDECK_IDLE_STOP_MINUTES` | no | off | Whole number 1–1440. `watch-auto-restart.php` stops a slot that has been GitHub-idle this long. Skips busy and Pause-AR slots; does nothing while jobs are queued. Settings → Automation |
 | `RUNNERDECK_CRASH_WEBHOOK_URL` | no | off | POSTed once per crash-loop onset, when a runner's 7-day crash count first reaches `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` if that is set, and when disk first reaches `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` GiB. Slack/Discord incoming webhook URLs are detected and get their native payload shape; anything else gets a plain JSON payload. Set from Settings |
 | `RUNNERDECK_CRASH_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1. When set, the crash webhook also fires once as a runner's 7-day crash count first reaches this value. Set from Settings |
 | `RUNNERDECK_DRAIN_TIMEOUT` | no | `600` | Seconds to wait for GitHub `busy=false` before drain-stop or rolling restart gives up (1–3600). Settings → Automation, `drain_stop` / `rolling_restart` API actions, and `php bin/drain-stop.php` |
