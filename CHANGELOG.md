@@ -8,6 +8,10 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Settings shows a **This host** card: Host, bind, HTTPS, php -S vs
+  php-fpm, TOTP, and TRUST_PROXY — the same facts as the hosting banners,
+  always visible (including on localhost).
+
 - Pull requests run ChangeRadar 0.1.0 (`base.sha`..`head.sha`): upload
   `report.md` / `report.json` and post a sticky bot comment with the
   report and logo. Fail-open (no `--policy`). Pinned to

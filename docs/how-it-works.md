@@ -131,6 +131,8 @@
   (a handful of workers; a live log holds one). php-fpm is documented in
   [Hosting](hosting.md). A TLS hostname or non-localhost Host shows
   warning banners (missing TLS, TOTP-only 443, `php -S`, TRUST_PROXY).
+  Settings → **This host** lists Host, bind, HTTPS, server, TOTP, and
+  TRUST_PROXY for the current request even on localhost.
 - **Recent log** on the dashboard is `storage/runnerdeck.log` (start/stop/
   delete/rename plus provision/`gh` failures, secrets redacted). The panel
   auto-opens only when there is an error-level line. Filter by level and
