@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Pull requests run ChangeRadar 0.2.1 via the published Action and
+  `changeradar.jar` (`AnikethTS/ChangeRadar@dc61539e`, `version: v0.2.1`).
+  Compact sticky comment, SARIF/JSON/Markdown artifacts, Files-changed
+  notices. Fail-open (no `--policy`). Do not upload SARIF to Code Scanning.
+
 ## [1.7.0] - 2026-10-20
 
 ### Added
