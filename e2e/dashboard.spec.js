@@ -76,6 +76,7 @@ function fixtureRowHtml(r) {
       github += `<div class="label-chips">${r.github.labels.map((l) => `<span class="label-chip">${escapeHtml(l)}</span>`).join('')}</div>`;
     }
   }
+  github += '<div class="live-job" hidden></div>';
   if (r.mismatch_flagged) {
     github += '<div class="row-flag"><span class="badge badge-warning">local/GitHub status disagree</span></div>';
   }
@@ -858,6 +859,7 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
     }),
   }));
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await expect(page.locator('#queue-panel')).toBeVisible();
   await expect(page.locator('#queue-count')).toHaveText('1');
   await expect(page.locator('#queue-jobs')).toContainText('lint');
