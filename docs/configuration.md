@@ -10,7 +10,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_SCOPE` | no | `org` | `org` to manage org-level runners, or `repo` to scope runners to a single repo instead |
 | `RUNNERDECK_ORG` | only if `scope=org` | — | GitHub org the runners belong to |
 | `RUNNERDECK_REPO` | only if `scope=repo` | — | `owner/repo` the runners belong to |
-| `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name |
+| `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name. The dashboard queued-jobs panel counts GitHub jobs whose labels include this value |
 | `RUNNERDECK_EXTRA_LABELS` | no | off | Comma-separated extra GitHub labels applied with the shared label on add/rename. Settings → Repository. Existing slots keep current labels until then |
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |

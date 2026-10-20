@@ -95,6 +95,8 @@ is not a substitute for keeping this off any network beyond loopback (see
 [Hosting remotely](#hosting-remotely) above for the one supported way to
 do that). Auto-restart still goes through that same `POST action=start`;
 `GET action=status` only reports the flag and never starts a process.
+`GET action=queue` is the same class of read: GitHub job lists plus a
+disk cache, never `POST start`.
 
 Session cookies always go through one helper: `HttpOnly`, `SameSite=Lax`,
 and `Secure` when the request is HTTPS (`X-Forwarded-Proto` from a

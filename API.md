@@ -260,6 +260,42 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=check_updates'
 # {"ok":true,"current":"1.1.0","latest":"1.1.0","update_available":false,"error":null}
 ```
 
+### `action=queue`
+
+Jobs waiting on this host's shared runner label (`RUNNERDECK_LABEL`).
+Kept off the 5s `action=status` poll: GitHub has no org-wide queued-jobs
+API, so this walks a few workflow runs (repo scope, or up to five
+recently pushed org repos) and caches the result on disk for ~25s.
+Does not start runners — `hint` / `hint_action` (`start`, `add`, or
+empty) is advice only. Returns `409` if RunnerDeck isn't configured.
+
+```bash
+curl -sS 'http://127.0.0.1:8090/api.php?action=queue'
+```
+
+```jsonc
+{
+  "ok": true,
+  "label": "self-hosted-runnerdeck",
+  "count": 1,
+  "truncated": false,
+  "hint": "1 stopped slot(s) can pick these up.",
+  "hint_action": "start",
+  "jobs": [
+    {
+      "id": 9,
+      "name": "test",
+      "workflow": "CI",
+      "repo": "acme/app",
+      "html_url": "https://github.com/acme/app/actions/runs/77/job/9",
+      "status": "queued",
+      "waited": "12s"
+    }
+  ],
+  "message": ""
+}
+```
+
 ### `action=csrf_token`
 
 See **Auth** above. The one action that stays reachable even when TOTP

@@ -36,7 +36,8 @@ npm run e2e       # Playwright — see e2e/dashboard.spec.js
 a real (headless) browser — see the comment at the top of
 `e2e/dashboard.spec.js` for exactly what is and isn't real in there (GitHub
 itself is never contacted; runner data for the richer UI tests is supplied
-by mocking `action=status` responses).
+by mocking `action=status` responses, and `action=queue` is mocked so
+tests never walk live workflow runs).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on `ubuntu-latest` and `macos-latest` (PHP 8.1), a dedicated Alpine (musl)

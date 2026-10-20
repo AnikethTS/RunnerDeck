@@ -22,6 +22,7 @@ use RunnerDeck\Api\LogAction;
 use RunnerDeck\Api\LoginAction;
 use RunnerDeck\Api\LogoutAction;
 use RunnerDeck\Api\PauseAutoRestartAction;
+use RunnerDeck\Api\QueueAction;
 use RunnerDeck\Api\RenameAction;
 use RunnerDeck\Api\ResizeAction;
 use RunnerDeck\Api\RestartAction;
@@ -46,6 +47,7 @@ final class Api
         'history' => HistoryAction::class,
         'system' => SystemAction::class,
         'check_updates' => CheckUpdatesAction::class,
+        'queue' => QueueAction::class,
     ];
 
     /** @var array<string, class-string> */

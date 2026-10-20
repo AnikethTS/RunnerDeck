@@ -8,6 +8,11 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Dashboard **Queued jobs** panel: GitHub jobs waiting on this pool's
+  label, with a start-idle or add-runner hint. Polled separately from
+  status (~25s disk cache). Org scope scans a few recently pushed
+  repos; does not auto-start slots.
+
 - Settings shows a **This host** card: Host, bind, HTTPS, php -S vs
   php-fpm, TOTP, and TRUST_PROXY — the same facts as the hosting banners,
   always visible (including on localhost).

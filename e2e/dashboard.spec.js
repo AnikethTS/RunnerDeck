@@ -5,7 +5,8 @@ import { readFile } from 'node:fs/promises';
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
 // so GithubClient degrades to health.logged_in === false, same as any fresh
 // machine. Runner data for the richer UI tests (filter/sort/bulk/mismatch)
-// is supplied by mocking `action=status` responses at the network level
+// is supplied by mocking `action=status` responses at the network level;
+// `action=queue` is mocked empty so tests never walk live GitHub jobs
 // (`view.rows_html` is the PHP table markup the UI swaps in) —
 // see mockStatus() below. Mismatch badges require `mismatch_flagged: true`
 // on that payload (the streak itself is counted in PHP). First-run setup and Settings, by contrast, hit
@@ -16,6 +17,23 @@ import { readFile } from 'node:fs/promises';
 // state persisting across page loads (it does — Settings::save() writes
 // storage/settings.json for real, per RUNNERDECK_SETTINGS_FILE).
 test.describe.configure({ mode: 'serial' });
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api.php*action=queue*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      label: 'self-hosted-runnerdeck',
+      count: 0,
+      truncated: false,
+      hint: '',
+      hint_action: '',
+      jobs: [],
+      message: '',
+    }),
+  }));
+});
 
 function fixtureRunner(overrides = {}) {
   return {
@@ -799,4 +817,40 @@ test('runner rows show the local agent version', async ({ page }) => {
   await page.locator('#runner-filter').fill('2.300');
   await expect(page.locator('tr[data-runner]')).toHaveCount(1);
   await expect(page.locator('tr[data-runner="runner-old"]')).toBeVisible();
+});
+
+test('queued jobs panel lists waiting work and a start hint', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'runner-1', local_running: false, pid: null }),
+  ]);
+  await page.unroute('**/api.php*action=queue*');
+  await page.route('**/api.php*action=queue*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      label: 'self-hosted-runnerdeck',
+      count: 1,
+      truncated: false,
+      hint: '1 stopped slot(s) can pick these up.',
+      hint_action: 'start',
+      jobs: [{
+        id: 9,
+        name: 'lint',
+        workflow: 'CI',
+        repo: 'acme/app',
+        html_url: 'https://example.test/job/9',
+        status: 'queued',
+        waited: '45s',
+      }],
+      message: '',
+    }),
+  }));
+  await page.goto('/');
+  await expect(page.locator('#queue-panel')).toBeVisible();
+  await expect(page.locator('#queue-count')).toHaveText('1');
+  await expect(page.locator('#queue-jobs')).toContainText('lint');
+  await expect(page.locator('#queue-jobs a')).toHaveAttribute('href', 'https://example.test/job/9');
+  await expect(page.locator('#queue-hint')).toContainText('stopped slot');
+  await expect(page.locator('#queue-hint-btn')).toHaveText('Start idle slots');
 });

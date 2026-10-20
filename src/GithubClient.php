@@ -133,6 +133,32 @@ final class GithubClient
     }
 
     /**
+     * GET a GitHub REST path via `gh api`. Used for workflow-run/job queue
+     * polling — not the 5s runner snapshot.
+     *
+     * @return array<int|string, mixed>
+     * @throws \RuntimeException
+     */
+    public static function getJson(string $path, int $timeout = 15): array
+    {
+        self::ensureGhEnv();
+        $result = Shell::exec([Config::ghBinary(), 'api', $path], $timeout);
+        if ($result['code'] !== 0) {
+            self::fail(
+                'gh.api',
+                'gh api call failed: ' . trim($result['stderr']),
+                $result['stderr'],
+                true
+            );
+        }
+        $decoded = json_decode($result['stdout'], true);
+        if (!is_array($decoded)) {
+            self::fail('gh.api', 'gh api returned unexpected output', $result['stdout'], true);
+        }
+        return $decoded;
+    }
+
+    /**
      * @param array<int|string, mixed> $rows
      * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>
      */
