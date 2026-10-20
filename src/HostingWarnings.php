@@ -75,6 +75,49 @@ final class HostingWarnings
         return $html . "</div>\n";
     }
 
+    /**
+     * Always-on Settings facts for this request — not gated on hosted Host.
+     *
+     * @return list<array{label: string, value: string}>
+     */
+    public static function facts(): array
+    {
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        $bind = (string) ($_SERVER['SERVER_ADDR'] ?? '');
+        $rows = [
+            ['label' => 'Host', 'value' => $host !== '' ? $host : '(unknown)'],
+        ];
+        if ($bind !== '') {
+            $rows[] = ['label' => 'Bind', 'value' => $bind];
+        }
+        $rows[] = ['label' => 'HTTPS', 'value' => Session::requestIsHttps() ? 'Yes' : 'No'];
+        $rows[] = ['label' => 'Server', 'value' => self::serverLabel()];
+        $rows[] = ['label' => 'TOTP', 'value' => Auth::isEnabled() ? 'On' : 'Off'];
+        $rows[] = [
+            'label' => 'TRUST_PROXY',
+            'value' => Config::trustProxy() ? 'On' : 'Off',
+        ];
+        return $rows;
+    }
+
+    public static function settingsCardHtml(): string
+    {
+        $html = '<section class="settings-card" id="this-host" aria-labelledby="this-host-heading">' . "\n"
+            . '  <h3 id="this-host-heading">This host</h3>' . "\n"
+            . '  <p class="settings-hint">How this request reached PHP. Banner warnings'
+            . ' fire when Host is not localhost or the request is HTTPS.</p>' . "\n"
+            . '  <dl class="settings-facts">' . "\n";
+        foreach (self::facts() as $row) {
+            $html .= '    <dt>' . htmlspecialchars($row['label'], ENT_QUOTES, 'UTF-8') . '</dt>' . "\n"
+                . '    <dd>' . htmlspecialchars($row['value'], ENT_QUOTES, 'UTF-8') . '</dd>' . "\n";
+        }
+        return $html
+            . "  </dl>\n"
+            . '  <p class="settings-hint"><a href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/hosting.md">'
+            . 'Hosting docs</a></p>' . "\n"
+            . "</section>\n";
+    }
+
     public static function isHostedRequest(): bool
     {
         if (Session::requestIsHttps()) {
@@ -107,6 +150,17 @@ final class HostingWarnings
             || $host === '127.0.0.1'
             || $host === '::1'
             || $host === '::ffff:127.0.0.1';
+    }
+
+    public static function serverLabel(): string
+    {
+        $sapi = self::sapi();
+        return match ($sapi) {
+            'cli-server' => 'php -S',
+            'fpm-fcgi', 'cgi-fcgi' => 'php-fpm',
+            '' => '(unknown)',
+            default => $sapi,
+        };
     }
 
     private static function sapi(): string

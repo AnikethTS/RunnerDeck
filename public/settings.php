@@ -127,6 +127,8 @@ echo HostingWarnings::html();
       </section>
     <?php endif; ?>
 
+    <?= HostingWarnings::settingsCardHtml(); ?>
+
     <form method="post" class="settings-form" id="settings-form">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
 

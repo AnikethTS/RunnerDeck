@@ -5,7 +5,8 @@
 > is HTTPS: missing TLS, TOTP as the only gate this process can see,
 > `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a
 > non-loopback client. Loopback HTTP (`127.0.0.1` / `localhost`) stays
-> quiet. `php bin/doctor.php` also warns on a non-loopback bind.
+> quiet. Settings also has a **This host** card with those facts even
+> on localhost. `php bin/doctor.php` also warns on a non-loopback bind.
 
 RunnerDeck is still a **single-user operator UI** for runners on **this
 machine**. “Cloud hosting” here means: a VPS or home server where Caddy,

@@ -530,6 +530,8 @@ test('Local process sorts independently by CPU and uptime, including absent valu
 
 test('settings page toggles scope fields and persists a change', async ({ page }) => {
   await page.goto('/settings.php');
+  await expect(page.locator('#this-host')).toBeVisible();
+  await expect(page.locator('#this-host')).toContainText('php -S');
   await expect(page.locator('#settings-org-field')).toBeVisible();
   await expect(page.locator('#settings-session-idle')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();

@@ -113,6 +113,7 @@ runnerdeck/
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
     Layout.php            shared HTML chrome: theme cookie, topbar, assets
+    HostingWarnings.php   TLS/TOTP/php -S banners plus Settings This-host card
     Session.php           one session_start path (HttpOnly, SameSite, Secure)
     SecurityHeaders.php   CSP / frame / referrer headers for PHP responses
     Api.php               JSON API router and shared request helpers
