@@ -269,6 +269,8 @@ Layout::topbarEnd();
         <button id="btn-stop-all" class="btn btn-critical">Stop All</button>
         <button id="btn-drain-all" class="btn">Drain All</button>
         <button id="btn-rolling-restart-all" class="btn">Rolling Restart</button>
+        <button id="btn-rolling-upgrade" class="btn">Upgrade agents</button>
+        <button id="btn-maintenance" class="btn">Maintenance</button>
         <form id="pool-size-form" class="pool-form">
           <label for="pool-size">Pool size</label>
           <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
@@ -363,6 +365,10 @@ Layout::topbarEnd();
         <form id="add-runner-form" class="settings-form">
           <label for="add-runner-name">Name (optional)</label>
           <input type="text" id="add-runner-name" name="name" placeholder="leave blank to auto-name" />
+          <label class="checkbox-label">
+            <input type="checkbox" id="add-runner-ephemeral" value="1" />
+            Ephemeral (one job, then re-register)
+          </label>
           <div class="modal-actions">
             <button type="button" id="add-runner-cancel" class="btn">Cancel</button>
             <button type="submit" class="btn btn-good">Add</button>

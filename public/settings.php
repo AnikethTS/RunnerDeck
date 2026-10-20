@@ -56,6 +56,7 @@ if (
         'extraLabels' => (string) ($_POST['extra_labels'] ?? ''),
         'checkUpdates' => ($_POST['check_updates'] ?? '') === '1',
         'autoRestart' => ($_POST['auto_restart'] ?? '') === '1',
+        'scaleToQueue' => ($_POST['scale_to_queue'] ?? '') === '1',
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
         'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
@@ -76,6 +77,7 @@ if (
         'extraLabels' => implode(',', Config::extraLabels()),
         'checkUpdates' => Config::checkUpdatesEnabled(),
         'autoRestart' => Config::autoRestartEnabled(),
+        'scaleToQueue' => Config::scaleToQueueEnabled(),
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
         'crashWebhookThreshold' => Config::crashWebhookThreshold() !== null
             ? (string) Config::crashWebhookThreshold()
@@ -207,6 +209,16 @@ echo HostingWarnings::html();
             <?= $current['autoRestart'] ? 'checked' : '' ?>
           />
           Auto-restart crashed runners
+        </label>
+
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="scale_to_queue"
+            value="1"
+            <?= $current['scaleToQueue'] ? 'checked' : '' ?>
+          />
+          Start stopped slots when jobs are waiting on this label
         </label>
 
         <div class="settings-field">

@@ -13,7 +13,7 @@ $once = in_array('--once', $argv, true);
 $interval = 5;
 
 do {
-    if (Config::isConfigured() && Config::autoRestartEnabled()) {
+    if (Config::isConfigured()) {
         AutoRestart::tick();
     }
     if ($once) {

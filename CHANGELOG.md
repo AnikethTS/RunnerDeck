@@ -8,6 +8,20 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Busy rows show the **live GitHub job** (name, repo, link) from the
+  queued-jobs walk — not the 5s status poll.
+
+- Opt-in **scale to queue**: `watch-auto-restart.php` starts stopped
+  slots when jobs are waiting on this label (`RUNNERDECK_SCALE_TO_QUEUE`).
+
+- **Ephemeral** slots (`config.sh --ephemeral`): one job, then
+  RunnerDeck re-registers and starts the slot again. Not treated as a crash.
+
+- **Upgrade agents** drains one slot at a time, replaces the local
+  GitHub Actions runner package, and brings it back.
+
+- **Maintenance** drain-stops the pool and refuses starts until you resume.
+
 - Dashboard **Queued jobs** panel: GitHub jobs waiting on this pool's
   label, with a start-idle or add-runner hint. Polled separately from
   status (~25s disk cache). Org scope scans a few recently pushed

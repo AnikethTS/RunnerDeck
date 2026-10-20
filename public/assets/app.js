@@ -20,6 +20,7 @@ function initDashboard() {
   const exportBtn = document.getElementById('btn-export');
   let lastSnapshot = null;
   let lastRowsKey = '';
+  let lastLiveJobs = [];
 
   function visibleRows() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
@@ -69,7 +70,12 @@ function initDashboard() {
       updateSortIndicators();
     }
     applyDrainWaitUi();
+    applyLiveJobs();
     updateBulkActionsBar(visible);
+    const maintBtn = document.getElementById('btn-maintenance');
+    if (maintBtn) {
+      maintBtn.textContent = snapshot.maintenance ? 'Resume host' : 'Maintenance';
+    }
     lastUpdatedEl.textContent = snapshot.view && snapshot.view.updated
       ? snapshot.view.updated
       : `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
@@ -160,6 +166,9 @@ function initDashboard() {
       delete hintBtn.dataset.queueHint;
     }
 
+    lastLiveJobs = Array.isArray(data.live) ? data.live : [];
+    applyLiveJobs();
+
     listEl.replaceChildren();
     jobs.forEach((job) => {
       const li = document.createElement('li');
@@ -196,6 +205,41 @@ function initDashboard() {
     const badge = document.getElementById('update-available');
     badge.textContent = `Update available: v${data.latest}`;
     badge.hidden = false;
+  }
+
+  function applyLiveJobs() {
+    const byName = {};
+    lastLiveJobs.forEach((job) => {
+      if (job && job.runner_name) byName[job.runner_name] = job;
+    });
+    rowsEl.querySelectorAll('tr[data-runner]').forEach((tr) => {
+      let host = tr.querySelector('.live-job');
+      if (!host) {
+        const td = tr.children[2];
+        if (!td) return;
+        host = document.createElement('div');
+        host.className = 'live-job';
+        td.append(host);
+      }
+      const job = byName[tr.getAttribute('data-agent-name') || ''];
+      host.replaceChildren();
+      if (!job) {
+        host.hidden = true;
+        return;
+      }
+      host.hidden = false;
+      const title = document.createElement(job.html_url ? 'a' : 'span');
+      title.textContent = job.name || 'job';
+      if (job.html_url) {
+        title.href = job.html_url;
+        title.target = '_blank';
+        title.rel = 'noopener noreferrer';
+      }
+      const meta = document.createElement('span');
+      meta.className = 'muted';
+      meta.textContent = [job.repo, job.workflow].filter(Boolean).join(' · ');
+      host.append(title, ' ', meta);
+    });
   }
 
   function drainTimeoutSeconds() {
@@ -463,6 +507,24 @@ function initDashboard() {
     withLoading(e.currentTarget, 'Rolling…', () =>
       runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
     );
+  });
+
+  document.getElementById('btn-rolling-upgrade').addEventListener('click', (e) => {
+    withLoading(e.currentTarget, 'Upgrading…', () =>
+      runWithBusyGuard('rolling_upgrade', rollingParams({})),
+    );
+  });
+
+  document.getElementById('btn-maintenance').addEventListener('click', async (e) => {
+    const on = !(lastSnapshot && lastSnapshot.maintenance);
+    const msg = on
+      ? 'Drain-stop every runner and refuse starts until you resume this host?'
+      : 'Leave maintenance? Runners stay stopped until you start them.';
+    const sure = await confirmModal(msg);
+    if (!sure) return;
+    withLoading(e.currentTarget, on ? 'Draining…' : 'Resuming…', async () => {
+      await runWithBusyGuard('maintenance', rollingParams({ enabled: on ? '1' : '0' }));
+    });
   });
 
   rowsEl.addEventListener('change', (e) => {

@@ -175,6 +175,29 @@ final class CrashStateTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testEphemeralExitReprovisionsWithoutCrashFlag(): void
+    {
+        $running = [[
+            'id' => 'runner-base',
+            'local_running' => true,
+            'configured' => true,
+            'ephemeral' => true,
+        ]];
+        $stopped = [[
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'ephemeral' => true,
+        ]];
+        \RunnerDeck\CrashState::track($running);
+        $result = \RunnerDeck\CrashState::track($stopped);
+
+        $this->assertTrue($result[0]['should_auto_restart']);
+        $this->assertFalse($result[0]['crash_flagged']);
+        $this->assertSame(0, $result[0]['crash_count_7d']);
+    }
+
+    #[RunInSeparateProcess]
     public function testPausedSlotDoesNotAutoRestart(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');

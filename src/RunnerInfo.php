@@ -20,6 +20,7 @@ final class RunnerInfo
         public readonly ?int $diskKb = null,
         public readonly bool $canClearWork = false,
         public readonly ?string $agentVersion = null,
+        public readonly bool $ephemeral = false,
     ) {
     }
 
@@ -38,6 +39,7 @@ final class RunnerInfo
             'disk_kb' => $this->diskKb,
             'can_clear_work' => $this->canClearWork,
             'agent_version' => $this->agentVersion,
+            'ephemeral' => $this->ephemeral,
         ];
     }
 }

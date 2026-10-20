@@ -30,12 +30,17 @@
   dashboard waits, the row button shows remaining seconds and busy/idle
   from that same poll (`Busy · 12s`). **Rolling restart** does that
   drain-stop then start, one configured slot at a time, so this host is
-  not all-offline at once.
+  not all-offline at once. **Upgrade agents** is the same sequence plus
+  replacing the local GitHub Actions runner package with GitHub's current
+  download for this OS/arch. **Maintenance** drain-stops every slot and
+  refuses start / auto-restart / scale-to-queue until you resume.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
 - **Add Runner** allocates the next free slot and lets you give it its own
-  GitHub-registered name. New and renamed runners get the shared pool
+  GitHub-registered name. Optional **ephemeral** passes `--ephemeral` to
+  `config.sh`: the slot takes one job, exits, and RunnerDeck
+  re-registers it (not a crash). New and renamed runners get the shared pool
   label plus optional **extra labels** (`RUNNERDECK_EXTRA_LABELS` /
   Settings). **Rename** stops a runner, deregisters it from
   GitHub, and re-registers it fresh under the new name — same busy-flag
@@ -124,7 +129,9 @@
   this pool's label are a separate `action=queue` poll (~20s) with a
   ~25s disk cache — GitHub has no org-wide waiting-jobs API, so org
   scope only looks at a few recently pushed repos. The panel is a
-  hint (start idle slots / add a runner); it never auto-starts. Row
+  hint (start idle slots / add a runner); it never auto-starts unless
+  **scale to queue** is on. The same payload's `live` jobs paint the
+  current job on a busy row. Row
   HTML, stats, and the recent-log panel come from PHP; JS swaps that
   markup in and handles filter/sort, bulk actions, and live logs. A
   hidden tab stops the timer and fetches once when you come back — so

@@ -51,6 +51,7 @@ final class Dashboard
 
         return [
             'generated_at' => time(),
+            'maintenance' => HostMode::isMaintenance(),
             'health' => [
                 'logged_in' => $loggedIn,
                 'org_access_ok' => $orgAccessOk,

@@ -143,6 +143,8 @@ export function initModals(fetchStatus) {
 
   document.getElementById('btn-add-runner').addEventListener('click', () => {
     document.getElementById('add-runner-name').value = '';
+    const ephemeral = document.getElementById('add-runner-ephemeral');
+    if (ephemeral) ephemeral.checked = false;
     document.getElementById('add-runner-error').hidden = true;
     addRunnerModal.hidden = false;
   });
@@ -160,7 +162,11 @@ export function initModals(fetchStatus) {
     errorEl.hidden = true;
     setLoading(submitBtn, 'Adding…');
     try {
-      const { data } = await post('add_runner', { name });
+      const ephemeralEl = document.getElementById('add-runner-ephemeral');
+      const { data } = await post('add_runner', {
+        name,
+        ephemeral: ephemeralEl && ephemeralEl.checked ? '1' : '0',
+      });
       if (!data.ok) {
         errorEl.textContent = data.message || 'failed to add runner';
         errorEl.hidden = false;

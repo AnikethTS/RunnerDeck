@@ -130,6 +130,7 @@ final class RunnerPool
             diskKb: $disk['kb'],
             canClearWork: $disk['can_clear'] && !$running,
             agentVersion: $agentVersion,
+            ephemeral: SlotFlags::isEphemeral($dir),
         );
     }
 

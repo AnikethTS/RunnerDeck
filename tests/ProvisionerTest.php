@@ -363,4 +363,12 @@ final class ProvisionerTest extends TestCase
         $this->assertStringContainsString('failed to download runner package', $result['message']);
         $this->assertStringContainsString('404', $result['message']);
     }
+
+    public function testVersionFromDownloadReadsFilename(): void
+    {
+        $this->assertSame('2.321.0', \RunnerDeck\Provisioner::versionFromDownload([
+            'filename' => 'actions-runner-linux-x64-2.321.0.tar.gz',
+        ]));
+        $this->assertNull(\RunnerDeck\Provisioner::versionFromDownload(['filename' => 'unknown.bin']));
+    }
 }
