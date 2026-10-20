@@ -1,7 +1,12 @@
-# Two version knobs (do not clone ChangeRadar source or run Gradle here):
-# 1. uses: …@<sha> — Action wrapper (setup-java + download). Pin a SHA.
-# 2. version: — analyzer JAR. Omit it (or latest) for GitHub's latest
-#    published release. Set version: v0.2.1 to pin a JAR.
+# ChangeRadar 0.2.2 consumer workflow. Do not clone ChangeRadar or run its Gradle.
+#
+# Two version knobs:
+# 1. uses: …@<sha> — Action wrapper (Java, download, report). Pin a SHA.
+# 2. version: — analyzer JAR. Omit (or latest) for GitHub's latest release.
+#    Set version: v0.2.2 to pin a JAR.
+#
+# Artifact, sticky PR comment, and Checks notices are posted by the Action.
+# Fork PRs skip comment and annotations. Fail-open (no --policy).
 name: ChangeRadar
 
 on:
@@ -23,122 +28,14 @@ jobs:
     permissions:
       contents: read
       checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      - name: Fetch PR SHAs
-        run: |
-          git fetch --no-tags origin \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
-
-      # Wrapper SHA (docs/default-latest-jar). JAR defaults to latest.
-      - uses: AnikethTS/ChangeRadar@60797d65a6d59723477c5b2cc964adbd6d4c53d3
+      - uses: AnikethTS/ChangeRadar@5c888d9c6f8a1e2bc08228b56cdff04891f8f8b6 # v0.2.2
         with:
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
-          format: compact,markdown,json,sarif,github
-          output: build/changeradar
-          # version: v0.2.1
-
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: changeradar-report
-          path: build/changeradar/
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Annotate changed files
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository && hashFiles('build/changeradar/report.github.json') != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          python3 - "$HEAD_SHA" <<'PY'
-          import json
-          import pathlib
-          import sys
-
-          head = sys.argv[1]
-          payload = json.loads(pathlib.Path("build/changeradar/report.github.json").read_text())
-          body = {
-              "name": "ChangeRadar annotations",
-              "head_sha": head,
-              "status": "completed",
-              "conclusion": "success",
-              "output": {
-                  "title": payload.get("title") or "ChangeRadar impact",
-                  "summary": (payload.get("summary") or "")[:65000],
-                  "annotations": (payload.get("annotations") or [])[:50],
-              },
-          }
-          pathlib.Path("/tmp/changeradar-check.json").write_text(json.dumps(body))
-          PY
-          gh api --method POST "repos/${GH_REPO}/check-runs" --input /tmp/changeradar-check.json
-
-  comment:
-    name: Comment report
-    needs: impact
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-    steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        with:
-          name: changeradar-report
-          path: build/changeradar
-
-      - name: Post or update compact report comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          LOGO_URL: https://raw.githubusercontent.com/AnikethTS/ChangeRadar/v0.2.1/.github/logo.png
-        run: |
-          set -euo pipefail
-          test -s build/changeradar/report.compact.md
-          python3 - "$RUN_URL" "$LOGO_URL" <<'PY'
-          import json
-          import pathlib
-          import sys
-
-          run_url = sys.argv[1]
-          logo_url = sys.argv[2]
-          marker = "<!-- changeradar-report -->"
-          report = pathlib.Path("build/changeradar/report.compact.md").read_text()
-          header = (
-              marker
-              + "\n\n"
-              + '<img src="'
-              + logo_url
-              + '" alt="ChangeRadar" width="220" />\n\n'
-              + "Full Markdown, JSON, and SARIF: "
-              + run_url
-              + "\n\n"
-          )
-          pathlib.Path("/tmp/changeradar-comment.json").write_text(
-              json.dumps({"body": header + report})
-          )
-          PY
-          COMMENT_ID="$(
-            gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
-              --jq '.[] | select(.user.login=="github-actions[bot]" and (.body | contains("<!-- changeradar-report -->"))) | .id' \
-              | awk 'NF { print; exit }'
-          )"
-          if [ -n "${COMMENT_ID}" ]; then
-            gh api --method PATCH "repos/${GH_REPO}/issues/comments/${COMMENT_ID}" \
-              --input /tmp/changeradar-comment.json
-          else
-            gh api --method POST "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
-              --input /tmp/changeradar-comment.json
-          fi
+          # version: v0.2.2

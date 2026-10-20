@@ -8,11 +8,11 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
-- Pull requests run ChangeRadar via the published Action
-  (`AnikethTS/ChangeRadar@60797d65`). The analyzer JAR is GitHub's latest
-  release unless `version` is set. Compact sticky comment, SARIF/JSON/
-  Markdown artifacts, Files-changed notices. Fail-open (no `--policy`).
-  Do not upload SARIF to Code Scanning.
+- Pull requests run ChangeRadar 0.2.2 via the published Action
+  (`AnikethTS/ChangeRadar@5c888d9c`). Artifact, sticky comment, and
+  Checks notices come from the Action. JAR is GitHub's latest release
+  unless `version` is set. Fail-open (no `--policy`). Do not upload
+  SARIF to Code Scanning.
 
 ## [1.7.0] - 2026-10-20
 
