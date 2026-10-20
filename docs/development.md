@@ -49,9 +49,10 @@ with the default `GITHUB_TOKEN` scoped narrowly per job rather than
 workflow-wide, and third-party actions pinned to commit SHAs rather than
 mutable version tags. PHP lint and JS lint run as parallel jobs; workflows
 are checked with `actionlint`. PRs to `main` also run
-`.github/workflows/changeradar.yml`: ChangeRadar 0.2.1 via the published
-Action and `changeradar.jar` (SHA-pinned; fail-open; compact comment;
-SARIF stays on the artifact, not Code Scanning).
+`.github/workflows/changeradar.yml`: ChangeRadar via the published
+Action (SHA-pinned wrapper; latest `changeradar.jar` unless `version` is
+set; fail-open; compact comment; SARIF stays on the artifact, not Code
+Scanning).
 `.github/workflows/release.yml` publishes a
 zipped GitHub Release (checksum + signed provenance) and pushes
 `ghcr.io/anikethts/runnerdeck` whenever a `vX.Y.Z` tag is pushed — bump

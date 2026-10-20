@@ -1,6 +1,7 @@
-# Pin AnikethTS/ChangeRadar to a commit SHA. `version` is a published
-# release tag whose assets include changeradar.jar. Do not clone ChangeRadar
-# source or run Gradle here.
+# Two version knobs (do not clone ChangeRadar source or run Gradle here):
+# 1. uses: …@<sha> — Action wrapper (setup-java + download). Pin a SHA.
+# 2. version: — analyzer JAR. Omit it (or latest) for GitHub's latest
+#    published release. Set version: v0.2.1 to pin a JAR.
 name: ChangeRadar
 
 on:
@@ -33,13 +34,14 @@ jobs:
             "${{ github.event.pull_request.base.sha }}" \
             "${{ github.event.pull_request.head.sha }}"
 
-      - uses: AnikethTS/ChangeRadar@dc61539e4bb07574d0da6cc6b66c0f6ea0f556e1 # v0.2.1
+      # Wrapper SHA (docs/default-latest-jar). JAR defaults to latest.
+      - uses: AnikethTS/ChangeRadar@60797d65a6d59723477c5b2cc964adbd6d4c53d3
         with:
-          version: v0.2.1
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
           format: compact,markdown,json,sarif,github
           output: build/changeradar
+          # version: v0.2.1
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
