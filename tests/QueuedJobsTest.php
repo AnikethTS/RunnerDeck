@@ -45,6 +45,13 @@ final class QueuedJobsTest extends TestCase
         $this->assertStringContainsString('max size', $hint['hint']);
     }
 
+    public function testHintWaitAtPoolCap(): void
+    {
+        $hint = \RunnerDeck\QueuedJobs::hintFor(2, 0, 4, 3, 3);
+        $this->assertSame('', $hint['hint_action']);
+        $this->assertStringContainsString('Pool cap', $hint['hint']);
+    }
+
     public function testPickQueuedJobsFiltersByStatusAndLabel(): void
     {
         $jobs = \RunnerDeck\QueuedJobs::pickQueuedJobs([
@@ -84,6 +91,37 @@ final class QueuedJobsTest extends TestCase
         $this->assertSame('build', $jobs[0]['name']);
         $this->assertSame('acme/app', $jobs[0]['repo']);
         $this->assertSame('1m', $jobs[0]['waited']);
+    }
+
+    public function testPickRecentJobsUsesCompletedRunnerName(): void
+    {
+        $recent = \RunnerDeck\QueuedJobs::pickRecentJobs([
+            'jobs' => [
+                [
+                    'id' => 4,
+                    'name' => 'test',
+                    'status' => 'completed',
+                    'conclusion' => 'success',
+                    'runner_name' => 'acme-1',
+                    'html_url' => 'https://github.com/acme/app/job/4',
+                    'workflow_name' => 'CI',
+                    'started_at' => date('c', time() - 90),
+                    'completed_at' => date('c', time() - 30),
+                ],
+                [
+                    'id' => 5,
+                    'name' => 'still-running',
+                    'status' => 'in_progress',
+                    'runner_name' => 'acme-1',
+                ],
+            ],
+        ], 'acme/app');
+
+        $this->assertCount(1, $recent);
+        $this->assertSame('test', $recent[0]['name']);
+        $this->assertSame('success', $recent[0]['conclusion']);
+        $this->assertSame('acme-1', $recent[0]['runner_name']);
+        $this->assertSame('1m', $recent[0]['duration']);
     }
 
     public function testPickLiveJobsUsesInProgressRunnerName(): void
@@ -167,7 +205,7 @@ final class QueuedJobsTest extends TestCase
                     'stderr' => '',
                 ];
             }
-            if (str_contains($path, 'status=in_progress')) {
+            if (str_contains($path, 'status=in_progress') || str_contains($path, 'status=completed')) {
                 return [
                     'code' => 0,
                     'stdout' => json_encode(['workflow_runs' => []]),
@@ -202,8 +240,9 @@ final class QueuedJobsTest extends TestCase
         $this->assertSame('test', $first['jobs'][0]['name']);
         $this->assertSame('add', $first['hint_action']);
         $this->assertSame([], $first['live']);
+        $this->assertSame([], $first['recent']);
         $this->assertSame($first['count'], $second['count']);
-        $this->assertSame(3, $apiCalls);
+        $this->assertSame(4, $apiCalls);
     }
 
     #[RunInSeparateProcess]

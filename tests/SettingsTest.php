@@ -27,6 +27,8 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_LABEL');
         putenv('RUNNERDECK_EXTRA_LABELS');
         putenv('RUNNERDECK_CHECK_UPDATES');
+        putenv('RUNNERDECK_POOL_CAP');
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES');
         @unlink($this->settingsFile);
         @rmdir(dirname($this->settingsFile));
     }
@@ -152,6 +154,21 @@ final class SettingsTest extends TestCase
         $this->assertTrue($result['ok']);
         $loaded = \RunnerDeck\Settings::load();
         $this->assertSame('gpu,linux', $loaded['RUNNERDECK_EXTRA_LABELS']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionStoresPoolCapAndIdleStop(): void
+    {
+        $result = \RunnerDeck\Api\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'pool_cap' => '4',
+            'idle_stop_minutes' => '10',
+        ]);
+        $this->assertTrue($result['ok']);
+        $loaded = \RunnerDeck\Settings::load();
+        $this->assertSame('4', $loaded['RUNNERDECK_POOL_CAP']);
+        $this->assertSame('10', $loaded['RUNNERDECK_IDLE_STOP_MINUTES']);
     }
 
     #[RunInSeparateProcess]

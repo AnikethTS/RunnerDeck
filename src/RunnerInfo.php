@@ -21,6 +21,8 @@ final class RunnerInfo
         public readonly bool $canClearWork = false,
         public readonly ?string $agentVersion = null,
         public readonly bool $ephemeral = false,
+        /** @var list<string> */
+        public readonly array $extraLabels = [],
     ) {
     }
 
@@ -40,6 +42,7 @@ final class RunnerInfo
             'can_clear_work' => $this->canClearWork,
             'agent_version' => $this->agentVersion,
             'ephemeral' => $this->ephemeral,
+            'extra_labels' => $this->extraLabels,
         ];
     }
 }

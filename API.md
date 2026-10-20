@@ -269,8 +269,9 @@ API, so this walks a few workflow runs (repo scope, or up to five
 recently pushed org repos) and caches the result on disk for ~25s.
 Does not start runners — `hint` / `hint_action` (`start`, `add`, or
 empty) is advice only. `live` is in-progress jobs keyed by GitHub
-`runner_name` for the busy-row overlay. Returns `409` if RunnerDeck
-isn't configured.
+`runner_name` for the busy-row overlay. `recent` is completed jobs
+with `runner_name` for the last-jobs overlay. Returns `409` if
+RunnerDeck isn't configured.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/api.php?action=queue'
@@ -305,6 +306,18 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=queue'
       "runner_name": "acme-1"
     }
   ],
+  "recent": [
+    {
+      "id": 8,
+      "name": "test",
+      "workflow": "CI",
+      "repo": "acme/app",
+      "html_url": "https://github.com/acme/app/actions/runs/76/job/8",
+      "runner_name": "acme-1",
+      "conclusion": "success",
+      "duration": "1m"
+    }
+  ],
   "message": ""
 }
 ```
@@ -322,12 +335,12 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled. The dashboard uses `POST /logout.php` (CSRF + redirect to `login.php`) instead |
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success saves it, logs in, and returns one-time `recovery_codes`. `422` on a wrong code |
-| `start` | `runner` | No busy check — starting is never destructive. `409`-style `{ok:false}` in maintenance |
+| `start` | `runner` | No busy check — starting is never destructive. `{ok:false}` in maintenance or when `RUNNERDECK_POOL_CAP` is already full |
 | `stop` | `runner` | Busy-checked |
 | `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
 | `restart` | `runner` | Busy-checked |
@@ -337,7 +350,8 @@ ids for the `bulk_*` actions).
 | `pause_auto_restart` | `runner`, `paused` (`1` or `0`) | Holds or resumes auto-restart for one slot; manual Start still works |
 | `bulk_rolling_restart` | `runners` | One slot at a time (drain-stop then start); skips unconfigured; `timeout` optional |
 | `rename` | `runner`, `name` | Busy-checked; deregisters and re-registers under the new name |
-| `add_runner` | `name` (optional — auto-named if blank), `ephemeral` (`1` for one-job slots) | |
+| `add_runner` | `name` (optional — auto-named if blank), `ephemeral` (`1` for one-job slots), `extra_labels` (optional comma-separated) | `{ok:false}` at pool cap |
+| `remove_orphan` | `name` | GitHub runner this host registered, no local slot. Busy-checked |
 | `delete_runner` | `runner` | Busy-checked; deletes local files, deregisters from GitHub — no undo |
 | `start_all` | `count` (optional, default `10`, max `30`) | |
 | `stop_all` | — | Busy-checked across the whole pool in one GitHub call |

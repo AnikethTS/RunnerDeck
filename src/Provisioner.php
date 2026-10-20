@@ -84,7 +84,7 @@ final class Provisioner
             '--url', $registrationUrl,
             '--token', $token,
             '--name', $name,
-            '--labels', Config::provisionLabels(),
+            '--labels', Config::provisionLabelsFor($dir),
             '--work', '_work',
             '--unattended',
             '--replace',
@@ -100,6 +100,7 @@ final class Provisioner
             return self::fail('provision.config', $message, $name, $output);
         }
 
+        AgentRoster::remember($name);
         return ['ok' => true, 'message' => "{$name} configured"];
     }
 

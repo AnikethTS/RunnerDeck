@@ -40,9 +40,8 @@
 - **Add Runner** allocates the next free slot and lets you give it its own
   GitHub-registered name. Optional **ephemeral** passes `--ephemeral` to
   `config.sh`: the slot takes one job, exits, and RunnerDeck
-  re-registers it (not a crash). New and renamed runners get the shared pool
-  label plus optional **extra labels** (`RUNNERDECK_EXTRA_LABELS` /
-  Settings). **Rename** stops a runner, deregisters it from
+  re-registers it (not a crash). Optional **extra labels** on Add runner
+  are per-slot (with the pool label and Settings extras). **Rename** stops a runner, deregisters it from
   GitHub, and re-registers it fresh under the new name — same busy-flag
   confirmation as Stop, since it interrupts any in-progress job. **Delete**
   does the same deregistration, then renames the slot out of the pool and
@@ -130,8 +129,12 @@
   ~25s disk cache — GitHub has no org-wide waiting-jobs API, so org
   scope only looks at a few recently pushed repos. The panel is a
   hint (start idle slots / add a runner); it never auto-starts unless
-  **scale to queue** is on. The same payload's `live` jobs paint the
-  current job on a busy row. Row
+  **scale to queue** is on. **Pool cap** blocks starts above N running
+  slots. **Idle stop** (minutes, opt-in) stops GitHub-idle slots
+  when the queue is empty. The same payload's `live` jobs paint the
+  current job on a busy row; `recent` paints the last completed jobs.
+  GitHub names this host registered that have no local slot show in
+  **GitHub runners not on this host** (Remove from GitHub). Row
   HTML, stats, and the recent-log panel come from PHP; JS swaps that
   markup in and handles filter/sort, bulk actions, and live logs. A
   hidden tab stops the timer and fetches once when you come back — so

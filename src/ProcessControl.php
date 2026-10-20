@@ -62,6 +62,11 @@ final class ProcessControl
             return ['ok' => true, 'message' => "{$r->id} already running (pid {$resolved['pid']})"];
         }
 
+        $capped = self::blockCapMessage();
+        if ($capped !== null) {
+            return ['ok' => false, 'message' => $capped];
+        }
+
         $ephemeral = SlotFlags::isEphemeral($r->dir);
         if ($ephemeral) {
             Provisioner::deregister($r->dir);
@@ -148,6 +153,29 @@ final class ProcessControl
         return !self::isAlive($pid);
     }
 
+    public static function blockCapMessage(): ?string
+    {
+        $cap = Config::poolCap();
+        if ($cap === null) {
+            return null;
+        }
+        if (self::runningCount() >= $cap) {
+            return 'Pool cap is ' . $cap . ' running slot(s) — stop one or raise the cap in Settings';
+        }
+        return null;
+    }
+
+    public static function runningCount(): int
+    {
+        $n = 0;
+        foreach (RunnerPool::discover(0) as $info) {
+            if ($info->localRunning) {
+                $n++;
+            }
+        }
+        return $n;
+    }
+
     private static function signal(int $pid, int $signal): void
     {
         if (self::$killFake !== null) {
@@ -213,13 +241,25 @@ final class ProcessControl
         return self::startIndividual($fresh);
     }
 
-    /** Allocates the next free slot and installs/configures/starts it under an optional custom name. */
-    public static function addRunner(?string $name, bool $ephemeral = false): array
+    /**
+     * Allocates the next free slot and installs/configures/starts it under
+     * an optional custom name and per-slot extra labels.
+     *
+     * @param list<string> $extraLabels
+     */
+    public static function addRunner(?string $name, bool $ephemeral = false, array $extraLabels = []): array
     {
+        $capped = self::blockCapMessage();
+        if ($capped !== null) {
+            return ['ok' => false, 'message' => $capped];
+        }
         $id = RunnerPool::nextAvailableId();
         $dir = RunnerPool::dirFor($id);
         if ($ephemeral) {
             SlotFlags::setEphemeral($dir, true);
+        }
+        if ($extraLabels !== []) {
+            SlotFlags::setExtraLabels($dir, $extraLabels);
         }
         $info = new RunnerInfo(
             id: $id,
@@ -335,6 +375,7 @@ final class ProcessControl
                 if ($ghId !== null) {
                     GithubClient::deleteRunner($ghId);
                 }
+                AgentRoster::forget($r->agentName);
             } catch (\RuntimeException $e) {
                 $message = "failed to deregister {$r->agentName}: " . $e->getMessage();
                 return self::fail('process.deregister', $message, $r->id, $e->getMessage());

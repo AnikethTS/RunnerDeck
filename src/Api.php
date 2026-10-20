@@ -24,6 +24,7 @@ use RunnerDeck\Api\LogoutAction;
 use RunnerDeck\Api\MaintenanceAction;
 use RunnerDeck\Api\PauseAutoRestartAction;
 use RunnerDeck\Api\QueueAction;
+use RunnerDeck\Api\RemoveOrphanAction;
 use RunnerDeck\Api\RenameAction;
 use RunnerDeck\Api\ResizeAction;
 use RunnerDeck\Api\RestartAction;
@@ -67,6 +68,7 @@ final class Api
         'maintenance' => MaintenanceAction::class,
         'pause_auto_restart' => PauseAutoRestartAction::class,
         'rename' => RenameAction::class,
+        'remove_orphan' => RemoveOrphanAction::class,
         'add_runner' => AddRunnerAction::class,
         'delete_runner' => DeleteRunnerAction::class,
         'start_all' => StartAllAction::class,

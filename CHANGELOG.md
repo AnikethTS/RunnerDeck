@@ -6,6 +6,24 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in **idle stop**: after N GitHub-idle minutes, stop the slot
+  (`RUNNERDECK_IDLE_STOP_MINUTES`). Skips busy and Pause-AR slots, and
+  does nothing while jobs are queued for this label.
+
+- **Pool cap** (`RUNNERDECK_POOL_CAP`): never start more than N running
+  slots (Start, add, scale-to-queue).
+
+- **Per-slot extra labels** on Add runner, merged with the pool label
+  and Settings extras on `config.sh`.
+
+- Busy/idle rows can show the **last completed GitHub jobs** (name,
+  conclusion, duration) from the queued-jobs walk.
+
+- **GitHub runners not on this host**: names this machine registered
+  that have no local slot, with Remove from GitHub.
+
 ### Changed
 
 - Pull requests run ChangeRadar 0.2.2 via the published Action

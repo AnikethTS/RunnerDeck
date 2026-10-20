@@ -114,7 +114,7 @@ runnerdeck/
     RollingRestart.php    sequential drain-stop then start per slot
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
-    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue
+    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop
     RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
@@ -129,7 +129,7 @@ runnerdeck/
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
   run.sh            local php -S entry (also starts watch-auto-restart)
-  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue
+  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)

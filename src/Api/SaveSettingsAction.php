@@ -38,6 +38,8 @@ final class SaveSettingsAction
         $drainTimeout = trim((string) ($post['drain_timeout'] ?? ''));
         $diskThreshold = trim((string) ($post['disk_webhook_threshold'] ?? ''));
         $sessionIdle = trim((string) ($post['session_idle_minutes'] ?? ''));
+        $poolCap = trim((string) ($post['pool_cap'] ?? ''));
+        $idleStop = trim((string) ($post['idle_stop_minutes'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -75,6 +77,19 @@ final class SaveSettingsAction
                 'message' => 'session idle timeout must be a whole number between 1 and 1440 minutes',
             ];
         }
+        $capOk = $poolCap === ''
+            || (ctype_digit($poolCap) && (int) $poolCap >= 1 && (int) $poolCap <= 30);
+        if (!$capOk) {
+            return ['ok' => false, 'message' => 'pool cap must be a whole number between 1 and 30'];
+        }
+        $idleStopOk = $idleStop === ''
+            || (ctype_digit($idleStop) && (int) $idleStop >= 1 && (int) $idleStop <= 1440);
+        if (!$idleStopOk) {
+            return [
+                'ok' => false,
+                'message' => 'idle stop must be a whole number between 1 and 1440 minutes',
+            ];
+        }
 
         Settings::save([
             'RUNNERDECK_SCOPE' => $scope,
@@ -86,6 +101,8 @@ final class SaveSettingsAction
             'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
             'RUNNERDECK_AUTO_RESTART' => ($post['auto_restart'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_SCALE_TO_QUEUE' => ($post['scale_to_queue'] ?? '') === '1' ? '1' : '',
+            'RUNNERDECK_POOL_CAP' => $poolCap,
+            'RUNNERDECK_IDLE_STOP_MINUTES' => $idleStop,
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,
             'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,

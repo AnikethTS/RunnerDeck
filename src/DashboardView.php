@@ -137,7 +137,8 @@ final class DashboardView
      *     banner_hidden: bool,
      *     banner_text: string,
      *     updated: string,
-     *     stats: array<string, string>
+     *     stats: array<string, string>,
+     *     orphans_html: string
      * }
      */
     public static function pollView(array $snapshot): array
@@ -155,6 +156,9 @@ final class DashboardView
             'banner_text' => $banner['text'],
             'updated' => self::lastUpdated($snapshot),
             'stats' => self::statsCards($snapshot),
+            'orphans_html' => self::orphansHtml(
+                is_array($snapshot['orphans'] ?? null) ? $snapshot['orphans'] : []
+            ),
         ];
     }
 
@@ -228,7 +232,9 @@ final class DashboardView
         $gh = $runner['github'] ?? null;
         if (!is_array($gh)) {
             return self::badge('unknown', 'muted')
+                . self::labelChips($runner['extra_labels'] ?? [])
                 . '<div class="live-job" hidden></div>'
+                . '<div class="last-jobs" hidden></div>'
                 . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning');
         }
         $status = (string) ($gh['status'] ?? '');
@@ -241,14 +247,12 @@ final class DashboardView
             $html .= ' <span class="os-chip">' . self::e($os) . '</span>';
         }
         $labels = $gh['labels'] ?? [];
-        if (is_array($labels) && $labels !== []) {
-            $chips = '';
-            foreach ($labels as $label) {
-                $chips .= '<span class="label-chip">' . self::e((string) $label) . '</span>';
-            }
-            $html .= '<div class="label-chips">' . $chips . '</div>';
+        if (!is_array($labels) || $labels === []) {
+            $labels = $runner['extra_labels'] ?? [];
         }
+        $html .= self::labelChips($labels);
         $html .= '<div class="live-job" hidden></div>';
+        $html .= '<div class="last-jobs" hidden></div>';
         return $html . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning');
     }
 
@@ -463,6 +467,57 @@ final class DashboardView
             return $iso;
         }
         return gmdate('Y-m-d H:i:s', $ts) . ' UTC';
+    }
+
+    /**
+     * @param array<int, mixed> $labels
+     */
+    private static function labelChips(array $labels): string
+    {
+        $chips = '';
+        foreach ($labels as $label) {
+            if (!is_string($label) || $label === '') {
+                continue;
+            }
+            $chips .= '<span class="label-chip">' . self::e($label) . '</span>';
+        }
+        if ($chips === '') {
+            return '';
+        }
+        return '<div class="label-chips">' . $chips . '</div>';
+    }
+
+    /**
+     * @param array<int, mixed> $orphans
+     */
+    public static function orphansHtml(array $orphans): string
+    {
+        if ($orphans === []) {
+            return '';
+        }
+        $items = '';
+        foreach ($orphans as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $name = self::e((string) ($row['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $status = self::e((string) ($row['status'] ?? ''));
+            $busy = !empty($row['busy']) ? ' busy' : '';
+            $items .= '<li><span class="runner-name">' . $name . '</span>'
+                . ' <span class="muted">' . $status . $busy . '</span>'
+                . ' <button type="button" class="btn btn-sm btn-critical" data-action="remove-orphan" data-name="'
+                . $name . '">Remove from GitHub</button></li>';
+        }
+        if ($items === '') {
+            return '';
+        }
+        return '<div class="history-head"><span class="stat-label">GitHub runners not on this host</span></div>'
+            . '<p class="stat-sub">Registered from this machine earlier, no local slot now. '
+            . 'Other hosts are not listed.</p>'
+            . '<ul class="orphan-list">' . $items . '</ul>';
     }
 
     private static function e(string $s): string

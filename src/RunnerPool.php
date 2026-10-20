@@ -131,6 +131,7 @@ final class RunnerPool
             canClearWork: $disk['can_clear'] && !$running,
             agentVersion: $agentVersion,
             ephemeral: SlotFlags::isEphemeral($dir),
+            extraLabels: SlotFlags::extraLabels($dir),
         );
     }
 

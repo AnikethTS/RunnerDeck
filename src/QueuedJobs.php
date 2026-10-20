@@ -22,6 +22,7 @@ final class QueuedJobs
      *     hint_action: string,
      *     jobs: list<array<string, mixed>>,
      *     live: list<array<string, mixed>>,
+     *     recent: list<array<string, mixed>>,
      *     message: string
      * }
      */
@@ -42,6 +43,7 @@ final class QueuedJobs
                 'truncated' => false,
                 'jobs' => [],
                 'live' => [],
+                'recent' => [],
                 'message' => $e->getMessage(),
             ];
         }
@@ -57,6 +59,7 @@ final class QueuedJobs
      *     truncated?: bool,
      *     jobs?: list<array<string, mixed>>,
      *     live?: list<array<string, mixed>>,
+     *     recent?: list<array<string, mixed>>,
      *     message?: string
      * } $payload
      * @return array{
@@ -68,6 +71,7 @@ final class QueuedJobs
      *     hint_action: string,
      *     jobs: list<array<string, mixed>>,
      *     live: list<array<string, mixed>>,
+     *     recent: list<array<string, mixed>>,
      *     message: string
      * }
      */
@@ -85,7 +89,8 @@ final class QueuedJobs
             }
         }
         $count = (int) ($payload['count'] ?? 0);
-        $hint = self::hintFor($count, $stopped, $configured);
+        $running = $configured - $stopped;
+        $hint = self::hintFor($count, $stopped, $configured, Config::poolCap(), $running);
         return [
             'ok' => (bool) ($payload['ok'] ?? false),
             'label' => (string) ($payload['label'] ?? Config::label()),
@@ -95,6 +100,7 @@ final class QueuedJobs
             'hint_action' => $hint['hint_action'],
             'jobs' => is_array($payload['jobs'] ?? null) ? $payload['jobs'] : [],
             'live' => is_array($payload['live'] ?? null) ? $payload['live'] : [],
+            'recent' => is_array($payload['recent'] ?? null) ? $payload['recent'] : [],
             'message' => (string) ($payload['message'] ?? ''),
         ];
     }
@@ -102,8 +108,13 @@ final class QueuedJobs
     /**
      * @return array{hint: string, hint_action: string}
      */
-    public static function hintFor(int $queued, int $stoppedConfigured, int $configured): array
-    {
+    public static function hintFor(
+        int $queued,
+        int $stoppedConfigured,
+        int $configured,
+        ?int $cap = null,
+        ?int $running = null
+    ): array {
         if ($queued < 1) {
             return ['hint' => '', 'hint_action' => ''];
         }
@@ -111,6 +122,13 @@ final class QueuedJobs
             return [
                 'hint' => $stoppedConfigured . ' stopped slot(s) can pick these up.',
                 'hint_action' => 'start',
+            ];
+        }
+        $running = $running ?? max(0, $configured - $stoppedConfigured);
+        if ($cap !== null && $running >= $cap) {
+            return [
+                'hint' => 'Pool cap is ' . $cap . ' running slot(s). Jobs will wait.',
+                'hint_action' => '',
             ];
         }
         if ($configured < 30) {
@@ -212,6 +230,47 @@ final class QueuedJobs
         return $out;
     }
 
+    /**
+     * Recently completed jobs that ran on a named runner.
+     *
+     * @param array<int|string, mixed> $jobsPayload
+     * @return list<array<string, mixed>>
+     */
+    public static function pickRecentJobs(array $jobsPayload, string $repo): array
+    {
+        $out = [];
+        $jobs = $jobsPayload['jobs'] ?? [];
+        if (!is_array($jobs)) {
+            return [];
+        }
+        foreach ($jobs as $job) {
+            if (!is_array($job)) {
+                continue;
+            }
+            if ((string) ($job['status'] ?? '') !== 'completed') {
+                continue;
+            }
+            $runner = (string) ($job['runner_name'] ?? '');
+            if ($runner === '') {
+                continue;
+            }
+            $started = strtotime((string) ($job['started_at'] ?? '')) ?: 0;
+            $completed = strtotime((string) ($job['completed_at'] ?? '')) ?: 0;
+            $duration = ($started > 0 && $completed >= $started) ? ($completed - $started) : 0;
+            $out[] = [
+                'id' => (int) ($job['id'] ?? 0),
+                'name' => (string) ($job['name'] ?? 'job'),
+                'workflow' => (string) ($job['workflow_name'] ?? ''),
+                'repo' => $repo,
+                'html_url' => (string) ($job['html_url'] ?? ''),
+                'runner_name' => $runner,
+                'conclusion' => (string) ($job['conclusion'] ?? ''),
+                'duration' => $duration > 0 ? self::formatWait($duration) : '',
+            ];
+        }
+        return $out;
+    }
+
     public static function formatWait(int $seconds): string
     {
         if ($seconds < 60) {
@@ -231,28 +290,33 @@ final class QueuedJobs
      *     truncated: bool,
      *     jobs: list<array<string, mixed>>,
      *     live: list<array<string, mixed>>,
+     *     recent: list<array<string, mixed>>,
      *     message: string
      * }
      */
     private static function fetch(): array
     {
         $label = Config::label();
+        $empty = [
+            'ok' => true,
+            'label' => $label,
+            'count' => 0,
+            'truncated' => false,
+            'jobs' => [],
+            'live' => [],
+            'recent' => [],
+            'message' => '',
+        ];
         $login = GithubClient::checkLogin();
         if (!$login['logged_in']) {
-            return [
-                'ok' => true,
-                'label' => $label,
-                'count' => 0,
-                'truncated' => false,
-                'jobs' => [],
-                'live' => [],
-                'message' => 'gh CLI is not authenticated',
-            ];
+            $empty['message'] = 'gh CLI is not authenticated';
+            return $empty;
         }
 
         $repos = self::reposToScan();
         $jobs = [];
         $live = [];
+        $recent = [];
         $truncated = count($repos) >= self::MAX_REPOS;
         foreach ($repos as $repo) {
             $runs = self::runsForRepo($repo);
@@ -271,6 +335,11 @@ final class QueuedJobs
                         $live[] = $job;
                     }
                 }
+                foreach (self::pickRecentJobs($payload, $repo) as $job) {
+                    if (count($recent) < 30) {
+                        $recent[] = $job;
+                    }
+                }
                 foreach (self::pickQueuedJobs($payload, $repo, $label) as $job) {
                     $jobs[] = $job;
                     if (count($jobs) >= self::MAX_JOBS) {
@@ -281,6 +350,7 @@ final class QueuedJobs
                             'truncated' => true,
                             'jobs' => $jobs,
                             'live' => $live,
+                            'recent' => $recent,
                             'message' => '',
                         ];
                     }
@@ -295,6 +365,7 @@ final class QueuedJobs
             'truncated' => $truncated,
             'jobs' => $jobs,
             'live' => $live,
+            'recent' => $recent,
             'message' => '',
         ];
     }
@@ -332,7 +403,7 @@ final class QueuedJobs
     private static function runsForRepo(string $repo): array
     {
         $ids = [];
-        foreach (['queued', 'in_progress'] as $status) {
+        foreach (['queued', 'in_progress', 'completed'] as $status) {
             $payload = self::tryGetJson(
                 'repos/' . $repo . '/actions/runs?status=' . $status . '&per_page=' . self::MAX_RUNS
             );

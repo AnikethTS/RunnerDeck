@@ -96,11 +96,10 @@ final class Config
         return self::parseLabels((string) (getenv('RUNNERDECK_EXTRA_LABELS') ?: '')) ?? [];
     }
 
-    /** Comma-separated labels passed to config.sh --labels. */
+    /** Comma-separated pool labels passed to config.sh when the slot has none of its own. */
     public static function provisionLabels(): string
     {
-        $labels = array_values(array_unique(array_merge([self::label()], self::extraLabels())));
-        return implode(',', $labels);
+        return self::provisionLabelsFor('');
     }
 
     /**
@@ -144,6 +143,52 @@ final class Config
     public static function scaleToQueueEnabled(): bool
     {
         return getenv('RUNNERDECK_SCALE_TO_QUEUE') === '1';
+    }
+
+    /**
+     * Max locally running slots (1–30). Null means no cap beyond the
+     * 30-slot pool size. Starts (including scale-to-queue) refuse above this.
+     */
+    public static function poolCap(): ?int
+    {
+        $raw = getenv('RUNNERDECK_POOL_CAP');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return null;
+        }
+        return min(30, $n);
+    }
+
+    /**
+     * After this many idle minutes, drain-stop a running slot (1–1440).
+     * Null means idle-stop is off. Skips busy and Pause-AR slots, and
+     * does nothing while jobs are queued for this label.
+     */
+    public static function idleStopMinutes(): ?int
+    {
+        $raw = getenv('RUNNERDECK_IDLE_STOP_MINUTES');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return null;
+        }
+        return min(1440, $n);
+    }
+
+    /** Comma-separated labels for config.sh, including per-slot extras. */
+    public static function provisionLabelsFor(string $dir): string
+    {
+        $labels = array_values(array_unique(array_merge(
+            [self::label()],
+            self::extraLabels(),
+            SlotFlags::extraLabels($dir)
+        )));
+        return implode(',', $labels);
     }
 
     /** Seconds to wait for GitHub busy=false before drain-stop gives up (1–3600, default 600). */

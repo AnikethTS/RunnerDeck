@@ -14,6 +14,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_ORG', 'RUNNERDECK_REPO', 'RUNNERDECK_LABEL', 'RUNNERDECK_EXTRA_LABELS',
         'RUNNERDECK_POOL_DIR', 'RUNNERDECK_SCOPE', 'RUNNERDECK_CHECK_UPDATES',
         'RUNNERDECK_AUTH_TOTP_SECRET', 'RUNNERDECK_AUTO_RESTART', 'RUNNERDECK_SCALE_TO_QUEUE',
+        'RUNNERDECK_POOL_CAP', 'RUNNERDECK_IDLE_STOP_MINUTES',
         'RUNNERDECK_CRASH_WEBHOOK_URL',
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
         'RUNNERDECK_DISK_WEBHOOK_THRESHOLD', 'RUNNERDECK_SESSION_IDLE_MINUTES',
@@ -148,6 +149,17 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_SCALE_TO_QUEUE=1');
         $this->assertTrue(\RunnerDeck\Config::scaleToQueueEnabled());
+    }
+
+    #[RunInSeparateProcess]
+    public function testPoolCapAndIdleStopParseEnv(): void
+    {
+        $this->assertNull(\RunnerDeck\Config::poolCap());
+        $this->assertNull(\RunnerDeck\Config::idleStopMinutes());
+        putenv('RUNNERDECK_POOL_CAP=8');
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES=15');
+        $this->assertSame(8, \RunnerDeck\Config::poolCap());
+        $this->assertSame(15, \RunnerDeck\Config::idleStopMinutes());
     }
 
     #[RunInSeparateProcess]
