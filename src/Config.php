@@ -140,6 +140,12 @@ final class Config
         return getenv('RUNNERDECK_AUTO_RESTART') === '1';
     }
 
+    /** Start stopped idle slots when GitHub jobs are waiting on this label. */
+    public static function scaleToQueueEnabled(): bool
+    {
+        return getenv('RUNNERDECK_SCALE_TO_QUEUE') === '1';
+    }
+
     /** Seconds to wait for GitHub busy=false before drain-stop gives up (1–3600, default 600). */
     public static function drainTimeoutSeconds(): int
     {

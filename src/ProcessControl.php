@@ -45,11 +45,9 @@ final class ProcessControl
 
     public static function startIndividual(RunnerInfo $r, ?string $desiredName = null): array
     {
-        if (!$r->configured) {
-            $configure = Provisioner::ensureConfigured($r->dir, $desiredName ?? $r->agentName);
-            if (!$configure['ok']) {
-                return $configure;
-            }
+        $blocked = HostMode::blockStartMessage();
+        if ($blocked !== null) {
+            return ['ok' => false, 'message' => $blocked];
         }
 
         $resolved = ProcessDecision::resolveStart(
@@ -62,6 +60,24 @@ final class ProcessControl
                 file_put_contents("{$r->dir}/runner.pid", (string) $resolved['pid']);
             }
             return ['ok' => true, 'message' => "{$r->id} already running (pid {$resolved['pid']})"];
+        }
+
+        $ephemeral = SlotFlags::isEphemeral($r->dir);
+        if ($ephemeral) {
+            Provisioner::deregister($r->dir);
+            $configure = Provisioner::ensureConfigured(
+                $r->dir,
+                $desiredName ?? $r->agentName,
+                true
+            );
+            if (!$configure['ok']) {
+                return $configure;
+            }
+        } elseif (!$r->configured) {
+            $configure = Provisioner::ensureConfigured($r->dir, $desiredName ?? $r->agentName);
+            if (!$configure['ok']) {
+                return $configure;
+            }
         }
 
         RunnerLog::rotateIfOversized($r->dir);
@@ -198,17 +214,22 @@ final class ProcessControl
     }
 
     /** Allocates the next free slot and installs/configures/starts it under an optional custom name. */
-    public static function addRunner(?string $name): array
+    public static function addRunner(?string $name, bool $ephemeral = false): array
     {
         $id = RunnerPool::nextAvailableId();
+        $dir = RunnerPool::dirFor($id);
+        if ($ephemeral) {
+            SlotFlags::setEphemeral($dir, true);
+        }
         $info = new RunnerInfo(
             id: $id,
-            dir: RunnerPool::dirFor($id),
+            dir: $dir,
             configured: false,
             agentName: RunnerPool::agentNameFor($id),
             localRunning: false,
             pid: null,
             logTail: [],
+            ephemeral: $ephemeral,
         );
         $result = self::startIndividual($info, $name);
         $result['id'] = $id;
@@ -337,11 +358,16 @@ final class ProcessControl
             localRunning: false,
             pid: null,
             logTail: [],
+            ephemeral: SlotFlags::isEphemeral($dir),
         );
     }
 
     public static function startAll(int $count = 10): array
     {
+        $blocked = HostMode::blockStartMessage();
+        if ($blocked !== null) {
+            return ['ok' => false, 'message' => $blocked];
+        }
         $messages = [self::startIndividual(self::infoFor('runner-base'))['message']];
 
         for ($i = 1; $i <= $count; $i++) {
@@ -368,6 +394,10 @@ final class ProcessControl
     /** @param RunnerInfo[] $runners */
     public static function bulkStart(array $runners): array
     {
+        $blocked = HostMode::blockStartMessage();
+        if ($blocked !== null) {
+            return ['ok' => false, 'message' => $blocked];
+        }
         $messages = [];
         foreach ($runners as $r) {
             $messages[] = self::startIndividual($r)['message'];

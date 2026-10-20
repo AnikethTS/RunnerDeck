@@ -303,6 +303,14 @@ main { padding: 20px; max-width: 1600px; margin: 0 auto; }
   align-items: baseline;
   font-size: 13px;
 }
+.live-job {
+  margin-top: 6px;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
 
 .toolbar {
   display: flex;

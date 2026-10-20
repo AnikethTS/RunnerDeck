@@ -12,6 +12,7 @@ final class AddRunnerAction
     public static function handle(): never
     {
         $name = trim((string) ($_POST['name'] ?? ''));
-        JsonApi::respond(ProcessControl::addRunner($name !== '' ? $name : null));
+        $ephemeral = ($_POST['ephemeral'] ?? '') === '1';
+        JsonApi::respond(ProcessControl::addRunner($name !== '' ? $name : null, $ephemeral));
     }
 }

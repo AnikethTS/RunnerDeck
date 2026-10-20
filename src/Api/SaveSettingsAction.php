@@ -85,6 +85,7 @@ final class SaveSettingsAction
             'RUNNERDECK_CHECK_UPDATES' => ($post['check_updates'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_AUTH_TOTP_SECRET' => Config::authTotpSecret() ?? '',
             'RUNNERDECK_AUTO_RESTART' => ($post['auto_restart'] ?? '') === '1' ? '1' : '',
+            'RUNNERDECK_SCALE_TO_QUEUE' => ($post['scale_to_queue'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,
             'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,
@@ -99,6 +100,7 @@ final class SaveSettingsAction
             $bits[] = 'repo=' . $repo;
         }
         $bits[] = 'auto_restart=' . (($post['auto_restart'] ?? '') === '1' ? '1' : '0');
+        $bits[] = 'scale_to_queue=' . (($post['scale_to_queue'] ?? '') === '1' ? '1' : '0');
         $bits[] = 'webhook=' . ($webhookUrl !== '' ? 'set' : 'off');
         AppLog::info('settings.save', 'settings saved (' . implode(' ', $bits) . ')');
 

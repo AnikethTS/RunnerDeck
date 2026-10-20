@@ -12,6 +12,12 @@ final class DashboardView
      */
     public static function healthBanner(array $snapshot): array
     {
+        if (!empty($snapshot['maintenance'])) {
+            return [
+                'hidden' => false,
+                'text' => 'This host is in maintenance — runners will not start until you resume.',
+            ];
+        }
         $h = is_array($snapshot['health'] ?? null) ? $snapshot['health'] : [];
         $loggedIn = (bool) ($h['logged_in'] ?? false);
         $orgOk = (bool) ($h['org_access_ok'] ?? false);
@@ -222,6 +228,7 @@ final class DashboardView
         $gh = $runner['github'] ?? null;
         if (!is_array($gh)) {
             return self::badge('unknown', 'muted')
+                . '<div class="live-job" hidden></div>'
                 . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning');
         }
         $status = (string) ($gh['status'] ?? '');
@@ -241,6 +248,7 @@ final class DashboardView
             }
             $html .= '<div class="label-chips">' . $chips . '</div>';
         }
+        $html .= '<div class="live-job" hidden></div>';
         return $html . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning');
     }
 
@@ -257,6 +265,7 @@ final class DashboardView
         return $badge . self::resourceUsage($runner) . self::diskUsage($runner)
             . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
             . self::flag($runner, 'auto_restart_paused', 'auto-restart paused', 'warning')
+            . self::flag($runner, 'ephemeral', 'ephemeral', 'muted')
             . self::crashHistoryBadge($runner);
     }
 

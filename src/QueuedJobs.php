@@ -21,6 +21,7 @@ final class QueuedJobs
      *     hint: string,
      *     hint_action: string,
      *     jobs: list<array<string, mixed>>,
+     *     live: list<array<string, mixed>>,
      *     message: string
      * }
      */
@@ -40,6 +41,7 @@ final class QueuedJobs
                 'count' => 0,
                 'truncated' => false,
                 'jobs' => [],
+                'live' => [],
                 'message' => $e->getMessage(),
             ];
         }
@@ -54,6 +56,7 @@ final class QueuedJobs
      *     count?: int,
      *     truncated?: bool,
      *     jobs?: list<array<string, mixed>>,
+     *     live?: list<array<string, mixed>>,
      *     message?: string
      * } $payload
      * @return array{
@@ -64,6 +67,7 @@ final class QueuedJobs
      *     hint: string,
      *     hint_action: string,
      *     jobs: list<array<string, mixed>>,
+     *     live: list<array<string, mixed>>,
      *     message: string
      * }
      */
@@ -90,6 +94,7 @@ final class QueuedJobs
             'hint' => $hint['hint'],
             'hint_action' => $hint['hint_action'],
             'jobs' => is_array($payload['jobs'] ?? null) ? $payload['jobs'] : [],
+            'live' => is_array($payload['live'] ?? null) ? $payload['live'] : [],
             'message' => (string) ($payload['message'] ?? ''),
         ];
     }
@@ -171,6 +176,42 @@ final class QueuedJobs
         return $out;
     }
 
+    /**
+     * In-progress jobs assigned to a named runner (busy-row overlay).
+     *
+     * @param array<int|string, mixed> $jobsPayload
+     * @return list<array<string, mixed>>
+     */
+    public static function pickLiveJobs(array $jobsPayload, string $repo): array
+    {
+        $out = [];
+        $jobs = $jobsPayload['jobs'] ?? [];
+        if (!is_array($jobs)) {
+            return [];
+        }
+        foreach ($jobs as $job) {
+            if (!is_array($job)) {
+                continue;
+            }
+            if ((string) ($job['status'] ?? '') !== 'in_progress') {
+                continue;
+            }
+            $runner = (string) ($job['runner_name'] ?? '');
+            if ($runner === '') {
+                continue;
+            }
+            $out[] = [
+                'id' => (int) ($job['id'] ?? 0),
+                'name' => (string) ($job['name'] ?? 'job'),
+                'workflow' => (string) ($job['workflow_name'] ?? ''),
+                'repo' => $repo,
+                'html_url' => (string) ($job['html_url'] ?? ''),
+                'runner_name' => $runner,
+            ];
+        }
+        return $out;
+    }
+
     public static function formatWait(int $seconds): string
     {
         if ($seconds < 60) {
@@ -189,6 +230,7 @@ final class QueuedJobs
      *     count: int,
      *     truncated: bool,
      *     jobs: list<array<string, mixed>>,
+     *     live: list<array<string, mixed>>,
      *     message: string
      * }
      */
@@ -203,12 +245,14 @@ final class QueuedJobs
                 'count' => 0,
                 'truncated' => false,
                 'jobs' => [],
+                'live' => [],
                 'message' => 'gh CLI is not authenticated',
             ];
         }
 
         $repos = self::reposToScan();
         $jobs = [];
+        $live = [];
         $truncated = count($repos) >= self::MAX_REPOS;
         foreach ($repos as $repo) {
             $runs = self::runsForRepo($repo);
@@ -222,6 +266,11 @@ final class QueuedJobs
                 if ($payload === null) {
                     continue;
                 }
+                foreach (self::pickLiveJobs($payload, $repo) as $job) {
+                    if (count($live) < 30) {
+                        $live[] = $job;
+                    }
+                }
                 foreach (self::pickQueuedJobs($payload, $repo, $label) as $job) {
                     $jobs[] = $job;
                     if (count($jobs) >= self::MAX_JOBS) {
@@ -231,6 +280,7 @@ final class QueuedJobs
                             'count' => count($jobs),
                             'truncated' => true,
                             'jobs' => $jobs,
+                            'live' => $live,
                             'message' => '',
                         ];
                     }
@@ -244,6 +294,7 @@ final class QueuedJobs
             'count' => count($jobs),
             'truncated' => $truncated,
             'jobs' => $jobs,
+            'live' => $live,
             'message' => '',
         ];
     }

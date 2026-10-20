@@ -143,14 +143,18 @@ final class CrashState
             $thresholdCrossed = false;
             $id = (string) $r['id'];
             $paused = !empty($s['autoRestartPaused']);
-            if ($crashed) {
+            $ephemeral = !empty($r['ephemeral']);
+            $maintenance = HostMode::isMaintenance();
+            if ($crashed && $ephemeral) {
+                $shouldAutoRestart = !$paused && !$maintenance;
+            } elseif ($crashed) {
                 $before = $crashCounts[$id] ?? 0;
                 CrashHistory::record($id, (string) ($r['agent_name'] ?? $id));
                 $crashCounts[$id] = $before + 1;
                 $times = $crashTimes[$id] ?? [];
                 array_unshift($times, time());
                 $crashTimes[$id] = array_slice($times, 0, CrashHistory::LIST_LIMIT);
-                if ($autoRestart && !$paused && $s['attempts'] < self::MAX_ATTEMPTS) {
+                if ($autoRestart && !$paused && !$maintenance && $s['attempts'] < self::MAX_ATTEMPTS) {
                     $s['attempts']++;
                     $shouldAutoRestart = true;
                 } else {

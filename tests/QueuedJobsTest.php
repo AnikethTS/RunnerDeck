@@ -86,6 +86,39 @@ final class QueuedJobsTest extends TestCase
         $this->assertSame('1m', $jobs[0]['waited']);
     }
 
+    public function testPickLiveJobsUsesInProgressRunnerName(): void
+    {
+        $live = \RunnerDeck\QueuedJobs::pickLiveJobs([
+            'jobs' => [
+                [
+                    'id' => 8,
+                    'name' => 'lint',
+                    'status' => 'in_progress',
+                    'runner_name' => 'acme-1',
+                    'html_url' => 'https://github.com/acme/app/job/8',
+                    'workflow_name' => 'CI',
+                ],
+                [
+                    'id' => 9,
+                    'name' => 'queued-only',
+                    'status' => 'queued',
+                    'runner_name' => 'acme-1',
+                ],
+                [
+                    'id' => 10,
+                    'name' => 'unassigned',
+                    'status' => 'in_progress',
+                    'runner_name' => '',
+                ],
+            ],
+        ], 'acme/app');
+
+        $this->assertCount(1, $live);
+        $this->assertSame('acme-1', $live[0]['runner_name']);
+        $this->assertSame('lint', $live[0]['name']);
+        $this->assertSame('acme/app', $live[0]['repo']);
+    }
+
     public function testFormatWait(): void
     {
         $this->assertSame('12s', \RunnerDeck\QueuedJobs::formatWait(12));
@@ -168,6 +201,7 @@ final class QueuedJobsTest extends TestCase
         $this->assertSame(1, $first['count']);
         $this->assertSame('test', $first['jobs'][0]['name']);
         $this->assertSame('add', $first['hint_action']);
+        $this->assertSame([], $first['live']);
         $this->assertSame($first['count'], $second['count']);
         $this->assertSame(3, $apiCalls);
     }

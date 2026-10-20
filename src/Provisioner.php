@@ -6,9 +6,9 @@ namespace RunnerDeck;
 
 final class Provisioner
 {
-    public static function ensureInstalled(string $dir): array
+    public static function ensureInstalled(string $dir, bool $replace = false): array
     {
-        if (is_file("$dir/config.sh")) {
+        if (!$replace && is_file("$dir/config.sh")) {
             return ['ok' => true, 'message' => 'runner binaries already present'];
         }
 
@@ -55,11 +55,17 @@ final class Provisioner
         return ['ok' => true, 'message' => "runner binaries installed ({$download['os']}/{$download['architecture']})"];
     }
 
-    public static function ensureConfigured(string $dir, string $name): array
+    public static function ensureConfigured(string $dir, string $name, bool $ephemeral = false): array
     {
         $install = self::ensureInstalled($dir);
         if (!$install['ok']) {
             return $install;
+        }
+
+        if ($ephemeral) {
+            SlotFlags::setEphemeral($dir, true);
+        } else {
+            $ephemeral = SlotFlags::isEphemeral($dir);
         }
 
         if (is_file("$dir/.runner")) {
@@ -73,7 +79,7 @@ final class Provisioner
             return self::fail('provision.registration_token', $e->getMessage(), $name);
         }
 
-        $config = Shell::exec([
+        $cmd = [
             './config.sh',
             '--url', $registrationUrl,
             '--token', $token,
@@ -82,7 +88,11 @@ final class Provisioner
             '--work', '_work',
             '--unattended',
             '--replace',
-        ], 60, $dir);
+        ];
+        if ($ephemeral) {
+            $cmd[] = '--ephemeral';
+        }
+        $config = Shell::exec($cmd, 60, $dir);
 
         if ($config['code'] !== 0) {
             $output = trim($config['stderr'] . "\n" . $config['stdout']);
@@ -191,6 +201,22 @@ final class Provisioner
             }
         }
         throw new \RuntimeException("no official runner package found for {$os}/{$arch}");
+    }
+
+    /** @throws \RuntimeException if this OS/arch has no matching official package */
+    public static function pickDownloadForHost(): array
+    {
+        return self::pickDownload();
+    }
+
+    /** @param array<string, mixed> $download */
+    public static function versionFromDownload(array $download): ?string
+    {
+        $filename = (string) ($download['filename'] ?? '');
+        if (preg_match('/(\d+\.\d+\.\d+)/', $filename, $m)) {
+            return $m[1];
+        }
+        return null;
     }
 
     /** @throws \RuntimeException if this OS/arch has no matching official package */

@@ -30,6 +30,7 @@ test.beforeEach(async ({ page }) => {
       hint: '',
       hint_action: '',
       jobs: [],
+      live: [],
       message: '',
     }),
   }));
@@ -727,6 +728,8 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
   await expect(page.locator('#btn-drain-all')).toBeVisible();
   await expect(page.locator('#btn-rolling-restart-all')).toBeVisible();
+  await expect(page.locator('#btn-rolling-upgrade')).toBeVisible();
+  await expect(page.locator('#btn-maintenance')).toBeVisible();
   await expect(page.locator('tr[data-runner="fat"] button[data-action="rolling-restart"]')).toBeVisible();
 });
 
@@ -821,7 +824,7 @@ test('runner rows show the local agent version', async ({ page }) => {
 
 test('queued jobs panel lists waiting work and a start hint', async ({ page }) => {
   await mockStatus(page, [
-    fixtureRunner({ id: 'runner-1', local_running: false, pid: null }),
+    fixtureRunner({ id: 'runner-1', agent_name: 'e2e-runner-base', local_running: false, pid: null }),
   ]);
   await page.unroute('**/api.php*action=queue*');
   await page.route('**/api.php*action=queue*', (route) => route.fulfill({
@@ -843,6 +846,14 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
         status: 'queued',
         waited: '45s',
       }],
+      live: [{
+        id: 10,
+        name: 'build',
+        workflow: 'CI',
+        repo: 'acme/app',
+        html_url: 'https://example.test/job/10',
+        runner_name: 'e2e-runner-base',
+      }],
       message: '',
     }),
   }));
@@ -853,4 +864,5 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
   await expect(page.locator('#queue-jobs a')).toHaveAttribute('href', 'https://example.test/job/9');
   await expect(page.locator('#queue-hint')).toContainText('stopped slot');
   await expect(page.locator('#queue-hint-btn')).toHaveText('Start idle slots');
+  await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('build');
 });

@@ -17,6 +17,16 @@ final class DashboardViewTest extends TestCase
         $this->assertSame('', $banner['text']);
     }
 
+    public function testHealthBannerWhenMaintenance(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'maintenance' => true,
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('maintenance', $banner['text']);
+    }
+
     public function testHealthBannerWhenNotLoggedIn(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([
@@ -71,6 +81,22 @@ final class DashboardViewTest extends TestCase
         ]);
         $this->assertStringContainsString('os-chip', $html);
         $this->assertStringContainsString('Linux', $html);
+        $this->assertStringContainsString('live-job', $html);
+    }
+
+    public function testRowHtmlShowsEphemeralFlag(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => null,
+            'ephemeral' => true,
+        ]);
+        $this->assertStringContainsString('ephemeral', $html);
     }
 
     public function testRowHtmlShowsPausedAutoRestart(): void
