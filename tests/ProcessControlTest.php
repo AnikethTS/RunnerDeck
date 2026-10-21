@@ -38,6 +38,10 @@ final class ProcessControlTest extends TestCase
             return true;
         });
         \RunnerDeck\ProcessControl::fakeTermWait(0);
+        \RunnerDeck\HostPressure::fakeDisk(
+            fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]
+        );
+        \RunnerDeck\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
     }
 
     protected function tearDown(): void
@@ -48,6 +52,8 @@ final class ProcessControlTest extends TestCase
         \RunnerDeck\ProcessControl::fakeKill(null);
         \RunnerDeck\ProcessControl::fakeAlive(null);
         \RunnerDeck\ProcessControl::fakeTermWait(null);
+        \RunnerDeck\HostPressure::fakeDisk(null);
+        \RunnerDeck\HostPressure::fakeRam(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
@@ -364,6 +370,29 @@ final class ProcessControlTest extends TestCase
         $this->assertStringContainsString('Pool cap', $result['message']);
         $this->assertFalse($spawned);
         putenv('RUNNERDECK_POOL_CAP');
+    }
+
+    #[RunInSeparateProcess]
+    public function testStartRefusesWhenHostPressureIsHigh(): void
+    {
+        \RunnerDeck\HostPressure::fakeDisk(fn () => [50 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
+        putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
+        $spawned = false;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+            if (($cmd[0] ?? '') === 'bash') {
+                $spawned = true;
+            }
+            return ['code' => 0, 'stdout' => "1\n", 'stderr' => ''];
+        });
+
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('low on', $result['message']);
+        $this->assertFalse($spawned);
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
+        putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
     }
 
     #[RunInSeparateProcess]

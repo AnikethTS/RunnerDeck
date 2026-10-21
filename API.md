@@ -4,7 +4,8 @@ RunnerDeck's UI is just a client of its own API — `public/api.php`, plus
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`,
 `public/download_applog.php`)
 for streaming and downloading logs, and `public/health.php` for an unauthenticated
-uptime probe (`{"ok":true}`, no version). Everything here is `127.0.0.1`-only by
+uptime probe (`ok` is always true if PHP ran; `ready` is false in
+maintenance or when host pressure refuses starts). Everything here is `127.0.0.1`-only by
 default (see [Safety notes](docs/security-and-safety.md#safety-notes)). Off
 loopback, TOTP is required in code — not only as a warning. On loopback with
 login off, "who can call this" is "who can reach this port". With TOTP on,
@@ -340,7 +341,7 @@ ids for the `bulk_*` actions).
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
 | `totp_confirm` | `code` | Verifies `code` against the pending secret from `totp_begin`; on success saves it, logs in, and returns one-time `recovery_codes`. `422` on a wrong code |
-| `start` | `runner` | No busy check — starting is never destructive. `{ok:false}` in maintenance or when `RUNNERDECK_POOL_CAP` is already full |
+| `start` | `runner` | No busy check — starting is never destructive. `{ok:false}` in maintenance, host pressure (low disk/RAM), or when `RUNNERDECK_POOL_CAP` is already full |
 | `stop` | `runner` | Busy-checked |
 | `drain_stop` | `runner` | Waits until idle then stop; `timeout` optional |
 | `restart` | `runner` | Busy-checked |

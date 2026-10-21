@@ -20,6 +20,10 @@ final class AutoRestartTest extends TestCase
         putenv('RUNNERDECK_SCOPE=org');
         \RunnerDeck\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\HostPressure::fakeDisk(
+            fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]
+        );
+        \RunnerDeck\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
     }
 
     protected function tearDown(): void
@@ -27,6 +31,8 @@ final class AutoRestartTest extends TestCase
         \RunnerDeck\Shell::fake(null);
         \RunnerDeck\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\RunnerPool::fakeCheckProcess(null);
+        \RunnerDeck\HostPressure::fakeDisk(null);
+        \RunnerDeck\HostPressure::fakeRam(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');

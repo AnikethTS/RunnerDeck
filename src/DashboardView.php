@@ -18,6 +18,20 @@ final class DashboardView
                 'text' => 'This host is in maintenance — runners will not start until you resume.',
             ];
         }
+        $pressure = is_array($snapshot['pressure'] ?? null) ? $snapshot['pressure'] : [];
+        if (isset($pressure['ok']) && $pressure['ok'] === false) {
+            $reasons = [];
+            foreach (is_array($pressure['reasons'] ?? null) ? $pressure['reasons'] : [] as $reason) {
+                if (is_string($reason) && $reason !== '') {
+                    $reasons[] = $reason;
+                }
+            }
+            $detail = $reasons !== [] ? implode('; ', $reasons) : 'disk or RAM';
+            return [
+                'hidden' => false,
+                'text' => 'This host is low on ' . $detail . ' — new runners will not start.',
+            ];
+        }
         $h = is_array($snapshot['health'] ?? null) ? $snapshot['health'] : [];
         $loggedIn = (bool) ($h['logged_in'] ?? false);
         $orgOk = (bool) ($h['org_access_ok'] ?? false);

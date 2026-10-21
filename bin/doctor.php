@@ -7,7 +7,9 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Config;
 use RunnerDeck\GithubClient;
+use RunnerDeck\HostPressure;
 use RunnerDeck\Shell;
+use RunnerDeck\SlotDisk;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
 
@@ -154,6 +156,20 @@ if (Config::trustProxy()) {
     );
 } else {
     ok('TRUST_PROXY', 'off', $color);
+}
+
+echo "\nHost pressure\n";
+$pressure = HostPressure::snapshot();
+if ($pressure['ok']) {
+    $disk = $pressure['disk_free_kb'] !== null
+        ? SlotDisk::formatKb($pressure['disk_free_kb']) . ' disk free'
+        : 'disk unknown';
+    $ram = $pressure['ram_available_kb'] !== null
+        ? SlotDisk::formatKb($pressure['ram_available_kb']) . ' RAM available'
+        : 'RAM unknown';
+    ok('headroom', $disk . ', ' . $ram, $color);
+} else {
+    $warnings += warn('headroom', implode('; ', $pressure['reasons']) . ' — starts will refuse', $color);
 }
 
 echo "\nFilesystem\n";

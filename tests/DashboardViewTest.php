@@ -27,6 +27,19 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('maintenance', $banner['text']);
     }
 
+    public function testHealthBannerWhenHostPressure(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'pressure' => [
+                'ok' => false,
+                'reasons' => ['disk 100 MB free (need 1 GiB)'],
+            ],
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('100 MB', $banner['text']);
+    }
+
     public function testHealthBannerWhenNotLoggedIn(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([

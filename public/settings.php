@@ -59,6 +59,8 @@ if (
         'scaleToQueue' => ($_POST['scale_to_queue'] ?? '') === '1',
         'poolCap' => (string) ($_POST['pool_cap'] ?? ''),
         'idleStopMinutes' => (string) ($_POST['idle_stop_minutes'] ?? ''),
+        'minFreeDiskGib' => (string) ($_POST['min_free_disk_gib'] ?? ''),
+        'minFreeRamMib' => (string) ($_POST['min_free_ram_mib'] ?? ''),
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
         'crashWebhookThreshold' => (string) ($_POST['crash_webhook_threshold'] ?? ''),
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
@@ -84,6 +86,8 @@ if (
         'idleStopMinutes' => Config::idleStopMinutes() !== null
             ? (string) Config::idleStopMinutes()
             : '',
+        'minFreeDiskGib' => (string) Config::minFreeDiskGib(),
+        'minFreeRamMib' => (string) Config::minFreeRamMib(),
         'crashWebhookUrl' => Config::crashWebhookUrl() ?? '',
         'crashWebhookThreshold' => Config::crashWebhookThreshold() !== null
             ? (string) Config::crashWebhookThreshold()
@@ -259,6 +263,41 @@ echo HostingWarnings::html();
           <p class="settings-hint">
             Stop a slot that has been GitHub-idle this long. Off while jobs are queued.
             Needs watch-auto-restart.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-min-disk">Minimum free disk (GiB)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-min-disk"
+            name="min_free_disk_gib"
+            min="0"
+            max="1000"
+            step="1"
+            value="<?= htmlspecialchars($current['minFreeDiskGib']) ?>"
+          />
+          <p class="settings-hint">
+            Refuse starts when the pool filesystem has less than this free. 0 = off. Default 1.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-min-ram">Minimum free RAM (MiB)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-min-ram"
+            name="min_free_ram_mib"
+            min="0"
+            max="1048576"
+            step="1"
+            value="<?= htmlspecialchars($current['minFreeRamMib']) ?>"
+          />
+          <p class="settings-hint">
+            Refuse starts when Linux MemAvailable is below this. 0 = off. Default 256.
+            Ignored when RAM cannot be read (macOS).
           </p>
         </div>
 
