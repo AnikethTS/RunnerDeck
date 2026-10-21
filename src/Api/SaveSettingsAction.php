@@ -40,6 +40,8 @@ final class SaveSettingsAction
         $sessionIdle = trim((string) ($post['session_idle_minutes'] ?? ''));
         $poolCap = trim((string) ($post['pool_cap'] ?? ''));
         $idleStop = trim((string) ($post['idle_stop_minutes'] ?? ''));
+        $minDisk = trim((string) ($post['min_free_disk_gib'] ?? ''));
+        $minRam = trim((string) ($post['min_free_ram_mib'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -90,6 +92,22 @@ final class SaveSettingsAction
                 'message' => 'idle stop must be a whole number between 1 and 1440 minutes',
             ];
         }
+        $diskOk = $minDisk === ''
+            || (ctype_digit($minDisk) && (int) $minDisk <= 1000);
+        if (!$diskOk) {
+            return [
+                'ok' => false,
+                'message' => 'minimum free disk must be a whole number of GiB from 0 to 1000 (0 = off)',
+            ];
+        }
+        $ramOk = $minRam === ''
+            || (ctype_digit($minRam) && (int) $minRam <= 1048576);
+        if (!$ramOk) {
+            return [
+                'ok' => false,
+                'message' => 'minimum free RAM must be a whole number of MiB from 0 to 1048576 (0 = off)',
+            ];
+        }
 
         Settings::save([
             'RUNNERDECK_SCOPE' => $scope,
@@ -103,6 +121,8 @@ final class SaveSettingsAction
             'RUNNERDECK_SCALE_TO_QUEUE' => ($post['scale_to_queue'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_POOL_CAP' => $poolCap,
             'RUNNERDECK_IDLE_STOP_MINUTES' => $idleStop,
+            'RUNNERDECK_MIN_FREE_DISK_GIB' => $minDisk,
+            'RUNNERDECK_MIN_FREE_RAM_MIB' => $minRam,
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,
             'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD' => $webhookThreshold,
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,

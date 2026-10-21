@@ -62,6 +62,11 @@ final class ProcessControl
             return ['ok' => true, 'message' => "{$r->id} already running (pid {$resolved['pid']})"];
         }
 
+        $pressure = HostPressure::blockStartMessage();
+        if ($pressure !== null) {
+            return ['ok' => false, 'message' => $pressure];
+        }
+
         $capped = self::blockCapMessage();
         if ($capped !== null) {
             return ['ok' => false, 'message' => $capped];
@@ -249,6 +254,10 @@ final class ProcessControl
      */
     public static function addRunner(?string $name, bool $ephemeral = false, array $extraLabels = []): array
     {
+        $pressure = HostPressure::blockStartMessage();
+        if ($pressure !== null) {
+            return ['ok' => false, 'message' => $pressure];
+        }
         $capped = self::blockCapMessage();
         if ($capped !== null) {
             return ['ok' => false, 'message' => $capped];

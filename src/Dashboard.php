@@ -55,6 +55,7 @@ final class Dashboard
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
+            'pressure' => HostPressure::snapshot(),
             'orphans' => AgentRoster::orphans($ghRunners, $localNames),
             'health' => [
                 'logged_in' => $loggedIn,

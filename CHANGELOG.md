@@ -8,6 +8,11 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Host pressure**: refuse Start / add / scale-to-queue when the pool
+  disk or Linux MemAvailable is below a floor (default 1 GiB / 256 MiB,
+  `0` = off). Running jobs are not stopped. Dashboard banner,
+  `php bin/doctor.php`, and `health.php` `ready` / `pressure`.
+
 - Opt-in **idle stop**: after N GitHub-idle minutes, stop the slot
   (`RUNNERDECK_IDLE_STOP_MINUTES`). Skips busy and Pause-AR slots, and
   does nothing while jobs are queued for this label.

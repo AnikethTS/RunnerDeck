@@ -34,6 +34,11 @@
   replacing the local GitHub Actions runner package with GitHub's current
   download for this OS/arch. **Maintenance** drain-stops every slot and
   refuses start / auto-restart / scale-to-queue until you resume.
+  **Host pressure** also refuses new starts when the pool filesystem or
+  Linux MemAvailable is below the Settings minimum (default 1 GiB disk,
+  256 MiB RAM). Running jobs keep going. `public/health.php` stays an
+  unauthenticated liveness probe (`ok: true`) and adds `ready` plus
+  `pressure` so a monitor can see the box should not take more work.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).

@@ -163,6 +163,46 @@ final class Config
     }
 
     /**
+     * GiB that must stay free on the pool filesystem before a start
+     * (0 = off, default 1). Unknown disk readings fail open.
+     */
+    public static function minFreeDiskGib(): int
+    {
+        return self::optionalBoundEnv('RUNNERDECK_MIN_FREE_DISK_GIB', 1, 1000, 1);
+    }
+
+    /**
+     * MiB of MemAvailable that must remain before a start
+     * (0 = off, default 256). Unreadable RAM fails open (typical on macOS).
+     */
+    public static function minFreeRamMib(): int
+    {
+        return self::optionalBoundEnv('RUNNERDECK_MIN_FREE_RAM_MIB', 1, 1048576, 256);
+    }
+
+    /**
+     * Empty/unset uses $default. "0" disables. Other non-digits use $default.
+     */
+    private static function optionalBoundEnv(string $key, int $minOn, int $max, int $default): int
+    {
+        $raw = getenv($key);
+        if ($raw === false || $raw === '') {
+            return $default;
+        }
+        if (!ctype_digit($raw)) {
+            return $default;
+        }
+        $n = (int) $raw;
+        if ($n === 0) {
+            return 0;
+        }
+        if ($n < $minOn) {
+            return $default;
+        }
+        return min($max, $n);
+    }
+
+    /**
      * After this many idle minutes, drain-stop a running slot (1–1440).
      * Null means idle-stop is off. Skips busy and Pause-AR slots, and
      * does nothing while jobs are queued for this label.

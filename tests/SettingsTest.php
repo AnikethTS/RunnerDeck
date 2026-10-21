@@ -29,6 +29,8 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_CHECK_UPDATES');
         putenv('RUNNERDECK_POOL_CAP');
         putenv('RUNNERDECK_IDLE_STOP_MINUTES');
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
+        putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
         @unlink($this->settingsFile);
         @rmdir(dirname($this->settingsFile));
     }
@@ -169,6 +171,21 @@ final class SettingsTest extends TestCase
         $loaded = \RunnerDeck\Settings::load();
         $this->assertSame('4', $loaded['RUNNERDECK_POOL_CAP']);
         $this->assertSame('10', $loaded['RUNNERDECK_IDLE_STOP_MINUTES']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionStoresMinFreeHeadroom(): void
+    {
+        $result = \RunnerDeck\Api\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'min_free_disk_gib' => '2',
+            'min_free_ram_mib' => '512',
+        ]);
+        $this->assertTrue($result['ok']);
+        $loaded = \RunnerDeck\Settings::load();
+        $this->assertSame('2', $loaded['RUNNERDECK_MIN_FREE_DISK_GIB']);
+        $this->assertSame('512', $loaded['RUNNERDECK_MIN_FREE_RAM_MIB']);
     }
 
     #[RunInSeparateProcess]
