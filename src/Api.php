@@ -17,6 +17,7 @@ use RunnerDeck\Api\CsrfTokenAction;
 use RunnerDeck\Api\DeleteRunnerAction;
 use RunnerDeck\Api\DrainStopAction;
 use RunnerDeck\Api\DrainStopAllAction;
+use RunnerDeck\Api\ForceIdleAction;
 use RunnerDeck\Api\HistoryAction;
 use RunnerDeck\Api\LogAction;
 use RunnerDeck\Api\LoginAction;
@@ -30,6 +31,7 @@ use RunnerDeck\Api\ResizeAction;
 use RunnerDeck\Api\RestartAction;
 use RunnerDeck\Api\RollingRestartAction;
 use RunnerDeck\Api\RollingUpgradeAction;
+use RunnerDeck\Api\SafeRebootAction;
 use RunnerDeck\Api\SaveSettingsAction;
 use RunnerDeck\Api\StartAction;
 use RunnerDeck\Api\StartAllAction;
@@ -66,6 +68,8 @@ final class Api
         'rolling_restart' => RollingRestartAction::class,
         'rolling_upgrade' => RollingUpgradeAction::class,
         'maintenance' => MaintenanceAction::class,
+        'safe_reboot' => SafeRebootAction::class,
+        'force_idle' => ForceIdleAction::class,
         'pause_auto_restart' => PauseAutoRestartAction::class,
         'rename' => RenameAction::class,
         'remove_orphan' => RemoveOrphanAction::class,

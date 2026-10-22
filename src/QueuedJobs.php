@@ -91,7 +91,7 @@ final class QueuedJobs
         $count = (int) ($payload['count'] ?? 0);
         $running = $configured - $stopped;
         $hint = self::hintFor($count, $stopped, $configured, Config::poolCap(), $running);
-        return [
+        $out = [
             'ok' => (bool) ($payload['ok'] ?? false),
             'label' => (string) ($payload['label'] ?? Config::label()),
             'count' => $count,
@@ -103,6 +103,8 @@ final class QueuedJobs
             'recent' => is_array($payload['recent'] ?? null) ? $payload['recent'] : [],
             'message' => (string) ($payload['message'] ?? ''),
         ];
+        QueueAlert::check($out['jobs']);
+        return $out;
     }
 
     /**
@@ -189,6 +191,7 @@ final class QueuedJobs
                 'html_url' => (string) ($job['html_url'] ?? ''),
                 'status' => $status,
                 'waited' => self::formatWait($waitedSec),
+                'waited_sec' => $waitedSec,
             ];
         }
         return $out;

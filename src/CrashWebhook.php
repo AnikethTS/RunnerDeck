@@ -45,6 +45,21 @@ final class CrashWebhook
         }
     }
 
+    public static function notifyEvent(string $event, string $message): void
+    {
+        $url = Config::crashWebhookUrl();
+        if ($url === null) {
+            return;
+        }
+        $payload = self::payloadFor($url, $event, $message, null, null);
+        [$ok, $stderr] = self::post($url, $payload);
+        if (!$ok) {
+            AppLog::errorThrottled('crash_webhook', 'failed to deliver ' . $event . ' notification', [
+                'stderr' => $stderr,
+            ]);
+        }
+    }
+
     public static function notifyDisk(
         string $event,
         string $message,

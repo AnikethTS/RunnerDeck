@@ -76,6 +76,47 @@ final class HostPressure
             . ' — free resources before starting runners';
     }
 
+    /**
+     * One-shot webhook when pressure starts refusing starts. Not called from health.php.
+     *
+     * @param array{
+     *     ok: bool,
+     *     reasons: list<string>,
+     *     disk_free_kb: ?int,
+     *     disk_total_kb: ?int,
+     *     ram_available_kb: ?int
+     * }|null $snap
+     */
+    public static function checkAlert(?array $snap = null): void
+    {
+        if (Config::crashWebhookUrl() === null) {
+            return;
+        }
+        $snap = $snap ?? self::snapshot();
+        $over = !$snap['ok'];
+        $path = Settings::storageDir() . '/pressure_alert.json';
+        $was = false;
+        if (is_file($path)) {
+            $decoded = json_decode((string) file_get_contents($path), true);
+            $was = is_array($decoded) && !empty($decoded['fired']);
+        }
+        if ($over && !$was) {
+            $detail = $snap['reasons'] !== [] ? implode('; ', $snap['reasons']) : 'disk or RAM';
+            CrashWebhook::notifyEvent(
+                'host_pressure',
+                'RunnerDeck: this host is low on ' . $detail . ' — new runners will not start.'
+            );
+        }
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return;
+        }
+        $tmp = $path . '.tmp';
+        file_put_contents($tmp, json_encode(['fired' => $over], JSON_PRETTY_PRINT));
+        chmod($tmp, 0600);
+        rename($tmp, $path);
+    }
+
     /** @return array{0: ?int, 1: ?int} */
     private static function diskKb(): array
     {

@@ -35,4 +35,16 @@ final class HostModeTest extends TestCase
         \RunnerDeck\HostMode::setMaintenance(false);
         $this->assertFalse(\RunnerDeck\HostMode::isMaintenance());
     }
+
+    #[RunInSeparateProcess]
+    public function testRebootReadyMergesAndMaintenanceClearsIt(): void
+    {
+        $this->assertFalse(\RunnerDeck\HostMode::isRebootReady());
+        \RunnerDeck\HostMode::setRebootReady(true);
+        $this->assertTrue(\RunnerDeck\HostMode::isRebootReady());
+        $this->assertFalse(\RunnerDeck\HostMode::isMaintenance());
+        \RunnerDeck\HostMode::setMaintenance(true);
+        $this->assertTrue(\RunnerDeck\HostMode::isMaintenance());
+        $this->assertFalse(\RunnerDeck\HostMode::isRebootReady());
+    }
 }

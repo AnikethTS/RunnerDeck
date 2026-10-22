@@ -50,12 +50,15 @@ final class Dashboard
 
         $stats = self::computeStats($runners);
         DiskAlert::check($runners, $stats['total_disk_kb']);
+        $pressure = HostPressure::snapshot();
+        HostPressure::checkAlert($pressure);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
 
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
-            'pressure' => HostPressure::snapshot(),
+            'reboot_ready' => HostMode::isRebootReady(),
+            'pressure' => $pressure,
             'orphans' => AgentRoster::orphans($ghRunners, $localNames),
             'health' => [
                 'logged_in' => $loggedIn,

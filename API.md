@@ -5,7 +5,8 @@ standalone endpoints (`public/log_stream.php`, `public/download_log.php`,
 `public/download_applog.php`)
 for streaming and downloading logs, and `public/health.php` for an unauthenticated
 uptime probe (`ok` is always true if PHP ran; `ready` is false in
-maintenance or when host pressure refuses starts). Everything here is `127.0.0.1`-only by
+maintenance, when host pressure refuses starts, or when
+`reboot_ready` is set). Everything here is `127.0.0.1`-only by
 default (see [Safety notes](docs/security-and-safety.md#safety-notes)). Off
 loopback, TOTP is required in code — not only as a warning. On loopback with
 login off, "who can call this" is "who can reach this port". With TOTP on,
@@ -123,6 +124,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
 {
   "generated_at": 1789160000,
   "maintenance": false,
+  "reboot_ready": false,
   "health": { "logged_in": true, "org_access_ok": true, "message": "OK" },
   "runners": [
     {
@@ -144,7 +146,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "should_auto_restart": false,
       "auto_restart_paused": false,
       "mismatch_flagged": false,
-      "crash_count_7d": 0
+      "stuck_busy_flagged": false,
+      "crash_count_7d": 0}
     }
   ],
   "stats": { "total": 1, "running": 1, "avg_cpu_percent": 1.2, "total_rss_kb": 204800, "total_disk_kb": 4096 },
@@ -294,7 +297,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=queue'
       "repo": "acme/app",
       "html_url": "https://github.com/acme/app/actions/runs/77/job/9",
       "status": "queued",
-      "waited": "12s"
+      "waited": "12s",
+      "waited_sec": 12
     }
   ],
   "live": [
@@ -336,7 +340,7 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `queue_wait_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled. The dashboard uses `POST /logout.php` (CSRF + redirect to `login.php`) instead |
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
@@ -348,6 +352,8 @@ ids for the `bulk_*` actions).
 | `rolling_restart` | `runner` | Drain then restart one slot; `timeout` optional; `409` if still busy unless `force=1` |
 | `rolling_upgrade` | — | Drain, replace the local runner agent, start; one configured slot at a time; `timeout` optional |
 | `maintenance` | `enabled` (`1` or `0`) | Drain-stop all and refuse starts (`1`), or leave maintenance (`0`) |
+| `safe_reboot` | — | Drain-stop all and set `reboot_ready`; does not reboot the OS; `timeout` optional; `409` if still busy unless `force=1` |
+| `force_idle` | `runner` | GitHub busy, local process gone: DELETE the GitHub runner and local registration; files stay |
 | `pause_auto_restart` | `runner`, `paused` (`1` or `0`) | Holds or resumes auto-restart for one slot; manual Start still works |
 | `bulk_rolling_restart` | `runners` | One slot at a time (drain-stop then start); skips unconfigured; `timeout` optional |
 | `rename` | `runner`, `name` | Busy-checked; deregisters and re-registers under the new name |

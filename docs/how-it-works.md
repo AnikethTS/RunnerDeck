@@ -32,13 +32,17 @@
   drain-stop then start, one configured slot at a time, so this host is
   not all-offline at once. **Upgrade agents** is the same sequence plus
   replacing the local GitHub Actions runner package with GitHub's current
-  download for this OS/arch. **Maintenance** drain-stops every slot and
+  download for this OS/arch.   **Maintenance** drain-stops every slot and
   refuses start / auto-restart / scale-to-queue until you resume.
-  **Host pressure** also refuses new starts when the pool filesystem or
-  Linux MemAvailable is below the Settings minimum (default 1 GiB disk,
-  256 MiB RAM). Running jobs keep going. `public/health.php` stays an
-  unauthenticated liveness probe (`ok: true`) and adds `ready` plus
-  `pressure` so a monitor can see the box should not take more work.
+  **Safe reboot** drain-stops the pool and sets `reboot_ready` so you
+  can reboot the OS yourself — RunnerDeck does not call `reboot`.
+  Starting a runner clears that flag. **Host pressure** also refuses
+  new starts when the pool filesystem or Linux MemAvailable is below
+  the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
+  keep going. `public/health.php` stays an unauthenticated liveness
+  probe (`ok: true`) and adds `ready` plus `pressure` (and
+  `reboot_ready`) so a monitor can see the box should not take more
+  work. The pressure webhook is not sent from that probe.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
@@ -104,7 +108,11 @@
   are detected automatically and get their native payload shape; anything
   else gets a plain JSON payload, e.g. for a webhook-to-email/push relay.
   The same URL also fires once when a local/GitHub **mismatch** is first
-  flagged (three disagreeing polls).
+  flagged (three disagreeing polls), when **host pressure** starts
+  refusing starts, and when a queued job first exceeds the optional
+  queue-wait threshold. GitHub **busy** with no local process for three
+  polls flags the row; **Force idle** removes the GitHub registration
+  and local `.runner` files so the next Start re-registers.
 - Every crash is recorded, not just flagged ones — a small SQLite table
   (`src/CrashHistory.php`, the same database as CPU/RAM history) keeps a
   7-day count per runner. It's independent of `crash_flagged`: a runner

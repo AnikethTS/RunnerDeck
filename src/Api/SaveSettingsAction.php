@@ -40,6 +40,7 @@ final class SaveSettingsAction
         $sessionIdle = trim((string) ($post['session_idle_minutes'] ?? ''));
         $poolCap = trim((string) ($post['pool_cap'] ?? ''));
         $idleStop = trim((string) ($post['idle_stop_minutes'] ?? ''));
+        $queueWait = trim((string) ($post['queue_wait_minutes'] ?? ''));
         $minDisk = trim((string) ($post['min_free_disk_gib'] ?? ''));
         $minRam = trim((string) ($post['min_free_ram_mib'] ?? ''));
 
@@ -92,6 +93,14 @@ final class SaveSettingsAction
                 'message' => 'idle stop must be a whole number between 1 and 1440 minutes',
             ];
         }
+        $queueWaitOk = $queueWait === ''
+            || (ctype_digit($queueWait) && (int) $queueWait >= 1 && (int) $queueWait <= 1440);
+        if (!$queueWaitOk) {
+            return [
+                'ok' => false,
+                'message' => 'queue wait alert must be a whole number between 1 and 1440 minutes',
+            ];
+        }
         $diskOk = $minDisk === ''
             || (ctype_digit($minDisk) && (int) $minDisk <= 1000);
         if (!$diskOk) {
@@ -121,6 +130,7 @@ final class SaveSettingsAction
             'RUNNERDECK_SCALE_TO_QUEUE' => ($post['scale_to_queue'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_POOL_CAP' => $poolCap,
             'RUNNERDECK_IDLE_STOP_MINUTES' => $idleStop,
+            'RUNNERDECK_QUEUE_WAIT_MINUTES' => $queueWait,
             'RUNNERDECK_MIN_FREE_DISK_GIB' => $minDisk,
             'RUNNERDECK_MIN_FREE_RAM_MIB' => $minRam,
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,

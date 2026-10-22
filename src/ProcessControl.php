@@ -103,6 +103,7 @@ final class ProcessControl
         }
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
+        HostMode::setRebootReady(false);
         AppLog::info('process.start', "{$r->id} started (pid {$newPid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} started (pid {$newPid})"];
     }
@@ -225,6 +226,42 @@ final class ProcessControl
         }
         AppLog::info('process.clear_work', "{$r->id} " . $cleared['message'], ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} " . $cleared['message']];
+    }
+
+    /**
+     * GitHub still shows busy but this slot's process is gone. Drop the
+     * GitHub registration; local files stay. Next Start re-registers.
+     */
+    public static function forceIdle(RunnerInfo $r): array
+    {
+        $resolved = ProcessDecision::resolveStop(
+            RunnerPool::checkProcess("{$r->dir}/runner.pid"),
+            RunnerPool::liveListenersByDir(),
+            $r->dir
+        );
+        if ($resolved['running']) {
+            return [
+                'ok' => false,
+                'message' => "{$r->id} is still running locally — stop it first",
+            ];
+        }
+        try {
+            $ghId = GithubClient::listRunners()[$r->agentName]['id'] ?? null;
+            if ($ghId !== null) {
+                GithubClient::deleteRunner($ghId);
+            }
+        } catch (\RuntimeException $e) {
+            return self::fail(
+                'process.force_idle',
+                'failed to clear GitHub busy for ' . $r->agentName . ': ' . $e->getMessage(),
+                $r->id,
+                $e->getMessage()
+            );
+        }
+        Provisioner::deregister($r->dir);
+        CrashState::markExplicitlyStopped($r->id);
+        AppLog::info('process.force_idle', "{$r->id} cleared GitHub busy ({$r->agentName})", ['runner' => $r->id]);
+        return ['ok' => true, 'message' => "{$r->id} cleared on GitHub — Start to re-register"];
     }
 
     public static function restartIndividual(RunnerInfo $r): array
