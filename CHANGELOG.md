@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-22
+
 ### Security
 
 - Pin the Docker/Alpine smoke image to **PHP 8.5.12** (`php:8.5.12-cli-alpine`)
