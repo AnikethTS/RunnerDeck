@@ -41,7 +41,7 @@ tests never walk live workflow runs).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on `ubuntu-latest` and `macos-latest` (PHP 8.1), a dedicated Alpine (musl)
-container (PHP 8.5, same digest as the Dockerfile), and the
+container (PHP 8.5.12, same digest as the Dockerfile), and the
 [Docker image](docker.md) itself (`docker build` + env/lib assertions +
 boot + hit `action=status` through the real port mapping) for every
 push/PR — see [Platform support](getting-started.md#platform-support) —
