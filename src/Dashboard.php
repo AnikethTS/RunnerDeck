@@ -47,6 +47,8 @@ final class Dashboard
 
         $runners = CrashState::track($runners);
         self::notifyCrashes($runners);
+        $agents = AgentTarget::annotate($runners);
+        $runners = $agents['runners'];
 
         $stats = self::computeStats($runners);
         DiskAlert::check($runners, $stats['total_disk_kb']);
@@ -59,6 +61,8 @@ final class Dashboard
             'maintenance' => HostMode::isMaintenance(),
             'reboot_ready' => HostMode::isRebootReady(),
             'pressure' => $pressure,
+            'agent_latest' => $agents['latest'],
+            'agent_behind_count' => $agents['behind_count'],
             'orphans' => AgentRoster::orphans($ghRunners, $localNames),
             'health' => [
                 'logged_in' => $loggedIn,

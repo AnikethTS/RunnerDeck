@@ -41,6 +41,7 @@ final class SaveSettingsAction
         $poolCap = trim((string) ($post['pool_cap'] ?? ''));
         $idleStop = trim((string) ($post['idle_stop_minutes'] ?? ''));
         $queueWait = trim((string) ($post['queue_wait_minutes'] ?? ''));
+        $longJob = trim((string) ($post['long_job_minutes'] ?? ''));
         $minDisk = trim((string) ($post['min_free_disk_gib'] ?? ''));
         $minRam = trim((string) ($post['min_free_ram_mib'] ?? ''));
 
@@ -101,6 +102,14 @@ final class SaveSettingsAction
                 'message' => 'queue wait alert must be a whole number between 1 and 1440 minutes',
             ];
         }
+        $longJobOk = $longJob === ''
+            || (ctype_digit($longJob) && (int) $longJob >= 1 && (int) $longJob <= 1440);
+        if (!$longJobOk) {
+            return [
+                'ok' => false,
+                'message' => 'long job alert must be a whole number between 1 and 1440 minutes',
+            ];
+        }
         $diskOk = $minDisk === ''
             || (ctype_digit($minDisk) && (int) $minDisk <= 1000);
         if (!$diskOk) {
@@ -131,6 +140,7 @@ final class SaveSettingsAction
             'RUNNERDECK_POOL_CAP' => $poolCap,
             'RUNNERDECK_IDLE_STOP_MINUTES' => $idleStop,
             'RUNNERDECK_QUEUE_WAIT_MINUTES' => $queueWait,
+            'RUNNERDECK_LONG_JOB_MINUTES' => $longJob,
             'RUNNERDECK_MIN_FREE_DISK_GIB' => $minDisk,
             'RUNNERDECK_MIN_FREE_RAM_MIB' => $minRam,
             'RUNNERDECK_CRASH_WEBHOOK_URL' => $webhookUrl,

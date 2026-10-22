@@ -6,6 +6,20 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Long job alert**: optional `RUNNERDECK_LONG_JOB_MINUTES` fires the
+  crash webhook once per in-progress GitHub job on this host that has
+  run that long.
+
+- **Agent behind**: dashboard banner and row flag when a slot's local
+  GitHub Actions runner package is older than GitHub's current download
+  for this OS/arch (cached 1 hour). Use Upgrade agents.
+
+- **Settings export/import**: download a JSON copy without the TOTP
+  secret or crash webhook URL; import overlays recognised keys and never
+  replaces login.
+
 ## [1.8.0] - 2026-10-22
 
 ### Security

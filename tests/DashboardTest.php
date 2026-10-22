@@ -29,10 +29,12 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_HISTORY_FILE=' . $this->root . '/storage/db/history.sqlite');
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        \RunnerDeck\AgentTarget::fake(fn () => null);
     }
 
     protected function tearDown(): void
     {
+        \RunnerDeck\AgentTarget::fake(null);
         \RunnerDeck\Shell::fake(null);
         \RunnerDeck\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\RunnerPool::fakeCheckProcess(null);
