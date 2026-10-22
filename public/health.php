@@ -12,12 +12,14 @@ header('Cache-Control: no-store');
 
 $pressure = HostPressure::snapshot();
 $maintenance = HostMode::isMaintenance();
-$ready = $pressure['ok'] && !$maintenance;
+$rebootReady = HostMode::isRebootReady();
+$ready = $pressure['ok'] && !$maintenance && !$rebootReady;
 
 echo json_encode([
     'ok' => true,
     'ready' => $ready,
     'maintenance' => $maintenance,
+    'reboot_ready' => $rebootReady,
     'pressure' => [
         'ok' => $pressure['ok'],
         'reasons' => $pressure['reasons'],

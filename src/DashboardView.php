@@ -18,6 +18,12 @@ final class DashboardView
                 'text' => 'This host is in maintenance — runners will not start until you resume.',
             ];
         }
+        if (!empty($snapshot['reboot_ready'])) {
+            return [
+                'hidden' => false,
+                'text' => 'Pool is stopped. Safe to reboot this machine. Starting a runner clears this.',
+            ];
+        }
         $pressure = is_array($snapshot['pressure'] ?? null) ? $snapshot['pressure'] : [];
         if (isset($pressure['ok']) && $pressure['ok'] === false) {
             $reasons = [];
@@ -192,6 +198,7 @@ final class DashboardView
         $drainDis = $running ? '' : ' disabled';
         $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
         $pauseLabel = !empty($runner['auto_restart_paused']) ? 'Resume AR' : 'Pause AR';
+        $forceIdleHidden = !empty($runner['stuck_busy_flagged']) ? '' : ' hidden';
 
         return ''
             . '    <tr data-runner="' . $id . '" data-agent-name="' . $name . '">' . "\n"
@@ -224,6 +231,8 @@ final class DashboardView
             . '          <button class="btn btn-sm" data-action="rename">Rename</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="clear-work"'
             . $clearDis . '>Clear work</button>' . "\n"
+            . '          <button class="btn btn-sm btn-critical" data-action="force-idle"'
+            . $forceIdleHidden . '>Force idle</button>' . "\n"
             . '          <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>' . "\n"
             . '        </div>' . "\n"
             . '      </td>' . "\n"
@@ -267,7 +276,9 @@ final class DashboardView
         $html .= self::labelChips($labels);
         $html .= '<div class="live-job" hidden></div>';
         $html .= '<div class="last-jobs" hidden></div>';
-        return $html . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning');
+        return $html
+            . self::flag($runner, 'mismatch_flagged', 'local/GitHub status disagree', 'warning')
+            . self::flag($runner, 'stuck_busy_flagged', 'GitHub busy, process gone', 'critical');
     }
 
     /** @param array<string, mixed> $runner */

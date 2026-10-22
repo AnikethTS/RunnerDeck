@@ -59,6 +59,7 @@ if (
         'scaleToQueue' => ($_POST['scale_to_queue'] ?? '') === '1',
         'poolCap' => (string) ($_POST['pool_cap'] ?? ''),
         'idleStopMinutes' => (string) ($_POST['idle_stop_minutes'] ?? ''),
+        'queueWaitMinutes' => (string) ($_POST['queue_wait_minutes'] ?? ''),
         'minFreeDiskGib' => (string) ($_POST['min_free_disk_gib'] ?? ''),
         'minFreeRamMib' => (string) ($_POST['min_free_ram_mib'] ?? ''),
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
@@ -85,6 +86,9 @@ if (
         'poolCap' => Config::poolCap() !== null ? (string) Config::poolCap() : '',
         'idleStopMinutes' => Config::idleStopMinutes() !== null
             ? (string) Config::idleStopMinutes()
+            : '',
+        'queueWaitMinutes' => Config::queueWaitMinutes() !== null
+            ? (string) Config::queueWaitMinutes()
             : '',
         'minFreeDiskGib' => (string) Config::minFreeDiskGib(),
         'minFreeRamMib' => (string) Config::minFreeRamMib(),
@@ -263,6 +267,24 @@ echo HostingWarnings::html();
           <p class="settings-hint">
             Stop a slot that has been GitHub-idle this long. Off while jobs are queued.
             Needs watch-auto-restart.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-queue-wait">Queue wait alert (minutes, optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-queue-wait"
+            name="queue_wait_minutes"
+            min="1"
+            max="1440"
+            step="1"
+            value="<?= htmlspecialchars($current['queueWaitMinutes']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Fire the crash webhook once when a job waits this long on this label.
           </p>
         </div>
 

@@ -409,4 +409,65 @@ final class ProcessControlTest extends TestCase
         $this->assertSame([SIGTERM, SIGKILL], $this->signals);
         $this->assertFileExists($this->dir . '/runner.pid');
     }
+
+    #[RunInSeparateProcess]
+    public function testForceIdleRefusesWhenLocalProcessIsRunning(): void
+    {
+        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 9]);
+        $result = \RunnerDeck\ProcessControl::forceIdle($this->runner());
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('still running locally', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testForceIdleDeletesGithubAndLocalRegistration(): void
+    {
+        file_put_contents($this->dir . '/.runner', '{"agentName":"acme-1"}');
+        file_put_contents($this->dir . '/.credentials', 'secret');
+        file_put_contents($this->dir . '/runner.log', 'keep');
+        $deletedGhId = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners') && !str_contains($joined, 'DELETE')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([
+                        'runners' => [
+                            ['id' => 17, 'name' => 'acme-1', 'status' => 'online', 'busy' => true, 'labels' => []],
+                        ],
+                    ]),
+                    'stderr' => '',
+                ];
+            }
+            if (str_contains($joined, 'DELETE') && str_contains($joined, '/actions/runners/17')) {
+                $deletedGhId = 17;
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\ProcessControl::forceIdle($this->runner());
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(17, $deletedGhId);
+        $this->assertFileDoesNotExist($this->dir . '/.runner');
+        $this->assertFileDoesNotExist($this->dir . '/.credentials');
+        $this->assertFileExists($this->dir . '/runner.log');
+        $this->assertSame('process.force_idle', $this->lastLog()['action']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStartClearsRebootReady(): void
+    {
+        \RunnerDeck\HostMode::setRebootReady(true);
+        \RunnerDeck\Shell::fake(function (array $cmd): array {
+            $this->assertSame('bash', $cmd[0]);
+            return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
+        });
+
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
+
+        $this->assertTrue($result['ok']);
+        $this->assertFalse(\RunnerDeck\HostMode::isRebootReady());
+    }
 }

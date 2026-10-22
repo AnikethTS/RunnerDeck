@@ -40,6 +40,16 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('100 MB', $banner['text']);
     }
 
+    public function testHealthBannerWhenRebootReady(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'reboot_ready' => true,
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('Safe to reboot', $banner['text']);
+    }
+
     public function testHealthBannerWhenNotLoggedIn(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([
@@ -174,6 +184,24 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="drain"', $html);
         $this->assertStringContainsString('data-action="clear-work"', $html);
         $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
+        $this->assertMatchesRegularExpression('/data-action="force-idle"\s+hidden/', $html);
+    }
+
+    public function testRowHtmlShowsForceIdleWhenStuckBusy(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => [],
+            'github' => ['status' => 'online', 'busy' => true, 'labels' => []],
+            'stuck_busy_flagged' => true,
+        ]);
+        $this->assertStringContainsString('GitHub busy, process gone', $html);
+        $this->assertStringContainsString('data-action="force-idle"', $html);
+        $this->assertDoesNotMatchRegularExpression('/data-action="force-idle"[^>]*hidden/', $html);
     }
 
     public function testRowHtmlOmitsAgentVersionWhenMissing(): void

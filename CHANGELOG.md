@@ -8,6 +8,20 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Safe reboot**: drain-stop the pool and set `reboot_ready` so you can
+  reboot the machine yourself. Does not run `reboot`. Starting a runner
+  clears the banner. `health.php` `ready` is false while this is set.
+
+- **Queue wait alert**: optional `RUNNERDECK_QUEUE_WAIT_MINUTES` fires
+  the crash webhook once when a job on this label has waited that long.
+
+- **Host pressure webhook**: the crash webhook fires once when disk/RAM
+  floors start refusing starts. Not sent from `health.php`.
+
+- **Stuck busy**: GitHub `busy` with no local process for three polls
+  flags the row. **Force idle** DELETEs the GitHub runner and clears
+  local registration; files stay; the next Start re-registers.
+
 - **Host pressure**: refuse Start / add / scale-to-queue when the pool
   disk or Linux MemAvailable is below a floor (default 1 GiB / 256 MiB,
   `0` = off). Running jobs are not stopped. Dashboard banner,

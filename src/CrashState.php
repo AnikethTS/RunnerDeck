@@ -72,6 +72,7 @@ final class CrashState
             'wasRunning' => false, 'attempts' => 0, 'healthySince' => 0,
             'flagged' => false, 'notified' => false, 'justStopped' => false,
             'mismatchStreak' => 0, 'mismatchNotified' => false,
+            'stuckBusyStreak' => 0,
             'autoRestartPaused' => false,
         ];
     }
@@ -181,6 +182,9 @@ final class CrashState
                     $justMismatch = true;
                     $s['mismatchNotified'] = true;
                 }
+                $ghBusy = is_array($r['github'] ?? null) && !empty($r['github']['busy']);
+                $stuck = $ghBusy && empty($r['local_running']);
+                $s['stuckBusyStreak'] = $stuck ? ((int) ($s['stuckBusyStreak'] ?? 0)) + 1 : 0;
             }
 
             $s['justStopped'] = false;
@@ -193,6 +197,7 @@ final class CrashState
             $r['auto_restart_paused'] = $paused;
             $r['mismatch_flagged'] = $s['mismatchStreak'] >= self::MISMATCH_THRESHOLD;
             $r['just_mismatch_flagged'] = $justMismatch;
+            $r['stuck_busy_flagged'] = ((int) ($s['stuckBusyStreak'] ?? 0)) >= self::MISMATCH_THRESHOLD;
             $r['crash_count_7d'] = $crashCounts[$id] ?? 0;
             $r['crash_at_7d'] = $crashTimes[$id] ?? [];
             $r['crash_threshold_crossed'] = $thresholdCrossed;

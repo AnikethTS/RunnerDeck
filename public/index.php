@@ -280,6 +280,7 @@ Layout::topbarEnd();
         <button id="btn-rolling-restart-all" class="btn">Rolling Restart</button>
         <button id="btn-rolling-upgrade" class="btn">Upgrade agents</button>
         <button id="btn-maintenance" class="btn">Maintenance</button>
+        <button id="btn-safe-reboot" class="btn">Safe reboot</button>
         <form id="pool-size-form" class="pool-form">
           <label for="pool-size">Pool size</label>
           <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />

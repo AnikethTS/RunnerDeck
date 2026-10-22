@@ -87,11 +87,11 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
-    settings.php    scope/org/repo/label/extra labels, auto-restart, crash webhook, login setup
+    settings.php    scope/org/repo/label/extra labels, auto-restart, queue wait, crash webhook, login setup
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
     totp_setup.php  optional TOTP enroll / rotate
-    health.php      unauthenticated `{"ok":true}` probe (no version)
+    health.php      unauthenticated `{"ok":true}` probe (no version; `ready` / `pressure` / `reboot_ready`)
     assets/         app.js (dashboard), js/theme.js, style.css, logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
@@ -114,12 +114,14 @@ runnerdeck/
     RollingRestart.php    sequential drain-stop then start per slot
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
-    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop
+    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop, queue-wait alert
     RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
     Layout.php            shared HTML chrome: theme cookie, topbar, assets
-    HostPressure.php      disk/RAM headroom; refuse starts when too low
+    HostPressure.php      disk/RAM headroom; refuse starts when too low; one-shot webhook
+    HostMode.php          maintenance + reboot_ready flags
+    QueueAlert.php        one-shot webhook when a queued job waits too long
     HostingWarnings.php   TLS/TOTP/php -S banners plus Settings This-host card
     Session.php           one session_start path (HttpOnly, SameSite, Secure)
     SecurityHeaders.php   CSP / frame / referrer headers for PHP responses
@@ -130,7 +132,7 @@ runnerdeck/
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
   run.sh            local php -S entry (also starts watch-auto-restart)
-  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop
+  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)

@@ -127,6 +127,24 @@ final class CrashWebhookTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testNotifyEventPostsStructuredPayloadWithoutRunner(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        $body = null;
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+            $body = $cmd[array_search('-d', $cmd, true) + 1];
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\CrashWebhook::notifyEvent('host_pressure', 'low disk');
+
+        $decoded = json_decode((string) $body, true);
+        $this->assertSame('host_pressure', $decoded['event']);
+        $this->assertSame('low disk', $decoded['message']);
+        $this->assertArrayNotHasKey('runner', $decoded);
+    }
+
+    #[RunInSeparateProcess]
     public function testDiskNotifyUsesDiskPayload(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');

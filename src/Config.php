@@ -220,6 +220,23 @@ final class Config
         return min(1440, $n);
     }
 
+    /**
+     * Fire the crash webhook when a queued job has waited this many minutes
+     * (1–1440). Null means the alert is off.
+     */
+    public static function queueWaitMinutes(): ?int
+    {
+        $raw = getenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return null;
+        }
+        return min(1440, $n);
+    }
+
     /** Comma-separated labels for config.sh, including per-slot extras. */
     public static function provisionLabelsFor(string $dir): string
     {

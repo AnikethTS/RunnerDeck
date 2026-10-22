@@ -80,6 +80,9 @@ function fixtureRowHtml(r) {
   if (r.mismatch_flagged) {
     github += '<div class="row-flag"><span class="badge badge-warning">local/GitHub status disagree</span></div>';
   }
+  if (r.stuck_busy_flagged) {
+    github += '<div class="row-flag"><span class="badge badge-critical">GitHub busy, process gone</span></div>';
+  }
   let local = !r.configured
     ? '<span class="badge badge-muted">not configured</span>'
     : r.local_running
@@ -119,6 +122,7 @@ function fixtureRowHtml(r) {
       <button class="btn btn-sm" data-action="pause-auto-restart">${r.auto_restart_paused ? 'Resume AR' : 'Pause AR'}</button>
       <button class="btn btn-sm" data-action="rename">Rename</button>
       <button class="btn btn-sm" data-action="clear-work"${clearDis}>Clear work</button>
+      <button class="btn btn-sm btn-critical" data-action="force-idle"${r.stuck_busy_flagged ? '' : ' hidden'}>Force idle</button>
       <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
     </div></td>
   </tr>`;
@@ -731,6 +735,7 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('#btn-rolling-restart-all')).toBeVisible();
   await expect(page.locator('#btn-rolling-upgrade')).toBeVisible();
   await expect(page.locator('#btn-maintenance')).toBeVisible();
+  await expect(page.locator('#btn-safe-reboot')).toBeVisible();
   await expect(page.locator('tr[data-runner="fat"] button[data-action="rolling-restart"]')).toBeVisible();
 });
 

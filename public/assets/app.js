@@ -479,6 +479,19 @@ function initDashboard() {
       });
       return;
     }
+    if (action === 'force-idle') {
+      const name = tr.dataset.agentName || runner;
+      const sure = await confirmModal(
+        `Clear ${name} on GitHub? Local files stay. The next Start re-registers this slot.`,
+      );
+      if (!sure) return;
+      await withLoading(btn, 'Clearing…', async () => {
+        const { data } = await post('force_idle', { runner });
+        if (!data.ok) showToast(data.message);
+        await fetchStatus();
+      });
+      return;
+    }
     if (action === 'delete') {
       const name = tr.dataset.agentName || runner;
       const sure = await confirmModal(
@@ -587,6 +600,20 @@ function initDashboard() {
       await runWithBusyGuard('maintenance', rollingParams({ enabled: on ? '1' : '0' }));
     });
   });
+
+  const safeRebootBtn = document.getElementById('btn-safe-reboot');
+  if (safeRebootBtn) {
+    safeRebootBtn.addEventListener('click', async (e) => {
+      const sure = await confirmModal(
+        'Drain-stop every runner so this machine is safe to reboot? This does not reboot for you.',
+      );
+      if (!sure) return;
+      const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
+      withLoading(e.currentTarget, 'Draining…', () =>
+        drainThenStop('safe_reboot', rollingParams({}), ids),
+      );
+    });
+  }
 
   rowsEl.addEventListener('change', (e) => {
     const checkbox = e.target.closest('input.row-select');

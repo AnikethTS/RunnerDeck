@@ -54,6 +54,7 @@ final class CrashStateTest extends TestCase
         $this->assertFalse($result[0]['auto_restart_paused']);
         $this->assertFalse($result[0]['mismatch_flagged']);
         $this->assertFalse($result[0]['just_mismatch_flagged']);
+        $this->assertFalse($result[0]['stuck_busy_flagged']);
     }
 
     #[RunInSeparateProcess]
@@ -123,6 +124,25 @@ final class CrashStateTest extends TestCase
         $cleared = \RunnerDeck\CrashState::track([$agreed]);
 
         $this->assertFalse($cleared[0]['mismatch_flagged']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStuckBusyFlagsAfterThreePolls(): void
+    {
+        $row = [
+            'id' => 'runner-base',
+            'local_running' => false,
+            'configured' => true,
+            'github' => ['status' => 'online', 'busy' => true, 'labels' => []],
+        ];
+
+        $first = \RunnerDeck\CrashState::track([$row]);
+        $second = \RunnerDeck\CrashState::track([$row]);
+        $third = \RunnerDeck\CrashState::track([$row]);
+
+        $this->assertFalse($first[0]['stuck_busy_flagged']);
+        $this->assertFalse($second[0]['stuck_busy_flagged']);
+        $this->assertTrue($third[0]['stuck_busy_flagged']);
     }
 
     #[RunInSeparateProcess]
