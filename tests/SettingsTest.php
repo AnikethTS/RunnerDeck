@@ -30,6 +30,7 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_POOL_CAP');
         putenv('RUNNERDECK_IDLE_STOP_MINUTES');
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
+        putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
         @unlink($this->settingsFile);
@@ -168,12 +169,14 @@ final class SettingsTest extends TestCase
             'pool_cap' => '4',
             'idle_stop_minutes' => '10',
             'queue_wait_minutes' => '15',
+            'long_job_minutes' => '90',
         ]);
         $this->assertTrue($result['ok']);
         $loaded = \RunnerDeck\Settings::load();
         $this->assertSame('4', $loaded['RUNNERDECK_POOL_CAP']);
         $this->assertSame('10', $loaded['RUNNERDECK_IDLE_STOP_MINUTES']);
         $this->assertSame('15', $loaded['RUNNERDECK_QUEUE_WAIT_MINUTES']);
+        $this->assertSame('90', $loaded['RUNNERDECK_LONG_JOB_MINUTES']);
     }
 
     #[RunInSeparateProcess]

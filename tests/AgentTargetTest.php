@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests;
+
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\TestCase;
+
+final class AgentTargetTest extends TestCase
+{
+    protected function tearDown(): void
+    {
+        \RunnerDeck\AgentTarget::fake(null);
+    }
+
+    #[RunInSeparateProcess]
+    public function testAnnotateMarksOlderLocalVersions(): void
+    {
+        \RunnerDeck\AgentTarget::fake(fn () => '2.322.0');
+        $out = \RunnerDeck\AgentTarget::annotate([
+            ['id' => 'runner-1', 'agent_version' => '2.321.0'],
+            ['id' => 'runner-2', 'agent_version' => '2.322.0'],
+        ]);
+        $this->assertSame('2.322.0', $out['latest']);
+        $this->assertSame(1, $out['behind_count']);
+        $this->assertTrue($out['runners'][0]['agent_behind']);
+        $this->assertFalse($out['runners'][1]['agent_behind']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testUnknownLatestFailsOpen(): void
+    {
+        \RunnerDeck\AgentTarget::fake(fn () => null);
+        $out = \RunnerDeck\AgentTarget::annotate([
+            ['id' => 'runner-1', 'agent_version' => '2.321.0'],
+        ]);
+        $this->assertNull($out['latest']);
+        $this->assertSame(0, $out['behind_count']);
+        $this->assertFalse($out['runners'][0]['agent_behind']);
+    }
+}

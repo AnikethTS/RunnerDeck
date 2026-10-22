@@ -168,7 +168,12 @@
   `log.cleared` info line. Download is still there; SSH is optional.
 - The GitHub column shows online/busy plus the `os` field already on
   GitHub's runner list (`Linux` / `macOS` / `Windows`) — same poll, no
-  extra `gh` call.
+  extra `gh` call. If a slot's local runner package is older than
+  GitHub's current download for this OS/arch (cached one hour), the
+  row and banner say so. **Upgrade agents** already replaces that
+  package. Settings can **download** a JSON copy of this host's config
+  without the TOTP secret or webhook URL, and **import** it onto
+  another box without replacing login.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

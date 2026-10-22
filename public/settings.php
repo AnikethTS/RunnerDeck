@@ -10,6 +10,7 @@ use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
+use RunnerDeck\SettingsPortable;
 
 Auth::requirePageAccess();
 
@@ -33,6 +34,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Auth::revokeOtherSessions();
             $notice = 'Other sessions are signed out. This one stays open.';
         }
+    } elseif (isset($_POST['import_settings'])) {
+        $file = $_FILES['settings_file'] ?? null;
+        if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $error = 'Choose a settings JSON file to import.';
+        } elseif ((int) ($file['size'] ?? 0) > 65536) {
+            $error = 'settings file is too large.';
+        } else {
+            $raw = (string) file_get_contents((string) ($file['tmp_name'] ?? ''));
+            $decoded = json_decode($raw, true);
+            if (!is_array($decoded)) {
+                $error = 'settings file is not JSON.';
+            } else {
+                $result = SettingsPortable::import($decoded);
+                if ($result['ok']) {
+                    header('Location: settings.php');
+                    exit;
+                }
+                $error = $result['message'];
+            }
+        }
     } else {
         $result = SaveSettingsAction::save($_POST);
         if ($result['ok']) {
@@ -47,6 +68,7 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
     && !isset($_POST['regenerate_recovery'])
     && !isset($_POST['revoke_sessions'])
+    && !isset($_POST['import_settings'])
 ) {
     $current = [
         'scope' => (string) ($_POST['scope'] ?? 'org'),
@@ -60,6 +82,7 @@ if (
         'poolCap' => (string) ($_POST['pool_cap'] ?? ''),
         'idleStopMinutes' => (string) ($_POST['idle_stop_minutes'] ?? ''),
         'queueWaitMinutes' => (string) ($_POST['queue_wait_minutes'] ?? ''),
+        'longJobMinutes' => (string) ($_POST['long_job_minutes'] ?? ''),
         'minFreeDiskGib' => (string) ($_POST['min_free_disk_gib'] ?? ''),
         'minFreeRamMib' => (string) ($_POST['min_free_ram_mib'] ?? ''),
         'crashWebhookUrl' => (string) ($_POST['crash_webhook_url'] ?? ''),
@@ -89,6 +112,9 @@ if (
             : '',
         'queueWaitMinutes' => Config::queueWaitMinutes() !== null
             ? (string) Config::queueWaitMinutes()
+            : '',
+        'longJobMinutes' => Config::longJobMinutes() !== null
+            ? (string) Config::longJobMinutes()
             : '',
         'minFreeDiskGib' => (string) Config::minFreeDiskGib(),
         'minFreeRamMib' => (string) Config::minFreeRamMib(),
@@ -289,6 +315,24 @@ echo HostingWarnings::html();
         </div>
 
         <div class="settings-field">
+          <label for="settings-long-job">Long job alert (minutes, optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-long-job"
+            name="long_job_minutes"
+            min="1"
+            max="1440"
+            step="1"
+            value="<?= htmlspecialchars($current['longJobMinutes']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Fire the crash webhook once when an in-progress job on this host has run this long.
+          </p>
+        </div>
+
+        <div class="settings-field">
           <label for="settings-min-disk">Minimum free disk (GiB)</label>
           <input
             type="number"
@@ -427,6 +471,26 @@ echo HostingWarnings::html();
       </section>
 
     </form>
+
+    <section class="settings-card">
+      <h3>This host copy</h3>
+      <p class="settings-hint">
+        Download omits the TOTP secret and crash webhook URL. Import never
+        overwrites login. A missing webhook URL in the file keeps the one already saved.
+      </p>
+      <div class="settings-actions-row">
+        <a href="download_settings.php" class="btn btn-sm" download="runnerdeck-settings.json">
+          Download settings
+        </a>
+        <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+          <input type="file" name="settings_file" accept="application/json,.json" required />
+          <button type="submit" name="import_settings" value="1" class="btn btn-sm">
+            Import settings
+          </button>
+        </form>
+      </div>
+    </section>
 
     <?php if (Auth::isEnabled()) : ?>
       <section class="settings-card">

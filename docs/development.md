@@ -87,9 +87,10 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
-    settings.php    scope/org/repo/label/extra labels, auto-restart, queue wait, crash webhook, login setup
+    settings.php    scope/org/repo/label/extra labels, auto-restart, queue wait, crash webhook, login setup, settings import
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
+    download_settings.php redacted settings.json download
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version; `ready` / `pressure` / `reboot_ready`)
     assets/         app.js (dashboard), js/theme.js, style.css, logo.png
@@ -104,6 +105,7 @@ runnerdeck/
     Totp.php               RFC 6238 TOTP code generation/verification, no dependency
     RunnerPool.php        discovers runner dirs, checks process liveness
     AgentVersion.php      local GitHub Actions runner agent version
+    AgentTarget.php       cached GitHub current runner package version; agent_behind flags
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
     GithubClient.php      shells out to `gh`
     UpdateCheck.php        opt-in check against this project's own GitHub Releases
@@ -114,7 +116,7 @@ runnerdeck/
     RollingRestart.php    sequential drain-stop then start per slot
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
-    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop, queue-wait alert
+    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop, queue/long-job alerts
     RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
@@ -122,6 +124,8 @@ runnerdeck/
     HostPressure.php      disk/RAM headroom; refuse starts when too low; one-shot webhook
     HostMode.php          maintenance + reboot_ready flags
     QueueAlert.php        one-shot webhook when a queued job waits too long
+    LongJobAlert.php      one-shot webhook when an in-progress job runs too long
+    SettingsPortable.php  redacted settings export/import
     HostingWarnings.php   TLS/TOTP/php -S banners plus Settings This-host card
     Session.php           one session_start path (HttpOnly, SameSite, Secure)
     SecurityHeaders.php   CSP / frame / referrer headers for PHP responses

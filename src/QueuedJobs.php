@@ -104,6 +104,7 @@ final class QueuedJobs
             'message' => (string) ($payload['message'] ?? ''),
         ];
         QueueAlert::check($out['jobs']);
+        LongJobAlert::check($out['live']);
         return $out;
     }
 
@@ -221,6 +222,8 @@ final class QueuedJobs
             if ($runner === '') {
                 continue;
             }
+            $started = strtotime((string) ($job['started_at'] ?? '')) ?: 0;
+            $durationSec = $started > 0 ? max(0, time() - $started) : 0;
             $out[] = [
                 'id' => (int) ($job['id'] ?? 0),
                 'name' => (string) ($job['name'] ?? 'job'),
@@ -228,6 +231,8 @@ final class QueuedJobs
                 'repo' => $repo,
                 'html_url' => (string) ($job['html_url'] ?? ''),
                 'runner_name' => $runner,
+                'started_at' => $started > 0 ? gmdate('c', $started) : '',
+                'duration_sec' => $durationSec,
             ];
         }
         return $out;

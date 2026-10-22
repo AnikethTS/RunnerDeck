@@ -40,6 +40,18 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('100 MB', $banner['text']);
     }
 
+    public function testHealthBannerWhenAgentBehind(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'agent_behind_count' => 2,
+            'agent_latest' => '2.322.0',
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('2.322.0', $banner['text']);
+        $this->assertStringContainsString('Upgrade agents', $banner['text']);
+    }
+
     public function testHealthBannerWhenRebootReady(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([
@@ -84,6 +96,21 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="rolling-restart"', $html);
         $this->assertStringContainsString('data-action="pause-auto-restart"', $html);
         $this->assertStringContainsString('Pause AR', $html);
+    }
+
+    public function testRowHtmlShowsOlderAgentPackage(): void
+    {
+        $html = \RunnerDeck\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => null,
+            'agent_behind' => true,
+        ]);
+        $this->assertStringContainsString('older agent package', $html);
     }
 
     public function testRowHtmlShowsGithubOsChip(): void

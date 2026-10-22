@@ -43,6 +43,15 @@ final class DashboardView
         $orgOk = (bool) ($h['org_access_ok'] ?? false);
         $message = (string) ($h['message'] ?? '');
         if ($loggedIn && $orgOk) {
+            $behind = (int) ($snapshot['agent_behind_count'] ?? 0);
+            $latest = (string) ($snapshot['agent_latest'] ?? '');
+            if ($behind > 0 && $latest !== '') {
+                return [
+                    'hidden' => false,
+                    'text' => $behind . ' slot(s) are on an older GitHub Actions runner package ('
+                        . $latest . ' is current). Use Upgrade agents.',
+                ];
+            }
             return ['hidden' => true, 'text' => ''];
         }
         $text = !$loggedIn
@@ -292,6 +301,7 @@ final class DashboardView
             $badge = self::badge('stopped', 'critical');
         }
         return $badge . self::resourceUsage($runner) . self::diskUsage($runner)
+            . self::flag($runner, 'agent_behind', 'older agent package', 'warning')
             . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
             . self::flag($runner, 'auto_restart_paused', 'auto-restart paused', 'warning')
             . self::flag($runner, 'ephemeral', 'ephemeral', 'muted')

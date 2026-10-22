@@ -8,8 +8,9 @@ final class AutoRestart
 {
     /**
      * Local process check + start for flagged crashes, ephemeral
-     * reprovision, optional scale-to-queue, idle-stop, queue-wait alert,
-     * and host-pressure webhook. Does not write CPU/RAM history —
+     * reprovision, optional scale-to-queue, idle-stop, queue-wait and
+     * long-job alerts, and host-pressure webhook. Does not write CPU/RAM
+     * history —
      * dashboard polls still own those.
      *
      * @return list<array{ok: bool, message: string}>
@@ -23,8 +24,9 @@ final class AutoRestart
         $wantScale = Config::scaleToQueueEnabled();
         $wantIdle = Config::idleStopMinutes() !== null;
         $wantQueueAlert = Config::queueWaitMinutes() !== null && Config::crashWebhookUrl() !== null;
+        $wantLongJob = Config::longJobMinutes() !== null && Config::crashWebhookUrl() !== null;
         if (
-            !$wantCrash && !$wantScale && !$wantIdle && !$wantQueueAlert
+            !$wantCrash && !$wantScale && !$wantIdle && !$wantQueueAlert && !$wantLongJob
             && !self::poolHasEphemeral()
         ) {
             HostPressure::checkAlert();
@@ -41,7 +43,9 @@ final class AutoRestart
         Dashboard::notifyCrashes($rows);
         $out = self::startFlagged($rows);
         HostPressure::checkAlert();
-        $queued = ($wantScale || $wantIdle || $wantQueueAlert) ? QueuedJobs::snapshot()['count'] : 0;
+        $queued = ($wantScale || $wantIdle || $wantQueueAlert || $wantLongJob)
+            ? QueuedJobs::snapshot()['count']
+            : 0;
         if ($wantScale) {
             $out = array_merge($out, self::scaleToQueue($rows, $queued));
         }
