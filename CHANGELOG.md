@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Pin the Docker/Alpine smoke image to **PHP 8.5.12** (`php:8.5.12-cli-alpine`)
+  for CVE-2026-109618 / CVE-2026-109619. CI unit/e2e/lint jobs use 8.5.12
+  and 8.3.36. `php bin/doctor.php` warns when the host runtime is still
+  below those floors, or is PHP 8.1 (EOL, no official patch). Operators
+  still patch the host PHP packages themselves.
+
 ### Added
 
 - **Safe reboot**: drain-stop the pool and set `reboot_ready` so you can

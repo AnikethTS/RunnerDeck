@@ -23,7 +23,7 @@ jobs:
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.3.36"
           extensions: posix, pcntl, json, pdo_sqlite
           tools: composer:v2
           coverage: none
@@ -101,16 +101,16 @@ jobs:
         run: actionlint -color
 
   test:
-    name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.php }})
+    name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, php: "8.1" }
-          - { os: ubuntu-latest, php: "8.5" }
-          - { os: macos-latest, php: "8.5" }
+          - { os: ubuntu-latest, php: "8.1", label: "8.1" }
+          - { os: ubuntu-latest, php: "8.5.12", label: "8.5" }
+          - { os: macos-latest, php: "8.5.12", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -174,7 +174,7 @@ jobs:
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.3.36"
           extensions: posix, pcntl, json, pdo_sqlite
           coverage: none
 
@@ -204,7 +204,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: php:8.5-cli-alpine@sha256:dae77e6aa4934d22b903da93e0e506c34032f5d8f8f91693d2cbf6e2724ddf73
+      image: php:8.5.12-cli-alpine@sha256:d0cc453a4a24eb5e2e70c4657cf8bddedce4c4c33a9a348409cdc7d4b9762e94
     steps:
       - name: Install git, bash, curl, and required PHP extensions
         run: |
@@ -242,7 +242,7 @@ jobs:
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
-          php-version: "8.3"
+          php-version: "8.3.36"
           coverage: none
 
       - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0

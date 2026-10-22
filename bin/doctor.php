@@ -48,10 +48,32 @@ $failures = 0;
 $warnings = 0;
 
 echo "\nPHP\n";
-if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-    ok('PHP version', PHP_VERSION, $color);
-} else {
+if (version_compare(PHP_VERSION, '8.1.0', '<')) {
     $failures += fail('PHP version', PHP_VERSION . ' — RunnerDeck needs 8.1 or newer', $color);
+} else {
+    ok('PHP version', PHP_VERSION, $color);
+    $patched = [
+        '8.2' => '8.2.35',
+        '8.3' => '8.3.36',
+        '8.4' => '8.4.27',
+        '8.5' => '8.5.12',
+    ];
+    $branch = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+    if (PHP_VERSION_ID < 80200) {
+        $warnings += warn(
+            'PHP security',
+            PHP_VERSION . ' is end-of-life — no official fix for'
+                . ' CVE-2026-109618 / CVE-2026-109619; use a distro backport or move to 8.2.35+',
+            $color
+        );
+    } elseif (isset($patched[$branch]) && version_compare(PHP_VERSION, $patched[$branch], '<')) {
+        $warnings += warn(
+            'PHP security',
+            PHP_VERSION . ' is below ' . $patched[$branch]
+                . ' (CVE-2026-109618 / CVE-2026-109619). Update the host PHP packages and restart php-fpm / run.sh',
+            $color
+        );
+    }
 }
 foreach (['posix', 'pcntl'] as $ext) {
     if (extension_loaded($ext)) {
