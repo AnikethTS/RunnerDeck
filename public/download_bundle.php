@@ -36,4 +36,8 @@ if ($payload === false) {
 header('Content-Type: application/json; charset=utf-8');
 header('Content-Disposition: attachment; filename="runnerdeck-host-bundle.json"');
 header('Content-Length: ' . (string) strlen($payload));
+// JSON attachment from json_encode of host state. htmlentities() would
+// corrupt the file. include_secrets only chooses whether the webhook URL
+// is in that JSON; it is never echoed as HTML.
+// nosemgrep: php.lang.security.injection.echoed-request.echoed-request
 echo $payload;
