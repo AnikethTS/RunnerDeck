@@ -139,6 +139,7 @@ final class SaveSettingsAction
             'RUNNERDECK_SCALE_TO_QUEUE' => ($post['scale_to_queue'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_POOL_CAP' => $poolCap,
             'RUNNERDECK_IDLE_STOP_MINUTES' => $idleStop,
+            'RUNNERDECK_AUTO_CLEAR_WORK' => ($post['auto_clear_work'] ?? '') === '1' ? '1' : '',
             'RUNNERDECK_QUEUE_WAIT_MINUTES' => $queueWait,
             'RUNNERDECK_LONG_JOB_MINUTES' => $longJob,
             'RUNNERDECK_MIN_FREE_DISK_GIB' => $minDisk,

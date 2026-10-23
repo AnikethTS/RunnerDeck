@@ -81,6 +81,7 @@ if (
         'scaleToQueue' => ($_POST['scale_to_queue'] ?? '') === '1',
         'poolCap' => (string) ($_POST['pool_cap'] ?? ''),
         'idleStopMinutes' => (string) ($_POST['idle_stop_minutes'] ?? ''),
+        'autoClearWork' => ($_POST['auto_clear_work'] ?? '') === '1',
         'queueWaitMinutes' => (string) ($_POST['queue_wait_minutes'] ?? ''),
         'longJobMinutes' => (string) ($_POST['long_job_minutes'] ?? ''),
         'minFreeDiskGib' => (string) ($_POST['min_free_disk_gib'] ?? ''),
@@ -110,6 +111,7 @@ if (
         'idleStopMinutes' => Config::idleStopMinutes() !== null
             ? (string) Config::idleStopMinutes()
             : '',
+        'autoClearWork' => Config::autoClearWork(),
         'queueWaitMinutes' => Config::queueWaitMinutes() !== null
             ? (string) Config::queueWaitMinutes()
             : '',
@@ -296,6 +298,16 @@ echo HostingWarnings::html();
           </p>
         </div>
 
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="auto_clear_work"
+            value="1"
+            <?= $current['autoClearWork'] ? 'checked' : '' ?>
+          />
+          Delete <code>_work</code> after idle-stop or drain-stop (not after a regular Stop)
+        </label>
+
         <div class="settings-field">
           <label for="settings-queue-wait">Queue wait alert (minutes, optional)</label>
           <input
@@ -385,7 +397,7 @@ echo HostingWarnings::html();
 
       <section class="settings-card">
         <h3>Notifications</h3>
-        <p class="settings-hint">Optional webhook for crash-loop, crash count, and disk.</p>
+        <p class="settings-hint">Optional webhook for crash-loop, host mode, queue/long-job alerts, and disk.</p>
 
         <div class="settings-field">
           <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>

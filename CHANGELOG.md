@@ -8,6 +8,17 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Watch heartbeat**: when auto-restart, scale-to-queue, idle-stop,
+  queue/long-job alerts, or ephemeral slots are on, the dashboard warns
+  if `watch-auto-restart.php` has not ticked in ~20 seconds.
+
+- **Auto-clear `_work`**: optional `RUNNERDECK_AUTO_CLEAR_WORK` deletes
+  the work tree after idle-stop or drain-stop only (not a regular Stop).
+  Refuses if the process is still running.
+
+- **Host-mode webhook**: the crash webhook fires once when this host
+  first enters maintenance or `reboot_ready`. Not sent from `health.php`.
+
 - **Long job alert**: optional `RUNNERDECK_LONG_JOB_MINUTES` fires the
   crash webhook once per in-progress GitHub job on this host that has
   run that long.

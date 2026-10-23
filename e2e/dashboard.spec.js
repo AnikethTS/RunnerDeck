@@ -558,6 +558,7 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await expect(page.locator('#this-host')).toContainText('php -S');
   await expect(page.locator('#settings-org-field')).toBeVisible();
   await expect(page.locator('#settings-session-idle')).toBeVisible();
+  await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();
 
   await page.locator('#settings-scope').selectOption('repo');
@@ -569,6 +570,21 @@ test('settings page toggles scope fields and persists a change', async ({ page }
 
   await expect(page).toHaveURL(/index\.php$/);
   await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
+});
+
+test('dashboard shows watch heartbeat banner from status view', async ({ page }) => {
+  const runner = fixtureRunner();
+  await mockStatus(page, [runner], {
+    view: {
+      rows_html: fixtureRowHtml(runner),
+      banner_hidden: false,
+      banner_text: 'watch-auto-restart.php has not ticked — auto-restart is idle.',
+    },
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('#health-banner')).toBeVisible();
+  await expect(page.locator('#health-banner')).toContainText('watch-auto-restart.php');
 });
 
 test('settings page shows a validation error and keeps entered values', async ({ page }) => {

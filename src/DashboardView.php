@@ -24,6 +24,10 @@ final class DashboardView
                 'text' => 'Pool is stopped. Safe to reboot this machine. Starting a runner clears this.',
             ];
         }
+        $watch = (string) ($snapshot['watch_warning'] ?? '');
+        if ($watch !== '') {
+            return ['hidden' => false, 'text' => $watch];
+        }
         $pressure = is_array($snapshot['pressure'] ?? null) ? $snapshot['pressure'] : [];
         if (isset($pressure['ok']) && $pressure['ok'] === false) {
             $reasons = [];

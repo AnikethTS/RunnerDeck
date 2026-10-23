@@ -202,6 +202,12 @@ final class Config
         return min($max, $n);
     }
 
+    /** Delete `_work` after a successful idle-stop or drain-stop. */
+    public static function autoClearWork(): bool
+    {
+        return getenv('RUNNERDECK_AUTO_CLEAR_WORK') === '1';
+    }
+
     /**
      * After this many idle minutes, drain-stop a running slot (1–1440).
      * Null means idle-stop is off. Skips busy and Pause-AR slots, and

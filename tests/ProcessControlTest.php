@@ -58,6 +58,7 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK');
         exec('rm -rf ' . escapeshellarg($this->dir) . ' ' . escapeshellarg($this->dir . '.deleting')
             . ' ' . escapeshellarg($this->storageDir));
     }
@@ -317,6 +318,45 @@ final class ProcessControlTest extends TestCase
         $this->assertTrue($result['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
         $this->assertSame('process.clear_work', $this->lastLog()['action']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testMaybeClearWorkNoopsWhenDisabled(): void
+    {
+        mkdir($this->dir . '/_work', 0755, true);
+        $this->assertSame('', \RunnerDeck\ProcessControl::maybeClearWork($this->runner()));
+        $this->assertDirectoryExists($this->dir . '/_work');
+    }
+
+    #[RunInSeparateProcess]
+    public function testMaybeClearWorkRemovesTreeWhenEnabledAndStopped(): void
+    {
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/x', 'job');
+        $note = \RunnerDeck\ProcessControl::maybeClearWork($this->runner());
+        $this->assertStringContainsString('runner-1', $note);
+        $this->assertDirectoryDoesNotExist($this->dir . '/_work');
+    }
+
+    #[RunInSeparateProcess]
+    public function testBulkStopDoesNotClearWorkWithoutDrainFlag(): void
+    {
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
+        mkdir($this->dir . '/_work', 0755, true);
+        $result = \RunnerDeck\ProcessControl::bulkStop([$this->runner()]);
+        $this->assertTrue($result['ok']);
+        $this->assertDirectoryExists($this->dir . '/_work');
+    }
+
+    #[RunInSeparateProcess]
+    public function testBulkStopAfterDrainClearsWorkWhenEnabled(): void
+    {
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
+        mkdir($this->dir . '/_work', 0755, true);
+        $result = \RunnerDeck\ProcessControl::bulkStop([$this->runner()], true);
+        $this->assertTrue($result['ok']);
+        $this->assertDirectoryDoesNotExist($this->dir . '/_work');
     }
 
     #[RunInSeparateProcess]

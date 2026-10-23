@@ -17,7 +17,11 @@ final class AutoRestart
      */
     public static function tick(): array
     {
-        if (!Config::isConfigured() || HostMode::isMaintenance()) {
+        if (!Config::isConfigured()) {
+            return [];
+        }
+        WatchHeartbeat::touch();
+        if (HostMode::isMaintenance()) {
             return [];
         }
         $wantCrash = Config::autoRestartEnabled();
@@ -137,9 +141,13 @@ final class AutoRestart
             }
             $stopped = ProcessControl::stopIndividual($info);
             CrashState::markExplicitlyStopped($id);
+            $message = (string) ($stopped['message'] ?? '');
+            if (!empty($stopped['ok'])) {
+                $message .= ProcessControl::maybeClearWork($info);
+            }
             $out[] = [
                 'ok' => (bool) ($stopped['ok'] ?? false),
-                'message' => (string) ($stopped['message'] ?? ''),
+                'message' => $message,
             ];
         }
         return $out;

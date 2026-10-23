@@ -29,6 +29,6 @@ final class BulkDrainStopAction
             $ids[] = $r->id;
         }
         Drain::audit($ids, JsonApi::force());
-        JsonApi::respond(ProcessControl::bulkStop($runners));
+        JsonApi::respond(ProcessControl::bulkStop($runners, true));
     }
 }

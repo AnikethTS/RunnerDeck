@@ -62,6 +62,16 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('Safe to reboot', $banner['text']);
     }
 
+    public function testHealthBannerWhenWatchStale(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'watch_warning' => 'watch-auto-restart.php has not ticked — auto-restart is idle.',
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('watch-auto-restart.php', $banner['text']);
+    }
+
     public function testHealthBannerWhenNotLoggedIn(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([

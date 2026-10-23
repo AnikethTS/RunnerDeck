@@ -36,7 +36,8 @@
   refuses start / auto-restart / scale-to-queue until you resume.
   **Safe reboot** drain-stops the pool and sets `reboot_ready` so you
   can reboot the OS yourself — RunnerDeck does not call `reboot`.
-  Starting a runner clears that flag. **Host pressure** also refuses
+  Starting a runner clears that flag. The crash webhook fires once on
+  the rising edge of maintenance or `reboot_ready`. **Host pressure** also refuses
   new starts when the pool filesystem or Linux MemAvailable is below
   the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
   keep going. `public/health.php` stays an unauthenticated liveness
@@ -98,7 +99,10 @@
   only ever decides and reports; it never spawns a process itself. A
   sibling loop (`bin/watch-auto-restart.php`, started from `run.sh`)
   calls the same start path when auto-restart is on, so a crash is
-  restarted with no dashboard tab open. A visible tab may still POST
+  restarted with no dashboard tab open. That loop writes a heartbeat;
+  if watch-backed features are on and it has not ticked, the dashboard
+  banner says so. php-fpm-only hosts with those features off are not
+  nagged. A visible tab may still POST
   `start` as well; starting an already-running slot is a no-op. **Pause AR**
   on a row holds auto-restart for that slot only (crash still flags) so
   you can debug a flaky runner without turning the pool setting off.
@@ -109,8 +113,9 @@
   else gets a plain JSON payload, e.g. for a webhook-to-email/push relay.
   The same URL also fires once when a local/GitHub **mismatch** is first
   flagged (three disagreeing polls), when **host pressure** starts
-  refusing starts, and when a queued job first exceeds the optional
-  queue-wait threshold. GitHub **busy** with no local process for three
+  refusing starts, when a queued job first exceeds the optional
+  queue-wait threshold, and when this host first enters **maintenance**
+  or **reboot_ready**. GitHub **busy** with no local process for three
   polls flags the row; **Force idle** removes the GitHub registration
   and local `.runner` files so the next Start re-registers.
 - Every crash is recorded, not just flagged ones — a small SQLite table
@@ -122,9 +127,10 @@
   Clicking the badge lists the timestamps. The Local column can be sorted
   by that 7-day count. An optional Settings threshold fires the same
   webhook when the count first reaches N, not only on a crash-loop.
-- Each slot shows **best-effort disk** for `_work`, `_diag`, and
+-   Each slot shows **best-effort disk** for `_work`, `_diag`, and
   `runner.log` (sortable). **Clear work** on a stopped runner deletes
-  `_work` only. `runner.log` rotates to `runner.log.1` at 5 MB on start
+  `_work` only. Optional **auto-clear work** does the same after idle-stop
+  or drain-stop, not after a regular Stop. `runner.log` rotates to `runner.log.1` at 5 MB on start
   or stop (not while the process is running). Tails and downloads include
   the rotated file so a cap does not hide the previous chunk.
 - Runners can be **selected in bulk** (checkboxes, with a "select all" for

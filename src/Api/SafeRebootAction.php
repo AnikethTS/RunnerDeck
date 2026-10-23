@@ -32,7 +32,7 @@ final class SafeRebootAction
             $ids[] = $r->id;
         }
         Drain::audit($ids, JsonApi::force());
-        $stop = ProcessControl::stopAll();
+        $stop = ProcessControl::stopAll(true);
         HostMode::setRebootReady(true);
         AppLog::info('host.reboot_ready', 'pool drain-stopped — safe to reboot this machine');
         JsonApi::respond([

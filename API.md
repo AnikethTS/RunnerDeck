@@ -125,6 +125,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
   "generated_at": 1789160000,
   "maintenance": false,
   "reboot_ready": false,
+  "watch_warning": null,
   "agent_behind_count": 0,
   "health": { "logged_in": true, "org_access_ok": true, "message": "OK" },
   "runners": [
@@ -344,7 +345,7 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `queue_wait_minutes` (optional, 1–1440), `long_job_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `auto_clear_work` (`1` or omitted), `queue_wait_minutes` (optional, 1–1440), `long_job_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled. The dashboard uses `POST /logout.php` (CSRF + redirect to `login.php`) instead |
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |
