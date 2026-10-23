@@ -87,7 +87,7 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
-    settings.php    scope/org/repo/label/extra labels, auto-restart, queue wait, crash webhook, login setup, settings import
+    settings.php    scope/org/repo/label/extra labels, auto-restart, idle-stop, auto-clear work, queue wait, crash webhook, login setup, settings import
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
     download_settings.php redacted settings.json download
@@ -117,6 +117,7 @@ runnerdeck/
     SlotDisk.php          best-effort slot disk + clear `_work`
     DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
     AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop, queue/long-job alerts
+    WatchHeartbeat.php    watch-auto-restart.php tick file; dashboard stale banner
     RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows

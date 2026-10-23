@@ -16,6 +16,8 @@ final class AutoRestartTest extends TestCase
         $this->dir = sys_get_temp_dir() . '/runnerdeck-ar-' . uniqid() . '/runner-1';
         mkdir($this->dir, 0755, true);
         putenv('RUNNERDECK_POOL_DIR=' . dirname($this->dir));
+        putenv('RUNNERDECK_SETTINGS_FILE=' . dirname($this->dir) . '/storage/settings.json');
+        mkdir(dirname($this->dir) . '/storage', 0700, true);
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         \RunnerDeck\RunnerPool::fakeLiveListeners([]);
@@ -34,8 +36,10 @@ final class AutoRestartTest extends TestCase
         \RunnerDeck\HostPressure::fakeDisk(null);
         \RunnerDeck\HostPressure::fakeRam(null);
         putenv('RUNNERDECK_POOL_DIR');
+        putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK');
         exec('rm -rf ' . escapeshellarg(dirname($this->dir)));
     }
 
@@ -43,6 +47,7 @@ final class AutoRestartTest extends TestCase
     public function testTickIsNoopWhenAutoRestartIsOff(): void
     {
         $this->assertSame([], \RunnerDeck\AutoRestart::tick());
+        $this->assertFileExists(dirname($this->dir) . '/storage/watch_heartbeat.json');
     }
 
     #[RunInSeparateProcess]
@@ -145,14 +150,18 @@ final class AutoRestartTest extends TestCase
     public function testIdleStopStopsDueRunningSlot(): void
     {
         $storage = dirname($this->dir) . '/storage';
-        mkdir($storage, 0700, true);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
         putenv('RUNNERDECK_IDLE_STOP_MINUTES=1');
         file_put_contents($storage . '/idle_state.json', json_encode(['runner-1' => 1]));
         file_put_contents($this->dir . '/.runner', json_encode(['agentName' => 'acme-1']));
         file_put_contents($this->dir . '/runner.pid', '99');
         \RunnerDeck\IdleState::fakeNow(fn () => 120);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 99]);
+        \RunnerDeck\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
+            if (!is_file($pidFile)) {
+                return [false, null];
+            }
+            return [true, 99];
+        });
         \RunnerDeck\ProcessControl::fakeKill(fn () => true);
         \RunnerDeck\ProcessControl::fakeAlive(fn () => false);
         \RunnerDeck\ProcessControl::fakeTermWait(0);
@@ -174,6 +183,8 @@ final class AutoRestartTest extends TestCase
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
+        putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
+        mkdir($this->dir . '/_work', 0755, true);
         $row = (new \RunnerDeck\RunnerInfo(
             id: 'runner-1',
             dir: $this->dir,
@@ -186,6 +197,7 @@ final class AutoRestartTest extends TestCase
         $out = \RunnerDeck\AutoRestart::idleStop([$row]);
         $this->assertNotSame([], $out);
         $this->assertTrue($out[0]['ok']);
+        $this->assertDirectoryDoesNotExist($this->dir . '/_work');
         \RunnerDeck\IdleState::fakeNow(null);
         \RunnerDeck\ProcessControl::fakeKill(null);
         \RunnerDeck\ProcessControl::fakeAlive(null);

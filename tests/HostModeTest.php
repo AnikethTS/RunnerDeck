@@ -20,7 +20,9 @@ final class HostModeTest extends TestCase
 
     protected function tearDown(): void
     {
+        \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
@@ -46,5 +48,31 @@ final class HostModeTest extends TestCase
         \RunnerDeck\HostMode::setMaintenance(true);
         $this->assertTrue(\RunnerDeck\HostMode::isMaintenance());
         $this->assertFalse(\RunnerDeck\HostMode::isRebootReady());
+    }
+
+    #[RunInSeparateProcess]
+    public function testMaintenanceWebhookFiresOnceOnRisingEdge(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        $bodies = [];
+        \RunnerDeck\Shell::fake(function (array $cmd) use (&$bodies): array {
+            if (($cmd[0] ?? '') === 'curl') {
+                $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+
+        \RunnerDeck\HostMode::setMaintenance(true);
+        \RunnerDeck\HostMode::setMaintenance(true);
+        $this->assertCount(1, $bodies);
+        $decoded = json_decode((string) $bodies[0], true);
+        $this->assertSame('maintenance', $decoded['event']);
+
+        \RunnerDeck\HostMode::setMaintenance(false);
+        \RunnerDeck\HostMode::setRebootReady(true);
+        \RunnerDeck\HostMode::setRebootReady(true);
+        $this->assertCount(2, $bodies);
+        $decoded = json_decode((string) $bodies[1], true);
+        $this->assertSame('reboot_ready', $decoded['event']);
     }
 }

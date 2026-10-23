@@ -26,6 +26,10 @@ final class DrainStopAction
 
         Drain::audit([$r->id], JsonApi::force());
         CrashState::markExplicitlyStopped($r->id);
-        JsonApi::respond(ProcessControl::stopIndividual($r));
+        $stop = ProcessControl::stopIndividual($r);
+        if (!empty($stop['ok'])) {
+            $stop['message'] .= ProcessControl::maybeClearWork($r);
+        }
+        JsonApi::respond($stop);
     }
 }

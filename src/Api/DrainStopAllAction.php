@@ -30,6 +30,6 @@ final class DrainStopAllAction
             $ids[] = $r->id;
         }
         Drain::audit($ids, JsonApi::force());
-        JsonApi::respond(ProcessControl::stopAll());
+        JsonApi::respond(ProcessControl::stopAll(true));
     }
 }

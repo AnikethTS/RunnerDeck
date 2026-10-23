@@ -33,7 +33,7 @@ final class MaintenanceAction
                 $ids[] = $r->id;
             }
             Drain::audit($ids, JsonApi::force());
-            $stop = ProcessControl::stopAll();
+            $stop = ProcessControl::stopAll(true);
             AppLog::info('host.maintenance', 'maintenance on — runners drain-stopped');
             JsonApi::respond([
                 'ok' => true,

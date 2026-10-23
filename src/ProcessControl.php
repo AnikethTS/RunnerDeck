@@ -229,6 +229,22 @@ final class ProcessControl
     }
 
     /**
+     * Opt-in disk cleanup after idle-stop or drain-stop. Refuses if the
+     * process is still running (clearWorkDir). Empty string when off.
+     */
+    public static function maybeClearWork(RunnerInfo $r): string
+    {
+        if (!Config::autoClearWork()) {
+            return '';
+        }
+        $cleared = self::clearWorkDir($r);
+        if (empty($cleared['ok'])) {
+            return '';
+        }
+        return ' ' . (string) $cleared['message'];
+    }
+
+    /**
      * GitHub still shows busy but this slot's process is gone. Drop the
      * GitHub registration; local files stay. Next Start re-registers.
      */
@@ -464,11 +480,16 @@ final class ProcessControl
         return ['ok' => true, 'message' => implode("\n", $messages)];
     }
 
-    public static function stopAll(): array
+    public static function stopAll(bool $afterDrain = false): array
     {
         $messages = [];
         foreach (RunnerPool::discover(0) as $info) {
-            $messages[] = self::stopIndividual($info)['message'];
+            $stop = self::stopIndividual($info);
+            $message = (string) $stop['message'];
+            if ($afterDrain && !empty($stop['ok'])) {
+                $message .= self::maybeClearWork($info);
+            }
+            $messages[] = $message;
         }
         return ['ok' => true, 'message' => implode("\n", $messages)];
     }
@@ -493,11 +514,16 @@ final class ProcessControl
     }
 
     /** @param RunnerInfo[] $runners */
-    public static function bulkStop(array $runners): array
+    public static function bulkStop(array $runners, bool $afterDrain = false): array
     {
         $messages = [];
         foreach ($runners as $r) {
-            $messages[] = self::stopIndividual($r)['message'];
+            $stop = self::stopIndividual($r);
+            $message = (string) $stop['message'];
+            if ($afterDrain && !empty($stop['ok'])) {
+                $message .= self::maybeClearWork($r);
+            }
+            $messages[] = $message;
         }
         return ['ok' => true, 'message' => implode("\n", $messages)];
     }

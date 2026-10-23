@@ -20,19 +20,33 @@ final class HostMode
 
     public static function setMaintenance(bool $on): void
     {
+        $was = self::isMaintenance();
         $data = self::load();
         $data['maintenance'] = $on;
         if ($on) {
             $data['reboot_ready'] = false;
         }
         self::write($data);
+        if ($on && !$was) {
+            CrashWebhook::notifyEvent(
+                'maintenance',
+                'RunnerDeck: this host entered maintenance — runners will not start until you resume.'
+            );
+        }
     }
 
     public static function setRebootReady(bool $on): void
     {
+        $was = self::isRebootReady();
         $data = self::load();
         $data['reboot_ready'] = $on;
         self::write($data);
+        if ($on && !$was) {
+            CrashWebhook::notifyEvent(
+                'reboot_ready',
+                'RunnerDeck: pool is stopped. Safe to reboot this machine.'
+            );
+        }
     }
 
     public static function blockStartMessage(): ?string

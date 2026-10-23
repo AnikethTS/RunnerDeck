@@ -56,10 +56,19 @@ final class Dashboard
         HostPressure::checkAlert($pressure);
         History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
 
+        $hasEphemeral = false;
+        foreach ($runners as $row) {
+            if (!empty($row['ephemeral'])) {
+                $hasEphemeral = true;
+                break;
+            }
+        }
+
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
             'reboot_ready' => HostMode::isRebootReady(),
+            'watch_warning' => WatchHeartbeat::warning($hasEphemeral),
             'pressure' => $pressure,
             'agent_latest' => $agents['latest'],
             'agent_behind_count' => $agents['behind_count'],
