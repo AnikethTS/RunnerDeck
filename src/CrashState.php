@@ -49,6 +49,37 @@ final class CrashState
         self::writeState($state);
     }
 
+    /** @return array<string, array<string, mixed>> */
+    public static function export(): array
+    {
+        return self::readState();
+    }
+
+    /**
+     * Restore pause/flag bits. Live process streaks are cleared so a
+     * replacement host does not look like everything just crashed.
+     *
+     * @param array<mixed, mixed> $incoming
+     */
+    public static function restore(array $incoming): void
+    {
+        $out = [];
+        foreach ($incoming as $id => $row) {
+            if (!is_string($id) || !RunnerPool::isValidId($id) || !is_array($row)) {
+                continue;
+            }
+            $base = self::runnerState([], $id);
+            $base['autoRestartPaused'] = !empty($row['autoRestartPaused']);
+            $base['attempts'] = max(0, min(self::MAX_ATTEMPTS, (int) ($row['attempts'] ?? 0)));
+            $base['flagged'] = !empty($row['flagged']);
+            $base['notified'] = $base['flagged'];
+            $base['wasRunning'] = false;
+            $base['justStopped'] = true;
+            $out[$id] = $base;
+        }
+        self::writeState($out);
+    }
+
     public static function setAutoRestartPaused(string $id, bool $paused): void
     {
         $lock = self::lock();

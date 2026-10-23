@@ -79,6 +79,19 @@ final class AgentRoster
     }
 
     /** @param list<string> $names */
+    public static function replace(array $names): void
+    {
+        $out = [];
+        foreach ($names as $name) {
+            $name = trim($name);
+            if ($name !== '') {
+                $out[] = $name;
+            }
+        }
+        self::write(array_values(array_unique($out)));
+    }
+
+    /** @param list<string> $names */
     private static function write(array $names): void
     {
         $dir = dirname(self::path());

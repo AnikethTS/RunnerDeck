@@ -179,7 +179,10 @@
   row and banner say so. **Upgrade agents** already replaces that
   package. Settings can **download** a JSON copy of this host's config
   without the TOTP secret or webhook URL, and **import** it onto
-  another box without replacing login.
+  another box without replacing login. A **host bundle** is the same
+  plus slot flags, Pause AR, roster, host mode, and 7-day crash events.
+  TOTP never leaves the box; include the webhook URL only if you opt in.
+  Restore does not copy runner binaries, `_work`, or `gh` login.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

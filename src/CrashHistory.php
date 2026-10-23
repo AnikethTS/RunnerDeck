@@ -8,6 +8,7 @@ final class CrashHistory
 {
     private const RETENTION_SECONDS = 7 * 24 * 60 * 60;
     public const LIST_LIMIT = 100;
+    public const EXPORT_LIMIT = 5000;
 
     private static function db(): \PDO
     {
@@ -42,6 +43,65 @@ final class CrashHistory
                 ->execute([time() - self::RETENTION_SECONDS]);
         } catch (\Throwable) {
             // Crash history is a nice-to-have; never let it take the dashboard down.
+        }
+    }
+
+    /**
+     * @return list<array{ts: int, runner_id: string, agent_name: string}>
+     */
+    public static function exportEvents(int $limit = self::EXPORT_LIMIT): array
+    {
+        $limit = max(1, min(self::EXPORT_LIMIT, $limit));
+        try {
+            $db = self::db();
+            $stmt = $db->prepare(
+                'SELECT ts, runner_id, agent_name FROM crash_events WHERE ts >= ? ORDER BY ts DESC LIMIT '
+                . $limit
+            );
+            $stmt->execute([time() - self::RETENTION_SECONDS]);
+            $out = [];
+            foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+                $out[] = [
+                    'ts' => (int) $row['ts'],
+                    'runner_id' => (string) $row['runner_id'],
+                    'agent_name' => (string) $row['agent_name'],
+                ];
+            }
+            return $out;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @param list<array<string, mixed>> $events
+     */
+    public static function replaceEvents(array $events): int
+    {
+        try {
+            $db = self::db();
+            $db->exec('DELETE FROM crash_events');
+            $stmt = $db->prepare(
+                'INSERT INTO crash_events (ts, runner_id, agent_name) VALUES (?, ?, ?)'
+            );
+            $n = 0;
+            $cutoff = time() - self::RETENTION_SECONDS;
+            foreach ($events as $row) {
+                if ($n >= self::EXPORT_LIMIT) {
+                    break;
+                }
+                $ts = (int) ($row['ts'] ?? 0);
+                $id = (string) ($row['runner_id'] ?? '');
+                $name = (string) ($row['agent_name'] ?? '');
+                if ($ts < $cutoff || $id === '' || !RunnerPool::isValidId($id)) {
+                    continue;
+                }
+                $stmt->execute([$ts, $id, $name !== '' ? $name : $id]);
+                $n++;
+            }
+            return $n;
+        } catch (\Throwable) {
+            return 0;
         }
     }
 

@@ -49,6 +49,15 @@ final class HostMode
         }
     }
 
+    /** Write flags without firing the host-mode webhook (disaster-recovery restore). */
+    public static function restore(bool $maintenance, bool $rebootReady): void
+    {
+        self::write([
+            'maintenance' => $maintenance,
+            'reboot_ready' => $rebootReady && !$maintenance,
+        ]);
+    }
+
     public static function blockStartMessage(): ?string
     {
         if (!self::isMaintenance()) {

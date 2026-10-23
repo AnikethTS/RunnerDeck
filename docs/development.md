@@ -87,10 +87,11 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
-    settings.php    scope/org/repo/label/extra labels, auto-restart, idle-stop, auto-clear work, queue wait, crash webhook, login setup, settings import
+    settings.php    scope/org/repo/label/extra labels, auto-restart, idle-stop, auto-clear work, queue wait, crash webhook, login setup, settings/host-bundle import
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
     download_settings.php redacted settings.json download
+    download_bundle.php   host disaster-recovery JSON (optional webhook via POST)
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version; `ready` / `pressure` / `reboot_ready`)
     assets/         app.js (dashboard), js/theme.js, style.css, logo.png
@@ -127,6 +128,7 @@ runnerdeck/
     QueueAlert.php        one-shot webhook when a queued job waits too long
     LongJobAlert.php      one-shot webhook when an in-progress job runs too long
     SettingsPortable.php  redacted settings export/import
+    HostBundle.php        host disaster-recovery export/import
     HostingWarnings.php   TLS/TOTP/php -S banners plus Settings This-host card
     Session.php           one session_start path (HttpOnly, SameSite, Secure)
     SecurityHeaders.php   CSP / frame / referrer headers for PHP responses
