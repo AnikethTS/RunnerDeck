@@ -2,7 +2,8 @@
 
 RunnerDeck's UI is just a client of its own API — `public/api.php`, plus
 standalone endpoints (`public/log_stream.php`, `public/download_log.php`,
-`public/download_applog.php`, `public/download_settings.php`)
+`public/download_applog.php`, `public/download_settings.php`,
+`public/download_bundle.php`)
 for streaming and downloading logs, and `public/health.php` for an unauthenticated
 uptime probe (`ok` is always true if PHP ran; `ready` is false in
 maintenance, when host pressure refuses starts, or when
@@ -422,3 +423,17 @@ exists yet.
 ```bash
 curl -sS 'http://127.0.0.1:8090/download_applog.php' -o runnerdeck.log
 ```
+
+### `GET /download_settings.php`
+
+Redacted `storage/settings.json` (no TOTP secret, no crash webhook URL).
+Same auth as `download_log.php`.
+
+### `GET /download_bundle.php`
+
+JSON host bundle (`kind: runnerdeck-host-bundle`): settings (same
+redaction), slot flags, Pause AR / crash flags, agent roster, host mode,
+and 7-day crash events. Same auth as `download_log.php`. `POST` with CSRF
+and `include_secrets=1` also includes `RUNNERDECK_CRASH_WEBHOOK_URL`.
+TOTP is never included. Import is Settings → Import (auto-detects a
+bundle vs settings JSON). Restore does not fire the host-mode webhook.

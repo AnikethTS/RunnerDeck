@@ -559,6 +559,8 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await expect(page.locator('#settings-org-field')).toBeVisible();
   await expect(page.locator('#settings-session-idle')).toBeVisible();
   await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
+  await expect(page.locator('a[href="download_bundle.php"]')).toBeVisible();
+  await expect(page.locator('input[name="include_secrets"]')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();
 
   await page.locator('#settings-scope').selectOption('repo');

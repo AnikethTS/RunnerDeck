@@ -67,7 +67,20 @@ final class RunnerPool
 
     public static function isKnownId(string $id): bool
     {
-        return (bool) preg_match(self::ID_PATTERN, $id) && is_dir(Config::poolDir() . "/$id");
+        return self::isValidId($id) && is_dir(Config::poolDir() . "/$id");
+    }
+
+    /** Slot id shape, whether or not the directory exists yet. */
+    public static function isValidId(string $id): bool
+    {
+        if (preg_match(self::ID_PATTERN, $id) !== 1) {
+            return false;
+        }
+        if ($id === 'runner-base') {
+            return true;
+        }
+        $n = (int) substr($id, 7);
+        return $n >= 1 && $n <= 30;
     }
 
     public static function dirFor(string $id): string

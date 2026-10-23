@@ -10,6 +10,7 @@ use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
+use RunnerDeck\HostBundle;
 use RunnerDeck\SettingsPortable;
 
 Auth::requirePageAccess();
@@ -37,14 +38,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (isset($_POST['import_settings'])) {
         $file = $_FILES['settings_file'] ?? null;
         if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            $error = 'Choose a settings JSON file to import.';
-        } elseif ((int) ($file['size'] ?? 0) > 65536) {
-            $error = 'settings file is too large.';
+            $error = 'Choose a settings JSON file or host bundle to import.';
+        } elseif ((int) ($file['size'] ?? 0) > HostBundle::MAX_BYTES) {
+            $error = 'import file is too large.';
         } else {
             $raw = (string) file_get_contents((string) ($file['tmp_name'] ?? ''));
             $decoded = json_decode($raw, true);
             if (!is_array($decoded)) {
-                $error = 'settings file is not JSON.';
+                $error = 'import file is not JSON.';
+            } elseif (HostBundle::isBundle($decoded)) {
+                $result = HostBundle::import($decoded);
+                if ($result['ok']) {
+                    header('Location: settings.php');
+                    exit;
+                }
+                $error = $result['message'];
+            } elseif ((int) ($file['size'] ?? 0) > 65536) {
+                $error = 'settings file is too large.';
             } else {
                 $result = SettingsPortable::import($decoded);
                 if ($result['ok']) {
@@ -487,18 +497,33 @@ echo HostingWarnings::html();
     <section class="settings-card">
       <h3>This host copy</h3>
       <p class="settings-hint">
-        Download omits the TOTP secret and crash webhook URL. Import never
-        overwrites login. A missing webhook URL in the file keeps the one already saved.
+        Settings JSON omits the TOTP secret and crash webhook URL. A host
+        bundle also copies slot flags, crash history, pause-AR, roster, and
+        host mode. Neither overwrites login. A missing webhook keeps the one
+        already saved unless the bundle was downloaded with secrets included.
+        Restore does not copy runner binaries, <code>_work</code>, or
+        <code>gh</code> credentials — Start re-registers empty slots.
       </p>
       <div class="settings-actions-row">
         <a href="download_settings.php" class="btn btn-sm" download="runnerdeck-settings.json">
           Download settings
         </a>
+        <a href="download_bundle.php" class="btn btn-sm" download="runnerdeck-host-bundle.json">
+          Download host bundle
+        </a>
+        <form method="post" action="download_bundle.php">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
+          <label class="checkbox-label">
+            <input type="checkbox" name="include_secrets" value="1" />
+            Include crash webhook URL
+          </label>
+          <button type="submit" class="btn btn-sm">Download bundle with webhook</button>
+        </form>
         <form method="post" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
           <input type="file" name="settings_file" accept="application/json,.json" required />
           <button type="submit" name="import_settings" value="1" class="btn btn-sm">
-            Import settings
+            Import
           </button>
         </form>
       </div>

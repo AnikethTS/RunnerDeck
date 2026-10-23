@@ -8,6 +8,12 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Host disaster-recovery bundle**: download/restore this host’s settings,
+  slot flags, Pause AR, agent roster, host mode, and 7-day crash events as
+  one JSON file. TOTP is never included; the crash webhook URL is omitted
+  unless you opt in. Restore does not copy runner binaries, `_work`, or
+  `gh` credentials. Import of host mode does not fire the webhook.
+
 - **Watch heartbeat**: when auto-restart, scale-to-queue, idle-stop,
   queue/long-job alerts, or ephemeral slots are on, the dashboard warns
   if `watch-auto-restart.php` has not ticked in ~20 seconds.
