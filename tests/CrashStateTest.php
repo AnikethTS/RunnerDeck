@@ -46,7 +46,7 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testHealthyRunnerHasNoFlags(): void
     {
-        $result = \RunnerDeck\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(true));
 
         $this->assertFalse($result[0]['crash_flagged']);
         $this->assertFalse($result[0]['just_flagged']);
@@ -67,9 +67,9 @@ final class CrashStateTest extends TestCase
             'github' => ['status' => 'online', 'busy' => false, 'labels' => []],
         ];
 
-        $first = \RunnerDeck\CrashState::track([$row]);
-        $second = \RunnerDeck\CrashState::track([$row]);
-        $third = \RunnerDeck\CrashState::track([$row]);
+        $first = \RunnerDeck\Pool\CrashState::track([$row]);
+        $second = \RunnerDeck\Pool\CrashState::track([$row]);
+        $third = \RunnerDeck\Pool\CrashState::track([$row]);
 
         $this->assertFalse($first[0]['mismatch_flagged']);
         $this->assertFalse($first[0]['just_mismatch_flagged']);
@@ -78,7 +78,7 @@ final class CrashStateTest extends TestCase
         $this->assertTrue($third[0]['mismatch_flagged']);
         $this->assertTrue($third[0]['just_mismatch_flagged']);
 
-        $fourth = \RunnerDeck\CrashState::track([$row]);
+        $fourth = \RunnerDeck\Pool\CrashState::track([$row]);
         $this->assertTrue($fourth[0]['mismatch_flagged']);
         $this->assertFalse($fourth[0]['just_mismatch_flagged']);
     }
@@ -92,13 +92,13 @@ final class CrashStateTest extends TestCase
             'configured' => true,
             'github' => ['status' => 'online', 'busy' => false, 'labels' => []],
         ];
-        \RunnerDeck\CrashState::track([$row]);
-        \RunnerDeck\CrashState::track([$row]);
-        \RunnerDeck\CrashState::track([$row]);
+        \RunnerDeck\Pool\CrashState::track([$row]);
+        \RunnerDeck\Pool\CrashState::track([$row]);
+        \RunnerDeck\Pool\CrashState::track([$row]);
 
         $headless = $row;
         $headless['github'] = null;
-        $result = \RunnerDeck\CrashState::track([$headless], false);
+        $result = \RunnerDeck\Pool\CrashState::track([$headless], false);
 
         $this->assertTrue($result[0]['mismatch_flagged']);
     }
@@ -119,9 +119,9 @@ final class CrashStateTest extends TestCase
             'github' => ['status' => 'offline', 'busy' => false, 'labels' => []],
         ];
 
-        \RunnerDeck\CrashState::track([$offline]);
-        \RunnerDeck\CrashState::track([$offline]);
-        $cleared = \RunnerDeck\CrashState::track([$agreed]);
+        \RunnerDeck\Pool\CrashState::track([$offline]);
+        \RunnerDeck\Pool\CrashState::track([$offline]);
+        $cleared = \RunnerDeck\Pool\CrashState::track([$agreed]);
 
         $this->assertFalse($cleared[0]['mismatch_flagged']);
     }
@@ -136,9 +136,9 @@ final class CrashStateTest extends TestCase
             'github' => ['status' => 'online', 'busy' => true, 'labels' => []],
         ];
 
-        $first = \RunnerDeck\CrashState::track([$row]);
-        $second = \RunnerDeck\CrashState::track([$row]);
-        $third = \RunnerDeck\CrashState::track([$row]);
+        $first = \RunnerDeck\Pool\CrashState::track([$row]);
+        $second = \RunnerDeck\Pool\CrashState::track([$row]);
+        $third = \RunnerDeck\Pool\CrashState::track([$row]);
 
         $this->assertFalse($first[0]['stuck_busy_flagged']);
         $this->assertFalse($second[0]['stuck_busy_flagged']);
@@ -149,15 +149,15 @@ final class CrashStateTest extends TestCase
     public function testNoGithubRecordIsNotAMismatch(): void
     {
         $row = ['id' => 'runner-base', 'local_running' => true, 'configured' => true, 'github' => null];
-        $result = \RunnerDeck\CrashState::track([$row]);
+        $result = \RunnerDeck\Pool\CrashState::track([$row]);
         $this->assertFalse($result[0]['mismatch_flagged']);
     }
 
     #[RunInSeparateProcess]
     public function testCrashFlagsImmediatelyWithoutAutoRestart(): void
     {
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $result = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
 
         $this->assertTrue($result[0]['crash_flagged']);
         $this->assertTrue($result[0]['just_flagged']);
@@ -167,9 +167,9 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testJustFlaggedOnlyFiresOnce(): void
     {
-        \RunnerDeck\CrashState::track($this->runner(true));
-        \RunnerDeck\CrashState::track($this->runner(false));
-        $result = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        \RunnerDeck\Pool\CrashState::track($this->runner(false));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
 
         $this->assertTrue($result[0]['crash_flagged']);
         $this->assertFalse($result[0]['just_flagged']);
@@ -181,14 +181,14 @@ final class CrashStateTest extends TestCase
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
         for ($i = 0; $i < 3; $i++) {
-            \RunnerDeck\CrashState::track($this->runner(true));
-            $result = \RunnerDeck\CrashState::track($this->runner(false));
+            \RunnerDeck\Pool\CrashState::track($this->runner(true));
+            $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
             $this->assertTrue($result[0]['should_auto_restart'], "attempt {$i} should trigger a restart");
             $this->assertFalse($result[0]['crash_flagged'], "attempt {$i} should not be flagged yet");
         }
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $result = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertFalse($result[0]['should_auto_restart']);
         $this->assertTrue($result[0]['crash_flagged']);
         $this->assertTrue($result[0]['just_flagged']);
@@ -209,8 +209,8 @@ final class CrashStateTest extends TestCase
             'configured' => true,
             'ephemeral' => true,
         ]];
-        \RunnerDeck\CrashState::track($running);
-        $result = \RunnerDeck\CrashState::track($stopped);
+        \RunnerDeck\Pool\CrashState::track($running);
+        $result = \RunnerDeck\Pool\CrashState::track($stopped);
 
         $this->assertTrue($result[0]['should_auto_restart']);
         $this->assertFalse($result[0]['crash_flagged']);
@@ -221,9 +221,9 @@ final class CrashStateTest extends TestCase
     public function testPausedSlotDoesNotAutoRestart(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        \RunnerDeck\CrashState::setAutoRestartPaused('runner-base', true);
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $result = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::setAutoRestartPaused('runner-base', true);
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
 
         $this->assertTrue($result[0]['auto_restart_paused']);
         $this->assertFalse($result[0]['should_auto_restart']);
@@ -233,8 +233,8 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testUnconfiguredSlotNeverFlags(): void
     {
-        \RunnerDeck\CrashState::track($this->runner(true, configured: false));
-        $result = \RunnerDeck\CrashState::track($this->runner(false, configured: false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true, configured: false));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false, configured: false));
 
         $this->assertFalse($result[0]['crash_flagged']);
     }
@@ -242,9 +242,9 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testMarkExplicitlyStoppedSuppressesOneCrash(): void
     {
-        \RunnerDeck\CrashState::track($this->runner(true));
-        \RunnerDeck\CrashState::markExplicitlyStopped('runner-base');
-        $result = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        \RunnerDeck\Pool\CrashState::markExplicitlyStopped('runner-base');
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(false));
 
         $this->assertFalse($result[0]['crash_flagged']);
     }
@@ -252,16 +252,16 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testHealthyResetClearsAttemptsAndFlag(): void
     {
-        \RunnerDeck\CrashState::track($this->runner(true));
-        \RunnerDeck\CrashState::track($this->runner(false));
-        $sanity = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        \RunnerDeck\Pool\CrashState::track($this->runner(false));
+        $sanity = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertTrue($sanity[0]['crash_flagged'], 'sanity: still flagged before reset');
 
         $decoded = json_decode(file_get_contents($this->stateFile) ?: '', true);
         $decoded['runner-base']['healthySince'] = time() - 121;
         file_put_contents($this->stateFile, json_encode($decoded));
 
-        $result = \RunnerDeck\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(true));
 
         $this->assertFalse($result[0]['crash_flagged']);
     }
@@ -269,7 +269,7 @@ final class CrashStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testCrashCount7dStartsAtZero(): void
     {
-        $result = \RunnerDeck\CrashState::track($this->runner(true));
+        $result = \RunnerDeck\Pool\CrashState::track($this->runner(true));
 
         $this->assertSame(0, $result[0]['crash_count_7d']);
     }
@@ -279,12 +279,12 @@ final class CrashStateTest extends TestCase
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $first = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $first = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertSame(1, $first[0]['crash_count_7d']);
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $second = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $second = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertSame(2, $second[0]['crash_count_7d']);
         $this->assertCount(2, $second[0]['crash_at_7d']);
         $this->assertFalse($second[0]['crash_threshold_crossed']);
@@ -295,18 +295,18 @@ final class CrashStateTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=2');
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $first = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $first = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertFalse($first[0]['crash_threshold_crossed']);
         $this->assertSame(1, $first[0]['crash_count_7d']);
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $second = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $second = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertTrue($second[0]['crash_threshold_crossed']);
         $this->assertSame(2, $second[0]['crash_count_7d']);
 
-        \RunnerDeck\CrashState::track($this->runner(true));
-        $third = \RunnerDeck\CrashState::track($this->runner(false));
+        \RunnerDeck\Pool\CrashState::track($this->runner(true));
+        $third = \RunnerDeck\Pool\CrashState::track($this->runner(false));
         $this->assertFalse($third[0]['crash_threshold_crossed']);
         $this->assertSame(3, $third[0]['crash_count_7d']);
     }

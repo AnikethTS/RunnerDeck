@@ -13,35 +13,35 @@ final class LayoutTest extends TestCase
     public function testHtmlAttrEmptyWithoutCookie(): void
     {
         $_COOKIE = [];
-        $this->assertSame('', \RunnerDeck\Layout::htmlAttr());
-        $this->assertNull(\RunnerDeck\Layout::cookieTheme());
+        $this->assertSame('', \RunnerDeck\Core\Layout::htmlAttr());
+        $this->assertNull(\RunnerDeck\Core\Layout::cookieTheme());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlAttrAcceptsLightAndDark(): void
     {
-        $_COOKIE[\RunnerDeck\Layout::THEME_COOKIE] = 'dark';
-        $this->assertSame('dark', \RunnerDeck\Layout::cookieTheme());
-        $this->assertSame(' data-theme="dark"', \RunnerDeck\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'dark';
+        $this->assertSame('dark', \RunnerDeck\Core\Layout::cookieTheme());
+        $this->assertSame(' data-theme="dark"', \RunnerDeck\Core\Layout::htmlAttr());
 
-        $_COOKIE[\RunnerDeck\Layout::THEME_COOKIE] = 'light';
-        $this->assertSame(' data-theme="light"', \RunnerDeck\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'light';
+        $this->assertSame(' data-theme="light"', \RunnerDeck\Core\Layout::htmlAttr());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlAttrIgnoresUnknownValues(): void
     {
-        $_COOKIE[\RunnerDeck\Layout::THEME_COOKIE] = 'neon';
-        $this->assertNull(\RunnerDeck\Layout::cookieTheme());
-        $this->assertSame('', \RunnerDeck\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'neon';
+        $this->assertNull(\RunnerDeck\Core\Layout::cookieTheme());
+        $this->assertSame('', \RunnerDeck\Core\Layout::htmlAttr());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlOpenAppliesThemeAndTitle(): void
     {
-        $_COOKIE[\RunnerDeck\Layout::THEME_COOKIE] = 'dark';
+        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'dark';
         ob_start();
-        \RunnerDeck\Layout::htmlOpen('RunnerDeck — Settings');
+        \RunnerDeck\Core\Layout::htmlOpen('RunnerDeck — Settings');
         $html = (string) ob_get_clean();
 
         $this->assertStringContainsString('<html lang="en" data-theme="dark">', $html);
@@ -55,9 +55,9 @@ final class LayoutTest extends TestCase
     public function testTopbarIncludesThemeToggle(): void
     {
         ob_start();
-        \RunnerDeck\Layout::topbarStart();
-        \RunnerDeck\Layout::topbarEndStart();
-        \RunnerDeck\Layout::topbarEnd();
+        \RunnerDeck\Core\Layout::topbarStart();
+        \RunnerDeck\Core\Layout::topbarEndStart();
+        \RunnerDeck\Core\Layout::topbarEnd();
         $html = (string) ob_get_clean();
 
         $this->assertStringContainsString('class="topbar-end"', $html);
@@ -65,7 +65,7 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('id="theme-icon-sun"', $html);
         $this->assertStringContainsString('id="theme-icon-moon"', $html);
         $this->assertStringContainsString('<h1>RunnerDeck</h1>', $html);
-        $this->assertTrue(\RunnerDeck\Layout::hasLogo());
+        $this->assertTrue(\RunnerDeck\Core\Layout::hasLogo());
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);
     }

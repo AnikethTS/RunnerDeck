@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\AutoRestart;
-use RunnerDeck\Config;
+use RunnerDeck\Pool\AutoRestart;
+use RunnerDeck\Core\Config;
 
 $argv = $_SERVER['argv'] ?? [];
 $once = in_array('--once', $argv, true);

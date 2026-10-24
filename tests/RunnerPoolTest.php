@@ -30,42 +30,42 @@ final class RunnerPoolTest extends TestCase
     #[RunInSeparateProcess]
     public function testIsKnownIdAcceptsConfiguredDirs(): void
     {
-        $this->assertTrue(\RunnerDeck\RunnerPool::isKnownId('runner-base'));
-        $this->assertTrue(\RunnerDeck\RunnerPool::isKnownId('runner-2'));
+        $this->assertTrue(\RunnerDeck\Pool\RunnerPool::isKnownId('runner-base'));
+        $this->assertTrue(\RunnerDeck\Pool\RunnerPool::isKnownId('runner-2'));
     }
 
     #[RunInSeparateProcess]
     public function testIsKnownIdRejectsUnconfiguredOrMalformedIds(): void
     {
-        $this->assertFalse(\RunnerDeck\RunnerPool::isKnownId('runner-3'));
-        $this->assertFalse(\RunnerDeck\RunnerPool::isKnownId('not-a-runner-dir'));
-        $this->assertFalse(\RunnerDeck\RunnerPool::isKnownId('../etc/passwd'));
-        $this->assertFalse(\RunnerDeck\RunnerPool::isKnownId('runner-'));
+        $this->assertFalse(\RunnerDeck\Pool\RunnerPool::isKnownId('runner-3'));
+        $this->assertFalse(\RunnerDeck\Pool\RunnerPool::isKnownId('not-a-runner-dir'));
+        $this->assertFalse(\RunnerDeck\Pool\RunnerPool::isKnownId('../etc/passwd'));
+        $this->assertFalse(\RunnerDeck\Pool\RunnerPool::isKnownId('runner-'));
     }
 
     #[RunInSeparateProcess]
     public function testDirForJoinsPoolDirAndId(): void
     {
-        $this->assertSame($this->poolDir . '/runner-2', \RunnerDeck\RunnerPool::dirFor('runner-2'));
+        $this->assertSame($this->poolDir . '/runner-2', \RunnerDeck\Pool\RunnerPool::dirFor('runner-2'));
     }
 
     #[RunInSeparateProcess]
     public function testAgentNameForBaseUsesBareLabel(): void
     {
         putenv('RUNNERDECK_LABEL=my-label');
-        $this->assertSame('my-label', \RunnerDeck\RunnerPool::agentNameFor('runner-base'));
+        $this->assertSame('my-label', \RunnerDeck\Pool\RunnerPool::agentNameFor('runner-base'));
     }
 
     #[RunInSeparateProcess]
     public function testAgentNameForNumberedSuffixesTheLabel(): void
     {
         putenv('RUNNERDECK_LABEL=my-label');
-        $this->assertSame('my-label-2', \RunnerDeck\RunnerPool::agentNameFor('runner-2'));
+        $this->assertSame('my-label-2', \RunnerDeck\Pool\RunnerPool::agentNameFor('runner-2'));
     }
 
     public function testTailLogReturnsEmptyForMissingFile(): void
     {
-        $this->assertSame([], \RunnerDeck\RunnerPool::tailLog($this->poolDir . '/does-not-exist.log', 10));
+        $this->assertSame([], \RunnerDeck\Pool\RunnerPool::tailLog($this->poolDir . '/does-not-exist.log', 10));
     }
 
     public function testTailLogReturnsLastNLines(): void
@@ -73,7 +73,7 @@ final class RunnerPoolTest extends TestCase
         $path = $this->poolDir . '/runner.log';
         file_put_contents($path, implode("\n", range(1, 100)) . "\n");
 
-        $tail = \RunnerDeck\RunnerPool::tailLog($path, 5);
+        $tail = \RunnerDeck\Pool\RunnerPool::tailLog($path, 5);
 
         $this->assertSame(['96', '97', '98', '99', '100'], $tail);
     }
@@ -83,7 +83,7 @@ final class RunnerPoolTest extends TestCase
         $path = $this->poolDir . '/runner.log';
         file_put_contents($path, "a\nb\nc\n");
 
-        $this->assertSame(['a', 'b', 'c'], \RunnerDeck\RunnerPool::tailLog($path, 50));
+        $this->assertSame(['a', 'b', 'c'], \RunnerDeck\Pool\RunnerPool::tailLog($path, 50));
     }
 
     public function testTailLogReturnsEmptyWhenRequestingZeroLines(): void
@@ -91,7 +91,7 @@ final class RunnerPoolTest extends TestCase
         $path = $this->poolDir . '/runner.log';
         file_put_contents($path, "a\nb\n");
 
-        $this->assertSame([], \RunnerDeck\RunnerPool::tailLog($path, 0));
+        $this->assertSame([], \RunnerDeck\Pool\RunnerPool::tailLog($path, 0));
     }
 
     public function testTailLogIncludesRotatedSibling(): void
@@ -101,7 +101,7 @@ final class RunnerPoolTest extends TestCase
 
         $this->assertSame(
             ['old-b', 'new-a'],
-            \RunnerDeck\RunnerPool::tailLog($this->poolDir . '/runner.log', 2)
+            \RunnerDeck\Pool\RunnerPool::tailLog($this->poolDir . '/runner.log', 2)
         );
     }
 
@@ -111,12 +111,12 @@ final class RunnerPoolTest extends TestCase
         rmdir($this->poolDir . '/runner-base');
         rmdir($this->poolDir . '/runner-2');
         rmdir($this->poolDir . '/not-a-runner-dir');
-        $this->assertSame('runner-base', \RunnerDeck\RunnerPool::nextAvailableId());
+        $this->assertSame('runner-base', \RunnerDeck\Pool\RunnerPool::nextAvailableId());
     }
 
     #[RunInSeparateProcess]
     public function testNextAvailableIdContinuesAfterHighestNumber(): void
     {
-        $this->assertSame('runner-3', \RunnerDeck\RunnerPool::nextAvailableId());
+        $this->assertSame('runner-3', \RunnerDeck\Pool\RunnerPool::nextAvailableId());
     }
 }

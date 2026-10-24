@@ -5,11 +5,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Config;
-use RunnerDeck\CrashState;
-use RunnerDeck\Drain;
-use RunnerDeck\ProcessControl;
-use RunnerDeck\RunnerPool;
+use RunnerDeck\Core\Config;
+use RunnerDeck\Pool\CrashState;
+use RunnerDeck\Pool\Drain;
+use RunnerDeck\Pool\ProcessControl;
+use RunnerDeck\Pool\RunnerPool;
 
 if (!Config::isConfigured()) {
     fwrite(STDERR, "RunnerDeck is not configured yet.\n");

@@ -19,13 +19,13 @@ final class GithubAppTest extends TestCase
         putenv('RUNNERDECK_GITHUB_APP_KEY_FILE=' . $this->dir . '/app.pem');
         putenv('RUNNERDECK_GITHUB_APP_ID');
         putenv('RUNNERDECK_GITHUB_APP_INSTALLATION_ID');
-        \RunnerDeck\GithubApp::fakeToken(null);
+        \RunnerDeck\GitHub\GithubApp::fakeToken(null);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\GithubApp::fakeToken(null);
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\GitHub\GithubApp::fakeToken(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_GITHUB_APP_KEY_FILE');
         putenv('RUNNERDECK_GITHUB_APP_ID');
@@ -38,7 +38,7 @@ final class GithubAppTest extends TestCase
     #[RunInSeparateProcess]
     public function testNotConfiguredWithoutIdsAndKey(): void
     {
-        $this->assertFalse(\RunnerDeck\GithubApp::isConfigured());
+        $this->assertFalse(\RunnerDeck\GitHub\GithubApp::isConfigured());
     }
 
     #[RunInSeparateProcess]
@@ -50,16 +50,16 @@ final class GithubAppTest extends TestCase
             $this->dir . '/app.pem',
             "-----BEGIN PRIVATE KEY-----\ndGVzdA==\n-----END PRIVATE KEY-----\n"
         );
-        \RunnerDeck\GithubApp::fakeToken(fn () => 'ghs_test_token');
+        \RunnerDeck\GitHub\GithubApp::fakeToken(fn () => 'ghs_test_token');
         $authStatus = 0;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$authStatus): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authStatus): array {
             if (in_array('auth', $cmd, true) && in_array('status', $cmd, true)) {
                 $authStatus++;
             }
             return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
         });
 
-        $login = \RunnerDeck\GithubClient::checkLogin();
+        $login = \RunnerDeck\GitHub\GithubClient::checkLogin();
         $this->assertTrue($login['logged_in']);
         $this->assertSame(0, $authStatus);
         $this->assertSame('ghs_test_token', getenv('GH_TOKEN'));
@@ -68,7 +68,7 @@ final class GithubAppTest extends TestCase
     #[RunInSeparateProcess]
     public function testSavePrivateKeyRejectsNonPem(): void
     {
-        $this->assertFalse(\RunnerDeck\GithubApp::savePrivateKey('not-a-key'));
-        $this->assertFalse(\RunnerDeck\GithubApp::hasPrivateKey());
+        $this->assertFalse(\RunnerDeck\GitHub\GithubApp::savePrivateKey('not-a-key'));
+        $this->assertFalse(\RunnerDeck\GitHub\GithubApp::hasPrivateKey());
     }
 }

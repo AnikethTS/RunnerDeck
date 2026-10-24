@@ -28,15 +28,15 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentReturnsEmptyArrayWhenNothingRecorded(): void
     {
-        $this->assertSame([], \RunnerDeck\History::recent());
+        $this->assertSame([], \RunnerDeck\Host\History::recent());
     }
 
     #[RunInSeparateProcess]
     public function testRecordThenRecentRoundTrips(): void
     {
-        \RunnerDeck\History::record(42.5, 102400);
+        \RunnerDeck\Host\History::record(42.5, 102400);
 
-        $samples = \RunnerDeck\History::recent();
+        $samples = \RunnerDeck\Host\History::recent();
 
         $this->assertCount(1, $samples);
         $this->assertSame(42.5, $samples[0]['avg_cpu']);
@@ -47,12 +47,12 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentExcludesSamplesOlderThanRetentionWindow(): void
     {
-        \RunnerDeck\History::record(10.0, 1000);
+        \RunnerDeck\Host\History::record(10.0, 1000);
 
         $db = new PDO('sqlite:' . $this->dbFile);
         $db->prepare('UPDATE samples SET ts = ?')->execute([time() - 7200]);
 
-        $this->assertSame([], \RunnerDeck\History::recent());
+        $this->assertSame([], \RunnerDeck\Host\History::recent());
     }
 
     #[RunInSeparateProcess]
@@ -60,27 +60,27 @@ final class HistoryTest extends TestCase
     {
         putenv('RUNNERDECK_HISTORY_FILE=/nonexistent-root-only-path/history.sqlite');
 
-        \RunnerDeck\History::record(1.0, 1);
+        \RunnerDeck\Host\History::record(1.0, 1);
 
-        $this->assertSame([], \RunnerDeck\History::recent());
+        $this->assertSame([], \RunnerDeck\Host\History::recent());
     }
 
     public function testPolylineSvgPlaceholderWhenUnavailable(): void
     {
-        $svg = \RunnerDeck\History::polylineSvg([1.0, 2.0], 0.0, 100.0, true);
+        $svg = \RunnerDeck\Host\History::polylineSvg([1.0, 2.0], 0.0, 100.0, true);
         $this->assertStringContainsString('unavailable', $svg);
         $this->assertStringNotContainsString('polyline', $svg);
     }
 
     public function testPolylineSvgNeedsTwoSamples(): void
     {
-        $svg = \RunnerDeck\History::polylineSvg([12.0], 0.0, 100.0, false);
+        $svg = \RunnerDeck\Host\History::polylineSvg([12.0], 0.0, 100.0, false);
         $this->assertStringContainsString('collecting data', $svg);
     }
 
     public function testPolylineSvgPointsScaleToViewBox(): void
     {
-        $svg = \RunnerDeck\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false, '%', 0);
+        $svg = \RunnerDeck\Host\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false, '%', 0);
         $this->assertStringContainsString('42.0,92.0', $svg);
         $this->assertStringContainsString('390.0,10.0', $svg);
         $this->assertStringContainsString('<polyline', $svg);
@@ -92,13 +92,13 @@ final class HistoryTest extends TestCase
 
     public function testSummaryFormatsNowAndRange(): void
     {
-        $sum = \RunnerDeck\History::summary([8.0, 12.5, 10.0], '%', 1);
+        $sum = \RunnerDeck\Host\History::summary([8.0, 12.5, 10.0], '%', 1);
         $this->assertSame('10.0%', $sum['now']);
         $this->assertSame('8.0%–12.5% this hour', $sum['span']);
     }
 
     public function testSummaryEmpty(): void
     {
-        $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\History::summary([], '%', 1));
+        $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\Host\History::summary([], '%', 1));
     }
 }

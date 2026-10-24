@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Auth;
-use RunnerDeck\Config;
-use RunnerDeck\Totp;
+use RunnerDeck\Core\Auth;
+use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Totp;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
 

@@ -19,12 +19,12 @@ final class CrashWebhookTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         putenv('RUNNERDECK_SYSLOG');
         putenv('RUNNERDECK_SETTINGS_FILE');
-        \RunnerDeck\SyslogSink::fakeSend(null);
-        \RunnerDeck\WebhookOutbox::fakeNow(null);
+        \RunnerDeck\Alert\SyslogSink::fakeSend(null);
+        \RunnerDeck\Alert\WebhookOutbox::fakeNow(null);
         exec('rm -rf ' . escapeshellarg($this->tmpDir));
     }
 
@@ -32,12 +32,12 @@ final class CrashWebhookTest extends TestCase
     public function testNoRequestWhenUrlIsUnset(): void
     {
         $called = false;
-        \RunnerDeck\Shell::fake(function () use (&$called): array {
+        \RunnerDeck\Core\Shell::fake(function () use (&$called): array {
             $called = true;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
 
         $this->assertFalse($called);
     }
@@ -47,12 +47,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://hooks.slack.com/services/x');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
 
         $decoded = json_decode((string) $body, true);
         $this->assertArrayHasKey('text', $decoded);
@@ -64,12 +64,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://discord.com/api/webhooks/x/y');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
 
         $decoded = json_decode((string) $body, true);
         $this->assertArrayHasKey('content', $decoded);
@@ -80,12 +80,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
 
         $decoded = json_decode((string) $body, true);
         $this->assertSame('crash_loop', $decoded['event']);
@@ -98,12 +98,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1', 'crash_threshold', 5, 5);
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1', 'crash_threshold', 5, 5);
 
         $decoded = json_decode((string) $body, true);
         $this->assertSame('crash_threshold', $decoded['event']);
@@ -117,12 +117,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1', 'mismatch');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1', 'mismatch');
 
         $decoded = json_decode((string) $body, true);
         $this->assertSame('mismatch', $decoded['event']);
@@ -134,12 +134,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notifyEvent('host_pressure', 'low disk');
+        \RunnerDeck\Alert\CrashWebhook::notifyEvent('host_pressure', 'low disk');
 
         $decoded = json_decode((string) $body, true);
         $this->assertSame('host_pressure', $decoded['event']);
@@ -152,12 +152,12 @@ final class CrashWebhookTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::notifyDisk('disk_pool', 'pool full', null, null, 2048, 1);
+        \RunnerDeck\Alert\CrashWebhook::notifyDisk('disk_pool', 'pool full', null, null, 2048, 1);
 
         $decoded = json_decode((string) $body, true);
         $this->assertSame('disk_pool', $decoded['event']);
@@ -169,12 +169,12 @@ final class CrashWebhookTest extends TestCase
     public function testDoesNotThrowWhenCurlFails(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
-        \RunnerDeck\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'could not resolve host']);
+        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'could not resolve host']);
 
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
 
         $this->addToAssertionCount(1);
-        $this->assertSame(1, \RunnerDeck\WebhookOutbox::pendingCount());
+        $this->assertSame(1, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
     }
 
     #[RunInSeparateProcess]
@@ -183,23 +183,23 @@ final class CrashWebhookTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         mkdir($this->tmpDir, 0700, true);
         $calls = 0;
-        \RunnerDeck\Shell::fake(function () use (&$calls): array {
+        \RunnerDeck\Core\Shell::fake(function () use (&$calls): array {
             $calls++;
             if ($calls === 1) {
                 return ['code' => 6, 'stdout' => '', 'stderr' => 'down'];
             }
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
-        \RunnerDeck\WebhookOutbox::fakeNow(1000);
-        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
-        $this->assertSame(1, \RunnerDeck\WebhookOutbox::pendingCount());
+        \RunnerDeck\Alert\WebhookOutbox::fakeNow(1000);
+        \RunnerDeck\Alert\CrashWebhook::notify('runner-1', 'acme-1');
+        $this->assertSame(1, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
 
-        \RunnerDeck\WebhookOutbox::fakeNow(1100);
-        \RunnerDeck\CrashWebhook::flushOutbox();
-        $this->assertSame(0, \RunnerDeck\WebhookOutbox::pendingCount());
+        \RunnerDeck\Alert\WebhookOutbox::fakeNow(1100);
+        \RunnerDeck\Alert\CrashWebhook::flushOutbox();
+        $this->assertSame(0, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
         $this->assertSame(2, $calls);
 
-        \RunnerDeck\CrashWebhook::flushOutbox();
+        \RunnerDeck\Alert\CrashWebhook::flushOutbox();
         $this->assertSame(2, $calls);
     }
 
@@ -207,12 +207,12 @@ final class CrashWebhookTest extends TestCase
     public function testSyslogEmitsWithoutWebhookUrl(): void
     {
         $seen = [];
-        \RunnerDeck\SyslogSink::fakeSend(function (string $line) use (&$seen): bool {
+        \RunnerDeck\Alert\SyslogSink::fakeSend(function (string $line) use (&$seen): bool {
             $seen[] = $line;
             return true;
         });
         putenv('RUNNERDECK_SYSLOG=1');
-        \RunnerDeck\CrashWebhook::notifyEvent('host_pressure', 'low disk');
+        \RunnerDeck\Alert\CrashWebhook::notifyEvent('host_pressure', 'low disk');
         $this->assertCount(1, $seen);
         $this->assertStringContainsString('host_pressure', $seen[0]);
         $this->assertStringContainsString('low disk', $seen[0]);
@@ -220,27 +220,27 @@ final class CrashWebhookTest extends TestCase
 
     public function testIsValidUrlAcceptsHttpAndHttps(): void
     {
-        $this->assertTrue(\RunnerDeck\CrashWebhook::isValidUrl('https://example.com/hook'));
-        $this->assertTrue(\RunnerDeck\CrashWebhook::isValidUrl('http://example.com/hook'));
+        $this->assertTrue(\RunnerDeck\Alert\CrashWebhook::isValidUrl('https://example.com/hook'));
+        $this->assertTrue(\RunnerDeck\Alert\CrashWebhook::isValidUrl('http://example.com/hook'));
     }
 
     public function testIsValidUrlRejectsOtherSchemesAndGarbage(): void
     {
-        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl('ftp://example.com'));
-        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl('not-a-url'));
-        $this->assertFalse(\RunnerDeck\CrashWebhook::isValidUrl(''));
+        $this->assertFalse(\RunnerDeck\Alert\CrashWebhook::isValidUrl('ftp://example.com'));
+        $this->assertFalse(\RunnerDeck\Alert\CrashWebhook::isValidUrl('not-a-url'));
+        $this->assertFalse(\RunnerDeck\Alert\CrashWebhook::isValidUrl(''));
     }
 
     #[RunInSeparateProcess]
     public function testSendTestUsesADistinctMessageAndDoesNotIncludeARunner(): void
     {
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $result = \RunnerDeck\CrashWebhook::sendTest('https://example.com/hook');
+        $result = \RunnerDeck\Alert\CrashWebhook::sendTest('https://example.com/hook');
 
         $this->assertTrue($result['ok']);
         $decoded = json_decode((string) $body, true);
@@ -252,9 +252,9 @@ final class CrashWebhookTest extends TestCase
     #[RunInSeparateProcess]
     public function testSendTestReportsFailureWithStderr(): void
     {
-        \RunnerDeck\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'could not resolve host']);
+        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'could not resolve host']);
 
-        $result = \RunnerDeck\CrashWebhook::sendTest('https://example.com/hook');
+        $result = \RunnerDeck\Alert\CrashWebhook::sendTest('https://example.com/hook');
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('could not resolve host', $result['message']);
@@ -264,12 +264,12 @@ final class CrashWebhookTest extends TestCase
     public function testSendTestRespectsSlackPayloadShape(): void
     {
         $body = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$body): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$body): array {
             $body = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\CrashWebhook::sendTest('https://hooks.slack.com/services/x');
+        \RunnerDeck\Alert\CrashWebhook::sendTest('https://hooks.slack.com/services/x');
 
         $decoded = json_decode((string) $body, true);
         $this->assertArrayHasKey('text', $decoded);

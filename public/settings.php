@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Api\SaveSettingsAction;
-use RunnerDeck\Auth;
-use RunnerDeck\Config;
-use RunnerDeck\Csrf;
-use RunnerDeck\HostingWarnings;
-use RunnerDeck\Layout;
-use RunnerDeck\GithubApp;
-use RunnerDeck\HostBundle;
-use RunnerDeck\SettingsPortable;
+use RunnerDeck\Http\Action\SaveSettingsAction;
+use RunnerDeck\Core\Auth;
+use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Csrf;
+use RunnerDeck\Core\HostingWarnings;
+use RunnerDeck\Core\Layout;
+use RunnerDeck\GitHub\GithubApp;
+use RunnerDeck\Core\HostBundle;
+use RunnerDeck\Core\SettingsPortable;
 
 Auth::requirePageAccess();
 

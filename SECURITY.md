@@ -20,10 +20,10 @@ nothing is public until a fix is out and you're both ready to disclose it.
 
 ## What's in scope
 
-- `src/Auth.php` / `src/Totp.php` / `src/Csrf.php` — the login/lockout/CSRF layer.
-- `src/ProcessControl.php` / `src/Provisioner.php` / `src/Shell.php` — anything that shells out or manages processes.
-- `public/api.php` and the `src/Api/*` action classes — the HTTP surface.
-- Secret/token handling anywhere in `src/` (see `src/AppLog.php`'s redaction logic).
+- `src/Core/Auth.php` / `src/Core/Totp.php` / `src/Core/Csrf.php` — the login/lockout/CSRF layer.
+- `src/Pool/ProcessControl.php` / `src/Pool/Provisioner.php` / `src/Core/Shell.php` — anything that shells out or manages processes.
+- `public/api.php` and the `src/Http/Action/*` action classes — the HTTP surface.
+- Secret/token handling anywhere in `src/` (see `src/Core/AppLog.php`'s redaction logic).
 
 ## What's out of scope
 

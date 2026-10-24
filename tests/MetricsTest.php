@@ -18,18 +18,18 @@ final class MetricsTest extends TestCase
         putenv('RUNNERDECK_POOL_DIR=' . $this->dir . '/pool');
         mkdir($this->dir . '/pool', 0755, true);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/settings.json');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [5 * 1024 * 1024 * 1024, 10 * 1024 * 1024 * 1024]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => 1024 * 1024);
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [5 * 1024 * 1024 * 1024, 10 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 1024 * 1024);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\HostPressure::fakeDisk(null);
-        \RunnerDeck\HostPressure::fakeRam(null);
-        \RunnerDeck\RunnerPool::fakeLiveListeners(null);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(null);
+        \RunnerDeck\Host\HostPressure::fakeDisk(null);
+        \RunnerDeck\Host\HostPressure::fakeRam(null);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($this->dir));
@@ -42,7 +42,7 @@ final class MetricsTest extends TestCase
             'fetched_at' => 1,
             'payload' => ['count' => 3, 'recent' => []],
         ]));
-        $text = \RunnerDeck\Metrics::text();
+        $text = \RunnerDeck\Host\Metrics::text();
         $this->assertStringContainsString('runnerdeck_runners{state="total"} 0', $text);
         $this->assertStringContainsString('runnerdeck_queue_jobs 3', $text);
         $this->assertStringContainsString('runnerdeck_webhook_outbox 0', $text);

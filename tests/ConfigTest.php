@@ -39,68 +39,68 @@ final class ConfigTest extends TestCase
     public function testOrgThrowsWhenUnset(): void
     {
         $this->expectException(RuntimeException::class);
-        \RunnerDeck\Config::org();
+        \RunnerDeck\Core\Config::org();
     }
 
     #[RunInSeparateProcess]
     public function testOrgReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_ORG=my-org');
-        $this->assertSame('my-org', \RunnerDeck\Config::org());
+        $this->assertSame('my-org', \RunnerDeck\Core\Config::org());
     }
 
     #[RunInSeparateProcess]
     public function testLabelDefaultsWhenUnset(): void
     {
-        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::label());
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Core\Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testLabelReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_LABEL=custom-label');
-        $this->assertSame('custom-label', \RunnerDeck\Config::label());
+        $this->assertSame('custom-label', \RunnerDeck\Core\Config::label());
     }
 
     #[RunInSeparateProcess]
     public function testProvisionLabelsMergesExtrasAndIgnoresInvalidEnv(): void
     {
-        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::provisionLabels());
-        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Config::parseLabels(' gpu, linux,gpu '));
-        $this->assertNull(\RunnerDeck\Config::parseLabels('not a label'));
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Core\Config::provisionLabels());
+        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Core\Config::parseLabels(' gpu, linux,gpu '));
+        $this->assertNull(\RunnerDeck\Core\Config::parseLabels('not a label'));
         putenv('RUNNERDECK_EXTRA_LABELS=gpu, linux');
-        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Config::extraLabels());
-        $this->assertSame('self-hosted-runnerdeck,gpu,linux', \RunnerDeck\Config::provisionLabels());
+        $this->assertSame(['gpu', 'linux'], \RunnerDeck\Core\Config::extraLabels());
+        $this->assertSame('self-hosted-runnerdeck,gpu,linux', \RunnerDeck\Core\Config::provisionLabels());
         putenv('RUNNERDECK_EXTRA_LABELS=bad label');
-        $this->assertSame([], \RunnerDeck\Config::extraLabels());
-        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Config::provisionLabels());
+        $this->assertSame([], \RunnerDeck\Core\Config::extraLabels());
+        $this->assertSame('self-hosted-runnerdeck', \RunnerDeck\Core\Config::provisionLabels());
     }
 
     #[RunInSeparateProcess]
     public function testPoolDirStripsTrailingSlash(): void
     {
         putenv('RUNNERDECK_POOL_DIR=/tmp/runners/');
-        $this->assertSame('/tmp/runners', \RunnerDeck\Config::poolDir());
+        $this->assertSame('/tmp/runners', \RunnerDeck\Core\Config::poolDir());
     }
 
     #[RunInSeparateProcess]
     public function testPoolDirDefaultsNextToRepoCheckout(): void
     {
         $expected = dirname(__DIR__, 2) . '/runners';
-        $this->assertSame($expected, \RunnerDeck\Config::poolDir());
+        $this->assertSame($expected, \RunnerDeck\Core\Config::poolDir());
     }
 
     #[RunInSeparateProcess]
     public function testScopeDefaultsToOrg(): void
     {
-        $this->assertSame('org', \RunnerDeck\Config::scope());
+        $this->assertSame('org', \RunnerDeck\Core\Config::scope());
     }
 
     #[RunInSeparateProcess]
     public function testScopeAcceptsRepo(): void
     {
         putenv('RUNNERDECK_SCOPE=repo');
-        $this->assertSame('repo', \RunnerDeck\Config::scope());
+        $this->assertSame('repo', \RunnerDeck\Core\Config::scope());
     }
 
     #[RunInSeparateProcess]
@@ -108,210 +108,210 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_SCOPE=user');
         $this->expectException(RuntimeException::class);
-        \RunnerDeck\Config::scope();
+        \RunnerDeck\Core\Config::scope();
     }
 
     #[RunInSeparateProcess]
     public function testRepoThrowsWhenUnset(): void
     {
         $this->expectException(RuntimeException::class);
-        \RunnerDeck\Config::repo();
+        \RunnerDeck\Core\Config::repo();
     }
 
     #[RunInSeparateProcess]
     public function testRepoReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_REPO=AnikethTS/RunnerDeck');
-        $this->assertSame('AnikethTS/RunnerDeck', \RunnerDeck\Config::repo());
+        $this->assertSame('AnikethTS/RunnerDeck', \RunnerDeck\Core\Config::repo());
     }
 
     #[RunInSeparateProcess]
     public function testCheckUpdatesEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\RunnerDeck\Config::checkUpdatesEnabled());
+        $this->assertFalse(\RunnerDeck\Core\Config::checkUpdatesEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testCheckUpdatesEnabledTrueWhenSetTo1(): void
     {
         putenv('RUNNERDECK_CHECK_UPDATES=1');
-        $this->assertTrue(\RunnerDeck\Config::checkUpdatesEnabled());
+        $this->assertTrue(\RunnerDeck\Core\Config::checkUpdatesEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testAutoRestartEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\RunnerDeck\Config::autoRestartEnabled());
+        $this->assertFalse(\RunnerDeck\Core\Config::autoRestartEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testAutoRestartEnabledTrueWhenSetTo1(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        $this->assertTrue(\RunnerDeck\Config::autoRestartEnabled());
+        $this->assertTrue(\RunnerDeck\Core\Config::autoRestartEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testScaleToQueueEnabledTrueWhenSetTo1(): void
     {
         putenv('RUNNERDECK_SCALE_TO_QUEUE=1');
-        $this->assertTrue(\RunnerDeck\Config::scaleToQueueEnabled());
+        $this->assertTrue(\RunnerDeck\Core\Config::scaleToQueueEnabled());
     }
 
     #[RunInSeparateProcess]
     public function testPoolCapAndIdleStopParseEnv(): void
     {
-        $this->assertNull(\RunnerDeck\Config::poolCap());
-        $this->assertNull(\RunnerDeck\Config::idleStopMinutes());
-        $this->assertFalse(\RunnerDeck\Config::autoClearWork());
-        $this->assertNull(\RunnerDeck\Config::queueWaitMinutes());
+        $this->assertNull(\RunnerDeck\Core\Config::poolCap());
+        $this->assertNull(\RunnerDeck\Core\Config::idleStopMinutes());
+        $this->assertFalse(\RunnerDeck\Core\Config::autoClearWork());
+        $this->assertNull(\RunnerDeck\Core\Config::queueWaitMinutes());
         putenv('RUNNERDECK_POOL_CAP=8');
         putenv('RUNNERDECK_IDLE_STOP_MINUTES=15');
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES=20');
-        $this->assertSame(8, \RunnerDeck\Config::poolCap());
-        $this->assertSame(15, \RunnerDeck\Config::idleStopMinutes());
-        $this->assertSame(20, \RunnerDeck\Config::queueWaitMinutes());
+        $this->assertSame(8, \RunnerDeck\Core\Config::poolCap());
+        $this->assertSame(15, \RunnerDeck\Core\Config::idleStopMinutes());
+        $this->assertSame(20, \RunnerDeck\Core\Config::queueWaitMinutes());
         putenv('RUNNERDECK_LONG_JOB_MINUTES=45');
         putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
-        $this->assertSame(45, \RunnerDeck\Config::longJobMinutes());
-        $this->assertTrue(\RunnerDeck\Config::autoClearWork());
+        $this->assertSame(45, \RunnerDeck\Core\Config::longJobMinutes());
+        $this->assertTrue(\RunnerDeck\Core\Config::autoClearWork());
     }
 
     #[RunInSeparateProcess]
     public function testMinFreeDiskAndRamDefaultsAndZeroOff(): void
     {
-        $this->assertSame(1, \RunnerDeck\Config::minFreeDiskGib());
-        $this->assertSame(256, \RunnerDeck\Config::minFreeRamMib());
+        $this->assertSame(1, \RunnerDeck\Core\Config::minFreeDiskGib());
+        $this->assertSame(256, \RunnerDeck\Core\Config::minFreeRamMib());
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=0');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
-        $this->assertSame(0, \RunnerDeck\Config::minFreeDiskGib());
-        $this->assertSame(0, \RunnerDeck\Config::minFreeRamMib());
+        $this->assertSame(0, \RunnerDeck\Core\Config::minFreeDiskGib());
+        $this->assertSame(0, \RunnerDeck\Core\Config::minFreeRamMib());
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=4');
-        $this->assertSame(4, \RunnerDeck\Config::minFreeDiskGib());
+        $this->assertSame(4, \RunnerDeck\Core\Config::minFreeDiskGib());
     }
 
     #[RunInSeparateProcess]
     public function testCrashWebhookUrlDefaultsToNull(): void
     {
-        $this->assertNull(\RunnerDeck\Config::crashWebhookUrl());
+        $this->assertNull(\RunnerDeck\Core\Config::crashWebhookUrl());
     }
 
     #[RunInSeparateProcess]
     public function testCrashWebhookUrlReturnsEnvValue(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://hooks.slack.com/services/x');
-        $this->assertSame('https://hooks.slack.com/services/x', \RunnerDeck\Config::crashWebhookUrl());
+        $this->assertSame('https://hooks.slack.com/services/x', \RunnerDeck\Core\Config::crashWebhookUrl());
     }
 
     #[RunInSeparateProcess]
     public function testCrashWebhookThresholdDefaultsToNull(): void
     {
-        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+        $this->assertNull(\RunnerDeck\Core\Config::crashWebhookThreshold());
     }
 
     #[RunInSeparateProcess]
     public function testCrashWebhookThresholdParsesPositiveInt(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=5');
-        $this->assertSame(5, \RunnerDeck\Config::crashWebhookThreshold());
+        $this->assertSame(5, \RunnerDeck\Core\Config::crashWebhookThreshold());
     }
 
     #[RunInSeparateProcess]
     public function testCrashWebhookThresholdRejectsZeroAndGarbage(): void
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=0');
-        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+        $this->assertNull(\RunnerDeck\Core\Config::crashWebhookThreshold());
         putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=nope');
-        $this->assertNull(\RunnerDeck\Config::crashWebhookThreshold());
+        $this->assertNull(\RunnerDeck\Core\Config::crashWebhookThreshold());
     }
 
     #[RunInSeparateProcess]
     public function testDrainTimeoutSecondsDefaultsTo600(): void
     {
-        $this->assertSame(600, \RunnerDeck\Config::drainTimeoutSeconds());
+        $this->assertSame(600, \RunnerDeck\Core\Config::drainTimeoutSeconds());
     }
 
     #[RunInSeparateProcess]
     public function testDrainTimeoutSecondsCapsAt3600(): void
     {
         putenv('RUNNERDECK_DRAIN_TIMEOUT=99999');
-        $this->assertSame(3600, \RunnerDeck\Config::drainTimeoutSeconds());
+        $this->assertSame(3600, \RunnerDeck\Core\Config::drainTimeoutSeconds());
     }
 
     #[RunInSeparateProcess]
     public function testDiskWebhookThresholdDefaultsToNull(): void
     {
-        $this->assertNull(\RunnerDeck\Config::diskWebhookThresholdGb());
+        $this->assertNull(\RunnerDeck\Core\Config::diskWebhookThresholdGb());
     }
 
     #[RunInSeparateProcess]
     public function testDiskWebhookThresholdParsesPositiveInt(): void
     {
         putenv('RUNNERDECK_DISK_WEBHOOK_THRESHOLD=10');
-        $this->assertSame(10, \RunnerDeck\Config::diskWebhookThresholdGb());
+        $this->assertSame(10, \RunnerDeck\Core\Config::diskWebhookThresholdGb());
     }
 
     #[RunInSeparateProcess]
     public function testSessionIdleMinutesDefaultsToNull(): void
     {
-        $this->assertNull(\RunnerDeck\Config::sessionIdleMinutes());
+        $this->assertNull(\RunnerDeck\Core\Config::sessionIdleMinutes());
     }
 
     #[RunInSeparateProcess]
     public function testSessionIdleMinutesCapsAt1440(): void
     {
         putenv('RUNNERDECK_SESSION_IDLE_MINUTES=9999');
-        $this->assertSame(1440, \RunnerDeck\Config::sessionIdleMinutes());
+        $this->assertSame(1440, \RunnerDeck\Core\Config::sessionIdleMinutes());
     }
 
     #[RunInSeparateProcess]
     public function testAuthEnabledDefaultsToFalse(): void
     {
-        $this->assertFalse(\RunnerDeck\Config::authEnabled());
-        $this->assertNull(\RunnerDeck\Config::authTotpSecret());
+        $this->assertFalse(\RunnerDeck\Core\Config::authEnabled());
+        $this->assertNull(\RunnerDeck\Core\Config::authTotpSecret());
     }
 
     #[RunInSeparateProcess]
     public function testAuthEnabledTrueWhenSecretSet(): void
     {
         putenv('RUNNERDECK_AUTH_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ');
-        $this->assertTrue(\RunnerDeck\Config::authEnabled());
-        $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', \RunnerDeck\Config::authTotpSecret());
+        $this->assertTrue(\RunnerDeck\Core\Config::authEnabled());
+        $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', \RunnerDeck\Core\Config::authTotpSecret());
     }
 
     #[RunInSeparateProcess]
     public function testVersionReadsFromVersionFile(): void
     {
         $expected = trim((string) file_get_contents(dirname(__DIR__) . '/VERSION'));
-        $this->assertSame($expected, \RunnerDeck\Config::version());
+        $this->assertSame($expected, \RunnerDeck\Core\Config::version());
     }
 
     #[RunInSeparateProcess]
     public function testTrustProxyDefaultsOff(): void
     {
-        $this->assertFalse(\RunnerDeck\Config::trustProxy());
+        $this->assertFalse(\RunnerDeck\Core\Config::trustProxy());
     }
 
     #[RunInSeparateProcess]
     public function testTrustProxyEnabledWhenSet(): void
     {
         putenv('RUNNERDECK_TRUST_PROXY=1');
-        $this->assertTrue(\RunnerDeck\Config::trustProxy());
+        $this->assertTrue(\RunnerDeck\Core\Config::trustProxy());
     }
 
     #[RunInSeparateProcess]
     public function testSlotCapsAndSyslogParse(): void
     {
-        $this->assertNull(\RunnerDeck\Config::slotCpuPercent());
-        $this->assertNull(\RunnerDeck\Config::slotMemoryMaxMib());
-        $this->assertFalse(\RunnerDeck\Config::syslogEnabled());
+        $this->assertNull(\RunnerDeck\Core\Config::slotCpuPercent());
+        $this->assertNull(\RunnerDeck\Core\Config::slotMemoryMaxMib());
+        $this->assertFalse(\RunnerDeck\Core\Config::syslogEnabled());
         putenv('RUNNERDECK_SLOT_CPU_PERCENT=40');
         putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=512');
         putenv('RUNNERDECK_SYSLOG=1');
-        $this->assertSame(40, \RunnerDeck\Config::slotCpuPercent());
-        $this->assertSame(512, \RunnerDeck\Config::slotMemoryMaxMib());
-        $this->assertTrue(\RunnerDeck\Config::syslogEnabled());
+        $this->assertSame(40, \RunnerDeck\Core\Config::slotCpuPercent());
+        $this->assertSame(512, \RunnerDeck\Core\Config::slotMemoryMaxMib());
+        $this->assertTrue(\RunnerDeck\Core\Config::syslogEnabled());
         putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=8');
-        $this->assertNull(\RunnerDeck\Config::slotMemoryMaxMib());
+        $this->assertNull(\RunnerDeck\Core\Config::slotMemoryMaxMib());
     }
 }

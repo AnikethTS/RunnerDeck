@@ -17,8 +17,8 @@ final class GithubClientTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
-        \RunnerDeck\GithubApp::fakeToken(null);
+        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\GitHub\GithubApp::fakeToken(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('GH_TOKEN');
@@ -43,7 +43,7 @@ final class GithubClientTest extends TestCase
             'labels' => [['name' => 'linux']],
         ]);
 
-        $runners = \RunnerDeck\GithubClient::decodeRunnerList($page1 . "\n" . $page2);
+        $runners = \RunnerDeck\GitHub\GithubClient::decodeRunnerList($page1 . "\n" . $page2);
 
         $this->assertSame(['acme-1', 'acme-2'], array_keys($runners));
         $this->assertSame(1, $runners['acme-1']['id']);
@@ -62,21 +62,21 @@ final class GithubClientTest extends TestCase
             ],
         ]);
 
-        $runners = \RunnerDeck\GithubClient::decodeRunnerList($stdout);
+        $runners = \RunnerDeck\GitHub\GithubClient::decodeRunnerList($stdout);
 
         $this->assertSame(9, $runners['acme-9']['id']);
     }
 
     public function testDecodeRunnerListEmptyStdoutIsEmptyMap(): void
     {
-        $this->assertSame([], \RunnerDeck\GithubClient::decodeRunnerList("  \n"));
+        $this->assertSame([], \RunnerDeck\GitHub\GithubClient::decodeRunnerList("  \n"));
     }
 
     #[RunInSeparateProcess]
     public function testListRunnersPassesPaginateAndPerPage(): void
     {
         $seen = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$seen): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$seen): array {
             $seen = $cmd;
             return [
                 'code' => 0,
@@ -91,7 +91,7 @@ final class GithubClientTest extends TestCase
             ];
         });
 
-        $runners = \RunnerDeck\GithubClient::listRunners();
+        $runners = \RunnerDeck\GitHub\GithubClient::listRunners();
 
         $this->assertContains('--paginate', $seen);
         $this->assertContains('-q', $seen);
@@ -107,12 +107,12 @@ final class GithubClientTest extends TestCase
     public function testGetJsonDecodesGhApiStdout(): void
     {
         $seen = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$seen): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$seen): array {
             $seen = $cmd;
             return ['code' => 0, 'stdout' => '{"ok":true}', 'stderr' => ''];
         });
 
-        $decoded = \RunnerDeck\GithubClient::getJson('repos/acme/app/actions/runs');
+        $decoded = \RunnerDeck\GitHub\GithubClient::getJson('repos/acme/app/actions/runs');
 
         $this->assertSame(['ok' => true], $decoded);
         $this->assertContains('api', $seen);

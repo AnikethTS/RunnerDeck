@@ -28,7 +28,7 @@ final class AgentVersionTest extends TestCase
             'agentVersion' => '2.321.0',
         ]));
 
-        $this->assertSame('2.321.0', \RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertSame('2.321.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testPrefersRunnerJsonOverListenerDeps(): void
@@ -39,7 +39,7 @@ final class AgentVersionTest extends TestCase
             json_encode(['targets' => ['.NETCoreApp,Version=v8.0' => ['Runner.Listener/2.321.0' => []]]])
         );
 
-        $this->assertSame('2.300.0', \RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertSame('2.300.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testFallsBackToListenerDepsJson(): void
@@ -49,7 +49,7 @@ final class AgentVersionTest extends TestCase
             json_encode(['targets' => ['.NETCoreApp,Version=v8.0' => ['Runner.Listener/2.321.0' => []]]])
         );
 
-        $this->assertSame('2.321.0', \RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertSame('2.321.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testRejectsNonVersionStringsInRunnerJson(): void
@@ -59,7 +59,7 @@ final class AgentVersionTest extends TestCase
             'version' => 'https://github.com/example',
         ]));
 
-        $this->assertNull(\RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertNull(\RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testFallsBackToListenerDepsTextWhenJsonIsBroken(): void
@@ -69,11 +69,11 @@ final class AgentVersionTest extends TestCase
             'not-json Runner.Listener/2.311.0 trailing'
         );
 
-        $this->assertSame('2.311.0', \RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertSame('2.311.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testReturnsNullWhenNothingReadable(): void
     {
-        $this->assertNull(\RunnerDeck\AgentVersion::read($this->dir));
+        $this->assertNull(\RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 }

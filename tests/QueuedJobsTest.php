@@ -13,7 +13,7 @@ final class QueuedJobsTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_REPO');
         putenv('RUNNERDECK_SCOPE');
@@ -27,34 +27,34 @@ final class QueuedJobsTest extends TestCase
 
     public function testHintStartWhenStoppedSlotsExist(): void
     {
-        $hint = \RunnerDeck\QueuedJobs::hintFor(3, 2, 4);
+        $hint = \RunnerDeck\GitHub\QueuedJobs::hintFor(3, 2, 4);
         $this->assertSame('start', $hint['hint_action']);
         $this->assertStringContainsString('2 stopped', $hint['hint']);
     }
 
     public function testHintAddWhenBusyAndUnderCap(): void
     {
-        $hint = \RunnerDeck\QueuedJobs::hintFor(1, 0, 4);
+        $hint = \RunnerDeck\GitHub\QueuedJobs::hintFor(1, 0, 4);
         $this->assertSame('add', $hint['hint_action']);
     }
 
     public function testHintWaitAtMaxPool(): void
     {
-        $hint = \RunnerDeck\QueuedJobs::hintFor(1, 0, 30);
+        $hint = \RunnerDeck\GitHub\QueuedJobs::hintFor(1, 0, 30);
         $this->assertSame('', $hint['hint_action']);
         $this->assertStringContainsString('max size', $hint['hint']);
     }
 
     public function testHintWaitAtPoolCap(): void
     {
-        $hint = \RunnerDeck\QueuedJobs::hintFor(2, 0, 4, 3, 3);
+        $hint = \RunnerDeck\GitHub\QueuedJobs::hintFor(2, 0, 4, 3, 3);
         $this->assertSame('', $hint['hint_action']);
         $this->assertStringContainsString('Pool cap', $hint['hint']);
     }
 
     public function testPickQueuedJobsFiltersByStatusAndLabel(): void
     {
-        $jobs = \RunnerDeck\QueuedJobs::pickQueuedJobs([
+        $jobs = \RunnerDeck\GitHub\QueuedJobs::pickQueuedJobs([
             'jobs' => [
                 [
                     'id' => 1,
@@ -95,7 +95,7 @@ final class QueuedJobsTest extends TestCase
 
     public function testPickRecentJobsUsesCompletedRunnerName(): void
     {
-        $recent = \RunnerDeck\QueuedJobs::pickRecentJobs([
+        $recent = \RunnerDeck\GitHub\QueuedJobs::pickRecentJobs([
             'jobs' => [
                 [
                     'id' => 4,
@@ -127,7 +127,7 @@ final class QueuedJobsTest extends TestCase
 
     public function testPickLiveJobsUsesInProgressRunnerName(): void
     {
-        $live = \RunnerDeck\QueuedJobs::pickLiveJobs([
+        $live = \RunnerDeck\GitHub\QueuedJobs::pickLiveJobs([
             'jobs' => [
                 [
                     'id' => 8,
@@ -160,9 +160,9 @@ final class QueuedJobsTest extends TestCase
 
     public function testFormatWait(): void
     {
-        $this->assertSame('12s', \RunnerDeck\QueuedJobs::formatWait(12));
-        $this->assertSame('3m', \RunnerDeck\QueuedJobs::formatWait(180));
-        $this->assertSame('2h', \RunnerDeck\QueuedJobs::formatWait(7200));
+        $this->assertSame('12s', \RunnerDeck\GitHub\QueuedJobs::formatWait(12));
+        $this->assertSame('3m', \RunnerDeck\GitHub\QueuedJobs::formatWait(180));
+        $this->assertSame('2h', \RunnerDeck\GitHub\QueuedJobs::formatWait(7200));
     }
 
     #[RunInSeparateProcess]
@@ -170,7 +170,7 @@ final class QueuedJobsTest extends TestCase
     {
         $this->isolate();
         $calls = 0;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$calls): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calls): array {
             $calls++;
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
@@ -178,7 +178,7 @@ final class QueuedJobsTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => 'unexpected ' . implode(' ', $cmd)];
         });
 
-        $snap = \RunnerDeck\QueuedJobs::snapshot();
+        $snap = \RunnerDeck\GitHub\QueuedJobs::snapshot();
 
         $this->assertTrue($snap['ok']);
         $this->assertSame(0, $snap['count']);
@@ -193,7 +193,7 @@ final class QueuedJobsTest extends TestCase
         putenv('RUNNERDECK_SCOPE=repo');
         putenv('RUNNERDECK_REPO=acme/app');
         $apiCalls = 0;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$apiCalls): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$apiCalls): array {
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
             }
@@ -233,8 +233,8 @@ final class QueuedJobsTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => $path];
         });
 
-        $first = \RunnerDeck\QueuedJobs::snapshot();
-        $second = \RunnerDeck\QueuedJobs::snapshot();
+        $first = \RunnerDeck\GitHub\QueuedJobs::snapshot();
+        $second = \RunnerDeck\GitHub\QueuedJobs::snapshot();
 
         $this->assertTrue($first['ok']);
         $this->assertSame(1, $first['count']);
@@ -252,7 +252,7 @@ final class QueuedJobsTest extends TestCase
         $this->isolate();
         putenv('RUNNERDECK_SCOPE=org');
         putenv('RUNNERDECK_ORG=acme');
-        \RunnerDeck\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
             }
@@ -297,7 +297,7 @@ final class QueuedJobsTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => $path];
         });
 
-        $snap = \RunnerDeck\QueuedJobs::snapshot();
+        $snap = \RunnerDeck\GitHub\QueuedJobs::snapshot();
 
         $this->assertTrue($snap['ok']);
         $this->assertSame(1, $snap['count']);

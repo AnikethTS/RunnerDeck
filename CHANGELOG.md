@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Split `src/` into PSR-4 folders that match namespaces: `Core`, `GitHub`,
+  `Host`, `Pool`, `Alert`, `Ui`, and `Http` (router plus one class per
+  `api.php` action). Autoload is still `RunnerDeck\` → `src/`.
+
 ## [1.9.0] - 2026-10-24
 
 ### Added

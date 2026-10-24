@@ -29,15 +29,15 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_HISTORY_FILE=' . $this->root . '/storage/db/history.sqlite');
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \RunnerDeck\AgentTarget::fake(fn () => null);
+        \RunnerDeck\GitHub\AgentTarget::fake(fn () => null);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\AgentTarget::fake(null);
-        \RunnerDeck\Shell::fake(null);
-        \RunnerDeck\RunnerPool::fakeLiveListeners(null);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(null);
+        \RunnerDeck\GitHub\AgentTarget::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_HISTORY_FILE');
@@ -55,7 +55,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
         $spawned = false;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
             if (($cmd[0] ?? '') === 'bash') {
                 $spawned = true;
                 return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
@@ -63,12 +63,12 @@ final class DashboardTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
         });
 
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Ui\Dashboard::snapshot();
 
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        $result = \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        $result = \RunnerDeck\Ui\Dashboard::snapshot();
 
         $this->assertTrue(
             $result['runners'][0]['should_auto_restart'],
@@ -86,7 +86,7 @@ final class DashboardTest extends TestCase
     {
         $authCalled = false;
         $listCalled = false;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'auth status')) {
                 $authCalled = true;
@@ -109,10 +109,10 @@ final class DashboardTest extends TestCase
             }
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
 
-        $result = \RunnerDeck\Dashboard::snapshot();
+        $result = \RunnerDeck\Ui\Dashboard::snapshot();
 
         $this->assertTrue($listCalled);
         $this->assertFalse($authCalled);
@@ -128,7 +128,7 @@ final class DashboardTest extends TestCase
     public function testSnapshotUsesAuthStatusOnlyAfterListRunnersFails(): void
     {
         $authCalled = false;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$authCalled): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authCalled): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'auth status')) {
                 $authCalled = true;
@@ -139,10 +139,10 @@ final class DashboardTest extends TestCase
             }
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
 
-        $result = \RunnerDeck\Dashboard::snapshot();
+        $result = \RunnerDeck\Ui\Dashboard::snapshot();
 
         $this->assertTrue($authCalled);
         $this->assertFalse($result['health']['logged_in']);
@@ -156,7 +156,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
 
         $webhookBody = null;
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$webhookBody): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$webhookBody): array {
             if (($cmd[0] ?? '') === 'curl') {
                 $webhookBody = $cmd[array_search('-d', $cmd, true) + 1];
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -164,12 +164,12 @@ final class DashboardTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
         });
 
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Ui\Dashboard::snapshot();
 
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Ui\Dashboard::snapshot();
 
         $this->assertNotNull($webhookBody, 'expected a webhook POST for the crash-loop');
         $decoded = json_decode((string) $webhookBody, true);
@@ -184,7 +184,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
         $bodies = [];
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
             if (($cmd[0] ?? '') === 'curl') {
                 $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -192,12 +192,12 @@ final class DashboardTest extends TestCase
             return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
         });
 
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Ui\Dashboard::snapshot();
 
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\Dashboard::snapshot();
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Ui\Dashboard::snapshot();
 
         $this->assertCount(1, $bodies);
         $decoded = json_decode((string) $bodies[0], true);

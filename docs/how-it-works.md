@@ -127,7 +127,7 @@
   polls flags the row; **Force idle** removes the GitHub registration
   and local `.runner` files so the next Start re-registers.
 - Every crash is recorded, not just flagged ones — a small SQLite table
-  (`src/CrashHistory.php`, the same database as CPU/RAM history) keeps a
+  (`src/Pool/CrashHistory.php`, the same database as CPU/RAM history) keeps a
   7-day count per runner. It's independent of `crash_flagged`: a runner
   that's crashed 5 times but keeps getting auto-restarted still shows
   that count in the table, even though it's not currently flagged — the

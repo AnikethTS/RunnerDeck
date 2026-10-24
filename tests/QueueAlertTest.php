@@ -21,7 +21,7 @@ final class QueueAlertTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
@@ -35,14 +35,14 @@ final class QueueAlertTest extends TestCase
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES=1');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $bodies = [];
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
             $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
         $jobs = [['name' => 'ci', 'waited_sec' => 120]];
-        \RunnerDeck\QueueAlert::check($jobs);
-        \RunnerDeck\QueueAlert::check($jobs);
+        \RunnerDeck\Alert\QueueAlert::check($jobs);
+        \RunnerDeck\Alert\QueueAlert::check($jobs);
 
         $this->assertCount(1, $bodies);
         $decoded = json_decode((string) $bodies[0], true);
@@ -56,12 +56,12 @@ final class QueueAlertTest extends TestCase
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES=10');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $called = false;
-        \RunnerDeck\Shell::fake(function () use (&$called): array {
+        \RunnerDeck\Core\Shell::fake(function () use (&$called): array {
             $called = true;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\QueueAlert::check([['name' => 'ci', 'waited_sec' => 30]]);
+        \RunnerDeck\Alert\QueueAlert::check([['name' => 'ci', 'waited_sec' => 30]]);
 
         $this->assertFalse($called);
     }

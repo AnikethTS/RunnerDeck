@@ -14,19 +14,19 @@ final class RunnerLogTest extends TestCase
     {
         $this->dir = sys_get_temp_dir() . '/runnerdeck-rlog-' . uniqid();
         mkdir($this->dir, 0755, true);
-        \RunnerDeck\RunnerLog::fakeMaxBytes(20);
+        \RunnerDeck\Pool\RunnerLog::fakeMaxBytes(20);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\RunnerLog::fakeMaxBytes(null);
+        \RunnerDeck\Pool\RunnerLog::fakeMaxBytes(null);
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
     public function testLeavesSmallLogsAlone(): void
     {
         file_put_contents($this->dir . '/runner.log', 'tiny');
-        \RunnerDeck\RunnerLog::rotateIfOversized($this->dir);
+        \RunnerDeck\Pool\RunnerLog::rotateIfOversized($this->dir);
 
         $this->assertFileExists($this->dir . '/runner.log');
         $this->assertFileDoesNotExist($this->dir . '/runner.log.1');
@@ -36,7 +36,7 @@ final class RunnerLogTest extends TestCase
     {
         file_put_contents($this->dir . '/runner.log', str_repeat('x', 32));
         file_put_contents($this->dir . '/runner.log.1', 'old');
-        \RunnerDeck\RunnerLog::rotateIfOversized($this->dir);
+        \RunnerDeck\Pool\RunnerLog::rotateIfOversized($this->dir);
 
         $this->assertFileDoesNotExist($this->dir . '/runner.log');
         $this->assertFileExists($this->dir . '/runner.log.1');
@@ -50,7 +50,7 @@ final class RunnerLogTest extends TestCase
 
         $this->assertSame(
             ['old-3', 'new-1', 'new-2'],
-            \RunnerDeck\RunnerLog::tail($this->dir, 3)
+            \RunnerDeck\Pool\RunnerLog::tail($this->dir, 3)
         );
     }
 
@@ -58,7 +58,7 @@ final class RunnerLogTest extends TestCase
     {
         file_put_contents($this->dir . '/runner.log.1', "a\nb\nc\n");
 
-        $this->assertSame(['b', 'c'], \RunnerDeck\RunnerLog::tail($this->dir, 2));
+        $this->assertSame(['b', 'c'], \RunnerDeck\Pool\RunnerLog::tail($this->dir, 2));
     }
 
     public function testFilesAreOldestFirst(): void
@@ -68,7 +68,7 @@ final class RunnerLogTest extends TestCase
 
         $this->assertSame(
             [$this->dir . '/runner.log.1', $this->dir . '/runner.log'],
-            \RunnerDeck\RunnerLog::files($this->dir)
+            \RunnerDeck\Pool\RunnerLog::files($this->dir)
         );
     }
 }

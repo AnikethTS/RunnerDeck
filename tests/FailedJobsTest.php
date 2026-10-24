@@ -11,7 +11,7 @@ final class FailedJobsTest extends TestCase
 {
     public function testLatestFailedJobWinsOverOlderSuccess(): void
     {
-        $latest = \RunnerDeck\FailedJobs::latestByRunner([
+        $latest = \RunnerDeck\GitHub\FailedJobs::latestByRunner([
             [
                 'id' => 1,
                 'name' => 'old',
@@ -59,12 +59,12 @@ final class FailedJobsTest extends TestCase
             ],
         ]));
         $spawned = false;
-        \RunnerDeck\Shell::fake(function () use (&$spawned): array {
+        \RunnerDeck\Core\Shell::fake(function () use (&$spawned): array {
             $spawned = true;
             return ['code' => 1, 'stdout' => '', 'stderr' => ''];
         });
 
-        $rows = \RunnerDeck\FailedJobs::annotate([
+        $rows = \RunnerDeck\GitHub\FailedJobs::annotate([
             ['id' => 'runner-1', 'agent_name' => 'acme-1'],
             ['id' => 'runner-2', 'agent_name' => 'acme-2'],
         ]);
@@ -73,7 +73,7 @@ final class FailedJobsTest extends TestCase
         $this->assertSame('lint', $rows[0]['last_job_name']);
         $this->assertFalse($rows[1]['last_job_failed']);
         $this->assertFalse($spawned);
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($dir));
     }

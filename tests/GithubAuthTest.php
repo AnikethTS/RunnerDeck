@@ -10,20 +10,20 @@ final class GithubAuthTest extends TestCase
 {
     public function testLooksStaleOn401AndNotOnGenericErrors(): void
     {
-        $this->assertTrue(\RunnerDeck\GithubAuth::looksStale('HTTP 401: Bad credentials'));
-        $this->assertTrue(\RunnerDeck\GithubAuth::looksStale('Resource not accessible by integration'));
-        $this->assertFalse(\RunnerDeck\GithubAuth::looksStale('network timeout'));
-        $this->assertFalse(\RunnerDeck\GithubAuth::looksStale('no gh'));
+        $this->assertTrue(\RunnerDeck\GitHub\GithubAuth::looksStale('HTTP 401: Bad credentials'));
+        $this->assertTrue(\RunnerDeck\GitHub\GithubAuth::looksStale('Resource not accessible by integration'));
+        $this->assertFalse(\RunnerDeck\GitHub\GithubAuth::looksStale('network timeout'));
+        $this->assertFalse(\RunnerDeck\GitHub\GithubAuth::looksStale('no gh'));
     }
 
     public function testStaleWarningSilentWhenGithubOk(): void
     {
-        $this->assertNull(\RunnerDeck\GithubAuth::staleWarning(true, true, 'HTTP 401 leftover'));
+        $this->assertNull(\RunnerDeck\GitHub\GithubAuth::staleWarning(true, true, 'HTTP 401 leftover'));
     }
 
     public function testStaleWarningWhenLoggedInButForbidden(): void
     {
-        $text = \RunnerDeck\GithubAuth::staleWarning(
+        $text = \RunnerDeck\GitHub\GithubAuth::staleWarning(
             true,
             false,
             'Logged in, but cannot read org runners: HTTP 403'
