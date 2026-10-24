@@ -72,6 +72,16 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('watch-auto-restart.php', $banner['text']);
     }
 
+    public function testHealthBannerWhenAuthStale(): void
+    {
+        $banner = \RunnerDeck\DashboardView::healthBanner([
+            'auth_stale' => 'GitHub authentication is expired or missing.',
+            'health' => ['logged_in' => false, 'org_access_ok' => false, 'message' => 'HTTP 401'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('expired', $banner['text']);
+    }
+
     public function testHealthBannerWhenNotLoggedIn(): void
     {
         $banner = \RunnerDeck\DashboardView::healthBanner([
@@ -166,8 +176,11 @@ final class DashboardViewTest extends TestCase
             'log_tail' => [],
             'github' => null,
             'ephemeral' => true,
+            'last_job_failed' => true,
+            'last_job_name' => 'lint',
         ]);
         $this->assertStringContainsString('ephemeral', $html);
+        $this->assertStringContainsString('last job failed: lint', $html);
     }
 
     public function testRowHtmlShowsPausedAutoRestart(): void

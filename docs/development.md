@@ -87,7 +87,7 @@ runnerdeck/
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
-    settings.php    scope/org/repo/label/extra labels, auto-restart, idle-stop, auto-clear work, queue wait, crash webhook, login setup, settings/host-bundle import
+    settings.php    scope/org/repo/label, GitHub App, automation, crash webhook, login, settings/host-bundle import
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
     download_settings.php redacted settings.json download
@@ -108,7 +108,10 @@ runnerdeck/
     AgentVersion.php      local GitHub Actions runner agent version
     AgentTarget.php       cached GitHub current runner package version; agent_behind flags
     SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
-    GithubClient.php      shells out to `gh`
+    GithubClient.php      shells out to `gh` (GH_TOKEN from GitHub App when set)
+    GithubApp.php         installation JWT + token cache for org-owned apps
+    GithubAuth.php        stale 401/403/SSO banner text
+    FailedJobs.php        last completed job failed flag from queue cache
     UpdateCheck.php        opt-in check against this project's own GitHub Releases
     Provisioner.php       downloads, installs, and registers a runner
     ProcessDecision.php   pidfile vs live-process start/stop decisions

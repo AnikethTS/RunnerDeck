@@ -18,8 +18,11 @@ final class GithubClientTest extends TestCase
     protected function tearDown(): void
     {
         \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\GithubApp::fakeToken(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('GH_TOKEN');
+        putenv('GITHUB_TOKEN');
     }
 
     public function testDecodeRunnerListMergesPaginatedNdjson(): void

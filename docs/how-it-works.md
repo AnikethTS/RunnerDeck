@@ -9,6 +9,10 @@
   "invisible" just because its pidfile disappeared.
 - **GitHub-reported state** comes from `gh api --paginate …/actions/runners`
   (`per_page=100`) so orgs with more than 30 runners are not truncated.
+  `gh` uses `GH_TOKEN` from a GitHub App installation when Settings has
+  App ID, installation ID, and a PEM key; otherwise `gh auth login`.
+  401/403/expired/SSO responses get a specific dashboard banner. The last
+  completed job from the queued-jobs cache can flag a row when it failed.
 - **Starting an unconfigured runner slot** downloads the official runner
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new

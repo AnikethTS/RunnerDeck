@@ -34,6 +34,8 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
+        putenv('RUNNERDECK_GITHUB_APP_ID');
+        putenv('RUNNERDECK_GITHUB_APP_INSTALLATION_ID');
         @unlink($this->settingsFile);
         @rmdir(dirname($this->settingsFile));
     }
@@ -172,6 +174,8 @@ final class SettingsTest extends TestCase
             'queue_wait_minutes' => '15',
             'long_job_minutes' => '90',
             'auto_clear_work' => '1',
+            'github_app_id' => '99',
+            'github_app_installation_id' => '1001',
         ]);
         $this->assertTrue($result['ok']);
         $loaded = \RunnerDeck\Settings::load();
@@ -180,6 +184,8 @@ final class SettingsTest extends TestCase
         $this->assertSame('15', $loaded['RUNNERDECK_QUEUE_WAIT_MINUTES']);
         $this->assertSame('90', $loaded['RUNNERDECK_LONG_JOB_MINUTES']);
         $this->assertSame('1', $loaded['RUNNERDECK_AUTO_CLEAR_WORK']);
+        $this->assertSame('99', $loaded['RUNNERDECK_GITHUB_APP_ID']);
+        $this->assertSame('1001', $loaded['RUNNERDECK_GITHUB_APP_INSTALLATION_ID']);
     }
 
     #[RunInSeparateProcess]
