@@ -16,7 +16,7 @@ final class LongJobAlert
     public static function check(array $live): void
     {
         $minutes = Config::longJobMinutes();
-        if ($minutes === null || Config::crashWebhookUrl() === null) {
+        if ($minutes === null || !CrashWebhook::wantsNotify()) {
             return;
         }
         $need = $minutes * 60;

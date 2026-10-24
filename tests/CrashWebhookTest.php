@@ -21,7 +21,10 @@ final class CrashWebhookTest extends TestCase
     {
         \RunnerDeck\Shell::fake(null);
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_SYSLOG');
         putenv('RUNNERDECK_SETTINGS_FILE');
+        \RunnerDeck\SyslogSink::fakeSend(null);
+        \RunnerDeck\WebhookOutbox::fakeNow(null);
         exec('rm -rf ' . escapeshellarg($this->tmpDir));
     }
 
@@ -171,6 +174,48 @@ final class CrashWebhookTest extends TestCase
         \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
 
         $this->addToAssertionCount(1);
+        $this->assertSame(1, \RunnerDeck\WebhookOutbox::pendingCount());
+    }
+
+    #[RunInSeparateProcess]
+    public function testFlushOutboxRetriesUntilSuccessAndDoesNotDuplicate(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        mkdir($this->tmpDir, 0700, true);
+        $calls = 0;
+        \RunnerDeck\Shell::fake(function () use (&$calls): array {
+            $calls++;
+            if ($calls === 1) {
+                return ['code' => 6, 'stdout' => '', 'stderr' => 'down'];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        \RunnerDeck\WebhookOutbox::fakeNow(1000);
+        \RunnerDeck\CrashWebhook::notify('runner-1', 'acme-1');
+        $this->assertSame(1, \RunnerDeck\WebhookOutbox::pendingCount());
+
+        \RunnerDeck\WebhookOutbox::fakeNow(1100);
+        \RunnerDeck\CrashWebhook::flushOutbox();
+        $this->assertSame(0, \RunnerDeck\WebhookOutbox::pendingCount());
+        $this->assertSame(2, $calls);
+
+        \RunnerDeck\CrashWebhook::flushOutbox();
+        $this->assertSame(2, $calls);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSyslogEmitsWithoutWebhookUrl(): void
+    {
+        $seen = [];
+        \RunnerDeck\SyslogSink::fakeSend(function (string $line) use (&$seen): bool {
+            $seen[] = $line;
+            return true;
+        });
+        putenv('RUNNERDECK_SYSLOG=1');
+        \RunnerDeck\CrashWebhook::notifyEvent('host_pressure', 'low disk');
+        $this->assertCount(1, $seen);
+        $this->assertStringContainsString('host_pressure', $seen[0]);
+        $this->assertStringContainsString('low disk', $seen[0]);
     }
 
     public function testIsValidUrlAcceptsHttpAndHttps(): void

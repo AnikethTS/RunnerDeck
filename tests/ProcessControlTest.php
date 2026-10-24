@@ -54,6 +54,9 @@ final class ProcessControlTest extends TestCase
         \RunnerDeck\ProcessControl::fakeTermWait(null);
         \RunnerDeck\HostPressure::fakeDisk(null);
         \RunnerDeck\HostPressure::fakeRam(null);
+        \RunnerDeck\SlotCgroup::fakeRoot(null);
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT');
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB');
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
@@ -134,6 +137,26 @@ final class ProcessControlTest extends TestCase
         $this->assertSame('5555', trim((string) file_get_contents($this->dir . '/runner.pid')));
         $this->assertSame('info', $this->lastLog()['level']);
         $this->assertSame('process.start', $this->lastLog()['action']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStartAppliesCgroupLimitsWhenConfigured(): void
+    {
+        $cg = $this->storageDir . '/cgroup';
+        mkdir($cg, 0755, true);
+        file_put_contents($cg . '/cgroup.controllers', "cpu memory\n");
+        \RunnerDeck\SlotCgroup::fakeRoot($cg);
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT=50');
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=256');
+        \RunnerDeck\Shell::fake(fn () => ['code' => 0, 'stdout' => "5555\n", 'stderr' => '']);
+
+        $result = \RunnerDeck\ProcessControl::startIndividual($this->runner());
+
+        $this->assertTrue($result['ok']);
+        $slot = $cg . '/runnerdeck/runner-1';
+        $this->assertSame('50000 100000', trim((string) file_get_contents($slot . '/cpu.max')));
+        $this->assertSame('268435456', trim((string) file_get_contents($slot . '/memory.max')));
+        $this->assertSame('5555', trim((string) file_get_contents($slot . '/cgroup.procs')));
     }
 
     #[RunInSeparateProcess]

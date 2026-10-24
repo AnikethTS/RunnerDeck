@@ -148,6 +148,10 @@ PHP on loopback so random clients never reach it.
 version string. Use it for a local uptime probe, not as a fingerprint
 of which release you run.
 
+`GET /metrics.php` is Prometheus text (pool size, pressure, queue cache,
+webhook outbox). Also unauthenticated. It does not call GitHub or fire
+webhooks. Restrict scrape sources the same way you restrict health.
+
 ## Docker
 
 The image still uses `./run.sh` (`php -S` inside the container) and

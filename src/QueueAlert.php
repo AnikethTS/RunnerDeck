@@ -16,7 +16,7 @@ final class QueueAlert
     public static function check(array $jobs): void
     {
         $minutes = Config::queueWaitMinutes();
-        if ($minutes === null || Config::crashWebhookUrl() === null) {
+        if ($minutes === null || !CrashWebhook::wantsNotify()) {
             return;
         }
         $need = $minutes * 60;

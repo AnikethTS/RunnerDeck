@@ -94,6 +94,7 @@ runnerdeck/
     download_bundle.php   host disaster-recovery JSON (optional webhook via POST)
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version; `ready` / `pressure` / `reboot_ready`)
+    metrics.php     Prometheus text (local pool/pressure/queue cache/outbox; no GitHub)
     assets/         app.js (dashboard), js/theme.js, style.css, logo.png
   src/
     bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
@@ -126,6 +127,11 @@ runnerdeck/
     Dashboard.php         merges local + GitHub state into one snapshot
     DashboardView.php     first-paint HTML for stats, health banner, runner rows
     Layout.php            shared HTML chrome: theme cookie, topbar, assets
+    CrashWebhook.php      crash/alert POST + outbox retry
+    WebhookOutbox.php     persisted failed webhook posts
+    SyslogSink.php        optional RFC5424 to a unix datagram
+    SlotCgroup.php        optional cgroup v2 CPU/memory on start
+    Metrics.php           Prometheus text for metrics.php
     HostPressure.php      disk/RAM headroom; refuse starts when too low; one-shot webhook
     HostMode.php          maintenance + reboot_ready flags
     QueueAlert.php        one-shot webhook when a queued job waits too long

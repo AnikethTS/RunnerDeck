@@ -12,7 +12,7 @@ final class DiskAlert
     public static function check(array $runners, ?int $totalDiskKb): void
     {
         $thresholdGb = Config::diskWebhookThresholdGb();
-        if ($thresholdGb === null || Config::crashWebhookUrl() === null) {
+        if ($thresholdGb === null || !CrashWebhook::wantsNotify()) {
             return;
         }
 

@@ -47,6 +47,7 @@ final class Dashboard
 
         $runners = CrashState::track($runners);
         self::notifyCrashes($runners);
+        CrashWebhook::flushOutbox();
         $agents = AgentTarget::annotate($runners);
         $runners = FailedJobs::annotate($agents['runners']);
 
@@ -79,6 +80,7 @@ final class Dashboard
                 'message' => $message,
             ],
             'auth_stale' => GithubAuth::staleWarning($loggedIn, $orgAccessOk, $message),
+            'webhook_outbox' => WebhookOutbox::pendingCount(),
             'runners' => $runners,
             'stats' => $stats,
             'system' => SystemStats::snapshot(),

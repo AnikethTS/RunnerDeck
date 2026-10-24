@@ -20,11 +20,6 @@ final class CrashWebhook
         ?int $count = null,
         ?int $threshold = null
     ): void {
-        $url = Config::crashWebhookUrl();
-        if ($url === null) {
-            return;
-        }
-
         if ($event === 'crash_threshold' && $count !== null && $threshold !== null) {
             $message = "RunnerDeck: {$agentName} ({$runnerId}) reached {$count} crashes in 7 days "
                 . "(threshold {$threshold}).";
@@ -34,30 +29,29 @@ final class CrashWebhook
             $message = "RunnerDeck: {$agentName} ({$runnerId}) crashed and needs attention.";
             $event = 'crash_loop';
         }
-        $payload = self::payloadFor($url, $event, $message, $runnerId, $agentName, $count, $threshold);
-        [$ok, $stderr] = self::post($url, $payload);
-
-        if (!$ok) {
-            AppLog::errorThrottled('crash_webhook', 'failed to deliver crash notification', [
-                'runner' => $runnerId,
-                'stderr' => $stderr,
-            ]);
+        SyslogSink::emit($event, $message);
+        $url = Config::crashWebhookUrl();
+        if ($url === null) {
+            return;
         }
+        $payload = self::payloadFor($url, $event, $message, $runnerId, $agentName, $count, $threshold);
+        self::deliver($url, $payload, $event, $message, $runnerId);
+    }
+
+    public static function wantsNotify(): bool
+    {
+        return Config::crashWebhookUrl() !== null || SyslogSink::enabled();
     }
 
     public static function notifyEvent(string $event, string $message): void
     {
+        SyslogSink::emit($event, $message);
         $url = Config::crashWebhookUrl();
         if ($url === null) {
             return;
         }
         $payload = self::payloadFor($url, $event, $message, null, null);
-        [$ok, $stderr] = self::post($url, $payload);
-        if (!$ok) {
-            AppLog::errorThrottled('crash_webhook', 'failed to deliver ' . $event . ' notification', [
-                'stderr' => $stderr,
-            ]);
-        }
+        self::deliver($url, $payload, $event, $message, null);
     }
 
     public static function notifyDisk(
@@ -68,20 +62,22 @@ final class CrashWebhook
         int $diskKb,
         int $thresholdGb
     ): void {
+        SyslogSink::emit($event, $message);
         $url = Config::crashWebhookUrl();
         if ($url === null) {
             return;
         }
 
         $payload = self::payloadFor($url, $event, $message, $runnerId, $agentName, null, $thresholdGb, $diskKb);
-        [$ok, $stderr] = self::post($url, $payload);
+        self::deliver($url, $payload, $event, $message, $runnerId);
+    }
 
-        if (!$ok) {
-            AppLog::errorThrottled('crash_webhook', 'failed to deliver disk notification', [
-                'runner' => $runnerId,
-                'stderr' => $stderr,
-            ]);
-        }
+    public static function flushOutbox(): void
+    {
+        WebhookOutbox::flush(static function (string $url, array $payload): bool {
+            [$ok] = self::post($url, $payload);
+            return $ok;
+        });
     }
 
     /** @return array{ok: bool, message: string} */
@@ -120,6 +116,28 @@ final class CrashWebhook
         );
 
         return [$result['code'] === 0, $result['stderr']];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function deliver(
+        string $url,
+        array $payload,
+        string $event,
+        string $message,
+        ?string $runnerId
+    ): void {
+        [$ok, $stderr] = self::post($url, $payload);
+        if ($ok) {
+            WebhookOutbox::forget($url, $event, $message, $runnerId);
+            return;
+        }
+        WebhookOutbox::enqueue($url, $payload, $event, $message, $runnerId);
+        AppLog::errorThrottled('crash_webhook', 'failed to deliver ' . $event . ' notification', [
+            'runner' => $runnerId,
+            'stderr' => $stderr,
+        ]);
     }
 
     /** @return array<string, mixed> */

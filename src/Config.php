@@ -353,6 +353,49 @@ final class Config
         return getenv('RUNNERDECK_TRUST_PROXY') === '1';
     }
 
+    public static function syslogEnabled(): bool
+    {
+        return getenv('RUNNERDECK_SYSLOG') === '1';
+    }
+
+    /** Unix datagram socket (`/dev/log` unless `RUNNERDECK_SYSLOG_SOCKET` is set). */
+    public static function syslogSocket(): string
+    {
+        $raw = getenv('RUNNERDECK_SYSLOG_SOCKET');
+        if (is_string($raw) && $raw !== '' && str_starts_with($raw, '/')) {
+            return $raw;
+        }
+        return '/dev/log';
+    }
+
+    /** Percent of one CPU (1–100) for cgroup cpu.max. Null = off. */
+    public static function slotCpuPercent(): ?int
+    {
+        $raw = getenv('RUNNERDECK_SLOT_CPU_PERCENT');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return null;
+        }
+        return min(100, $n);
+    }
+
+    /** Memory.max in MiB (64–1048576). Null = off. */
+    public static function slotMemoryMaxMib(): ?int
+    {
+        $raw = getenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 64) {
+            return null;
+        }
+        return min(1048576, $n);
+    }
+
     public static function version(): string
     {
         static $version = null;

@@ -45,6 +45,8 @@ final class SaveSettingsAction
         $longJob = trim((string) ($post['long_job_minutes'] ?? ''));
         $minDisk = trim((string) ($post['min_free_disk_gib'] ?? ''));
         $minRam = trim((string) ($post['min_free_ram_mib'] ?? ''));
+        $slotCpu = trim((string) ($post['slot_cpu_percent'] ?? ''));
+        $slotMem = trim((string) ($post['slot_memory_max_mib'] ?? ''));
         $appId = trim((string) ($post['github_app_id'] ?? ''));
         $appInstall = trim((string) ($post['github_app_installation_id'] ?? ''));
         $appPem = trim((string) ($post['github_app_private_key'] ?? ''));
@@ -135,6 +137,20 @@ final class SaveSettingsAction
             return ['ok' => false, 'message' => 'GitHub App private key must be a PEM private key'];
         }
 
+        $cpuOk = $slotCpu === ''
+            || (ctype_digit($slotCpu) && (int) $slotCpu >= 1 && (int) $slotCpu <= 100);
+        if (!$cpuOk) {
+            return ['ok' => false, 'message' => 'slot CPU cap must be a whole number between 1 and 100'];
+        }
+        $memOk = $slotMem === ''
+            || (ctype_digit($slotMem) && (int) $slotMem >= 64 && (int) $slotMem <= 1048576);
+        if (!$memOk) {
+            return [
+                'ok' => false,
+                'message' => 'slot memory cap must be a whole number of MiB from 64 to 1048576',
+            ];
+        }
+
         $ramOk = $minRam === ''
             || (ctype_digit($minRam) && (int) $minRam <= 1048576);
         if (!$ramOk) {
@@ -170,6 +186,9 @@ final class SaveSettingsAction
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,
             'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
             'RUNNERDECK_SESSION_IDLE_MINUTES' => $sessionIdle,
+            'RUNNERDECK_SYSLOG' => ($post['syslog'] ?? '') === '1' ? '1' : '',
+            'RUNNERDECK_SLOT_CPU_PERCENT' => $slotCpu,
+            'RUNNERDECK_SLOT_MEMORY_MAX_MIB' => $slotMem,
             'RUNNERDECK_GITHUB_APP_ID' => $appId,
             'RUNNERDECK_GITHUB_APP_INSTALLATION_ID' => $appInstall,
         ]);
@@ -184,6 +203,7 @@ final class SaveSettingsAction
         $bits[] = 'scale_to_queue=' . (($post['scale_to_queue'] ?? '') === '1' ? '1' : '0');
         $bits[] = 'webhook=' . ($webhookUrl !== '' ? 'set' : 'off');
         $bits[] = 'github_app=' . ($appId !== '' && $appInstall !== '' ? 'set' : 'off');
+        $bits[] = 'syslog=' . (($post['syslog'] ?? '') === '1' ? '1' : '0');
         AppLog::info('settings.save', 'settings saved (' . implode(' ', $bits) . ')');
 
         return ['ok' => true, 'message' => 'settings saved'];

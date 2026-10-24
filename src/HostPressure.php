@@ -89,7 +89,7 @@ final class HostPressure
      */
     public static function checkAlert(?array $snap = null): void
     {
-        if (Config::crashWebhookUrl() === null) {
+        if (!CrashWebhook::wantsNotify()) {
             return;
         }
         $snap = $snap ?? self::snapshot();

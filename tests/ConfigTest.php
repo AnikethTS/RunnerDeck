@@ -22,6 +22,8 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
         'RUNNERDECK_DISK_WEBHOOK_THRESHOLD', 'RUNNERDECK_SESSION_IDLE_MINUTES',
         'RUNNERDECK_TRUST_PROXY',
+        'RUNNERDECK_SYSLOG', 'RUNNERDECK_SYSLOG_SOCKET',
+        'RUNNERDECK_SLOT_CPU_PERCENT', 'RUNNERDECK_SLOT_MEMORY_MAX_MIB',
         'RUNNERDECK_GITHUB_APP_ID', 'RUNNERDECK_GITHUB_APP_INSTALLATION_ID',
         'RUNNERDECK_GITHUB_APP_KEY_FILE',
     ];
@@ -295,5 +297,21 @@ final class ConfigTest extends TestCase
     {
         putenv('RUNNERDECK_TRUST_PROXY=1');
         $this->assertTrue(\RunnerDeck\Config::trustProxy());
+    }
+
+    #[RunInSeparateProcess]
+    public function testSlotCapsAndSyslogParse(): void
+    {
+        $this->assertNull(\RunnerDeck\Config::slotCpuPercent());
+        $this->assertNull(\RunnerDeck\Config::slotMemoryMaxMib());
+        $this->assertFalse(\RunnerDeck\Config::syslogEnabled());
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT=40');
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=512');
+        putenv('RUNNERDECK_SYSLOG=1');
+        $this->assertSame(40, \RunnerDeck\Config::slotCpuPercent());
+        $this->assertSame(512, \RunnerDeck\Config::slotMemoryMaxMib());
+        $this->assertTrue(\RunnerDeck\Config::syslogEnabled());
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=8');
+        $this->assertNull(\RunnerDeck\Config::slotMemoryMaxMib());
     }
 }

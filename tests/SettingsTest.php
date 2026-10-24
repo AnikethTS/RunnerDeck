@@ -174,6 +174,9 @@ final class SettingsTest extends TestCase
             'queue_wait_minutes' => '15',
             'long_job_minutes' => '90',
             'auto_clear_work' => '1',
+            'syslog' => '1',
+            'slot_cpu_percent' => '50',
+            'slot_memory_max_mib' => '1024',
             'github_app_id' => '99',
             'github_app_installation_id' => '1001',
         ]);
@@ -184,6 +187,9 @@ final class SettingsTest extends TestCase
         $this->assertSame('15', $loaded['RUNNERDECK_QUEUE_WAIT_MINUTES']);
         $this->assertSame('90', $loaded['RUNNERDECK_LONG_JOB_MINUTES']);
         $this->assertSame('1', $loaded['RUNNERDECK_AUTO_CLEAR_WORK']);
+        $this->assertSame('1', $loaded['RUNNERDECK_SYSLOG']);
+        $this->assertSame('50', $loaded['RUNNERDECK_SLOT_CPU_PERCENT']);
+        $this->assertSame('1024', $loaded['RUNNERDECK_SLOT_MEMORY_MAX_MIB']);
         $this->assertSame('99', $loaded['RUNNERDECK_GITHUB_APP_ID']);
         $this->assertSame('1001', $loaded['RUNNERDECK_GITHUB_APP_INSTALLATION_ID']);
     }

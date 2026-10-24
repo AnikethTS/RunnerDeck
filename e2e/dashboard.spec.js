@@ -564,6 +564,8 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await expect(page.locator('#settings-session-idle')).toBeVisible();
   await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
   await expect(page.locator('#settings-github-app-id')).toBeVisible();
+  await expect(page.locator('#settings-slot-cpu')).toBeVisible();
+  await expect(page.locator('input[name="syslog"]')).toBeVisible();
   await expect(page.locator('a[href="download_bundle.php"]')).toBeVisible();
   await expect(page.locator('input[name="include_secrets"]')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();
@@ -577,6 +579,14 @@ test('settings page toggles scope fields and persists a change', async ({ page }
 
   await expect(page).toHaveURL(/index\.php$/);
   await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
+});
+
+test('metrics.php serves prometheus text without github', async ({ request }) => {
+  const res = await request.get('/metrics.php');
+  expect(res.ok()).toBeTruthy();
+  const body = await res.text();
+  expect(body).toContain('runnerdeck_runners');
+  expect(body).toContain('runnerdeck_webhook_outbox');
 });
 
 test('dashboard shows watch heartbeat banner from status view', async ({ page }) => {

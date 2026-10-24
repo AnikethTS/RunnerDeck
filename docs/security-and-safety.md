@@ -10,7 +10,7 @@ supported, but it's opt-in and has two parts, both required together:
 
 1. **Require a login.** Off loopback this is enforced: `./run.sh` will
    not bind `0.0.0.0` without TOTP, and PHP refuses the dashboard/API
-   (except `/health.php`) until you run `php bin/setup-totp.php` on the
+   (except `/health.php` and `/metrics.php`) until you run `php bin/setup-totp.php` on the
    machine. On loopback you can still open **Settings → Login → Set up
    login** in the dashboard. Both paths generate a TOTP secret for an
    authenticator app (Google Authenticator, Authy, 1Password, etc.) via
