@@ -49,7 +49,7 @@ with the default `GITHUB_TOKEN` scoped narrowly per job rather than
 workflow-wide, and third-party actions pinned to commit SHAs rather than
 mutable version tags. PHP lint and JS lint run as parallel jobs; workflows
 are checked with `actionlint`. PRs to `main` also run
-`.github/workflows/changeradar.yml`: ChangeRadar 0.2.2 via the published
+`.github/workflows/changeradar.yml`: ChangeRadar 0.2.5 via the published
 Action (SHA-pinned wrapper; latest `changeradar.jar` unless `version` is
 set; fail-open; the Action posts artifact, compact comment, and Checks
 notices; SARIF stays on the artifact, not Code Scanning).
@@ -59,8 +59,9 @@ zipped GitHub Release (checksum + signed provenance) and pushes
 the root `VERSION` file to match in the same commit, before tagging; it's
 what the optional in-app update check compares against. Dependabot
 (`.github/dependabot.yml`) keeps the dev-tooling Composer/npm
-dependencies, the pinned Actions SHAs, and the Docker base image current
-on a weekly schedule.
+dependencies and the Docker base image current on a weekly schedule, and
+moves pinned Actions SHAs daily (including ChangeRadar). Leave the
+analyzer `version` input unset so the JAR stays on the latest release.
 
 Security checks beyond linting: `.github/workflows/semgrep.yml` and
 `.github/workflows/codeql.yml` (JavaScript; PHP is covered by Semgrep) run static analysis on

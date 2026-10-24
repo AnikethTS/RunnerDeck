@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-24
+
 ### Added
 
 - **Prometheus `/metrics.php`**: unauthenticated scrape of local pool size,
@@ -67,6 +69,13 @@ follows [SemVer](https://semver.org/).
 - Pin `fast-uri` 3.1.9 so CI `npm audit` is not blocked by
   GHSA-w74x-v6f9-j3xg / GHSA-xhq7-xmqj-769h / GHSA-wjr9-j795-jxcr /
   GHSA-333x-w4r6-6crp (dev lint tree only).
+
+### Changed
+
+- Pull requests run ChangeRadar 0.2.5 via the published Action
+  (`AnikethTS/ChangeRadar@531ea25`). JAR is GitHub's latest release
+  unless `version` is set. Dependabot moves that Action SHA daily, so a
+  later ChangeRadar tag does not need a hand edit.
 
 ## [1.8.0] - 2026-10-22
 
