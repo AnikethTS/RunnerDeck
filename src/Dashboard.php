@@ -48,7 +48,7 @@ final class Dashboard
         $runners = CrashState::track($runners);
         self::notifyCrashes($runners);
         $agents = AgentTarget::annotate($runners);
-        $runners = $agents['runners'];
+        $runners = FailedJobs::annotate($agents['runners']);
 
         $stats = self::computeStats($runners);
         DiskAlert::check($runners, $stats['total_disk_kb']);
@@ -78,6 +78,7 @@ final class Dashboard
                 'org_access_ok' => $orgAccessOk,
                 'message' => $message,
             ],
+            'auth_stale' => GithubAuth::staleWarning($loggedIn, $orgAccessOk, $message),
             'runners' => $runners,
             'stats' => $stats,
             'system' => SystemStats::snapshot(),

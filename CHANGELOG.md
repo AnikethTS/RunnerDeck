@@ -8,6 +8,17 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **GitHub App**: optional App ID, installation ID, and PEM private key
+  (Settings, `storage/github_app.pem`) mint an installation token for
+  `gh api` so this host does not need a personal `gh auth login`.
+
+- **gh auth stale**: dashboard banner when GitHub returns 401/403, expired
+  token, SSO, or missing permissions — including a failed GitHub App mint.
+
+- **Failed job flag**: row badge when the last completed GitHub job on
+  that slot failed or timed out (from the queued-jobs cache). A later
+  success clears it. GET status does not call GitHub for this.
+
 - **Host disaster-recovery bundle**: download/restore this host’s settings,
   slot flags, Pause AR, agent roster, host mode, and 7-day crash events as
   one JSON file. TOTP is never included; the crash webhook URL is omitted
@@ -36,6 +47,12 @@ follows [SemVer](https://semver.org/).
 - **Settings export/import**: download a JSON copy without the TOTP
   secret or crash webhook URL; import overlays recognised keys and never
   replaces login.
+
+### Security
+
+- Pin `fast-uri` 3.1.9 so CI `npm audit` is not blocked by
+  GHSA-w74x-v6f9-j3xg / GHSA-xhq7-xmqj-769h / GHSA-wjr9-j795-jxcr /
+  GHSA-333x-w4r6-6crp (dev lint tree only).
 
 ## [1.8.0] - 2026-10-22
 

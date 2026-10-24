@@ -127,6 +127,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
   "maintenance": false,
   "reboot_ready": false,
   "watch_warning": null,
+  "auth_stale": null,
   "agent_behind_count": 0,
   "health": { "logged_in": true, "org_access_ok": true, "message": "OK" },
   "runners": [
@@ -151,6 +152,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
       "mismatch_flagged": false,
       "stuck_busy_flagged": false,
       "agent_behind": false,
+      "last_job_failed": false,
       "crash_count_7d": 0
     }
   ],
@@ -178,6 +180,10 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
 registered name yet (still provisioning, or access issue — see `health`).
 `agent_version` is the local GitHub Actions runner agent version (`null`
 if `.runner` and `bin/Runner.Listener.deps.json` do not have one).
+
+`last_job_failed` is true when the queued-jobs cache's latest completed
+job for that `agent_name` concluded `failure` or `timed_out`. It does
+not trigger another GitHub call from `action=status`.
 
 `crash_flagged`/`just_flagged`/`should_auto_restart`/`auto_restart_paused`/`mismatch_flagged` are
 server-tracked bookkeeping (`src/CrashState.php`) — reading/updating a small
@@ -346,7 +352,7 @@ ids for the `bulk_*` actions).
 
 | Action | Required fields | Notes |
 |---|---|---|
-| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `auto_clear_work` (`1` or omitted), `queue_wait_minutes` (optional, 1–1440), `long_job_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440) | Persists to `storage/settings.json` |
+| `save_settings` | `scope` (`org`/`repo`), `org` or `repo`, `label` (optional), `check_updates` (`1` or omitted), `auto_restart` (`1` or omitted), `scale_to_queue` (`1` or omitted), `pool_cap` (optional, 1–30), `idle_stop_minutes` (optional, 1–1440), `auto_clear_work` (`1` or omitted), `queue_wait_minutes` (optional, 1–1440), `long_job_minutes` (optional, 1–1440), `crash_webhook_url` (optional, must start with `http://` or `https://`), `crash_webhook_threshold` (optional, ≥ 1), `drain_timeout` (optional, 1–3600 seconds), `disk_webhook_threshold` (optional, ≥ 1 GiB), `session_idle_minutes` (optional, 1–1440), `github_app_id` / `github_app_installation_id` (optional), `github_app_private_key` (optional PEM; omitted keeps the saved key) | Persists to `storage/settings.json`; PEM goes to `storage/github_app.pem` |
 | `logout` | — | Ends the current session; a no-op response if TOTP login isn't enabled. The dashboard uses `POST /logout.php` (CSRF + redirect to `login.php`) instead |
 | `login` | `code` or `recovery_code` | CSRF required. Reachable without an existing session. `401` on a wrong code, `429` while locked out |
 | `totp_begin` | — | Generates a pending TOTP secret (not saved yet), returned as `secret` and an `otpauth://` `uri`. Without login already on, only from loopback |

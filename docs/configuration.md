@@ -31,6 +31,9 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_DRAIN_TIMEOUT` | no | `600` | Seconds to wait for GitHub `busy=false` before drain-stop or rolling restart gives up (1–3600). Settings → Automation, `drain_stop` / `rolling_restart` API actions, and `php bin/drain-stop.php` |
 | `RUNNERDECK_DISK_WEBHOOK_THRESHOLD` | no | off | Whole number ≥ 1 (GiB). When set, the crash webhook also fires once as a slot or the pool total first reaches this size. Set from Settings |
 | `RUNNERDECK_TRUST_PROXY` | no | off | `1` to honor `X-Forwarded-Proto` from a non-loopback reverse proxy. Same-machine proxy to `127.0.0.1:8090` or php-fpm on `:9000` already trusts that header. See [Hosting](hosting.md) |
+| `RUNNERDECK_GITHUB_APP_ID` | no | off | GitHub App ID. With installation ID and `storage/github_app.pem`, `gh api` uses an installation token instead of `gh auth login`. Settings → GitHub App |
+| `RUNNERDECK_GITHUB_APP_INSTALLATION_ID` | no | off | Installation ID for that app on this org or repo |
+| `RUNNERDECK_GITHUB_APP_KEY_FILE` | no | `storage/github_app.pem` | PEM private key path. Never stored in `settings.json` |
 
 The header uses `public/assets/logo.png` (shipped with the repo, same art as
 `.github/logo.png`). Replace that file if you want your own mark.

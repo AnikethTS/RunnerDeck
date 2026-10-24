@@ -6,6 +6,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Config;
+use RunnerDeck\GithubApp;
 use RunnerDeck\GithubClient;
 use RunnerDeck\HostPressure;
 use RunnerDeck\Shell;
@@ -114,9 +115,16 @@ if (is_executable($gh) || commandExists($gh)) {
         // authStatus() also probes org/repo access, which needs a scope to be set.
         $auth = GithubClient::authStatus();
         if ($auth->loggedIn) {
-            ok('gh auth status', 'logged in', $color);
+            ok(
+                'gh auth status',
+                GithubApp::isConfigured() ? 'GitHub App installation token' : 'logged in',
+                $color
+            );
         } else {
-            $failures += fail('gh auth status', $auth->message . ' — run `gh auth login`', $color);
+            $hint = GithubApp::isConfigured()
+                ? 'check GitHub App ID, installation, and private key in Settings'
+                : 'run `gh auth login` or set a GitHub App in Settings';
+            $failures += fail('gh auth status', $auth->message . ' — ' . $hint, $color);
         }
     } else {
         $login = Shell::exec([$gh, 'auth', 'status'], 10);

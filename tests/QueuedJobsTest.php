@@ -122,6 +122,7 @@ final class QueuedJobsTest extends TestCase
         $this->assertSame('success', $recent[0]['conclusion']);
         $this->assertSame('acme-1', $recent[0]['runner_name']);
         $this->assertSame('1m', $recent[0]['duration']);
+        $this->assertGreaterThan(0, $recent[0]['completed_at']);
     }
 
     public function testPickLiveJobsUsesInProgressRunnerName(): void

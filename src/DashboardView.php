@@ -46,6 +46,13 @@ final class DashboardView
         $loggedIn = (bool) ($h['logged_in'] ?? false);
         $orgOk = (bool) ($h['org_access_ok'] ?? false);
         $message = (string) ($h['message'] ?? '');
+        $stale = (string) ($snapshot['auth_stale'] ?? '');
+        if ($stale === '') {
+            $stale = (string) (GithubAuth::staleWarning($loggedIn, $orgOk, $message) ?? '');
+        }
+        if ($stale !== '') {
+            return ['hidden' => false, 'text' => $stale];
+        }
         if ($loggedIn && $orgOk) {
             $behind = (int) ($snapshot['agent_behind_count'] ?? 0);
             $latest = (string) ($snapshot['agent_latest'] ?? '');
@@ -309,6 +316,7 @@ final class DashboardView
             . self::flag($runner, 'crash_flagged', 'crashed unexpectedly', 'critical')
             . self::flag($runner, 'auto_restart_paused', 'auto-restart paused', 'warning')
             . self::flag($runner, 'ephemeral', 'ephemeral', 'muted')
+            . self::lastJobFailedFlag($runner)
             . self::crashHistoryBadge($runner);
     }
 
@@ -386,6 +394,16 @@ final class DashboardView
     }
 
     /** @param array<string, mixed> $runner */
+    private static function lastJobFailedFlag(array $runner): string
+    {
+        if (empty($runner['last_job_failed'])) {
+            return '';
+        }
+        $name = trim((string) ($runner['last_job_name'] ?? ''));
+        $text = $name !== '' ? 'last job failed: ' . $name : 'last job failed';
+        return self::flag(['last_job_failed' => true], 'last_job_failed', $text, 'critical');
+    }
+
     private static function crashHistoryBadge(array $runner): string
     {
         $n = $runner['crash_count_7d'] ?? 0;

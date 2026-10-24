@@ -16,6 +16,7 @@ final class GithubClient
         if ($dir = Config::ghConfigDir()) {
             putenv("GH_CONFIG_DIR=$dir");
         }
+        GithubApp::applyToEnv();
     }
 
     /** 'orgs/{org}' or 'repos/{owner}/{repo}' depending on Config::scope() — the prefix for every runners API call */
@@ -28,6 +29,15 @@ final class GithubClient
     public static function checkLogin(): array
     {
         self::ensureGhEnv();
+        if (GithubApp::isConfigured()) {
+            if (GithubApp::token() !== null) {
+                return ['logged_in' => true, 'message' => 'OK'];
+            }
+            return [
+                'logged_in' => false,
+                'message' => 'GitHub App is set but the installation token could not be minted',
+            ];
+        }
         $login = Shell::exec([Config::ghBinary(), 'auth', 'status'], 10);
         if ($login['code'] !== 0) {
             $message = trim($login['stderr'] ?: $login['stdout']) ?: 'gh auth status failed';

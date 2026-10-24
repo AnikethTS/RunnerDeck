@@ -95,6 +95,10 @@ function fixtureRowHtml(r) {
   if (r.crash_flagged) {
     local += '<div class="row-flag"><span class="badge badge-critical">crashed unexpectedly</span></div>';
   }
+  if (r.last_job_failed) {
+    const job = r.last_job_name ? `last job failed: ${r.last_job_name}` : 'last job failed';
+    local += `<div class="row-flag"><span class="badge badge-critical">${job}</span></div>`;
+  }
   if (r.auto_restart_paused) {
     local += '<div class="row-flag"><span class="badge badge-warning">auto-restart paused</span></div>';
   }
@@ -559,6 +563,7 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await expect(page.locator('#settings-org-field')).toBeVisible();
   await expect(page.locator('#settings-session-idle')).toBeVisible();
   await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
+  await expect(page.locator('#settings-github-app-id')).toBeVisible();
   await expect(page.locator('a[href="download_bundle.php"]')).toBeVisible();
   await expect(page.locator('input[name="include_secrets"]')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();

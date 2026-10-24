@@ -17,6 +17,7 @@
     "stylelint-config-standard": "^40.0.0"
   },
   "overrides": {
-    "source-map-js": "1.2.2"
+    "source-map-js": "1.2.2",
+    "fast-uri": "3.1.9"
   }
 }
