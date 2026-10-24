@@ -102,6 +102,9 @@ if (
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
         'diskWebhookThreshold' => (string) ($_POST['disk_webhook_threshold'] ?? ''),
         'sessionIdleMinutes' => (string) ($_POST['session_idle_minutes'] ?? ''),
+        'syslog' => ($_POST['syslog'] ?? '') === '1',
+        'slotCpuPercent' => (string) ($_POST['slot_cpu_percent'] ?? ''),
+        'slotMemoryMaxMib' => (string) ($_POST['slot_memory_max_mib'] ?? ''),
         'githubAppId' => (string) ($_POST['github_app_id'] ?? ''),
         'githubAppInstallationId' => (string) ($_POST['github_app_installation_id'] ?? ''),
         'githubAppKeyPresent' => GithubApp::hasPrivateKey(),
@@ -144,6 +147,13 @@ if (
             : '',
         'sessionIdleMinutes' => Config::sessionIdleMinutes() !== null
             ? (string) Config::sessionIdleMinutes()
+            : '',
+        'syslog' => Config::syslogEnabled(),
+        'slotCpuPercent' => Config::slotCpuPercent() !== null
+            ? (string) Config::slotCpuPercent()
+            : '',
+        'slotMemoryMaxMib' => Config::slotMemoryMaxMib() !== null
+            ? (string) Config::slotMemoryMaxMib()
             : '',
         'githubAppId' => GithubApp::appId() !== null ? (string) GithubApp::appId() : '',
         'githubAppInstallationId' => GithubApp::installationId() !== null
@@ -449,6 +459,41 @@ echo HostingWarnings::html();
         </div>
 
         <div class="settings-field">
+          <label for="settings-slot-cpu">Slot CPU cap (percent of one CPU)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-slot-cpu"
+            name="slot_cpu_percent"
+            min="1"
+            max="100"
+            step="1"
+            value="<?= htmlspecialchars($current['slotCpuPercent']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Linux cgroup v2 <code>cpu.max</code> when a slot starts. Off if blank.
+            macOS and missing cgroup permissions fail open (the runner still starts).
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-slot-mem">Slot memory cap (MiB)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-slot-mem"
+            name="slot_memory_max_mib"
+            min="64"
+            max="1048576"
+            step="1"
+            value="<?= htmlspecialchars($current['slotMemoryMaxMib']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">cgroup v2 <code>memory.max</code> on start. 64–1048576. Blank = off.</p>
+        </div>
+
+        <div class="settings-field">
           <label for="settings-drain-timeout">Drain timeout (seconds)</label>
           <input
             type="number"
@@ -466,7 +511,23 @@ echo HostingWarnings::html();
 
       <section class="settings-card">
         <h3>Notifications</h3>
-        <p class="settings-hint">Optional webhook for crash-loop, host mode, queue/long-job alerts, and disk.</p>
+        <p class="settings-hint">Optional webhook for crash-loop, host mode, queue/long-job alerts, and disk.
+          Failed posts retry with backoff. Prometheus is <code>GET /metrics.php</code> (no TOTP, no GitHub).
+        </p>
+
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="syslog"
+            value="1"
+            <?= $current['syslog'] ? 'checked' : '' ?>
+          />
+          Send crash and alert events to local syslog
+        </label>
+        <p class="settings-hint">
+          RFC5424 datagram to <code>/dev/log</code> (or <code>RUNNERDECK_SYSLOG_SOCKET</code>).
+          Fail-open if the socket is missing.
+        </p>
 
         <div class="settings-field">
           <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>

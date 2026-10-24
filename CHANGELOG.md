@@ -8,6 +8,20 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Prometheus `/metrics.php`**: unauthenticated scrape of local pool size,
+  pressure, queue cache, and webhook outbox. No GitHub, no start, no webhook.
+
+- **Webhook retry**: failed crash-webhook POSTs persist in
+  `storage/webhook_outbox.json` and retry with backoff. Success drops the
+  item. Settings Test is not retried. Not flushed from `health.php` or
+  `/metrics.php`.
+
+- **Syslog**: optional RFC5424 datagram of crash/alert events to `/dev/log`
+  (or `RUNNERDECK_SYSLOG_SOCKET`). Fail-open if the socket is missing.
+
+- **Per-slot cgroup caps**: optional CPU percent and memory MiB on start
+  (Linux cgroup v2). Missing cgroup or permissions fail open.
+
 - **GitHub App**: optional App ID, installation ID, and PEM private key
   (Settings, `storage/github_app.pem`) mint an installation token for
   `gh api` so this host does not need a personal `gh auth login`.

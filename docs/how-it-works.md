@@ -41,13 +41,16 @@
   **Safe reboot** drain-stops the pool and sets `reboot_ready` so you
   can reboot the OS yourself — RunnerDeck does not call `reboot`.
   Starting a runner clears that flag. The crash webhook fires once on
-  the rising edge of maintenance or `reboot_ready`. **Host pressure** also refuses
+  the rising edge of maintenance or `reboot_ready`. Failed webhook posts
+  retry with backoff. Optional syslog gets the same events.
+  **Host pressure** also refuses
   new starts when the pool filesystem or Linux MemAvailable is below
   the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
   keep going. `public/health.php` stays an unauthenticated liveness
   probe (`ok: true`) and adds `ready` plus `pressure` (and
   `reboot_ready`) so a monitor can see the box should not take more
   work. The pressure webhook is not sent from that probe.
+  `public/metrics.php` is a Prometheus scrape of local counters only.
 - Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
   runner and asks for confirmation if it's mid-job (or if that status can't
   be verified at all — it fails closed, not open).
@@ -62,7 +65,8 @@
   removes the directory (binaries, config, logs) — always confirmed
   separately from the busy check, since there's no undo.
 - Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
-  cross-platform, read-only — nothing is capped or throttled), with a
+  cross-platform). Optional Linux **cgroup v2** CPU/memory caps apply on
+  start only; missing cgroup support fails open. A
   rolling one-hour pool-wide history chart backed by a small local SQLite
   file (`storage/db/history.sqlite`). The charts label the axis (CPU 0–100%,
   RAM in MB), the latest sample, and min–max for the hour. This is

@@ -103,6 +103,7 @@ final class ProcessControl
         }
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
+        SlotCgroup::apply($r->id, $newPid);
         HostMode::setRebootReady(false);
         AppLog::info('process.start', "{$r->id} started (pid {$newPid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} started (pid {$newPid})"];

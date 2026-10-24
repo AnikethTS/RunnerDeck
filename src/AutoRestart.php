@@ -21,14 +21,15 @@ final class AutoRestart
             return [];
         }
         WatchHeartbeat::touch();
+        CrashWebhook::flushOutbox();
         if (HostMode::isMaintenance()) {
             return [];
         }
         $wantCrash = Config::autoRestartEnabled();
         $wantScale = Config::scaleToQueueEnabled();
         $wantIdle = Config::idleStopMinutes() !== null;
-        $wantQueueAlert = Config::queueWaitMinutes() !== null && Config::crashWebhookUrl() !== null;
-        $wantLongJob = Config::longJobMinutes() !== null && Config::crashWebhookUrl() !== null;
+        $wantQueueAlert = Config::queueWaitMinutes() !== null && CrashWebhook::wantsNotify();
+        $wantLongJob = Config::longJobMinutes() !== null && CrashWebhook::wantsNotify();
         if (
             !$wantCrash && !$wantScale && !$wantIdle && !$wantQueueAlert && !$wantLongJob
             && !self::poolHasEphemeral()

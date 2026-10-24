@@ -436,6 +436,16 @@ final class QueuedJobs
         return array_values($ids);
     }
 
+    /** Queued job count from the last queue poll cache. Does not call GitHub. */
+    public static function peekCachedCount(): int
+    {
+        $payload = self::peekCachePayload();
+        if ($payload === null) {
+            return 0;
+        }
+        return max(0, (int) ($payload['count'] ?? 0));
+    }
+
     /**
      * Completed jobs from the last queue poll, even if the cache TTL has
      * passed. Empty when the queue action has not run yet. Does not call GitHub.
@@ -444,16 +454,8 @@ final class QueuedJobs
      */
     public static function peekRecent(): array
     {
-        $path = self::cachePath();
-        if (!is_file($path)) {
-            return [];
-        }
-        $decoded = json_decode((string) file_get_contents($path), true);
-        if (!is_array($decoded)) {
-            return [];
-        }
-        $payload = $decoded['payload'] ?? null;
-        if (!is_array($payload)) {
+        $payload = self::peekCachePayload();
+        if ($payload === null) {
             return [];
         }
         $recent = $payload['recent'] ?? [];
@@ -467,6 +469,21 @@ final class QueuedJobs
             }
         }
         return $out;
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function peekCachePayload(): ?array
+    {
+        $path = self::cachePath();
+        if (!is_file($path)) {
+            return null;
+        }
+        $decoded = json_decode((string) file_get_contents($path), true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        $payload = $decoded['payload'] ?? null;
+        return is_array($payload) ? $payload : null;
     }
 
     /** @return array<string, mixed>|null */
