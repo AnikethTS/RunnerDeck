@@ -70,6 +70,12 @@ follows [SemVer](https://semver.org/).
   GHSA-w74x-v6f9-j3xg / GHSA-xhq7-xmqj-769h / GHSA-wjr9-j795-jxcr /
   GHSA-333x-w4r6-6crp (dev lint tree only).
 
+### Changed
+
+- Pull requests run ChangeRadar 0.2.6 via the published Action
+  (`AnikethTS/ChangeRadar@e3d3b348`). JAR is GitHub's latest release
+  unless `version` is set.
+
 ## [1.8.0] - 2026-10-22
 
 ### Security
