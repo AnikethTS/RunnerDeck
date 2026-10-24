@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-24
+
 ### Added
 
 - **Prometheus `/metrics.php`**: unauthenticated scrape of local pool size,
