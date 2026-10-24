@@ -1,9 +1,12 @@
-# ChangeRadar 0.2.6 consumer workflow. Do not clone ChangeRadar or run its Gradle.
+# ChangeRadar 0.2.5 consumer workflow. Do not clone ChangeRadar or run its Gradle.
 #
 # Two version knobs:
 # 1. uses: …@<sha> — Action wrapper (Java, download, report). Pin a SHA.
+#    Dependabot moves this SHA when ChangeRadar publishes a tag. Do not
+#    hand-edit it. An analyzer-only release still needs no workflow edit:
+#    the JAR input below is what carries scan behavior.
 # 2. version: — analyzer JAR. Omit (or latest) for GitHub's latest release.
-#    Set version: v0.2.6 to pin a JAR.
+#    Set version: v0.2.5 to pin a JAR.
 #
 # Artifact, sticky PR comment, and Checks notices are posted by the Action.
 # Fork PRs skip comment and annotations. Fail-open (no --policy).
@@ -34,8 +37,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: AnikethTS/ChangeRadar@e3d3b3488ab7f20c347fd41dbba9386552082bd5 # v0.2.6
+      - uses: AnikethTS/ChangeRadar@531ea25fafe2a36d180bacbc67402da720a354a0 # v0.2.5
         with:
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
-          # version: v0.2.6
+          # version: v0.2.5

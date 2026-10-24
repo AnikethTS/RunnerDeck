@@ -72,9 +72,10 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
-- Pull requests run ChangeRadar 0.2.6 via the published Action
-  (`AnikethTS/ChangeRadar@e3d3b348`). JAR is GitHub's latest release
-  unless `version` is set.
+- Pull requests run ChangeRadar 0.2.5 via the published Action
+  (`AnikethTS/ChangeRadar@531ea25`). JAR is GitHub's latest release
+  unless `version` is set. Dependabot moves that Action SHA daily, so a
+  later ChangeRadar tag does not need a hand edit.
 
 ## [1.8.0] - 2026-10-22
 
