@@ -27,7 +27,7 @@ fields as forward-compatible noise, not an error.
 
 By default, GET actions need nothing — no session, no token. POST actions
 require a CSRF token, since the only thing standing between this app and a
-forged request from another browser tab is that token (see `src/Csrf.php`).
+forged request from another browser tab is that token (see `src/Core/Csrf.php`).
 The UI gets one for free (embedded in `index.php` as `window.__CSRF__` on
 every page load); a script that isn't rendering that page can fetch one
 directly:
@@ -71,7 +71,7 @@ curl -sS -b cookies.txt 'http://127.0.0.1:8090/api.php?action=status'
 ```
 
 Five wrong codes in a row locks login out for 5 minutes, same as the UI
-(`src/Auth.php`). There's no separate API token or key to mint — a script
+(`src/Core/Auth.php`). There's no separate API token or key to mint — a script
 authenticates exactly the way a browser does.
 
 ## Response shape
@@ -188,7 +188,7 @@ job for that `agent_name` concluded `failure` or `timed_out`. It does
 not trigger another GitHub call from `action=status`.
 
 `crash_flagged`/`just_flagged`/`should_auto_restart`/`auto_restart_paused`/`mismatch_flagged` are
-server-tracked bookkeeping (`src/CrashState.php`) — reading/updating a small
+server-tracked bookkeeping (`src/Pool/CrashState.php`) — reading/updating a small
 state file on every poll, the same category of side effect as
 `History::record()` already writing a stats sample from within this same GET
 action. `just_flagged` is `true` for exactly one poll, the one where a
@@ -200,7 +200,7 @@ polls where GitHub `online` and the local process disagree.
 threshold (the crash webhook URL is notified once, `event: mismatch`).
 
 `crash_count_7d` is how many times this runner has crashed in the last 7
-days (`src/CrashHistory.php`, a small SQLite table in the same database
+days (`src/Pool/CrashHistory.php`, a small SQLite table in the same database
 as CPU/RAM history) — independent of `crash_flagged`, so it stays
 non-zero even after the runner's recovered and the flag has cleared.
 `crash_at_7d` is the newest timestamps for those events (unix seconds,

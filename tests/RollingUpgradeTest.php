@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use PHPUnit\Framework\TestCase;
-use RunnerDeck\RunnerInfo;
+use RunnerDeck\Pool\RunnerInfo;
 
 final class RollingUpgradeTest extends TestCase
 {
@@ -21,7 +21,7 @@ final class RollingUpgradeTest extends TestCase
             logTail: [],
         );
 
-        $result = \RunnerDeck\RollingUpgrade::run([$r], true, 10);
+        $result = \RunnerDeck\Pool\RollingUpgrade::run([$r], true, 10);
 
         $this->assertTrue($result['ok']);
         $this->assertStringContainsString('No configured runners', $result['message']);

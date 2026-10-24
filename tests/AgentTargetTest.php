@@ -11,14 +11,14 @@ final class AgentTargetTest extends TestCase
 {
     protected function tearDown(): void
     {
-        \RunnerDeck\AgentTarget::fake(null);
+        \RunnerDeck\GitHub\AgentTarget::fake(null);
     }
 
     #[RunInSeparateProcess]
     public function testAnnotateMarksOlderLocalVersions(): void
     {
-        \RunnerDeck\AgentTarget::fake(fn () => '2.322.0');
-        $out = \RunnerDeck\AgentTarget::annotate([
+        \RunnerDeck\GitHub\AgentTarget::fake(fn () => '2.322.0');
+        $out = \RunnerDeck\GitHub\AgentTarget::annotate([
             ['id' => 'runner-1', 'agent_version' => '2.321.0'],
             ['id' => 'runner-2', 'agent_version' => '2.322.0'],
         ]);
@@ -31,8 +31,8 @@ final class AgentTargetTest extends TestCase
     #[RunInSeparateProcess]
     public function testUnknownLatestFailsOpen(): void
     {
-        \RunnerDeck\AgentTarget::fake(fn () => null);
-        $out = \RunnerDeck\AgentTarget::annotate([
+        \RunnerDeck\GitHub\AgentTarget::fake(fn () => null);
+        $out = \RunnerDeck\GitHub\AgentTarget::annotate([
             ['id' => 'runner-1', 'agent_version' => '2.321.0'],
         ]);
         $this->assertNull($out['latest']);

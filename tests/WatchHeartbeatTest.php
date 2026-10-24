@@ -22,12 +22,12 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
-        \RunnerDeck\WatchHeartbeat::fakeNow(null);
+        \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\WatchHeartbeat::fakeNow(null);
+        \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTO_RESTART');
         putenv('RUNNERDECK_SCALE_TO_QUEUE');
@@ -41,14 +41,14 @@ final class WatchHeartbeatTest extends TestCase
     #[RunInSeparateProcess]
     public function testWarningSilentWhenWatchFeaturesOff(): void
     {
-        $this->assertNull(\RunnerDeck\WatchHeartbeat::warning(false));
+        $this->assertNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
     public function testWarningWhenAutoRestartOnAndNoTick(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        $text = \RunnerDeck\WatchHeartbeat::warning(false);
+        $text = \RunnerDeck\Host\WatchHeartbeat::warning(false);
         $this->assertNotNull($text);
         $this->assertStringContainsString('watch-auto-restart.php', $text);
     }
@@ -57,9 +57,9 @@ final class WatchHeartbeatTest extends TestCase
     public function testTouchClearsStaleWarning(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        \RunnerDeck\WatchHeartbeat::fakeNow(fn () => 1_700_000_000);
-        \RunnerDeck\WatchHeartbeat::touch();
-        $this->assertNull(\RunnerDeck\WatchHeartbeat::warning(false));
+        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Host\WatchHeartbeat::touch();
+        $this->assertNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
@@ -67,15 +67,15 @@ final class WatchHeartbeatTest extends TestCase
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
         $t = 1_700_000_000;
-        \RunnerDeck\WatchHeartbeat::fakeNow(fn () => $t);
-        \RunnerDeck\WatchHeartbeat::touch();
-        \RunnerDeck\WatchHeartbeat::fakeNow(fn () => $t + 21);
-        $this->assertNotNull(\RunnerDeck\WatchHeartbeat::warning(false));
+        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => $t);
+        \RunnerDeck\Host\WatchHeartbeat::touch();
+        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => $t + 21);
+        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
     public function testEphemeralNeedsHeartbeatEvenWhenFlagsOff(): void
     {
-        $this->assertNotNull(\RunnerDeck\WatchHeartbeat::warning(true));
+        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(true));
     }
 }

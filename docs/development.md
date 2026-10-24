@@ -84,7 +84,7 @@ PR expectations and the project's policy on AI-assisted contributions.
 runnerdeck/
   public/
     index.php       server-rendered dashboard page
-    api.php         JSON API front controller (`action=` handlers in src/Api/)
+    api.php         JSON API front controller (`action=` handlers in src/Http/Action/)
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
@@ -98,53 +98,15 @@ runnerdeck/
     metrics.php     Prometheus text (local pool/pressure/queue cache/outbox; no GitHub)
     assets/         app.js (dashboard), js/theme.js, style.css, logo.png
   src/
-    bootstrap.php        autoload (`RunnerDeck\` → `src/`) + env bootstrap
-    Config.php           env-based configuration
-    Settings.php          reads/writes storage/settings.json (UI setup/Settings)
-    AppLog.php             JSON error + operator audit log at storage/runnerdeck.log
-    History.php            best-effort CPU/RAM history + SVG chart markup
-    Csrf.php              session-bound CSRF token minting/verification
-    Auth.php              TOTP login, recovery codes, lockout, idle timeout
-    Totp.php               RFC 6238 TOTP code generation/verification, no dependency
-    RunnerPool.php        discovers runner dirs, checks process liveness
-    AgentVersion.php      local GitHub Actions runner agent version
-    AgentTarget.php       cached GitHub current runner package version; agent_behind flags
-    SystemStats.php        whole-machine CPU/RAM usage, off the same ps scan
-    GithubClient.php      shells out to `gh` (GH_TOKEN from GitHub App when set)
-    GithubApp.php         installation JWT + token cache for org-owned apps
-    GithubAuth.php        stale 401/403/SSO banner text
-    FailedJobs.php        last completed job failed flag from queue cache
-    UpdateCheck.php        opt-in check against this project's own GitHub Releases
-    Provisioner.php       downloads, installs, and registers a runner
-    ProcessDecision.php   pidfile vs live-process start/stop decisions
-    ProcessControl.php    start/stop (wait + SIGKILL)/restart, individual and pool-wide
-    Drain.php             wait for GitHub busy=false before stop
-    RollingRestart.php    sequential drain-stop then start per slot
-    SlotDisk.php          best-effort slot disk + clear `_work`
-    DiskAlert.php         one-shot disk webhook when a slot or pool crosses N GiB
-    AutoRestart.php       headless start for crashes, ephemeral slots, scale-to-queue, idle-stop, queue/long-job alerts
-    WatchHeartbeat.php    watch-auto-restart.php tick file; dashboard stale banner
-    RunnerLog.php         rotate oversized `runner.log`; tail/download include `.1`
-    Dashboard.php         merges local + GitHub state into one snapshot
-    DashboardView.php     first-paint HTML for stats, health banner, runner rows
-    Layout.php            shared HTML chrome: theme cookie, topbar, assets
-    CrashWebhook.php      crash/alert POST + outbox retry
-    WebhookOutbox.php     persisted failed webhook posts
-    SyslogSink.php        optional RFC5424 to a unix datagram
-    SlotCgroup.php        optional cgroup v2 CPU/memory on start
-    Metrics.php           Prometheus text for metrics.php
-    HostPressure.php      disk/RAM headroom; refuse starts when too low; one-shot webhook
-    HostMode.php          maintenance + reboot_ready flags
-    QueueAlert.php        one-shot webhook when a queued job waits too long
-    LongJobAlert.php      one-shot webhook when an in-progress job runs too long
-    SettingsPortable.php  redacted settings export/import
-    HostBundle.php        host disaster-recovery export/import
-    HostingWarnings.php   TLS/TOTP/php -S banners plus Settings This-host card
-    Session.php           one session_start path (HttpOnly, SameSite, Secure)
-    SecurityHeaders.php   CSP / frame / referrer headers for PHP responses
-    Api.php               JSON API router and shared request helpers
-    Api/                  one class per `api.php?action=` (`RunnerDeck\Api\`)
-    Shell.php             timeout-guarded subprocess helper
+    bootstrap.php   autoload (`RunnerDeck\` → `src/`) + env bootstrap
+    Core/           Config, Settings, Auth, TOTP, CSRF, session, layout, log, shell
+    GitHub/         gh client, GitHub App, queue cache, agent version, orphans
+    Host/           pressure, host mode, metrics, cgroups, history, disk
+    Pool/           runner dirs, start/stop, drain, rolling restart, crash state
+    Alert/          crash webhook, outbox retry, syslog, queue/long-job alerts
+    Ui/             dashboard snapshot and first-paint HTML
+    Http/           API router (`RunnerDeck\Http\Api`)
+    Http/Action/    one class per `api.php?action=` (`RunnerDeck\Http\Action\`)
   tests/            PHPUnit unit tests for the pure-logic pieces above
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd

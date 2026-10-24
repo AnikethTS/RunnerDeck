@@ -14,7 +14,7 @@
     <rule ref="PSR12"/>
 
     <!-- Front-controller scripts mix declarations with side effects by design.
-         App classes live in the RunnerDeck namespace (PSR-4 via bootstrap.php). -->
+         App classes live under RunnerDeck\ with PSR-4 folders via bootstrap.php. -->
     <rule ref="PSR1.Classes.ClassDeclaration.MissingNamespace">
         <severity>0</severity>
     </rule>

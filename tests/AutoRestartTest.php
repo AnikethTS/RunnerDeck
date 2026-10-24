@@ -20,21 +20,21 @@ final class AutoRestartTest extends TestCase
         mkdir(dirname($this->dir) . '/storage', 0700, true);
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
-        \RunnerDeck\RunnerPool::fakeLiveListeners([]);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\HostPressure::fakeDisk(
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Host\HostPressure::fakeDisk(
             fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]
         );
-        \RunnerDeck\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
-        \RunnerDeck\RunnerPool::fakeLiveListeners(null);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(null);
-        \RunnerDeck\HostPressure::fakeDisk(null);
-        \RunnerDeck\HostPressure::fakeRam(null);
+        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
+        \RunnerDeck\Host\HostPressure::fakeDisk(null);
+        \RunnerDeck\Host\HostPressure::fakeRam(null);
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_ORG');
@@ -46,7 +46,7 @@ final class AutoRestartTest extends TestCase
     #[RunInSeparateProcess]
     public function testTickIsNoopWhenAutoRestartIsOff(): void
     {
-        $this->assertSame([], \RunnerDeck\AutoRestart::tick());
+        $this->assertSame([], \RunnerDeck\Pool\AutoRestart::tick());
         $this->assertFileExists(dirname($this->dir) . '/storage/watch_heartbeat.json');
     }
 
@@ -54,12 +54,12 @@ final class AutoRestartTest extends TestCase
     public function testStartFlaggedStartsOnlyMarkedRunners(): void
     {
         $spawned = [];
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
             $spawned[] = $cmd;
             return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
         });
 
-        $info = new \RunnerDeck\RunnerInfo(
+        $info = new \RunnerDeck\Pool\RunnerInfo(
             id: 'runner-1',
             dir: $this->dir,
             configured: true,
@@ -68,7 +68,7 @@ final class AutoRestartTest extends TestCase
             pid: null,
             logTail: [],
         );
-        $started = \RunnerDeck\AutoRestart::startFlagged([
+        $started = \RunnerDeck\Pool\AutoRestart::startFlagged([
             array_merge($info->toArray(), ['should_auto_restart' => true]),
         ]);
 
@@ -82,12 +82,12 @@ final class AutoRestartTest extends TestCase
     public function testStartFlaggedSkipsPausedRunners(): void
     {
         $spawned = [];
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
             $spawned[] = $cmd;
             return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
         });
 
-        $info = new \RunnerDeck\RunnerInfo(
+        $info = new \RunnerDeck\Pool\RunnerInfo(
             id: 'runner-1',
             dir: $this->dir,
             configured: true,
@@ -96,7 +96,7 @@ final class AutoRestartTest extends TestCase
             pid: null,
             logTail: [],
         );
-        $started = \RunnerDeck\AutoRestart::startFlagged([
+        $started = \RunnerDeck\Pool\AutoRestart::startFlagged([
             array_merge($info->toArray(), [
                 'should_auto_restart' => true,
                 'auto_restart_paused' => true,
@@ -115,13 +115,13 @@ final class AutoRestartTest extends TestCase
         mkdir($pool . '/runner-2', 0755, true);
         file_put_contents($this->dir . '/.runner', json_encode(['agentName' => 'acme-1']));
         file_put_contents($pool . '/runner-2/.runner', json_encode(['agentName' => 'acme-2']));
-        \RunnerDeck\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
             if (!is_file($pidFile)) {
                 return [false, null];
             }
             return [true, (int) file_get_contents($pidFile)];
         });
-        \RunnerDeck\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'bash') {
                 return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
             }
@@ -130,7 +130,7 @@ final class AutoRestartTest extends TestCase
 
         $rows = [];
         foreach (['runner-1' => $this->dir, 'runner-2' => $pool . '/runner-2'] as $id => $dir) {
-            $rows[] = (new \RunnerDeck\RunnerInfo(
+            $rows[] = (new \RunnerDeck\Pool\RunnerInfo(
                 id: $id,
                 dir: $dir,
                 configured: true,
@@ -140,7 +140,7 @@ final class AutoRestartTest extends TestCase
                 logTail: [],
             ))->toArray();
         }
-        $out = \RunnerDeck\AutoRestart::scaleToQueue($rows, 5);
+        $out = \RunnerDeck\Pool\AutoRestart::scaleToQueue($rows, 5);
         $ok = array_values(array_filter($out, fn ($row) => !empty($row['ok'])));
         $this->assertCount(1, $ok);
         putenv('RUNNERDECK_POOL_CAP');
@@ -155,17 +155,17 @@ final class AutoRestartTest extends TestCase
         file_put_contents($storage . '/idle_state.json', json_encode(['runner-1' => 1]));
         file_put_contents($this->dir . '/.runner', json_encode(['agentName' => 'acme-1']));
         file_put_contents($this->dir . '/runner.pid', '99');
-        \RunnerDeck\IdleState::fakeNow(fn () => 120);
-        \RunnerDeck\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
+        \RunnerDeck\Pool\IdleState::fakeNow(fn () => 120);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
             if (!is_file($pidFile)) {
                 return [false, null];
             }
             return [true, 99];
         });
-        \RunnerDeck\ProcessControl::fakeKill(fn () => true);
-        \RunnerDeck\ProcessControl::fakeAlive(fn () => false);
-        \RunnerDeck\ProcessControl::fakeTermWait(0);
-        \RunnerDeck\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\Pool\ProcessControl::fakeKill(fn () => true);
+        \RunnerDeck\Pool\ProcessControl::fakeAlive(fn () => false);
+        \RunnerDeck\Pool\ProcessControl::fakeTermWait(0);
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners') && str_contains($joined, '--paginate')) {
                 return [
@@ -185,7 +185,7 @@ final class AutoRestartTest extends TestCase
 
         putenv('RUNNERDECK_AUTO_CLEAR_WORK=1');
         mkdir($this->dir . '/_work', 0755, true);
-        $row = (new \RunnerDeck\RunnerInfo(
+        $row = (new \RunnerDeck\Pool\RunnerInfo(
             id: 'runner-1',
             dir: $this->dir,
             configured: true,
@@ -194,14 +194,14 @@ final class AutoRestartTest extends TestCase
             pid: 99,
             logTail: [],
         ))->toArray();
-        $out = \RunnerDeck\AutoRestart::idleStop([$row]);
+        $out = \RunnerDeck\Pool\AutoRestart::idleStop([$row]);
         $this->assertNotSame([], $out);
         $this->assertTrue($out[0]['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
-        \RunnerDeck\IdleState::fakeNow(null);
-        \RunnerDeck\ProcessControl::fakeKill(null);
-        \RunnerDeck\ProcessControl::fakeAlive(null);
-        \RunnerDeck\ProcessControl::fakeTermWait(null);
+        \RunnerDeck\Pool\IdleState::fakeNow(null);
+        \RunnerDeck\Pool\ProcessControl::fakeKill(null);
+        \RunnerDeck\Pool\ProcessControl::fakeAlive(null);
+        \RunnerDeck\Pool\ProcessControl::fakeTermWait(null);
         putenv('RUNNERDECK_IDLE_STOP_MINUTES');
         putenv('RUNNERDECK_SETTINGS_FILE');
     }

@@ -27,9 +27,9 @@ final class AgentRosterTest extends TestCase
     #[RunInSeparateProcess]
     public function testOrphansAreRosterNamesMissingLocally(): void
     {
-        \RunnerDeck\AgentRoster::remember('acme-1');
-        \RunnerDeck\AgentRoster::remember('gone-box');
-        $orphans = \RunnerDeck\AgentRoster::orphans([
+        \RunnerDeck\GitHub\AgentRoster::remember('acme-1');
+        \RunnerDeck\GitHub\AgentRoster::remember('gone-box');
+        $orphans = \RunnerDeck\GitHub\AgentRoster::orphans([
             'acme-1' => ['id' => 1, 'status' => 'online', 'busy' => false, 'labels' => [], 'os' => ''],
             'gone-box' => ['id' => 2, 'status' => 'offline', 'busy' => false, 'labels' => [], 'os' => ''],
         ], ['acme-1']);
@@ -42,9 +42,9 @@ final class AgentRosterTest extends TestCase
     #[RunInSeparateProcess]
     public function testForgetRemovesName(): void
     {
-        \RunnerDeck\AgentRoster::remember('gone-box');
-        \RunnerDeck\AgentRoster::forget('gone-box');
-        $this->assertSame([], \RunnerDeck\AgentRoster::orphans([
+        \RunnerDeck\GitHub\AgentRoster::remember('gone-box');
+        \RunnerDeck\GitHub\AgentRoster::forget('gone-box');
+        $this->assertSame([], \RunnerDeck\GitHub\AgentRoster::orphans([
             'gone-box' => ['id' => 2, 'status' => 'offline', 'busy' => false, 'labels' => [], 'os' => ''],
         ], []));
     }

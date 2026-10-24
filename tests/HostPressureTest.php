@@ -13,9 +13,9 @@ final class HostPressureTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\HostPressure::fakeDisk(null);
-        \RunnerDeck\HostPressure::fakeRam(null);
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Host\HostPressure::fakeDisk(null);
+        \RunnerDeck\Host\HostPressure::fakeRam(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
         putenv('RUNNERDECK_POOL_DIR');
@@ -31,13 +31,13 @@ final class HostPressureTest extends TestCase
     {
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [100 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [100 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
 
-        $snap = \RunnerDeck\HostPressure::snapshot();
+        $snap = \RunnerDeck\Host\HostPressure::snapshot();
         $this->assertFalse($snap['ok']);
         $this->assertNotSame([], $snap['reasons']);
-        $this->assertStringContainsString('disk', (string) \RunnerDeck\HostPressure::blockStartMessage());
+        $this->assertStringContainsString('disk', (string) \RunnerDeck\Host\HostPressure::blockStartMessage());
     }
 
     #[RunInSeparateProcess]
@@ -45,10 +45,10 @@ final class HostPressureTest extends TestCase
     {
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=0');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=256');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => 64 * 1024);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 64 * 1024);
 
-        $this->assertStringContainsString('RAM', (string) \RunnerDeck\HostPressure::blockStartMessage());
+        $this->assertStringContainsString('RAM', (string) \RunnerDeck\Host\HostPressure::blockStartMessage());
     }
 
     #[RunInSeparateProcess]
@@ -56,11 +56,11 @@ final class HostPressureTest extends TestCase
     {
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=256');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [null, null]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => null);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [null, null]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => null);
 
-        $this->assertTrue(\RunnerDeck\HostPressure::snapshot()['ok']);
-        $this->assertNull(\RunnerDeck\HostPressure::blockStartMessage());
+        $this->assertTrue(\RunnerDeck\Host\HostPressure::snapshot()['ok']);
+        $this->assertNull(\RunnerDeck\Host\HostPressure::blockStartMessage());
     }
 
     #[RunInSeparateProcess]
@@ -68,11 +68,11 @@ final class HostPressureTest extends TestCase
     {
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=0');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [1, 100]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => 1);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [1, 100]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 1);
 
-        $this->assertTrue(\RunnerDeck\HostPressure::snapshot()['ok']);
-        $this->assertNull(\RunnerDeck\HostPressure::blockStartMessage());
+        $this->assertTrue(\RunnerDeck\Host\HostPressure::snapshot()['ok']);
+        $this->assertNull(\RunnerDeck\Host\HostPressure::blockStartMessage());
     }
 
     #[RunInSeparateProcess]
@@ -84,16 +84,16 @@ final class HostPressureTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
-        \RunnerDeck\HostPressure::fakeDisk(fn () => [100 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
-        \RunnerDeck\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [100 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
         $posts = 0;
-        \RunnerDeck\Shell::fake(function () use (&$posts): array {
+        \RunnerDeck\Core\Shell::fake(function () use (&$posts): array {
             $posts++;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        \RunnerDeck\HostPressure::checkAlert();
-        \RunnerDeck\HostPressure::checkAlert();
+        \RunnerDeck\Host\HostPressure::checkAlert();
+        \RunnerDeck\Host\HostPressure::checkAlert();
 
         $this->assertSame(1, $posts);
     }

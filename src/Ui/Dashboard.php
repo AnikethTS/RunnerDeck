@@ -1,0 +1,207 @@
+<?php
+
+declare(strict_types=1);
+
+namespace RunnerDeck\Ui;
+
+use RunnerDeck\Alert\CrashWebhook;
+use RunnerDeck\Alert\WebhookOutbox;
+use RunnerDeck\Core\AppLog;
+use RunnerDeck\Core\Config;
+use RunnerDeck\GitHub\AgentRoster;
+use RunnerDeck\GitHub\AgentTarget;
+use RunnerDeck\GitHub\FailedJobs;
+use RunnerDeck\GitHub\GithubAuth;
+use RunnerDeck\GitHub\GithubClient;
+use RunnerDeck\Host\DiskAlert;
+use RunnerDeck\Host\History;
+use RunnerDeck\Host\HostMode;
+use RunnerDeck\Host\HostPressure;
+use RunnerDeck\Host\SystemStats;
+use RunnerDeck\Host\WatchHeartbeat;
+use RunnerDeck\Pool\CrashState;
+use RunnerDeck\Pool\RunnerPool;
+
+final class Dashboard
+{
+    public static function snapshot(int $logLines = 15): array
+    {
+        $ghRunners = [];
+        $loggedIn = false;
+        $orgAccessOk = false;
+        $message = 'OK';
+
+        try {
+            $ghRunners = GithubClient::listRunners();
+            $loggedIn = true;
+            $orgAccessOk = true;
+        } catch (\RuntimeException $e) {
+            $login = GithubClient::checkLogin();
+            $loggedIn = $login['logged_in'];
+            if ($loggedIn) {
+                $scopeLabel = Config::scope() === 'repo' ? 'repo' : 'org';
+                $message = "Logged in, but cannot read {$scopeLabel} runners: " . $e->getMessage();
+            } else {
+                $message = $login['message'];
+            }
+        }
+
+        $discovered = RunnerPool::discover($logLines);
+        $runners = [];
+        $localNames = [];
+        foreach ($discovered as $info) {
+            $row = $info->toArray();
+            $localNames[] = $info->agentName;
+            AgentRoster::remember($info->agentName);
+            $gh = $ghRunners[$info->agentName] ?? null;
+            $row['github'] = $gh === null ? null : [
+                'status' => $gh['status'],
+                'busy' => $gh['busy'],
+                'labels' => $gh['labels'],
+                'os' => $gh['os'],
+            ];
+            $runners[] = $row;
+        }
+
+        $runners = CrashState::track($runners);
+        self::notifyCrashes($runners);
+        CrashWebhook::flushOutbox();
+        $agents = AgentTarget::annotate($runners);
+        $runners = FailedJobs::annotate($agents['runners']);
+
+        $stats = self::computeStats($runners);
+        DiskAlert::check($runners, $stats['total_disk_kb']);
+        $pressure = HostPressure::snapshot();
+        HostPressure::checkAlert($pressure);
+        History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
+
+        $hasEphemeral = false;
+        foreach ($runners as $row) {
+            if (!empty($row['ephemeral'])) {
+                $hasEphemeral = true;
+                break;
+            }
+        }
+
+        return [
+            'generated_at' => time(),
+            'maintenance' => HostMode::isMaintenance(),
+            'reboot_ready' => HostMode::isRebootReady(),
+            'watch_warning' => WatchHeartbeat::warning($hasEphemeral),
+            'pressure' => $pressure,
+            'agent_latest' => $agents['latest'],
+            'agent_behind_count' => $agents['behind_count'],
+            'orphans' => AgentRoster::orphans($ghRunners, $localNames),
+            'health' => [
+                'logged_in' => $loggedIn,
+                'org_access_ok' => $orgAccessOk,
+                'message' => $message,
+            ],
+            'auth_stale' => GithubAuth::staleWarning($loggedIn, $orgAccessOk, $message),
+            'webhook_outbox' => WebhookOutbox::pendingCount(),
+            'runners' => $runners,
+            'stats' => $stats,
+            'system' => SystemStats::snapshot(),
+            'history' => self::historyView(),
+            'errors' => AppLog::recent(30),
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $runners */
+    public static function notifyCrashes(array $runners): void
+    {
+        foreach ($runners as $r) {
+            if (!empty($r['just_flagged'])) {
+                CrashWebhook::notify((string) $r['id'], (string) ($r['agent_name'] ?? $r['id']));
+            }
+            if (!empty($r['just_mismatch_flagged'])) {
+                CrashWebhook::notify(
+                    (string) $r['id'],
+                    (string) ($r['agent_name'] ?? $r['id']),
+                    'mismatch'
+                );
+            }
+            if (!empty($r['crash_threshold_crossed'])) {
+                $count = (int) ($r['crash_count_7d'] ?? 0);
+                $n = Config::crashWebhookThreshold();
+                if ($n !== null) {
+                    CrashWebhook::notify(
+                        (string) $r['id'],
+                        (string) ($r['agent_name'] ?? $r['id']),
+                        'crash_threshold',
+                        $count,
+                        $n
+                    );
+                }
+            }
+        }
+    }
+
+    /** @param array<int, array<string, mixed>> $runners */
+    public static function computeStats(array $runners): array
+    {
+        $running = array_values(array_filter($runners, static fn($r) => $r['local_running']));
+        $notNull = static fn($v) => $v !== null;
+        $cpuValues = array_values(array_filter(array_column($running, 'cpu_percent'), $notNull));
+        $rssValues = array_values(array_filter(array_column($running, 'rss_kb'), $notNull));
+        $diskValues = array_values(array_filter(array_column($runners, 'disk_kb'), $notNull));
+
+        return [
+            'total' => count($runners),
+            'running' => count($running),
+            'avg_cpu_percent' => $cpuValues ? array_sum($cpuValues) / count($cpuValues) : null,
+            'total_rss_kb' => $rssValues ? array_sum($rssValues) : null,
+            'total_disk_kb' => $diskValues ? array_sum($diskValues) : null,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * }
+     */
+    public static function historyView(): array
+    {
+        $unavailable = !History::isAvailable();
+        $samples = History::recent();
+        $cpu = array_values(array_map(static fn (array $s): float => (float) $s['avg_cpu'], $samples));
+        $mem = array_values(array_map(
+            static fn (array $s): float => ((int) $s['total_rss_kb']) / 1024.0,
+            $samples
+        ));
+        $memMax = $mem === [] ? 10.0 : (float) max(10.0, ...$mem);
+        $cpuSummary = History::summary($cpu, '%', 1);
+        $memSummary = History::summary($mem, ' MB', 0);
+
+        return [
+            'available' => !$unavailable,
+            'cpu_svg' => History::polylineSvg($cpu, 0.0, 100.0, $unavailable, '%', 0),
+            'mem_svg' => History::polylineSvg($mem, 0.0, $memMax, $unavailable, ' MB', 0),
+            'cpu_now' => $cpuSummary['now'],
+            'cpu_span' => $cpuSummary['span'],
+            'mem_now' => $memSummary['now'],
+            'mem_span' => $memSummary['span'],
+        ];
+    }
+
+    /** @return array{0: bool, 1: bool, 2: ?string} [known, busy, error] */
+    public static function isBusy(string $agentName): array
+    {
+        try {
+            $runners = GithubClient::listRunners();
+        } catch (\RuntimeException $e) {
+            return [false, false, $e->getMessage()];
+        }
+        $gh = $runners[$agentName] ?? null;
+        if ($gh === null) {
+            return [false, false, "no GitHub record for {$agentName}"];
+        }
+        return [true, $gh['busy'], null];
+    }
+}

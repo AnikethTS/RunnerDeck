@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace RunnerDeck\Http\Action;
+
+use RunnerDeck\Http\Api as JsonApi;
+use RunnerDeck\Pool\RunnerLog;
+use RunnerDeck\Pool\RunnerPool;
+
+final class LogAction
+{
+    public static function handle(): never
+    {
+        $id = $_GET['runner'] ?? '';
+        if (!RunnerPool::isKnownId($id)) {
+            JsonApi::respond(['ok' => false, 'message' => "unknown runner: {$id}"], 404);
+        }
+        $lines = max(1, min(2000, (int) ($_GET['lines'] ?? 200)));
+        $tail = RunnerLog::tail(RunnerPool::dirFor($id), $lines);
+        JsonApi::respond(['ok' => true, 'lines' => $tail]);
+    }
+}

@@ -20,7 +20,7 @@ final class LongJobAlertTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Shell::fake(null);
+        \RunnerDeck\Core\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
@@ -33,15 +33,15 @@ final class LongJobAlertTest extends TestCase
         putenv('RUNNERDECK_LONG_JOB_MINUTES=1');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $bodies = [];
-        \RunnerDeck\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
             $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
         $job = ['id' => 9, 'name' => 'lint', 'runner_name' => 'acme-1', 'duration_sec' => 120];
-        \RunnerDeck\LongJobAlert::check([$job]);
-        \RunnerDeck\LongJobAlert::check([$job]);
-        \RunnerDeck\LongJobAlert::check([]);
+        \RunnerDeck\Alert\LongJobAlert::check([$job]);
+        \RunnerDeck\Alert\LongJobAlert::check([$job]);
+        \RunnerDeck\Alert\LongJobAlert::check([]);
 
         $this->assertCount(1, $bodies);
         $decoded = json_decode((string) $bodies[0], true);

@@ -14,7 +14,7 @@ final class SessionTest extends TestCase
     {
         $_SERVER['HTTPS'] = 'off';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
-        \RunnerDeck\Session::start();
+        \RunnerDeck\Core\Session::start();
         $params = session_get_cookie_params();
 
         $this->assertTrue($params['httponly']);
@@ -26,7 +26,7 @@ final class SessionTest extends TestCase
     public function testStartSetsSecureOnHttps(): void
     {
         $_SERVER['HTTPS'] = 'on';
-        \RunnerDeck\Session::start();
+        \RunnerDeck\Core\Session::start();
         $params = session_get_cookie_params();
 
         $this->assertTrue($params['secure']);
@@ -39,7 +39,7 @@ final class SessionTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
 
-        $this->assertTrue(\RunnerDeck\Session::requestIsHttps());
+        $this->assertTrue(\RunnerDeck\Core\Session::requestIsHttps());
     }
 
     #[RunInSeparateProcess]
@@ -50,7 +50,7 @@ final class SessionTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
         putenv('RUNNERDECK_TRUST_PROXY');
 
-        $this->assertFalse(\RunnerDeck\Session::requestIsHttps());
+        $this->assertFalse(\RunnerDeck\Core\Session::requestIsHttps());
     }
 
     #[RunInSeparateProcess]
@@ -61,7 +61,7 @@ final class SessionTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
         putenv('RUNNERDECK_TRUST_PROXY=1');
 
-        $this->assertTrue(\RunnerDeck\Session::requestIsHttps());
+        $this->assertTrue(\RunnerDeck\Core\Session::requestIsHttps());
     }
 
     #[RunInSeparateProcess]
@@ -70,17 +70,17 @@ final class SessionTest extends TestCase
         $_SERVER['HTTPS'] = '';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertFalse(\RunnerDeck\Session::requestIsHttps());
+        $this->assertFalse(\RunnerDeck\Core\Session::requestIsHttps());
     }
 
     #[RunInSeparateProcess]
     public function testRemoteIsLoopback(): void
     {
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        $this->assertTrue(\RunnerDeck\Session::remoteIsLoopback());
+        $this->assertTrue(\RunnerDeck\Core\Session::remoteIsLoopback());
         $_SERVER['REMOTE_ADDR'] = '::1';
-        $this->assertTrue(\RunnerDeck\Session::remoteIsLoopback());
+        $this->assertTrue(\RunnerDeck\Core\Session::remoteIsLoopback());
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
-        $this->assertFalse(\RunnerDeck\Session::remoteIsLoopback());
+        $this->assertFalse(\RunnerDeck\Core\Session::remoteIsLoopback());
     }
 }

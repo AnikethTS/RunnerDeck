@@ -5,12 +5,12 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Config;
-use RunnerDeck\GithubApp;
-use RunnerDeck\GithubClient;
-use RunnerDeck\HostPressure;
-use RunnerDeck\Shell;
-use RunnerDeck\SlotDisk;
+use RunnerDeck\Core\Config;
+use RunnerDeck\GitHub\GithubApp;
+use RunnerDeck\GitHub\GithubClient;
+use RunnerDeck\Host\HostPressure;
+use RunnerDeck\Core\Shell;
+use RunnerDeck\Host\SlotDisk;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
 

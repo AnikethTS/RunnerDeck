@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\HostMode;
-use RunnerDeck\HostPressure;
+use RunnerDeck\Host\HostMode;
+use RunnerDeck\Host\HostPressure;
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');

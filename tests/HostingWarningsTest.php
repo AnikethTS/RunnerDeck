@@ -11,7 +11,7 @@ final class HostingWarningsTest extends TestCase
 {
     protected function tearDown(): void
     {
-        \RunnerDeck\HostingWarnings::fakeSapi(null);
+        \RunnerDeck\Core\HostingWarnings::fakeSapi(null);
         putenv('RUNNERDECK_TRUST_PROXY');
         $_SERVER = [];
     }
@@ -24,9 +24,9 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = '127.0.0.1:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertFalse(\RunnerDeck\HostingWarnings::isHostedRequest());
-        $this->assertSame([], \RunnerDeck\HostingWarnings::messages());
-        $this->assertSame('', \RunnerDeck\HostingWarnings::html());
+        $this->assertFalse(\RunnerDeck\Core\HostingWarnings::isHostedRequest());
+        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
+        $this->assertSame('', \RunnerDeck\Core\HostingWarnings::html());
     }
 
     #[RunInSeparateProcess]
@@ -37,7 +37,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'localhost:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertSame([], \RunnerDeck\HostingWarnings::messages());
+        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
     }
 
     #[RunInSeparateProcess]
@@ -48,7 +48,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $msgs = \RunnerDeck\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
         $this->assertNotSame([], $msgs);
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('not HTTPS', $joined);
@@ -63,7 +63,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
 
-        $msgs = \RunnerDeck\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('TOTP is the only gate', $joined);
         $this->assertStringNotContainsString('not HTTPS', $joined);
@@ -74,12 +74,12 @@ final class HostingWarningsTest extends TestCase
     {
         $_SERVER['HTTPS'] = 'on';
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
-        \RunnerDeck\HostingWarnings::fakeSapi('cli-server');
+        \RunnerDeck\Core\HostingWarnings::fakeSapi('cli-server');
 
-        $msgs = \RunnerDeck\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('php -S', $joined);
-        $html = \RunnerDeck\HostingWarnings::html();
+        $html = \RunnerDeck\Core\HostingWarnings::html();
         $this->assertStringContainsString('banner-info', $html);
         $this->assertStringContainsString('id="hosting-warnings"', $html);
     }
@@ -93,7 +93,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
         putenv('RUNNERDECK_TRUST_PROXY=1');
 
-        $joined = implode("\n", array_column(\RunnerDeck\HostingWarnings::messages(), 'text'));
+        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
         $this->assertStringContainsString('TRUST_PROXY', $joined);
         $this->assertStringNotContainsString('not HTTPS', $joined);
     }
@@ -106,11 +106,11 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['SERVER_ADDR'] = '127.0.0.1';
         $_SERVER['HTTP_HOST'] = '127.0.0.1:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
-        \RunnerDeck\HostingWarnings::fakeSapi('cli-server');
+        \RunnerDeck\Core\HostingWarnings::fakeSapi('cli-server');
         putenv('RUNNERDECK_AUTH_TOTP_SECRET');
         putenv('RUNNERDECK_TRUST_PROXY');
 
-        $facts = \RunnerDeck\HostingWarnings::facts();
+        $facts = \RunnerDeck\Core\HostingWarnings::facts();
         $byLabel = [];
         foreach ($facts as $row) {
             $byLabel[$row['label']] = $row['value'];
@@ -122,7 +122,7 @@ final class HostingWarningsTest extends TestCase
         $this->assertSame('Off', $byLabel['TOTP']);
         $this->assertSame('Off', $byLabel['TRUST_PROXY']);
 
-        $html = \RunnerDeck\HostingWarnings::settingsCardHtml();
+        $html = \RunnerDeck\Core\HostingWarnings::settingsCardHtml();
         $this->assertStringContainsString('id="this-host"', $html);
         $this->assertStringContainsString('This host', $html);
         $this->assertStringContainsString('127.0.0.1:8090', $html);
@@ -135,9 +135,9 @@ final class HostingWarningsTest extends TestCase
     {
         $_SERVER['HTTPS'] = 'on';
         $_SERVER['HTTP_HOST'] = 'ex.com<script>';
-        \RunnerDeck\HostingWarnings::fakeSapi('fpm-fcgi');
+        \RunnerDeck\Core\HostingWarnings::fakeSapi('fpm-fcgi');
 
-        $html = \RunnerDeck\HostingWarnings::settingsCardHtml();
+        $html = \RunnerDeck\Core\HostingWarnings::settingsCardHtml();
         $this->assertStringContainsString('ex.com&lt;script&gt;', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringContainsString('php-fpm', $html);
@@ -148,9 +148,9 @@ final class HostingWarningsTest extends TestCase
     public function testRequestHostStripsPortAndIpv6Brackets(): void
     {
         $_SERVER['HTTP_HOST'] = 'Example.COM:443';
-        $this->assertSame('example.com', \RunnerDeck\HostingWarnings::requestHost());
+        $this->assertSame('example.com', \RunnerDeck\Core\HostingWarnings::requestHost());
 
         $_SERVER['HTTP_HOST'] = '[::1]:8090';
-        $this->assertSame('::1', \RunnerDeck\HostingWarnings::requestHost());
+        $this->assertSame('::1', \RunnerDeck\Core\HostingWarnings::requestHost());
     }
 }

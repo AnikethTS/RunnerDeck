@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Auth;
-use RunnerDeck\RunnerLog;
-use RunnerDeck\RunnerPool;
+use RunnerDeck\Core\Auth;
+use RunnerDeck\Pool\RunnerLog;
+use RunnerDeck\Pool\RunnerPool;
 
 Auth::rejectPlainIfProtected();
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\AppLog;
-use RunnerDeck\Auth;
+use RunnerDeck\Core\AppLog;
+use RunnerDeck\Core\Auth;
 
 Auth::rejectPlainIfProtected();
 
