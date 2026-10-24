@@ -48,6 +48,12 @@ follows [SemVer](https://semver.org/).
   secret or crash webhook URL; import overlays recognised keys and never
   replaces login.
 
+### Security
+
+- Pin `fast-uri` 3.1.9 so CI `npm audit` is not blocked by
+  GHSA-w74x-v6f9-j3xg / GHSA-xhq7-xmqj-769h / GHSA-wjr9-j795-jxcr /
+  GHSA-333x-w4r6-6crp (dev lint tree only).
+
 ## [1.8.0] - 2026-10-22
 
 ### Security
