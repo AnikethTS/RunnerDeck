@@ -23,7 +23,7 @@ export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
 if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
     if ! php -r '
         require $argv[1] . "/src/bootstrap.php";
-        exit(\RunnerDeck\Config::authEnabled() ? 0 : 1);
+        exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);
     ' -- "$DIR"; then
         echo "Non-loopback bind requires TOTP login. Run: php bin/setup-totp.php" >&2
         exit 1
