@@ -274,6 +274,7 @@ final class QueuedJobs
                 'runner_name' => $runner,
                 'conclusion' => (string) ($job['conclusion'] ?? ''),
                 'duration' => $duration > 0 ? self::formatWait($duration) : '',
+                'completed_at' => $completed,
             ];
         }
         return $out;
@@ -433,6 +434,39 @@ final class QueuedJobs
             }
         }
         return array_values($ids);
+    }
+
+    /**
+     * Completed jobs from the last queue poll, even if the cache TTL has
+     * passed. Empty when the queue action has not run yet. Does not call GitHub.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function peekRecent(): array
+    {
+        $path = self::cachePath();
+        if (!is_file($path)) {
+            return [];
+        }
+        $decoded = json_decode((string) file_get_contents($path), true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+        $payload = $decoded['payload'] ?? null;
+        if (!is_array($payload)) {
+            return [];
+        }
+        $recent = $payload['recent'] ?? [];
+        if (!is_array($recent)) {
+            return [];
+        }
+        $out = [];
+        foreach ($recent as $row) {
+            if (is_array($row)) {
+                $out[] = $row;
+            }
+        }
+        return $out;
     }
 
     /** @return array<string, mixed>|null */

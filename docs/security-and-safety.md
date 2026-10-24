@@ -55,7 +55,8 @@ and a second operator account are out of scope.
 ## What lives on the host
 
 The UI is not the asset. On this machine sit the `gh` token
-(`~/.config/gh` or the container mount), the runner pool, and each
+(`~/.config/gh` or the container mount), optional GitHub App PEM
+(`storage/github_app.pem`), the runner pool, and each
 slot’s `_work` (job checkout, sometimes workflow secrets on disk).
 Anyone with a shell as the operator — or root on the VPS — can drive
 GitHub as that token and read the same files the dashboard can. Treat a

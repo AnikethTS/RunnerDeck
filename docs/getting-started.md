@@ -25,7 +25,8 @@ shipped." Be specific about what that means before assuming an old box works:
 - **Optional:** the `pdo_sqlite` extension, for the CPU/RAM history chart
   (`apt install php-sqlite3` / `dnf install php-pdo` / bundled with
   Homebrew's `php`). Nothing else in the dashboard depends on it.
-- **[`gh`](https://cli.github.com/)**, authenticated (`gh auth login`), with
+- **[`gh`](https://cli.github.com/)**, authenticated (`gh auth login`) **or**
+  a GitHub App in Settings (installation token, no personal login), with
   access matching the scope you pick (see `RUNNERDECK_SCOPE` in
   [Configuration](configuration.md)). GitHub's API has no concept of a
   personal-account-level runner — it's org or repo:

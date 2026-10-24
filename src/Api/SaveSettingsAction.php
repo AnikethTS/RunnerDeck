@@ -8,6 +8,7 @@ use RunnerDeck\Api as JsonApi;
 use RunnerDeck\AppLog;
 use RunnerDeck\Config;
 use RunnerDeck\CrashWebhook;
+use RunnerDeck\GithubApp;
 use RunnerDeck\Settings;
 
 final class SaveSettingsAction
@@ -44,6 +45,9 @@ final class SaveSettingsAction
         $longJob = trim((string) ($post['long_job_minutes'] ?? ''));
         $minDisk = trim((string) ($post['min_free_disk_gib'] ?? ''));
         $minRam = trim((string) ($post['min_free_ram_mib'] ?? ''));
+        $appId = trim((string) ($post['github_app_id'] ?? ''));
+        $appInstall = trim((string) ($post['github_app_installation_id'] ?? ''));
+        $appPem = trim((string) ($post['github_app_private_key'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -118,6 +122,19 @@ final class SaveSettingsAction
                 'message' => 'minimum free disk must be a whole number of GiB from 0 to 1000 (0 = off)',
             ];
         }
+        $appIdOk = $appId === '' || (ctype_digit($appId) && (int) $appId > 0);
+        if (!$appIdOk) {
+            return ['ok' => false, 'message' => 'GitHub App ID must be a whole number'];
+        }
+        $appInstallOk = $appInstall === ''
+            || (ctype_digit($appInstall) && (int) $appInstall > 0);
+        if (!$appInstallOk) {
+            return ['ok' => false, 'message' => 'GitHub App installation ID must be a whole number'];
+        }
+        if ($appPem !== '' && (!str_contains($appPem, 'BEGIN') || !str_contains($appPem, 'PRIVATE KEY'))) {
+            return ['ok' => false, 'message' => 'GitHub App private key must be a PEM private key'];
+        }
+
         $ramOk = $minRam === ''
             || (ctype_digit($minRam) && (int) $minRam <= 1048576);
         if (!$ramOk) {
@@ -125,6 +142,10 @@ final class SaveSettingsAction
                 'ok' => false,
                 'message' => 'minimum free RAM must be a whole number of MiB from 0 to 1048576 (0 = off)',
             ];
+        }
+
+        if ($appPem !== '' && !GithubApp::savePrivateKey($appPem)) {
+            return ['ok' => false, 'message' => 'could not save GitHub App private key'];
         }
 
         Settings::save([
@@ -149,6 +170,8 @@ final class SaveSettingsAction
             'RUNNERDECK_DRAIN_TIMEOUT' => $drainTimeout,
             'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
             'RUNNERDECK_SESSION_IDLE_MINUTES' => $sessionIdle,
+            'RUNNERDECK_GITHUB_APP_ID' => $appId,
+            'RUNNERDECK_GITHUB_APP_INSTALLATION_ID' => $appInstall,
         ]);
 
         $bits = ['scope=' . $scope];
@@ -160,6 +183,7 @@ final class SaveSettingsAction
         $bits[] = 'auto_restart=' . (($post['auto_restart'] ?? '') === '1' ? '1' : '0');
         $bits[] = 'scale_to_queue=' . (($post['scale_to_queue'] ?? '') === '1' ? '1' : '0');
         $bits[] = 'webhook=' . ($webhookUrl !== '' ? 'set' : 'off');
+        $bits[] = 'github_app=' . ($appId !== '' && $appInstall !== '' ? 'set' : 'off');
         AppLog::info('settings.save', 'settings saved (' . implode(' ', $bits) . ')');
 
         return ['ok' => true, 'message' => 'settings saved'];

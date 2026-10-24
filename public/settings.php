@@ -10,6 +10,7 @@ use RunnerDeck\Config;
 use RunnerDeck\Csrf;
 use RunnerDeck\HostingWarnings;
 use RunnerDeck\Layout;
+use RunnerDeck\GithubApp;
 use RunnerDeck\HostBundle;
 use RunnerDeck\SettingsPortable;
 
@@ -101,6 +102,9 @@ if (
         'drainTimeout' => (string) ($_POST['drain_timeout'] ?? ''),
         'diskWebhookThreshold' => (string) ($_POST['disk_webhook_threshold'] ?? ''),
         'sessionIdleMinutes' => (string) ($_POST['session_idle_minutes'] ?? ''),
+        'githubAppId' => (string) ($_POST['github_app_id'] ?? ''),
+        'githubAppInstallationId' => (string) ($_POST['github_app_installation_id'] ?? ''),
+        'githubAppKeyPresent' => GithubApp::hasPrivateKey(),
     ];
 } else {
     try {
@@ -141,6 +145,11 @@ if (
         'sessionIdleMinutes' => Config::sessionIdleMinutes() !== null
             ? (string) Config::sessionIdleMinutes()
             : '',
+        'githubAppId' => GithubApp::appId() !== null ? (string) GithubApp::appId() : '',
+        'githubAppInstallationId' => GithubApp::installationId() !== null
+            ? (string) GithubApp::installationId()
+            : '',
+        'githubAppKeyPresent' => GithubApp::hasPrivateKey(),
     ];
 }
 
@@ -237,6 +246,56 @@ echo HostingWarnings::html();
         <p class="settings-hint">
           Extra labels apply on add and rename. Existing slots keep theirs until then.
         </p>
+      </section>
+
+      <section class="settings-card">
+        <h3>GitHub App</h3>
+        <p class="settings-hint">
+          Optional org-owned app instead of <code>gh auth login</code>.
+          Needs App ID, installation ID, and a PEM private key (stored in
+          <code>storage/github_app.pem</code>, never in settings JSON).
+        </p>
+        <div class="settings-field">
+          <label for="settings-github-app-id">App ID (optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-github-app-id"
+            name="github_app_id"
+            min="1"
+            step="1"
+            value="<?= htmlspecialchars($current['githubAppId']) ?>"
+            placeholder="off"
+          />
+        </div>
+        <div class="settings-field">
+          <label for="settings-github-app-install">Installation ID (optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-github-app-install"
+            name="github_app_installation_id"
+            min="1"
+            step="1"
+            value="<?= htmlspecialchars($current['githubAppInstallationId']) ?>"
+            placeholder="off"
+          />
+        </div>
+        <div class="settings-field">
+          <label for="settings-github-app-pem">Private key PEM</label>
+          <textarea
+            id="settings-github-app-pem"
+            name="github_app_private_key"
+            rows="6"
+            placeholder="<?= $current['githubAppKeyPresent']
+                ? 'Key is saved. Paste a new PEM to replace it.'
+                : '-----BEGIN PRIVATE KEY-----' ?>"
+          ></textarea>
+          <p class="settings-hint">
+            Leave blank to keep the saved key. Permissions: Administration
+            (org or repo runners) read/write.
+          </p>
+        </div>
       </section>
 
       <section class="settings-card">
