@@ -22,6 +22,7 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
         \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
     }
 
@@ -35,6 +36,7 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_QUEUE_WAIT_MINUTES');
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
@@ -77,5 +79,12 @@ final class WatchHeartbeatTest extends TestCase
     public function testEphemeralNeedsHeartbeatEvenWhenFlagsOff(): void
     {
         $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(true));
+    }
+
+    #[RunInSeparateProcess]
+    public function testBundleSnapshotNeedsHeartbeat(): void
+    {
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
+        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
     }
 }

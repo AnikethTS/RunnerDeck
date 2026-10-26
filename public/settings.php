@@ -103,6 +103,8 @@ if (
         'diskWebhookThreshold' => (string) ($_POST['disk_webhook_threshold'] ?? ''),
         'sessionIdleMinutes' => (string) ($_POST['session_idle_minutes'] ?? ''),
         'syslog' => ($_POST['syslog'] ?? '') === '1',
+        'bundleSnapshot' => ($_POST['bundle_snapshot'] ?? '') === '1',
+        'bundleSnapshotSecrets' => ($_POST['bundle_snapshot_secrets'] ?? '') === '1',
         'slotCpuPercent' => (string) ($_POST['slot_cpu_percent'] ?? ''),
         'slotMemoryMaxMib' => (string) ($_POST['slot_memory_max_mib'] ?? ''),
         'githubAppId' => (string) ($_POST['github_app_id'] ?? ''),
@@ -149,6 +151,8 @@ if (
             ? (string) Config::sessionIdleMinutes()
             : '',
         'syslog' => Config::syslogEnabled(),
+        'bundleSnapshot' => Config::bundleSnapshotEnabled(),
+        'bundleSnapshotSecrets' => Config::bundleSnapshotSecrets(),
         'slotCpuPercent' => Config::slotCpuPercent() !== null
             ? (string) Config::slotCpuPercent()
             : '',
@@ -507,6 +511,29 @@ echo HostingWarnings::html();
           />
           <p class="settings-hint">Wait for GitHub <code>busy=false</code> before stop. 1–3600, default 600.</p>
         </div>
+
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="bundle_snapshot"
+            value="1"
+            <?= $current['bundleSnapshot'] ? 'checked' : '' ?>
+          />
+          Daily host-bundle snapshot
+        </label>
+        <p class="settings-hint">
+          Writes <code>storage/bundles/host-YYYY-MM-DD.json</code> (UTC day), keeps 7 files.
+          TOTP is never included. Needs watch-auto-restart or an open dashboard tab.
+        </p>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="bundle_snapshot_secrets"
+            value="1"
+            <?= $current['bundleSnapshotSecrets'] ? 'checked' : '' ?>
+          />
+          Include crash webhook URL in the daily snapshot
+        </label>
       </section>
 
       <section class="settings-card">

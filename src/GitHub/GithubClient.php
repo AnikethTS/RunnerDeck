@@ -82,20 +82,16 @@ final class GithubClient
      */
     public static function listRunners(): array
     {
-        self::ensureGhEnv();
         $path = self::accountBase() . '/actions/runners?per_page=100';
-        $result = Shell::exec(
-            [Config::ghBinary(), 'api', '--paginate', $path, '-q', '.runners[]'],
-            30
-        );
-        if ($result['code'] !== 0) {
+        $result = self::runApi(['--paginate', $path, '-q', '.runners[]'], 30);
+        if (!$result['ok']) {
             self::fail('gh.list_runners', 'gh api call failed: ' . trim($result['stderr']), $result['stderr'], true);
         }
 
         try {
-            return self::decodeRunnerList($result['stdout']);
+            return self::decodeRunnerList($result['body']);
         } catch (\RuntimeException $e) {
-            self::fail('gh.list_runners', $e->getMessage(), $result['stdout'], true);
+            self::fail('gh.list_runners', $e->getMessage(), $result['body'], true);
         }
     }
 
@@ -155,9 +151,8 @@ final class GithubClient
      */
     public static function getJson(string $path, int $timeout = 15): array
     {
-        self::ensureGhEnv();
-        $result = Shell::exec([Config::ghBinary(), 'api', $path], $timeout);
-        if ($result['code'] !== 0) {
+        $result = self::runApi([$path], $timeout);
+        if (!$result['ok']) {
             self::fail(
                 'gh.api',
                 'gh api call failed: ' . trim($result['stderr']),
@@ -165,11 +160,40 @@ final class GithubClient
                 true
             );
         }
-        $decoded = json_decode($result['stdout'], true);
+        $decoded = json_decode($result['body'], true);
         if (!is_array($decoded)) {
-            self::fail('gh.api', 'gh api returned unexpected output', $result['stdout'], true);
+            self::fail('gh.api', 'gh api returned unexpected output', $result['body'], true);
         }
         return $decoded;
+    }
+
+    /**
+     * Split `gh api --include` stdout into HTTP Date (if any) and JSON body.
+     * Output without an HTTP envelope is returned unchanged (fail-open).
+     *
+     * @return array{date: ?string, body: string}
+     */
+    public static function parseGhOutput(string $raw): array
+    {
+        $text = str_replace("\r\n", "\n", $raw);
+        if (!str_starts_with(ltrim($text), 'HTTP/')) {
+            return ['date' => null, 'body' => $raw];
+        }
+        $date = null;
+        $bodies = [];
+        foreach (preg_split('/(?=^HTTP\/)/m', $text) ?: [] as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '') {
+                continue;
+            }
+            $parts = preg_split('/\n\n/', $chunk, 2);
+            $headers = $parts[0] ?? '';
+            $bodies[] = $parts[1] ?? '';
+            if ($date === null && preg_match('/^Date:\s*(.+)$/mi', $headers, $m) === 1) {
+                $date = trim($m[1]);
+            }
+        }
+        return ['date' => $date, 'body' => implode("\n", $bodies)];
     }
 
     /**
@@ -205,12 +229,12 @@ final class GithubClient
     /** @throws \RuntimeException if the gh call fails */
     public static function deleteRunner(int $id): void
     {
-        self::ensureGhEnv();
-        $result = Shell::exec(
-            [Config::ghBinary(), 'api', '-X', 'DELETE', self::accountBase() . "/actions/runners/{$id}"],
-            15
+        $result = self::runApi(
+            ['-X', 'DELETE', self::accountBase() . "/actions/runners/{$id}"],
+            15,
+            false
         );
-        if ($result['code'] !== 0) {
+        if (!$result['ok']) {
             self::fail(
                 'gh.delete_runner',
                 'failed to deregister runner: ' . trim($result['stderr']),
@@ -221,17 +245,13 @@ final class GithubClient
 
     public static function registrationToken(): string
     {
-        self::ensureGhEnv();
-        $result = Shell::exec(
-            [
-                Config::ghBinary(), 'api', '-X', 'POST',
-                self::accountBase() . '/actions/runners/registration-token',
-                '-q', '.token',
-            ],
-            15
+        $result = self::runApi(
+            ['-X', 'POST', self::accountBase() . '/actions/runners/registration-token', '-q', '.token'],
+            15,
+            false
         );
-        $token = trim($result['stdout']);
-        if ($result['code'] !== 0 || $token === '') {
+        $token = trim($result['body']);
+        if (!$result['ok'] || $token === '') {
             self::fail(
                 'gh.registration_token',
                 'failed to obtain a runner registration token: ' . trim($result['stderr']),
@@ -252,27 +272,46 @@ final class GithubClient
      */
     public static function listRunnerDownloads(): array
     {
-        self::ensureGhEnv();
-        $result = Shell::exec(
-            [Config::ghBinary(), 'api', self::accountBase() . '/actions/runners/downloads'],
-            15
-        );
-        if ($result['code'] !== 0) {
+        $result = self::runApi([self::accountBase() . '/actions/runners/downloads'], 15);
+        if (!$result['ok']) {
             self::fail(
                 'gh.list_downloads',
                 'failed to list runner downloads: ' . trim($result['stderr']),
                 $result['stderr']
             );
         }
-        $decoded = json_decode($result['stdout'], true);
+        $decoded = json_decode($result['body'], true);
         if (!is_array($decoded)) {
             self::fail(
                 'gh.list_downloads',
                 'gh api returned unexpected output for runner downloads',
-                $result['stdout']
+                $result['body']
             );
         }
         return $decoded;
+    }
+
+    /**
+     * @param list<string> $ghArgs arguments after `gh api --include`
+     * @return array{ok: bool, body: string, stderr: string}
+     */
+    private static function runApi(array $ghArgs, int $timeout, bool $observeClock = true): array
+    {
+        self::ensureGhEnv();
+        GithubBackoff::throwIfCooling();
+        $cmd = array_merge([Config::ghBinary(), 'api', '--include'], $ghArgs);
+        $result = Shell::exec($cmd, $timeout);
+        $parsed = self::parseGhOutput($result['stdout']);
+        if ($observeClock) {
+            GithubClock::observeHttpDate($parsed['date']);
+        }
+        $blob = $result['stderr'] . "\n" . $result['stdout'];
+        if ($result['code'] !== 0) {
+            GithubBackoff::noteFailure($blob);
+            return ['ok' => false, 'body' => $parsed['body'], 'stderr' => $result['stderr']];
+        }
+        GithubBackoff::clear();
+        return ['ok' => true, 'body' => $parsed['body'], 'stderr' => $result['stderr']];
     }
 
     /** @throws \RuntimeException */

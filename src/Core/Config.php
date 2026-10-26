@@ -398,6 +398,18 @@ final class Config
         return min(1048576, $n);
     }
 
+    /** Daily disaster-recovery JSON under storage/bundles (TOTP never included). */
+    public static function bundleSnapshotEnabled(): bool
+    {
+        return getenv('RUNNERDECK_BUNDLE_SNAPSHOT') === '1';
+    }
+
+    /** Include crash webhook URL in the daily host-bundle snapshot. */
+    public static function bundleSnapshotSecrets(): bool
+    {
+        return self::bundleSnapshotEnabled() && getenv('RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS') === '1';
+    }
+
     public static function version(): string
     {
         static $version = null;

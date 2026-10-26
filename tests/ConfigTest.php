@@ -26,6 +26,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_SLOT_CPU_PERCENT', 'RUNNERDECK_SLOT_MEMORY_MAX_MIB',
         'RUNNERDECK_GITHUB_APP_ID', 'RUNNERDECK_GITHUB_APP_INSTALLATION_ID',
         'RUNNERDECK_GITHUB_APP_KEY_FILE',
+        'RUNNERDECK_BUNDLE_SNAPSHOT', 'RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS',
     ];
 
     protected function tearDown(): void
@@ -313,5 +314,17 @@ final class ConfigTest extends TestCase
         $this->assertTrue(\RunnerDeck\Core\Config::syslogEnabled());
         putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=8');
         $this->assertNull(\RunnerDeck\Core\Config::slotMemoryMaxMib());
+    }
+
+    #[RunInSeparateProcess]
+    public function testBundleSnapshotFlags(): void
+    {
+        $this->assertFalse(\RunnerDeck\Core\Config::bundleSnapshotEnabled());
+        $this->assertFalse(\RunnerDeck\Core\Config::bundleSnapshotSecrets());
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS=1');
+        $this->assertFalse(\RunnerDeck\Core\Config::bundleSnapshotSecrets());
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
+        $this->assertTrue(\RunnerDeck\Core\Config::bundleSnapshotEnabled());
+        $this->assertTrue(\RunnerDeck\Core\Config::bundleSnapshotSecrets());
     }
 }

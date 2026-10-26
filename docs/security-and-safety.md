@@ -66,7 +66,8 @@ reduce who can reach the login page; they do not sandbox `gh`. A
 Settings **host bundle** copies dashboard state (settings, slot flags,
 crash history, host mode). It never includes TOTP. The crash webhook URL
 is omitted unless you opt in. It does not include `~/.config/gh`, runner
-binaries, or `_work`.
+binaries, or `_work`. The optional daily snapshot in `storage/bundles/`
+follows the same rules.
 
 ## PHP runtime (CVE-2026-109618 / CVE-2026-109619)
 

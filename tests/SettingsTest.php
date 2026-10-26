@@ -179,6 +179,8 @@ final class SettingsTest extends TestCase
             'slot_memory_max_mib' => '1024',
             'github_app_id' => '99',
             'github_app_installation_id' => '1001',
+            'bundle_snapshot' => '1',
+            'bundle_snapshot_secrets' => '1',
         ]);
         $this->assertTrue($result['ok']);
         $loaded = \RunnerDeck\Core\Settings::load();
@@ -192,6 +194,8 @@ final class SettingsTest extends TestCase
         $this->assertSame('1024', $loaded['RUNNERDECK_SLOT_MEMORY_MAX_MIB']);
         $this->assertSame('99', $loaded['RUNNERDECK_GITHUB_APP_ID']);
         $this->assertSame('1001', $loaded['RUNNERDECK_GITHUB_APP_INSTALLATION_ID']);
+        $this->assertSame('1', $loaded['RUNNERDECK_BUNDLE_SNAPSHOT']);
+        $this->assertSame('1', $loaded['RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS']);
     }
 
     #[RunInSeparateProcess]

@@ -9,20 +9,30 @@ use PHPUnit\Framework\TestCase;
 
 final class GithubClientTest extends TestCase
 {
+    private string $dir;
+
     protected function setUp(): void
     {
+        $this->dir = sys_get_temp_dir() . '/runnerdeck-ghclient-' . uniqid();
+        mkdir($this->dir, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/settings.json');
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
+        \RunnerDeck\GitHub\GithubBackoff::fakeNow(null);
     }
 
     protected function tearDown(): void
     {
         \RunnerDeck\Core\Shell::fake(null);
         \RunnerDeck\GitHub\GithubApp::fakeToken(null);
+        \RunnerDeck\GitHub\GithubBackoff::fakeNow(null);
+        \RunnerDeck\GitHub\GithubClock::fakeNow(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('GH_TOKEN');
         putenv('GITHUB_TOKEN');
+        putenv('RUNNERDECK_SETTINGS_FILE');
+        exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
     public function testDecodeRunnerListMergesPaginatedNdjson(): void
@@ -94,6 +104,7 @@ final class GithubClientTest extends TestCase
         $runners = \RunnerDeck\GitHub\GithubClient::listRunners();
 
         $this->assertContains('--paginate', $seen);
+        $this->assertContains('--include', $seen);
         $this->assertContains('-q', $seen);
         $this->assertContains('.runners[]', $seen);
         $this->assertTrue(
@@ -116,6 +127,54 @@ final class GithubClientTest extends TestCase
 
         $this->assertSame(['ok' => true], $decoded);
         $this->assertContains('api', $seen);
+        $this->assertContains('--include', $seen);
         $this->assertContains('repos/acme/app/actions/runs', $seen);
+    }
+
+    public function testParseGhOutputStripsHeadersAndReadsDate(): void
+    {
+        $raw = "HTTP/2.0 200 OK\nDate: Mon, 26 Oct 2026 16:00:00 GMT\nContent-Type: application/json\n\n"
+            . '{"ok":true}';
+        $parsed = \RunnerDeck\GitHub\GithubClient::parseGhOutput($raw);
+        $this->assertSame('Mon, 26 Oct 2026 16:00:00 GMT', $parsed['date']);
+        $this->assertSame('{"ok":true}', $parsed['body']);
+        $plain = \RunnerDeck\GitHub\GithubClient::parseGhOutput('{"ok":true}');
+        $this->assertNull($plain['date']);
+        $this->assertSame('{"ok":true}', $plain['body']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testListRunnersSkipsGhWhileCooling(): void
+    {
+        \RunnerDeck\GitHub\GithubBackoff::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\GitHub\GithubBackoff::noteFailure('HTTP 429: rate limit exceeded');
+        $called = false;
+        \RunnerDeck\Core\Shell::fake(function () use (&$called): array {
+            $called = true;
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        try {
+            \RunnerDeck\GitHub\GithubClient::listRunners();
+            $this->fail('expected cooling exception');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('cooling', $e->getMessage());
+        }
+        $this->assertFalse($called);
+    }
+
+    #[RunInSeparateProcess]
+    public function testListRunnersTripsBackoffOn429(): void
+    {
+        \RunnerDeck\GitHub\GithubBackoff::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Core\Shell::fake(function (): array {
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'HTTP 429: API rate limit exceeded'];
+        });
+        try {
+            \RunnerDeck\GitHub\GithubClient::listRunners();
+            $this->fail('expected gh api failure');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('429', $e->getMessage());
+        }
+        $this->assertTrue(\RunnerDeck\GitHub\GithubBackoff::isCooling());
     }
 }

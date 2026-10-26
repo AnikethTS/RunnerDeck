@@ -16,6 +16,9 @@ final class GithubAuth
         if ($loggedIn && $orgAccessOk) {
             return null;
         }
+        if (GithubBackoff::looksLimited($message)) {
+            return null;
+        }
         if (!self::looksStale($message)) {
             return null;
         }
