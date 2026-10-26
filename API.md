@@ -130,6 +130,8 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
   "watch_warning": null,
   "webhook_outbox": 0,
   "auth_stale": null,
+  "gh_backoff": null,
+  "clock_skew": null,
   "agent_behind_count": 0,
   "health": { "logged_in": true, "org_access_ok": true, "message": "OK" },
   "runners": [

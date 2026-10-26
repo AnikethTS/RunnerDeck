@@ -6,6 +6,20 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **gh api backoff**: HTTP 429 / secondary rate limit cools down polls
+  (30s, doubling, cap 15 min, or `Retry-After`). Dashboard banner. Fail-open
+  if the cooldown file is missing. GET status still does not start runners.
+
+- **Clock-skew warning**: when GitHub’s `Date` header is 5+ minutes off this
+  host, the dashboard banner says so. Missing/unparseable `Date` fails open.
+
+- **Daily host-bundle snapshot**: optional copy of the disaster-recovery JSON
+  into `storage/bundles/host-YYYY-MM-DD.json` (7 days). TOTP is never
+  included; crash webhook only with opt-in. Runs from watch (including
+  maintenance) or an open dashboard tab. Not from `health.php` / `/metrics.php`.
+
 ### Changed
 
 - Split `src/` into PSR-4 folders that match namespaces: `Core`, `GitHub`,

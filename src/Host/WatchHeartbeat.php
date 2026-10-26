@@ -45,7 +45,8 @@ final class WatchHeartbeat
             return null;
         }
         return 'watch-auto-restart.php has not ticked — auto-restart, scale, idle-stop, '
-            . 'and queue/long-job alerts are idle until run.sh or the watch unit is running.';
+            . 'queue/long-job alerts, and daily host-bundle snapshots are idle until run.sh '
+            . 'or the watch unit is running.';
     }
 
     public static function isFresh(): bool
@@ -68,6 +69,7 @@ final class WatchHeartbeat
             || Config::autoRestartEnabled()
             || Config::scaleToQueueEnabled()
             || Config::idleStopMinutes() !== null
+            || Config::bundleSnapshotEnabled()
             || (Config::queueWaitMinutes() !== null && Config::crashWebhookUrl() !== null)
             || (Config::longJobMinutes() !== null && Config::crashWebhookUrl() !== null);
     }

@@ -8,11 +8,14 @@ use RunnerDeck\Alert\CrashWebhook;
 use RunnerDeck\Alert\WebhookOutbox;
 use RunnerDeck\Core\AppLog;
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\HostBundleSnapshot;
 use RunnerDeck\GitHub\AgentRoster;
 use RunnerDeck\GitHub\AgentTarget;
 use RunnerDeck\GitHub\FailedJobs;
 use RunnerDeck\GitHub\GithubAuth;
+use RunnerDeck\GitHub\GithubBackoff;
 use RunnerDeck\GitHub\GithubClient;
+use RunnerDeck\GitHub\GithubClock;
 use RunnerDeck\Host\DiskAlert;
 use RunnerDeck\Host\History;
 use RunnerDeck\Host\HostMode;
@@ -45,6 +48,8 @@ final class Dashboard
                 $message = $login['message'];
             }
         }
+
+        HostBundleSnapshot::tick();
 
         $discovered = RunnerPool::discover($logLines);
         $runners = [];
@@ -98,6 +103,8 @@ final class Dashboard
                 'message' => $message,
             ],
             'auth_stale' => GithubAuth::staleWarning($loggedIn, $orgAccessOk, $message),
+            'gh_backoff' => GithubBackoff::warning(),
+            'clock_skew' => GithubClock::warning(),
             'webhook_outbox' => WebhookOutbox::pendingCount(),
             'runners' => $runners,
             'stats' => $stats,

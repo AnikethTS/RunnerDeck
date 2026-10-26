@@ -11,8 +11,11 @@
   (`per_page=100`) so orgs with more than 30 runners are not truncated.
   `gh` uses `GH_TOKEN` from a GitHub App installation when Settings has
   App ID, installation ID, and a PEM key; otherwise `gh auth login`.
-  401/403/expired/SSO responses get a specific dashboard banner. The last
-  completed job from the queued-jobs cache can flag a row when it failed.
+  401/403/expired/SSO responses get a specific dashboard banner. HTTP 429 /
+  secondary rate limit cools down further `gh api` polls instead of
+  hammering. GitHub’s `Date` header is compared to this host; a 5+ minute
+  skew gets a banner (missing Date fails open). The last completed job from
+  the queued-jobs cache can flag a row when it failed.
 - **Starting an unconfigured runner slot** downloads the official runner
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
@@ -190,7 +193,9 @@
   another box without replacing login. A **host bundle** is the same
   plus slot flags, Pause AR, roster, host mode, and 7-day crash events.
   TOTP never leaves the box; include the webhook URL only if you opt in.
-  Restore does not copy runner binaries, `_work`, or `gh` login.
+  Restore does not copy runner binaries, `_work`, or `gh` login. An
+  optional daily snapshot writes that JSON under `storage/bundles/`
+  (7 UTC days) from watch or an open dashboard tab.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

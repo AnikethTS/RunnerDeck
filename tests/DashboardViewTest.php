@@ -72,6 +72,26 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('watch-auto-restart.php', $banner['text']);
     }
 
+    public function testHealthBannerWhenGhBackoff(): void
+    {
+        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+            'gh_backoff' => 'GitHub API is rate-limited — pausing polls for about 1 min.',
+            'health' => ['logged_in' => true, 'org_access_ok' => false, 'message' => 'HTTP 429'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('rate-limited', $banner['text']);
+    }
+
+    public function testHealthBannerWhenClockSkew(): void
+    {
+        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+            'clock_skew' => "This host's clock is about 12 min behind GitHub.",
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('clock', $banner['text']);
+    }
+
     public function testHealthBannerWhenAuthStale(): void
     {
         $banner = \RunnerDeck\Ui\DashboardView::healthBanner([

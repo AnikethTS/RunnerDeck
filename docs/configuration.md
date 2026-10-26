@@ -38,6 +38,8 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_GITHUB_APP_ID` | no | off | GitHub App ID. With installation ID and `storage/github_app.pem`, `gh api` uses an installation token instead of `gh auth login`. Settings → GitHub App |
 | `RUNNERDECK_GITHUB_APP_INSTALLATION_ID` | no | off | Installation ID for that app on this org or repo |
 | `RUNNERDECK_GITHUB_APP_KEY_FILE` | no | `storage/github_app.pem` | PEM private key path. Never stored in `settings.json` |
+| `RUNNERDECK_BUNDLE_SNAPSHOT` | no | off | `1` to write a daily host-bundle JSON under `storage/bundles/` (UTC day, keep 7). TOTP never included. Settings → Automation |
+| `RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS` | no | off | `1` to include the crash webhook URL in that daily snapshot (ignored unless snapshot is on) |
 
 The header uses `public/assets/logo.png` (shipped with the repo, same art as
 `.github/logo.png`). Replace that file if you want your own mark.

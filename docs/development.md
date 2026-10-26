@@ -111,7 +111,7 @@ runnerdeck/
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
   run.sh            local php -S entry (also starts watch-auto-restart)
-  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts
+  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)

@@ -16,6 +16,15 @@ final class GithubAuthTest extends TestCase
         $this->assertFalse(\RunnerDeck\GitHub\GithubAuth::looksStale('no gh'));
     }
 
+    public function testStaleWarningSilentOnRateLimit(): void
+    {
+        $this->assertNull(\RunnerDeck\GitHub\GithubAuth::staleWarning(
+            true,
+            false,
+            'HTTP 429: API rate limit exceeded'
+        ));
+    }
+
     public function testStaleWarningSilentWhenGithubOk(): void
     {
         $this->assertNull(\RunnerDeck\GitHub\GithubAuth::staleWarning(true, true, 'HTTP 401 leftover'));

@@ -187,6 +187,10 @@ final class SaveSettingsAction
             'RUNNERDECK_DISK_WEBHOOK_THRESHOLD' => $diskThreshold,
             'RUNNERDECK_SESSION_IDLE_MINUTES' => $sessionIdle,
             'RUNNERDECK_SYSLOG' => ($post['syslog'] ?? '') === '1' ? '1' : '',
+            'RUNNERDECK_BUNDLE_SNAPSHOT' => ($post['bundle_snapshot'] ?? '') === '1' ? '1' : '',
+            'RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS' =>
+                (($post['bundle_snapshot'] ?? '') === '1'
+                    && ($post['bundle_snapshot_secrets'] ?? '') === '1') ? '1' : '',
             'RUNNERDECK_SLOT_CPU_PERCENT' => $slotCpu,
             'RUNNERDECK_SLOT_MEMORY_MAX_MIB' => $slotMem,
             'RUNNERDECK_GITHUB_APP_ID' => $appId,
@@ -204,6 +208,7 @@ final class SaveSettingsAction
         $bits[] = 'webhook=' . ($webhookUrl !== '' ? 'set' : 'off');
         $bits[] = 'github_app=' . ($appId !== '' && $appInstall !== '' ? 'set' : 'off');
         $bits[] = 'syslog=' . (($post['syslog'] ?? '') === '1' ? '1' : '0');
+        $bits[] = 'bundle_snapshot=' . (($post['bundle_snapshot'] ?? '') === '1' ? '1' : '0');
         AppLog::info('settings.save', 'settings saved (' . implode(' ', $bits) . ')');
 
         return ['ok' => true, 'message' => 'settings saved'];

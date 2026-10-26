@@ -6,6 +6,7 @@ namespace RunnerDeck\Pool;
 
 use RunnerDeck\Alert\CrashWebhook;
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\HostBundleSnapshot;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\GitHub\QueuedJobs;
 use RunnerDeck\Host\HostMode;
@@ -30,6 +31,7 @@ final class AutoRestart
             return [];
         }
         WatchHeartbeat::touch();
+        HostBundleSnapshot::tick();
         CrashWebhook::flushOutbox();
         if (HostMode::isMaintenance()) {
             return [];

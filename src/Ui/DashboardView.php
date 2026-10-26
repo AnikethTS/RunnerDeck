@@ -45,6 +45,10 @@ final class DashboardView
                 'text' => 'This host is low on ' . $detail . ' — new runners will not start.',
             ];
         }
+        $backoff = (string) ($snapshot['gh_backoff'] ?? '');
+        if ($backoff !== '') {
+            return ['hidden' => false, 'text' => $backoff];
+        }
         $h = is_array($snapshot['health'] ?? null) ? $snapshot['health'] : [];
         $loggedIn = (bool) ($h['logged_in'] ?? false);
         $orgOk = (bool) ($h['org_access_ok'] ?? false);
@@ -55,6 +59,10 @@ final class DashboardView
         }
         if ($stale !== '') {
             return ['hidden' => false, 'text' => $stale];
+        }
+        $skew = (string) ($snapshot['clock_skew'] ?? '');
+        if ($skew !== '') {
+            return ['hidden' => false, 'text' => $skew];
         }
         if ($loggedIn && $orgOk) {
             $behind = (int) ($snapshot['agent_behind_count'] ?? 0);
