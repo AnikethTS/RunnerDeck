@@ -65,6 +65,26 @@ final class Layout
         echo '    <div class="topbar-end">' . "\n";
     }
 
+    public static function pageNav(string $current): void
+    {
+        $links = [
+            'index.php' => 'Dashboard',
+            'history.php' => 'History',
+            'crashes.php' => 'Crashes',
+            'outbox.php' => 'Outbox',
+            'bundles.php' => 'Bundles',
+            'settings.php' => 'Settings',
+        ];
+        echo '      <nav class="page-nav" aria-label="Host pages">' . "\n";
+        foreach ($links as $href => $label) {
+            $currentAttr = $current === $href ? ' aria-current="page"' : '';
+            echo '        <a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
+                . '" class="page-nav-link"' . $currentAttr . '>'
+                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . "</a>\n";
+        }
+        echo "      </nav>\n";
+    }
+
     public static function logoutForm(string $csrfToken): void
     {
         if (!Auth::isEnabled()) {

@@ -10,7 +10,9 @@ namespace RunnerDeck\Host;
 // degrades to "no history," never breaks the rest of the dashboard.
 final class History
 {
-    private const RETENTION_SECONDS = 3600;
+    public const HOUR_SECONDS = 3600;
+    public const DAY_SECONDS = 86400;
+    private const RETENTION_SECONDS = self::DAY_SECONDS;
 
     public static function isAvailable(): bool
     {
@@ -40,17 +42,24 @@ final class History
         $pdo->exec('CREATE TABLE IF NOT EXISTS samples (
             ts INTEGER NOT NULL,
             avg_cpu REAL NOT NULL,
-            total_rss_kb INTEGER NOT NULL
+            total_rss_kb INTEGER NOT NULL,
+            disk_free_kb INTEGER
         )');
+        try {
+            $pdo->exec('ALTER TABLE samples ADD COLUMN disk_free_kb INTEGER');
+        } catch (\Throwable) {
+            // Column already exists on current databases.
+        }
         return $pdo;
     }
 
-    public static function record(float $avgCpu, int $totalRssKb): void
+    public static function record(float $avgCpu, int $totalRssKb, ?int $diskFreeKb = null): void
     {
         try {
             $db = self::db();
-            $db->prepare('INSERT INTO samples (ts, avg_cpu, total_rss_kb) VALUES (?, ?, ?)')
-                ->execute([time(), $avgCpu, $totalRssKb]);
+            $db->prepare(
+                'INSERT INTO samples (ts, avg_cpu, total_rss_kb, disk_free_kb) VALUES (?, ?, ?, ?)'
+            )->execute([time(), $avgCpu, $totalRssKb, $diskFreeKb]);
             $db->prepare('DELETE FROM samples WHERE ts < ?')
                 ->execute([time() - self::RETENTION_SECONDS]);
         } catch (\Throwable) {
@@ -58,17 +67,25 @@ final class History
         }
     }
 
-    /** @return array<int, array{ts: int, avg_cpu: float, total_rss_kb: int}> */
-    public static function recent(): array
+    /**
+     * @return array<int, array{ts: int, avg_cpu: float, total_rss_kb: int, disk_free_kb: ?int}>
+     */
+    public static function recent(int $seconds = self::HOUR_SECONDS): array
     {
+        $seconds = max(60, min(self::DAY_SECONDS, $seconds));
         try {
             $db = self::db();
-            $stmt = $db->prepare('SELECT ts, avg_cpu, total_rss_kb FROM samples WHERE ts >= ? ORDER BY ts ASC');
-            $stmt->execute([time() - self::RETENTION_SECONDS]);
+            $stmt = $db->prepare(
+                'SELECT ts, avg_cpu, total_rss_kb, disk_free_kb FROM samples WHERE ts >= ? ORDER BY ts ASC'
+            );
+            $stmt->execute([time() - $seconds]);
             return array_map(static fn($row) => [
                 'ts' => (int) $row['ts'],
                 'avg_cpu' => (float) $row['avg_cpu'],
                 'total_rss_kb' => (int) $row['total_rss_kb'],
+                'disk_free_kb' => is_numeric($row['disk_free_kb'] ?? null)
+                    ? (int) $row['disk_free_kb']
+                    : null,
             ], $stmt->fetchAll(\PDO::FETCH_ASSOC));
         } catch (\Throwable) {
             return [];
@@ -76,11 +93,36 @@ final class History
     }
 
     /**
+     * Cap SVG point count so a 24h poll stream stays readable.
+     *
+     * @param array<int, array<string, mixed>> $samples
+     * @return array<int, array<string, mixed>>
+     */
+    public static function downsample(array $samples, int $maxPoints = 400): array
+    {
+        $n = count($samples);
+        if ($n <= $maxPoints || $maxPoints < 2) {
+            return $samples;
+        }
+        $out = [];
+        $last = $n - 1;
+        for ($i = 0; $i < $maxPoints; $i++) {
+            $idx = (int) round($i * $last / ($maxPoints - 1));
+            $out[] = $samples[$idx];
+        }
+        return $out;
+    }
+
+    /**
      * @param list<float> $values
      * @return array{now: string, span: string}
      */
-    public static function summary(array $values, string $suffix, int $decimals): array
-    {
+    public static function summary(
+        array $values,
+        string $suffix,
+        int $decimals,
+        string $window = 'this hour'
+    ): array {
         if ($values === []) {
             return ['now' => '—', 'span' => ''];
         }
@@ -90,7 +132,7 @@ final class History
         return [
             'now' => self::formatTick($last, $suffix, $decimals),
             'span' => self::formatTick($lo, $suffix, $decimals)
-                . '–' . self::formatTick($hi, $suffix, $decimals) . ' this hour',
+                . '–' . self::formatTick($hi, $suffix, $decimals) . ' ' . $window,
         ];
     }
 
@@ -101,7 +143,8 @@ final class History
         float $max,
         bool $unavailable,
         string $suffix = '',
-        int $decimals = 0
+        int $decimals = 0,
+        string $horizon = '-1h'
     ): string {
         if ($unavailable) {
             return '<text x="12" y="58" font-size="11" fill="currentColor" opacity="0.55">'
@@ -167,11 +210,63 @@ final class History
         $html .= '<circle class="history-dot" cx="' . number_format($last[0], 1, '.', '')
             . '" cy="' . number_format($last[1], 1, '.', '') . '" r="3" />';
         $html .= '<text class="history-tick" x="' . number_format($padL, 1, '.', '')
-            . '" y="' . number_format($vbH - 4, 1, '.', '') . '">&minus;1h</text>';
+            . '" y="' . number_format($vbH - 4, 1, '.', '') . '">'
+            . htmlspecialchars($horizon, ENT_QUOTES, 'UTF-8') . '</text>';
         $html .= '<text class="history-tick history-tick-end" x="'
             . number_format($padL + $plotW, 1, '.', '') . '" y="'
             . number_format($vbH - 4, 1, '.', '') . '">now</text>';
 
+        return $html;
+    }
+
+    /**
+     * @param list<array{label: string, count: int}> $bars
+     */
+    public static function barSvg(array $bars): string
+    {
+        if ($bars === []) {
+            return '<text x="12" y="58" font-size="11" fill="currentColor" opacity="0.55">'
+                . 'no crash events</text>';
+        }
+        $counts = array_map(static fn (array $b): int => max(0, $b['count']), $bars);
+        $max = max(1, ...$counts);
+        $vbW = 400.0;
+        $vbH = 110.0;
+        $padL = 42.0;
+        $padR = 10.0;
+        $padT = 10.0;
+        $padB = 22.0;
+        $plotW = $vbW - $padL - $padR;
+        $plotH = $vbH - $padT - $padB;
+        $n = count($bars);
+        $gap = 6.0;
+        $barW = ($plotW - ($gap * max(0, $n - 1))) / max(1, $n);
+        $html = '';
+        foreach ([0.0, 0.5, 1.0] as $frac) {
+            $y = number_format($padT + ($frac * $plotH), 1, '.', '');
+            $tick = (int) round($max * (1.0 - $frac));
+            $html .= '<line class="history-rule" x1="' . number_format($padL, 1, '.', '')
+                . '" y1="' . $y . '" x2="' . number_format($padL + $plotW, 1, '.', '')
+                . '" y2="' . $y . '" />';
+            $html .= '<text class="history-tick" x="4" y="'
+                . number_format((float) $y + 3.0, 1, '.', '') . '">'
+                . htmlspecialchars((string) $tick, ENT_QUOTES, 'UTF-8') . '</text>';
+        }
+        foreach ($bars as $i => $bar) {
+            $h = ($bar['count'] / $max) * $plotH;
+            $x = $padL + ($i * ($barW + $gap));
+            $y = $padT + $plotH - $h;
+            $html .= '<rect class="history-bar" x="' . number_format($x, 1, '.', '')
+                . '" y="' . number_format($y, 1, '.', '')
+                . '" width="' . number_format($barW, 1, '.', '')
+                . '" height="' . number_format(max(0.5, $h), 1, '.', '') . '" />';
+            $label = strlen($bar['label']) > 6 ? substr($bar['label'], 5) : $bar['label'];
+            $html .= '<text class="history-tick" x="'
+                . number_format($x + ($barW / 2), 1, '.', '')
+                . '" y="' . number_format($vbH - 4, 1, '.', '')
+                . '" text-anchor="middle">'
+                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</text>';
+        }
         return $html;
     }
 

@@ -247,9 +247,11 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=log&runner=runner-base&lines=50'
 
 ### `action=history`
 
-Rolling one-hour CPU/RAM history, sampled once per `action=status` call
-(see [How it works](docs/how-it-works.md)). `available: false` means `pdo_sqlite` isn't
-installed — `samples` is always present but empty in that case.
+Last-hour CPU/RAM (and optional `disk_free_kb`) history, sampled once per
+`action=status` call (see [How it works](docs/how-it-works.md)). Samples are
+kept 24 hours for `history.php`; this action still returns the last hour.
+`available: false` means `pdo_sqlite` isn't installed — `samples` is always
+present but empty in that case.
 
 ```bash
 curl -sS 'http://127.0.0.1:8090/api.php?action=history'

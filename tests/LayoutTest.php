@@ -69,4 +69,18 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);
     }
+
+    #[RunInSeparateProcess]
+    public function testPageNavMarksCurrent(): void
+    {
+        ob_start();
+        \RunnerDeck\Core\Layout::pageNav('history.php');
+        $html = (string) ob_get_clean();
+        $this->assertStringContainsString('aria-label="Host pages"', $html);
+        $this->assertStringContainsString('href="history.php"', $html);
+        $this->assertStringContainsString('aria-current="page"', $html);
+        $this->assertStringContainsString('href="crashes.php"', $html);
+        $this->assertStringContainsString('href="outbox.php"', $html);
+        $this->assertStringContainsString('href="bundles.php"', $html);
+    }
 }

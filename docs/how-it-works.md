@@ -70,11 +70,13 @@
 - Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
   cross-platform). Optional Linux **cgroup v2** CPU/memory caps apply on
   start only; missing cgroup support fails open. A
-  rolling one-hour pool-wide history chart backed by a small local SQLite
-  file (`storage/db/history.sqlite`). The charts label the axis (CPU 0–100%,
-  RAM in MB), the latest sample, and min–max for the hour. This is
-  best-effort: if the `pdo_sqlite` PHP extension isn't installed, the rest
-  of the dashboard works exactly the same, you just don't get the chart.
+  rolling pool-wide history chart backed by a small local SQLite
+  file (`storage/db/history.sqlite`). Dashboard charts show the last hour;
+  **History** shows 24h CPU, runner RSS, and pool disk free (same samples,
+  including disk from host pressure). The charts label the axis, the latest
+  sample, and min–max. This is best-effort: if the `pdo_sqlite` PHP
+  extension isn't installed, the rest of the dashboard works exactly the
+  same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID, registered name,
   agent version, or GitHub label. A
   **state** dropdown (idle / busy / crashed / mismatch) stacks on that
@@ -136,7 +138,8 @@
   that count in the table, even though it's not currently flagged — the
   point is spotting a flaky runner before it becomes a real problem.
   Clicking the badge lists the timestamps. The Local column can be sorted
-  by that 7-day count. An optional Settings threshold fires the same
+  by that 7-day count. **Crashes** is a 7 UTC-day bar chart plus the same
+  list. An optional Settings threshold fires the same
   webhook when the count first reaches N, not only on a crash-loop.
 -   Each slot shows **best-effort disk** for `_work`, `_diag`, and
   `runner.log` (sortable). **Clear work** on a stopped runner deletes

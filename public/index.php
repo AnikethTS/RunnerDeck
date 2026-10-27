@@ -83,7 +83,7 @@ Layout::topbarEndStart();
       <span class="org-tag">
         <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
       </span>
-      <a href="settings.php" class="btn btn-sm">Settings</a>
+        <?php Layout::pageNav('index.php'); ?>
         <?php Layout::logoutForm($csrfToken); ?>
     <?php endif; ?>
 <?php
@@ -198,7 +198,7 @@ Layout::topbarEnd();
       <div class="history-grid">
         <div class="history-card">
           <div class="history-head">
-            <span class="stat-label">CPU % &middot; last hour</span>
+            <span class="stat-label">CPU % &middot; last hour · <a href="history.php">24h</a></span>
             <span id="chart-cpu-now" class="history-now"><?=
                 htmlspecialchars((string) ($history['cpu_now'] ?? '—'))
             ?></span>

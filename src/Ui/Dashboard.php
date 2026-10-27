@@ -78,7 +78,12 @@ final class Dashboard
         DiskAlert::check($runners, $stats['total_disk_kb']);
         $pressure = HostPressure::snapshot();
         HostPressure::checkAlert($pressure);
-        History::record($stats['avg_cpu_percent'] ?? 0.0, $stats['total_rss_kb'] ?? 0);
+        $diskFree = $pressure['disk_free_kb'] ?? null;
+        History::record(
+            $stats['avg_cpu_percent'] ?? 0.0,
+            $stats['total_rss_kb'] ?? 0,
+            is_int($diskFree) ? $diskFree : null
+        );
 
         $hasEphemeral = false;
         foreach ($runners as $row) {
