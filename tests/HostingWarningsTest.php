@@ -145,6 +145,18 @@ final class HostingWarningsTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testQuietOnIpv6LoopbackHttp(): void
+    {
+        $_SERVER['HTTPS'] = 'off';
+        $_SERVER['REMOTE_ADDR'] = '::1';
+        $_SERVER['HTTP_HOST'] = '[::1]:8090';
+        unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
+
+        $this->assertFalse(\RunnerDeck\Core\HostingWarnings::isHostedRequest());
+        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
+    }
+
+    #[RunInSeparateProcess]
     public function testRequestHostStripsPortAndIpv6Brackets(): void
     {
         $_SERVER['HTTP_HOST'] = 'Example.COM:443';

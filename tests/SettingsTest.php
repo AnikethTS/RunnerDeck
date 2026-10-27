@@ -68,6 +68,7 @@ final class SettingsTest extends TestCase
         $this->assertSame('AnikethTS/RunnerDeck', $loaded['RUNNERDECK_REPO']);
         $this->assertSame('my-label', $loaded['RUNNERDECK_LABEL']);
         $this->assertArrayNotHasKey('RUNNERDECK_ORG', $loaded, 'empty values should be dropped, not saved as blanks');
+        $this->assertSame(0600, fileperms($this->settingsFile) & 0777);
     }
 
     #[RunInSeparateProcess]

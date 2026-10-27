@@ -22,6 +22,9 @@ follows [SemVer](https://semver.org/).
   distro `dnf` PHP on Fedora, Rocky 9, and RHEL UBI 9 (`php-process` for
   posix/pcntl). The existing `ubuntu-latest` / `macos-latest` job names
   stay. GitHub no longer hosts macOS 13; macOS 14 retires 2 Nov 2026.
+  PHPUnit now asserts posix/pcntl/`pdo_sqlite`, `/proc` RAM, listener
+  pid checks, cgroup v2 writes, and linux/darwin/windows runner packages
+  so those distro jobs fail if the host PHP is incomplete.
 
 - **Responsive shell**: shared page gutter and max width so the top bar,
   banners, main, settings, and ops pages line up. Stats, charts, settings

@@ -97,6 +97,31 @@ final class ProvisionerTest extends TestCase
         $this->assertSame('actions-runner-linux-x64.tar.gz', $picked['filename']);
     }
 
+    public function testMatchDownloadMapsLinuxArmAndDarwinAndWindows(): void
+    {
+        $linuxArm = ['os' => 'linux', 'architecture' => 'arm64', 'filename' => 'linux-arm64.tar.gz'];
+        $osx = ['os' => 'osx', 'architecture' => 'x64', 'filename' => 'osx-x64.tar.gz'];
+        $win = ['os' => 'win', 'architecture' => 'x64', 'filename' => 'win-x64.zip'];
+        $linuxArmv7 = ['os' => 'linux', 'architecture' => 'arm', 'filename' => 'linux-arm.tar.gz'];
+
+        $this->assertSame(
+            'linux-arm64.tar.gz',
+            \RunnerDeck\Pool\Provisioner::matchDownload([$linuxArm], 'Linux', 'aarch64')['filename']
+        );
+        $this->assertSame(
+            'osx-x64.tar.gz',
+            \RunnerDeck\Pool\Provisioner::matchDownload([$osx], 'Darwin', 'amd64')['filename']
+        );
+        $this->assertSame(
+            'win-x64.zip',
+            \RunnerDeck\Pool\Provisioner::matchDownload([$win], 'Windows', 'x86_64')['filename']
+        );
+        $this->assertSame(
+            'linux-arm.tar.gz',
+            \RunnerDeck\Pool\Provisioner::matchDownload([$linuxArmv7], 'Linux', 'armv7l')['filename']
+        );
+    }
+
     public function testMatchDownloadRejectsUnknownOs(): void
     {
         $this->expectException(RuntimeException::class);

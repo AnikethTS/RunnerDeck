@@ -119,4 +119,44 @@ final class RunnerPoolTest extends TestCase
     {
         $this->assertSame('runner-3', \RunnerDeck\Pool\RunnerPool::nextAvailableId());
     }
+
+    #[RunInSeparateProcess]
+    public function testCheckProcessMissingPidFileIsStopped(): void
+    {
+        [$running, $pid] = \RunnerDeck\Pool\RunnerPool::checkProcess($this->poolDir . '/runner-base/.pid');
+        $this->assertFalse($running);
+        $this->assertNull($pid);
+    }
+
+    #[RunInSeparateProcess]
+    public function testCheckProcessDeadPidIsStopped(): void
+    {
+        $pidFile = $this->poolDir . '/runner-base/.pid';
+        file_put_contents($pidFile, '999999999');
+        [$running, $pid] = \RunnerDeck\Pool\RunnerPool::checkProcess($pidFile);
+        $this->assertFalse($running);
+        $this->assertSame(999999999, $pid);
+    }
+
+    #[RunInSeparateProcess]
+    public function testCheckProcessLiveNonListenerPidIsNotARunner(): void
+    {
+        $pidFile = $this->poolDir . '/runner-base/.pid';
+        file_put_contents($pidFile, (string) getmypid());
+        [$running, $pid] = \RunnerDeck\Pool\RunnerPool::checkProcess($pidFile);
+        $this->assertFalse($running);
+        $this->assertSame(getmypid(), $pid);
+    }
+
+    #[RunInSeparateProcess]
+    public function testLiveListenersByDirReturnsMap(): void
+    {
+        $map = \RunnerDeck\Pool\RunnerPool::liveListenersByDir();
+        $this->assertIsArray($map);
+        foreach ($map as $dir => $pid) {
+            $this->assertIsString($dir);
+            $this->assertIsInt($pid);
+            $this->assertGreaterThan(0, $pid);
+        }
+    }
 }

@@ -52,6 +52,25 @@ final class HostPressureTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testReadsLiveDiskAndProcMeminfoWhenNotFaked(): void
+    {
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB=0');
+        putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
+        putenv('RUNNERDECK_POOL_DIR=' . sys_get_temp_dir());
+
+        $snap = \RunnerDeck\Host\HostPressure::snapshot();
+        $this->assertTrue($snap['ok']);
+        $this->assertNotNull($snap['disk_free_kb']);
+        $this->assertNotNull($snap['disk_total_kb']);
+        $this->assertGreaterThan(0, $snap['disk_total_kb']);
+
+        if (PHP_OS_FAMILY === 'Linux' && is_readable('/proc/meminfo')) {
+            $this->assertNotNull($snap['ram_available_kb']);
+            $this->assertGreaterThan(0, $snap['ram_available_kb']);
+        }
+    }
+
+    #[RunInSeparateProcess]
     public function testUnknownReadingsFailOpen(): void
     {
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
