@@ -239,7 +239,7 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveThrowsWhenPathIsUnwritable(): void
     {
-        putenv('RUNNERDECK_SETTINGS_FILE=/nonexistent-root-only-path/settings.json');
+        putenv('RUNNERDECK_SETTINGS_FILE=/dev/null/runnerdeck-unwritable/settings.json');
 
         $this->expectException(RuntimeException::class);
         \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);

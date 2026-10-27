@@ -6,6 +6,16 @@ set -euo pipefail
 export COMPOSER_ALLOW_SUPERUSER=1
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# WSL checkout lives on /mnt/d (9P). Composer extract + PHPUnit from there
+# takes many minutes; copy onto the Linux disk first.
+if [[ "$root" == /mnt/* ]]; then
+    dest=/tmp/runnerdeck-ci
+    rm -rf "$dest"
+    mkdir -p "$dest"
+    tar -C "$root" --exclude='./.git' --exclude='./vendor' --exclude='./node_modules' -cf - . \
+        | tar -C "$dest" -xf -
+    root="$dest"
+fi
 cd "$root"
 
 php -v

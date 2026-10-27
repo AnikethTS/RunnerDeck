@@ -58,7 +58,7 @@ final class CrashHistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecordIsBestEffortWhenPathIsUnwritable(): void
     {
-        putenv('RUNNERDECK_HISTORY_FILE=/nonexistent-root-only-path/history.sqlite');
+        putenv('RUNNERDECK_HISTORY_FILE=/dev/null/runnerdeck-unwritable/history.sqlite');
 
         \RunnerDeck\Pool\CrashHistory::record('runner-1', 'acme-1');
 
