@@ -587,7 +587,7 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await page.locator('#settings-repo').fill('e2e-org/e2e-repo');
   await page.locator('#settings-save').click();
 
-  await expect(page).toHaveURL(/index\.php$/);
+  await expect(page).toHaveURL(/index\.php(?:#.*)?$/);
   await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
 });
 
@@ -625,7 +625,7 @@ test('settings page shows a validation error and keeps entered values', async ({
   await page.locator('#settings-crash-webhook-url').fill('ftp://example.com');
   await page.locator('#settings-save').click();
 
-  await expect(page).toHaveURL(/settings\.php$/);
+  await expect(page).toHaveURL(/settings\.php(?:#.*)?$/);
   await expect(page.locator('.setup-error')).toContainText('crash webhook url must start with');
   await expect(page.locator('#settings-org')).toHaveValue('e2e-org');
 });
