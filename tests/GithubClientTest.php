@@ -138,9 +138,21 @@ final class GithubClientTest extends TestCase
         $parsed = \RunnerDeck\GitHub\GithubClient::parseGhOutput($raw);
         $this->assertSame('Mon, 26 Oct 2026 16:00:00 GMT', $parsed['date']);
         $this->assertSame('{"ok":true}', $parsed['body']);
+        $this->assertNull($parsed['remaining']);
         $plain = \RunnerDeck\GitHub\GithubClient::parseGhOutput('{"ok":true}');
         $this->assertNull($plain['date']);
         $this->assertSame('{"ok":true}', $plain['body']);
+    }
+
+    public function testParseGhOutputReadsRateLimitHeaders(): void
+    {
+        $raw = "HTTP/2.0 200 OK\nDate: Mon, 26 Oct 2026 16:00:00 GMT\n"
+            . "X-RateLimit-Limit: 5000\nX-RateLimit-Remaining: 42\n"
+            . "X-RateLimit-Reset: 1700003600\n\n{\"ok\":true}";
+        $parsed = \RunnerDeck\GitHub\GithubClient::parseGhOutput($raw);
+        $this->assertSame(42, $parsed['remaining']);
+        $this->assertSame(5000, $parsed['limit']);
+        $this->assertSame(1700003600, $parsed['reset']);
     }
 
     #[RunInSeparateProcess]

@@ -50,6 +50,8 @@ final class SaveSettingsAction
         $appId = trim((string) ($post['github_app_id'] ?? ''));
         $appInstall = trim((string) ($post['github_app_installation_id'] ?? ''));
         $appPem = trim((string) ($post['github_app_private_key'] ?? ''));
+        $logRetention = trim((string) ($post['log_retention_days'] ?? ''));
+        $agentSha = strtolower(trim((string) ($post['agent_sha'] ?? '')));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -151,6 +153,19 @@ final class SaveSettingsAction
             ];
         }
 
+        $logOk = $logRetention === ''
+            || (ctype_digit($logRetention) && (int) $logRetention >= 1 && (int) $logRetention <= 365);
+        if (!$logOk) {
+            return [
+                'ok' => false,
+                'message' => 'log retention must be a whole number of days from 1 to 365',
+            ];
+        }
+        $shaOk = $agentSha === '' || preg_match('/^[a-f0-9]{64}$/', $agentSha) === 1;
+        if (!$shaOk) {
+            return ['ok' => false, 'message' => 'agent SHA must be a 64-character hex SHA-256'];
+        }
+
         $ramOk = $minRam === ''
             || (ctype_digit($minRam) && (int) $minRam <= 1048576);
         if (!$ramOk) {
@@ -191,6 +206,8 @@ final class SaveSettingsAction
             'RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS' =>
                 (($post['bundle_snapshot'] ?? '') === '1'
                     && ($post['bundle_snapshot_secrets'] ?? '') === '1') ? '1' : '',
+            'RUNNERDECK_LOG_RETENTION_DAYS' => $logRetention,
+            'RUNNERDECK_AGENT_SHA' => $agentSha,
             'RUNNERDECK_SLOT_CPU_PERCENT' => $slotCpu,
             'RUNNERDECK_SLOT_MEMORY_MAX_MIB' => $slotMem,
             'RUNNERDECK_GITHUB_APP_ID' => $appId,

@@ -20,6 +20,19 @@ final class Provisioner
 
         try {
             $download = self::pickDownload();
+            $pin = Config::agentSha();
+            $listed = $download['sha256_checksum'] ?? null;
+            if (
+                $pin !== null
+                && is_string($listed)
+                && $listed !== ''
+                && strtolower($listed) !== $pin
+            ) {
+                return self::fail(
+                    'provision.pin',
+                    'GitHub runner package SHA does not match RUNNERDECK_AGENT_SHA — aborted'
+                );
+            }
         } catch (\RuntimeException $e) {
             return self::fail('provision.pick_download', $e->getMessage());
         }
@@ -36,9 +49,18 @@ final class Provisioner
         }
 
         $expectedSha = $download['sha256_checksum'] ?? null;
-        if (!self::checksumMatches($archivePath, is_string($expectedSha) ? $expectedSha : null)) {
+        $ghSha = is_string($expectedSha) && $expectedSha !== '' ? $expectedSha : null;
+        if (!self::checksumMatches($archivePath, $ghSha)) {
             @unlink($archivePath);
             return self::fail('provision.checksum', 'downloaded runner package failed checksum verification — aborted');
+        }
+        $pin = Config::agentSha();
+        if ($pin !== null && $ghSha === null && !self::checksumMatches($archivePath, $pin)) {
+            @unlink($archivePath);
+            return self::fail(
+                'provision.pin',
+                'downloaded runner package does not match RUNNERDECK_AGENT_SHA — aborted'
+            );
         }
 
         $extract = self::isZipArchive($download['filename'])

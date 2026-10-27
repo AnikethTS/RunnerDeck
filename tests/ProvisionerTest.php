@@ -20,6 +20,7 @@ final class ProvisionerTest extends TestCase
         putenv('RUNNERDECK_SCOPE=org');
         putenv('RUNNERDECK_LABEL=self-hosted-runnerdeck');
         putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/storage/settings.json');
+        putenv('RUNNERDECK_AGENT_SHA');
     }
 
     protected function tearDown(): void
@@ -29,21 +30,25 @@ final class ProvisionerTest extends TestCase
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_LABEL');
         putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_AGENT_SHA');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
     /** @return array<string, mixed> */
-    private function packageMeta(string $sha = 'abc'): array
+    private function packageMeta(?string $sha = 'abc'): array
     {
-        return [
+        $meta = [
             'download_url' => 'https://example.test/runner.tar.gz',
             'filename' => 'actions-runner-linux-x64.tar.gz',
-            'sha256_checksum' => $sha,
         ];
+        if ($sha !== null) {
+            $meta['sha256_checksum'] = $sha;
+        }
+        return $meta;
     }
 
     /** @return list<array<string, mixed>> every GitHub os/arch pair so pickDownload works on CI hosts */
-    private function downloadsForAnyHost(string $sha = 'abc'): array
+    private function downloadsForAnyHost(?string $sha = 'abc'): array
     {
         $meta = $this->packageMeta($sha);
         $out = [];
@@ -362,6 +367,98 @@ final class ProvisionerTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('failed to download runner package', $result['message']);
         $this->assertStringContainsString('404', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testEnsureInstalledAbortsWhenListedShaDiffersFromPin(): void
+    {
+        putenv('RUNNERDECK_AGENT_SHA=' . str_repeat('a', 64));
+        $calledCurl = false;
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calledCurl): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode($this->downloadsForAnyHost(str_repeat('b', 64))),
+                    'stderr' => '',
+                ];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $calledCurl = true;
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('RUNNERDECK_AGENT_SHA', $result['message']);
+        $this->assertFalse($calledCurl);
+    }
+
+    #[RunInSeparateProcess]
+    public function testEnsureInstalledChecksPinOnFileWhenGithubOmitsChecksum(): void
+    {
+        $payload = 'good-archive';
+        $pin = hash('sha256', $payload);
+        putenv('RUNNERDECK_AGENT_SHA=' . $pin);
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use ($payload): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode($this->downloadsForAnyHost(null)),
+                    'stderr' => '',
+                ];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, $payload);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar') {
+                file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+                file_put_contents($this->dir . '/run.sh', '#!/bin/sh');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertTrue($result['ok']);
+        $this->assertFileExists($this->dir . '/config.sh');
+    }
+
+    #[RunInSeparateProcess]
+    public function testEnsureInstalledAbortsWhenOmittedChecksumFileMissesPin(): void
+    {
+        putenv('RUNNERDECK_AGENT_SHA=' . str_repeat('c', 64));
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode($this->downloadsForAnyHost(null)),
+                    'stderr' => '',
+                ];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, 'other-bytes');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('does not match RUNNERDECK_AGENT_SHA', $result['message']);
+        $this->assertFileDoesNotExist($this->dir . '/actions-runner-linux-x64.tar.gz');
     }
 
     public function testVersionFromDownloadReadsFilename(): void

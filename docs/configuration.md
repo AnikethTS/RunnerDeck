@@ -40,6 +40,8 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_GITHUB_APP_KEY_FILE` | no | `storage/github_app.pem` | PEM private key path. Never stored in `settings.json` |
 | `RUNNERDECK_BUNDLE_SNAPSHOT` | no | off | `1` to write a daily host-bundle JSON under `storage/bundles/` (UTC day, keep 7). TOTP never included. Settings → Automation |
 | `RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS` | no | off | `1` to include the crash webhook URL in that daily snapshot (ignored unless snapshot is on) |
+| `RUNNERDECK_LOG_RETENTION_DAYS` | no | off | Whole number 1–365. On watch ticks (including maintenance), delete idle-slot `runner.log`, `runner.log.1`, and `_diag` files older than this. Never while the process is running. Never `_work`. Settings → Automation |
+| `RUNNERDECK_AGENT_SHA` | no | off | 64 hex SHA-256 of the runner package add/upgrade may install. GitHub checksum mismatch refuses. If GitHub omits checksum, the downloaded file is still checked. Settings → Automation |
 
 The header uses `public/assets/logo.png` (shipped with the repo, same art as
 `.github/logo.png`). Replace that file if you want your own mark.

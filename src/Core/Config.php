@@ -398,6 +398,37 @@ final class Config
         return min(1048576, $n);
     }
 
+    /**
+     * Delete idle-slot runner.log / runner.log.1 / _diag older than N days (1–365).
+     * Null means off.
+     */
+    public static function logRetentionDays(): ?int
+    {
+        $raw = getenv('RUNNERDECK_LOG_RETENTION_DAYS');
+        if ($raw === false || $raw === '' || !ctype_digit($raw)) {
+            return null;
+        }
+        $n = (int) $raw;
+        if ($n < 1) {
+            return null;
+        }
+        return min(365, $n);
+    }
+
+    /** Optional SHA-256 of the runner tarball add/upgrade may install. */
+    public static function agentSha(): ?string
+    {
+        $raw = getenv('RUNNERDECK_AGENT_SHA');
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+        $hex = strtolower(trim($raw));
+        if (preg_match('/^[a-f0-9]{64}$/', $hex) !== 1) {
+            return null;
+        }
+        return $hex;
+    }
+
     /** Daily disaster-recovery JSON under storage/bundles (TOTP never included). */
     public static function bundleSnapshotEnabled(): bool
     {

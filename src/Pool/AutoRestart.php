@@ -32,6 +32,7 @@ final class AutoRestart
         }
         WatchHeartbeat::touch();
         HostBundleSnapshot::tick();
+        LogRetention::tick();
         CrashWebhook::flushOutbox();
         if (HostMode::isMaintenance()) {
             return [];

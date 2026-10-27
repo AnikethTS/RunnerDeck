@@ -27,6 +27,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_GITHUB_APP_ID', 'RUNNERDECK_GITHUB_APP_INSTALLATION_ID',
         'RUNNERDECK_GITHUB_APP_KEY_FILE',
         'RUNNERDECK_BUNDLE_SNAPSHOT', 'RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS',
+        'RUNNERDECK_LOG_RETENTION_DAYS', 'RUNNERDECK_AGENT_SHA',
     ];
 
     protected function tearDown(): void
@@ -326,5 +327,23 @@ final class ConfigTest extends TestCase
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         $this->assertTrue(\RunnerDeck\Core\Config::bundleSnapshotEnabled());
         $this->assertTrue(\RunnerDeck\Core\Config::bundleSnapshotSecrets());
+    }
+
+    #[RunInSeparateProcess]
+    public function testLogRetentionAndAgentSha(): void
+    {
+        $this->assertNull(\RunnerDeck\Core\Config::logRetentionDays());
+        $this->assertNull(\RunnerDeck\Core\Config::agentSha());
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS=14');
+        $this->assertSame(14, \RunnerDeck\Core\Config::logRetentionDays());
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS=999');
+        $this->assertSame(365, \RunnerDeck\Core\Config::logRetentionDays());
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS=0');
+        $this->assertNull(\RunnerDeck\Core\Config::logRetentionDays());
+        $sha = str_repeat('ab', 32);
+        putenv('RUNNERDECK_AGENT_SHA=' . strtoupper($sha));
+        $this->assertSame($sha, \RunnerDeck\Core\Config::agentSha());
+        putenv('RUNNERDECK_AGENT_SHA=not-a-sha');
+        $this->assertNull(\RunnerDeck\Core\Config::agentSha());
     }
 }

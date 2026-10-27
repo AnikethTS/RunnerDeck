@@ -8,6 +8,23 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Log retention**: optional days (1–365) to delete idle-slot `runner.log`,
+  `runner.log.1`, and `_diag` files older than that. Never while the process
+  is running. Never deletes `_work`. Runs from watch, including maintenance.
+
+- **GitHub API quota**: last `X-RateLimit-*` from `gh api --include`. Banner
+  when remaining is under 100 or ≤10% of the limit. The GitHub stats card
+  shows remaining/limit when known. Missing headers fail open.
+
+- **Outbox gave up**: after 8 failed webhook retries, a dashboard banner
+  points at Outbox for 7 days. A later successful delivery or a drop clears
+  it.
+
+- **Pin runner package SHA-256**: Settings / `RUNNERDECK_AGENT_SHA`. Add
+  and Upgrade refuse a GitHub checksum that does not match. If GitHub omits
+  the checksum, the downloaded file is still checked. The agent-behind
+  banner is suppressed while a pin is set.
+
 - **Host history page** (`history.php`): 24h CPU, runner RSS, and pool disk-free
   charts from samples already written on dashboard polls. Dashboard sparklines
   stay at one hour. Missing sqlite fails open.
