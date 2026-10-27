@@ -8,6 +8,9 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- **E2E CI**: cache Playwright Chromium and skip `--with-deps` on
+  `ubuntu-latest` (the image already has the libraries; apt was ~6 minutes).
+
 - **Header**: sticky bar, brand links home, version on every page, org/label
   chip next to Log out, and a single-row page nav that scrolls on a narrow
   screen. Page help is on the link itself, not an extra **i** per item.

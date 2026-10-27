@@ -186,8 +186,15 @@ jobs:
       - name: Install JS dev tooling
         run: npm ci
 
+      # ubuntu-latest already has Chromium's system libs. --with-deps still
+      # runs apt and pulls ~80MB of fonts, which was ~6 minutes of this job.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright's Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Run E2E tests
         run: npm run e2e
