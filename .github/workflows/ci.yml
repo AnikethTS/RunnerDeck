@@ -276,7 +276,7 @@ jobs:
             dnf -y module enable php:8.2
           fi
           dnf -y --setopt=install_weak_deps=0 install \
-            php-cli php-process php-xml php-mbstring php-pdo php-curl
+            php-cli php-process php-xml php-mbstring php-pdo php-curl procps-ng
           dnf -y --setopt=install_weak_deps=0 install php-json || true
           dnf -y --setopt=install_weak_deps=0 install php-pecl-zip || \
             dnf -y --setopt=install_weak_deps=0 install php-zip || true

@@ -30,4 +30,12 @@ final class ShellTest extends TestCase
         $this->assertNotSame(0, $result['code']);
         $this->assertStringContainsString('timed out', $result['stderr']);
     }
+
+    public function testMissingBinaryFailsOpenWithoutPhpWarning(): void
+    {
+        $result = \RunnerDeck\Core\Shell::exec(['/no/such/runnerdeck-helper', '--help'], 3);
+
+        $this->assertSame(-1, $result['code']);
+        $this->assertStringContainsString('failed to start process', $result['stderr']);
+    }
 }

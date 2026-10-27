@@ -32,7 +32,9 @@ final class Shell
         }
 
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $proc = proc_open($cmd, $descriptors, $pipes, $cwd);
+        // Missing helpers (e.g. `ps` on a minimal Fedora container) must not
+        // raise php warnings — callers fail open on a non-zero code.
+        $proc = @proc_open($cmd, $descriptors, $pipes, $cwd);
         if (!is_resource($proc)) {
             return ['code' => -1, 'stdout' => '', 'stderr' => 'failed to start process: ' . implode(' ', $cmd)];
         }
@@ -48,8 +50,8 @@ final class Shell
         $exitCode = null;
 
         while (true) {
-            $stdout .= stream_get_contents($pipes[1]);
-            $stderr .= stream_get_contents($pipes[2]);
+            $stdout .= (string) (stream_get_contents($pipes[1]) ?: '');
+            $stderr .= (string) (stream_get_contents($pipes[2]) ?: '');
 
             $status = proc_get_status($proc);
             if (!$status['running']) {
@@ -69,8 +71,8 @@ final class Shell
             usleep(50000);
         }
 
-        $stdout .= stream_get_contents($pipes[1]);
-        $stderr .= stream_get_contents($pipes[2]);
+        $stdout .= (string) (stream_get_contents($pipes[1]) ?: '');
+        $stderr .= (string) (stream_get_contents($pipes[2]) ?: '');
         fclose($pipes[1]);
         fclose($pipes[2]);
         $closeCode = proc_close($proc);
