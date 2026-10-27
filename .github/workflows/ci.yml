@@ -103,14 +103,24 @@ jobs:
   test:
     name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.label }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Required check names on main: keep these three labels as-is.
           - { os: ubuntu-latest, php: "8.1", label: "8.1" }
           - { os: ubuntu-latest, php: "8.5.12", label: "8.5" }
           - { os: macos-latest, php: "8.5.12", label: "8.5" }
+          # Oldest GitHub-hosted Ubuntu still offered (22.04 retires Apr 2027).
+          - { os: ubuntu-22.04, php: "8.1", label: "8.1" }
+          - { os: ubuntu-22.04, php: "8.3.36", label: "8.3" }
+          - { os: ubuntu-22.04, php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-22.04-arm, php: "8.1", label: "8.1" }
+          # Oldest macOS image that remains after macos-14's 2 Nov 2026 retirement.
+          # macos-13 is already gone; macos-14 is in brownout.
+          - { os: macos-15, php: "8.1", label: "8.1" }
+          - { os: macos-15, php: "8.5.12", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -145,7 +155,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - ubuntu-22.04
+          - macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -205,6 +219,60 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  apt-php-test:
+    name: Unit tests (${{ matrix.name }}, apt PHP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Ubuntu 22.04", image: "ubuntu:22.04" }
+          - { name: "Debian 12", image: "debian:12-slim" }
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      - name: Install git, curl, unzip, and distro PHP
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates curl git unzip \
+            php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
+          php -v
+          php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Composer and run PHPUnit
+        run: bash bin/ci-apt-phpunit.sh
+
+  wsl-test:
+    name: Unit tests (WSL2 Ubuntu 22.04, apt PHP)
+    runs-on: windows-2022
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: Vampire/setup-wsl@887f39deb6c0976365e546926fe66f41b77d65ff # v6.1.0
+        with:
+          distribution: Ubuntu-22.04
+          wsl-version: "2"
+          update: true
+          additional-packages: >-
+            ca-certificates curl git unzip
+            php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
+
+      - name: PHPUnit inside WSL2
+        shell: powershell
+        run: |
+          $unix = (wsl -d Ubuntu-22.04 -- wslpath -a "${{ github.workspace }}").Trim()
+          if ([string]::IsNullOrWhiteSpace($unix)) { throw "wslpath failed" }
+          wsl -d Ubuntu-22.04 --user root -- bash -lc "cd '$unix' && bash bin/ci-apt-phpunit.sh"
 
   alpine-smoke-test:
     name: Boot smoke test (Alpine/musl)

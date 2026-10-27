@@ -17,6 +17,12 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **CI on older hosts**: PHPUnit and boot smokes on Ubuntu 22.04 (x64 and
+  arm) and macOS 15, distro `apt` PHP on Ubuntu 22.04 and Debian 12, and
+  PHPUnit inside WSL2 Ubuntu 22.04 on `windows-2022`. The existing
+  `ubuntu-latest` / `macos-latest` job names stay. GitHub no longer hosts
+  macOS 13; macOS 14 retires 2 Nov 2026.
+
 - **Responsive shell**: shared page gutter and max width so the top bar,
   banners, main, settings, and ops pages line up. Stats, charts, settings
   tabs, and tables adapt at 900 / 720 / 520 px.
