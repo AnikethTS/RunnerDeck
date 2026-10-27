@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Header**: sticky bar, brand links home, version on every page, org/label
+  chip next to Log out, and a single-row page nav that scrolls on a narrow
+  screen. Page help is on the link itself, not an extra **i** per item.
+
 ### Added
 
 - **Responsive shell**: shared page gutter and max width so the top bar,
@@ -16,8 +22,8 @@ follows [SemVer](https://semver.org/).
   instead of one long page. Save still writes every tab. Sticky Save bar
   stays at the bottom.
 
-- **Help on controls**: an **i** next to page names and stats, and hover
-  text on pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
+- **Help on controls**: an **i** next to stats, and hover text on page
+  names and pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
   the rest state what they do. Help cards sit below the control (or above
   if there is no room) so they stay on screen.
 

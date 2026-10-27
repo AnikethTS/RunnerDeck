@@ -206,8 +206,8 @@ $help = [
 
 Layout::htmlOpen('RunnerDeck — Settings');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('settings.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 echo HostingWarnings::html();

@@ -22,6 +22,10 @@ final class ResponsiveLayoutTest extends TestCase
         $this->assertStringContainsString('--page-max:', $css);
         $this->assertStringContainsString('.page-shell', $css);
         $this->assertStringContainsString('.topbar-inner', $css);
+        $this->assertStringContainsString('position: sticky;', $css);
+        $this->assertStringContainsString('.topbar-brand', $css);
+        $this->assertStringContainsString('.topbar-lead', $css);
+        $this->assertStringContainsString('flex-flow: row nowrap;', $css);
         $this->assertStringContainsString('.table-scroll', $css);
         $this->assertStringContainsString('overflow-x: clip;', $css);
         $this->assertStringContainsString('.runner-table-wrap', $css);

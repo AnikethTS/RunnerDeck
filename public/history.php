@@ -32,8 +32,8 @@ $diskSum = History::summary($disk, ' GiB', 1, '24h');
 
 Layout::htmlOpen('RunnerDeck — History');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('history.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>

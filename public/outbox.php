@@ -33,8 +33,8 @@ $dropHelp = Layout::hoverHelp(
 
 Layout::htmlOpen('RunnerDeck — Outbox');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('outbox.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>

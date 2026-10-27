@@ -33,8 +33,8 @@ $delHelp = Layout::hoverHelp('Delete this snapshot file. Does not change running
 
 Layout::htmlOpen('RunnerDeck — Bundles');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('bundles.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>

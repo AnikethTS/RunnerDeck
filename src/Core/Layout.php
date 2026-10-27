@@ -53,17 +53,30 @@ final class Layout
 
     public static function topbarStart(): void
     {
+        $version = htmlspecialchars(Config::version(), ENT_QUOTES, 'UTF-8');
         echo '  <header class="topbar">' . "\n";
         echo '    <div class="topbar-inner page-shell">' . "\n";
+        echo '      <div class="topbar-lead">' . "\n";
+        echo '        <a class="topbar-brand" href="index.php">' . "\n";
         if (self::hasLogo()) {
-            echo '      <img src="assets/logo.png" alt="Logo" class="logo" />' . "\n";
+            echo '          <img src="assets/logo.png" alt="" class="logo" />' . "\n";
         }
-        echo "      <h1>RunnerDeck</h1>\n";
+        echo "          <h1 class=\"topbar-name\">RunnerDeck</h1>\n";
+        echo "        </a>\n";
+        echo '        <div class="topbar-meta">' . "\n";
+        echo '          <span class="edition-tag">Community</span>' . "\n";
+        echo '          <span class="version-tag">v' . $version . "</span>\n";
+        echo '          <a id="update-available" class="update-badge"'
+            . ' href="https://github.com/AnikethTS/RunnerDeck/releases/latest"'
+            . ' target="_blank" rel="noopener noreferrer" hidden></a>' . "\n";
+        echo "        </div>\n";
+        echo "      </div>\n";
     }
 
     public static function topbarEndStart(): void
     {
         echo '    <div class="topbar-end">' . "\n";
+        self::scopeChip();
     }
 
     public static function pageNav(string $current): void
@@ -97,13 +110,28 @@ final class Layout
         echo '      <nav class="page-nav" aria-label="Host pages">' . "\n";
         foreach ($links as $href => [$label, $help]) {
             $currentAttr = $current === $href ? ' aria-current="page"' : '';
-            echo '        <span class="page-nav-item">'
-                . '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
-                . '" class="page-nav-link"' . $currentAttr . '>'
-                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>'
-                . self::infoIcon($help) . "</span>\n";
+            echo '        <a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
+                . '" class="page-nav-link help-hover"' . $currentAttr
+                . self::hoverHelp($help) . '>'
+                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . "</a>\n";
         }
         echo "      </nav>\n";
+    }
+
+    public static function scopeChip(): void
+    {
+        if (!Config::isConfigured()) {
+            return;
+        }
+        try {
+            $place = Config::scope() === 'repo' ? Config::repo() : Config::org();
+        } catch (\RuntimeException) {
+            return;
+        }
+        $label = Config::label();
+        $text = $place . ' · ' . $label;
+        $safe = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        echo '      <span class="org-tag" title="' . $safe . '">' . $safe . "</span>\n";
     }
 
     /** Hover card text for toolbar buttons (CSS ::after). */
@@ -138,7 +166,7 @@ final class Layout
         $sunHidden = $theme === 'dark' ? ' hidden' : '';
         $moonHidden = $theme === 'dark' ? '' : ' hidden';
 
-        echo '    <button id="btn-theme-toggle" class="btn btn-sm help-hover" type="button"'
+        echo '    <button id="btn-theme-toggle" class="btn btn-sm topbar-icon-btn help-hover" type="button"'
             . ' aria-label="Toggle theme"'
             . self::hoverHelp('Switch between light and dark. Saved in a cookie.') . '>' . "\n";
         echo '      <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24"'

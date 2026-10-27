@@ -942,6 +942,8 @@ test('dashboard layout stays aligned and does not overflow at 1280px', async ({ 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
   await expect(page.locator('.topbar-inner')).toBeVisible();
+  await expect(page.locator('.topbar-brand')).toBeVisible();
+  await expect(page.locator('.page-nav-link[aria-current="page"]')).toHaveText('Dashboard');
   const statCols = await page.locator('.stat-grid').evaluate(
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
   );
@@ -978,6 +980,20 @@ test('history charts stack on a phone-sized viewport', async ({ page }) => {
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
   );
   expect(cols).toBe(1);
+  await assertNoHorizontalOverflow(page);
+});
+
+test('header nav stays on one row and reaches History at 390px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.locator('.topbar-brand')).toBeVisible();
+  const wrap = await page.locator('.page-nav').evaluate(
+    (el) => getComputedStyle(el).flexWrap,
+  );
+  expect(wrap).toBe('nowrap');
+  await page.locator('.page-nav a[href="history.php"]').click();
+  await expect(page).toHaveURL(/history\.php/);
+  await expect(page.locator('.page-nav-link[aria-current="page"]')).toHaveText('History');
   await assertNoHorizontalOverflow(page);
 });
 

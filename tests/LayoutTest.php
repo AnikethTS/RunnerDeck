@@ -65,11 +65,16 @@ final class LayoutTest extends TestCase
         $html = (string) ob_get_clean();
 
         $this->assertStringContainsString('class="topbar-inner page-shell"', $html);
+        $this->assertStringContainsString('class="topbar-lead"', $html);
+        $this->assertStringContainsString('class="topbar-brand"', $html);
+        $this->assertStringContainsString('href="index.php"', $html);
         $this->assertStringContainsString('class="topbar-end"', $html);
         $this->assertStringContainsString('id="btn-theme-toggle"', $html);
         $this->assertStringContainsString('id="theme-icon-sun"', $html);
         $this->assertStringContainsString('id="theme-icon-moon"', $html);
-        $this->assertStringContainsString('<h1>RunnerDeck</h1>', $html);
+        $this->assertStringContainsString('<h1 class="topbar-name">RunnerDeck</h1>', $html);
+        $this->assertStringContainsString('class="edition-tag"', $html);
+        $this->assertStringContainsString('id="update-available"', $html);
         $this->assertTrue(\RunnerDeck\Core\Layout::hasLogo());
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);
@@ -87,8 +92,38 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('href="crashes.php"', $html);
         $this->assertStringContainsString('href="outbox.php"', $html);
         $this->assertStringContainsString('href="bundles.php"', $html);
-        $this->assertStringContainsString('class="help-tip"', $html);
+        $this->assertStringContainsString('class="page-nav-link help-hover"', $html);
         $this->assertStringContainsString('24-hour CPU', $html);
+        $this->assertStringNotContainsString('class="help-tip"', $html);
+    }
+
+    #[RunInSeparateProcess]
+    public function testScopeChipShowsOrgAndLabel(): void
+    {
+        putenv('RUNNERDECK_SCOPE=org');
+        putenv('RUNNERDECK_ORG=acme');
+        putenv('RUNNERDECK_LABEL=self-hosted-runnerdeck');
+        ob_start();
+        \RunnerDeck\Core\Layout::scopeChip();
+        $html = (string) ob_get_clean();
+        $this->assertStringContainsString('class="org-tag"', $html);
+        $this->assertStringContainsString('acme · self-hosted-runnerdeck', $html);
+        putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_LABEL');
+    }
+
+    #[RunInSeparateProcess]
+    public function testScopeChipSilentWhenUnconfigured(): void
+    {
+        putenv('RUNNERDECK_SCOPE=org');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_REPO');
+        ob_start();
+        \RunnerDeck\Core\Layout::scopeChip();
+        $html = (string) ob_get_clean();
+        $this->assertSame('', $html);
+        putenv('RUNNERDECK_SCOPE');
     }
 
     public function testInfoIconEscapesHelpText(): void

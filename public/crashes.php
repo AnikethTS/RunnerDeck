@@ -22,8 +22,8 @@ $events = CrashHistory::exportEvents(100);
 
 Layout::htmlOpen('RunnerDeck — Crashes');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('crashes.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>

@@ -46,16 +46,7 @@ if ($needsSetup && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $csrfToken = Csrf::token();
 
-try {
-    $currentScope = Config::scope();
-} catch (RuntimeException) {
-    $currentScope = 'org';
-}
-
 $snapshot = $needsSetup ? null : Dashboard::snapshot(5);
-$accountLabel = $needsSetup
-    ? null
-    : ($currentScope === 'repo' ? (string) getenv('RUNNERDECK_REPO') : (string) getenv('RUNNERDECK_ORG'));
 $dash = is_array($snapshot) ? $snapshot : [];
 $history = is_array($dash['history'] ?? null) ? $dash['history'] : [];
 $stats = DashboardView::statsCards($dash);
@@ -116,22 +107,13 @@ Layout::htmlOpen('RunnerDeck', manifest: true);
   <div id="toast-container"></div>
 <?php
 Layout::topbarStart();
-?>
-    <span class="edition-tag">Community</span>
-    <span class="version-tag">v<?= htmlspecialchars(Config::version()) ?></span>
-    <a id="update-available" class="update-badge" href="https://github.com/AnikethTS/RunnerDeck/releases/latest"
-       target="_blank" rel="noopener noreferrer" hidden></a>
-<?php
+if (!$needsSetup) {
+    Layout::pageNav('index.php');
+}
 Layout::topbarEndStart();
-?>
-    <?php if (!$needsSetup) : ?>
-      <span class="org-tag">
-        <?= htmlspecialchars((string) $accountLabel) ?> &middot; label: <?= htmlspecialchars(Config::label()) ?>
-      </span>
-        <?php Layout::pageNav('index.php'); ?>
-        <?php Layout::logoutForm($csrfToken); ?>
-    <?php endif; ?>
-<?php
+if (!$needsSetup) {
+    Layout::logoutForm($csrfToken);
+}
 Layout::topbarEnd();
 ?>
 
