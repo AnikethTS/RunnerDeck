@@ -8,6 +8,19 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Host history page** (`history.php`): 24h CPU, runner RSS, and pool disk-free
+  charts from samples already written on dashboard polls. Dashboard sparklines
+  stay at one hour. Missing sqlite fails open.
+
+- **Crash timeline** (`crashes.php`): 7 UTC-day bar chart plus the recent crash
+  list from the existing sqlite log. No GitHub.
+
+- **Webhook outbox page** (`outbox.php`): pending retries (host, age, last
+  error). POST drop with CSRF. GET does not send.
+
+- **Host-bundle snapshots page** (`bundles.php`): list daily files, download,
+  delete one (CSRF). TOTP is never shown. Does not write a new snapshot.
+
 - **gh api backoff**: HTTP 429 / secondary rate limit cools down polls
   (30s, doubling, cap 15 min, or `Retry-After`). Dashboard banner. Fail-open
   if the cooldown file is missing. GET status still does not start runners.

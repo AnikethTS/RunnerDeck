@@ -172,6 +172,7 @@ $csrfToken = Csrf::token();
 Layout::htmlOpen('RunnerDeck — Settings');
 Layout::topbarStart();
 Layout::topbarEndStart();
+Layout::pageNav('settings.php');
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 echo HostingWarnings::html();

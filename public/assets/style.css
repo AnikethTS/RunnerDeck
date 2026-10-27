@@ -145,6 +145,51 @@ body {
 }
 .version-tag { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .org-tag { color: var(--text-muted); font-size: 13px; }
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.page-nav-link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.page-nav-link:hover { color: var(--text-primary); }
+.page-nav-link[aria-current="page"] {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.ops-main {
+  padding: 20px 20px 48px;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+.ops-history-grid { margin: 0 0 16px; }
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 16px 0 0;
+}
+.ops-table th,
+.ops-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ops-table th { color: var(--text-muted); font-weight: 600; }
+.ops-row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ops-row-actions form { margin: 0; }
+.history-bar { fill: var(--brand); opacity: 0.85; }
 
 .update-badge {
   display: inline-flex;

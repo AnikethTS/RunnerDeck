@@ -112,4 +112,20 @@ final class HostBundleSnapshotTest extends TestCase
         $this->assertFileDoesNotExist($dir . '/host-2026-01-01.json');
         $this->assertFileExists($dir . '/host-2026-01-09.json');
     }
+
+    #[RunInSeparateProcess]
+    public function testListAndDeleteRejectPathTraversal(): void
+    {
+        putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
+        \RunnerDeck\Core\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Core\HostBundleSnapshot::tick();
+        $day = gmdate('Y-m-d', 1_700_000_000);
+        $rows = \RunnerDeck\Core\HostBundleSnapshot::list();
+        $this->assertSame($day, $rows[0]['day']);
+        $this->assertNotNull(\RunnerDeck\Core\HostBundleSnapshot::pathFor($day));
+        $this->assertNull(\RunnerDeck\Core\HostBundleSnapshot::pathFor('../settings'));
+        $this->assertFalse(\RunnerDeck\Core\HostBundleSnapshot::delete('../settings'));
+        $this->assertTrue(\RunnerDeck\Core\HostBundleSnapshot::delete($day));
+        $this->assertSame([], \RunnerDeck\Core\HostBundleSnapshot::list());
+    }
 }

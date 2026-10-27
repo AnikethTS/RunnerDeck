@@ -89,6 +89,11 @@ runnerdeck/
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
     settings.php    scope/org/repo/label, GitHub App, automation, crash webhook, login, settings/host-bundle import
+    history.php     24h CPU/RAM/disk-free charts (local samples)
+    crashes.php     7-day crash bars and list
+    outbox.php      webhook retry queue (CSRF drop; GET does not send)
+    bundles.php     daily host-bundle files (download / CSRF delete)
+    download_snapshot.php  one stored host-YYYY-MM-DD.json
     download_log.php      runner.log (+ rotated) download
     download_applog.php   storage/runnerdeck.log download
     download_settings.php redacted settings.json download

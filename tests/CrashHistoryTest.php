@@ -91,4 +91,15 @@ final class CrashHistoryTest extends TestCase
         $this->assertCount(2, $times['runner-1']);
         $this->assertGreaterThan($times['runner-1'][1], $times['runner-1'][0]);
     }
+
+    #[RunInSeparateProcess]
+    public function testCountsByUtcDayFillsZeros(): void
+    {
+        \RunnerDeck\Pool\CrashHistory::record('runner-1', 'acme-1');
+        $days = \RunnerDeck\Pool\CrashHistory::countsByUtcDay(7);
+        $this->assertCount(7, $days);
+        $this->assertSame(gmdate('Y-m-d'), $days[6]['day']);
+        $this->assertSame(1, $days[6]['count']);
+        $this->assertSame(0, $days[0]['count']);
+    }
 }

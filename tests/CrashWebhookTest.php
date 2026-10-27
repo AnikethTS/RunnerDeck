@@ -175,6 +175,14 @@ final class CrashWebhookTest extends TestCase
 
         $this->addToAssertionCount(1);
         $this->assertSame(1, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
+        $pending = \RunnerDeck\Alert\WebhookOutbox::pending();
+        $this->assertSame('example.com', $pending[0]['host']);
+        $this->assertStringContainsString('could not resolve', $pending[0]['last_error']);
+        $this->assertArrayNotHasKey('url', $pending[0]);
+        $this->assertArrayNotHasKey('payload', $pending[0]);
+        $this->assertTrue(\RunnerDeck\Alert\WebhookOutbox::drop($pending[0]['id']));
+        $this->assertSame(0, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
+        $this->assertFalse(\RunnerDeck\Alert\WebhookOutbox::drop('not-a-hash'));
     }
 
     #[RunInSeparateProcess]

@@ -137,7 +137,7 @@ final class CrashWebhook
             WebhookOutbox::forget($url, $event, $message, $runnerId);
             return;
         }
-        WebhookOutbox::enqueue($url, $payload, $event, $message, $runnerId);
+        WebhookOutbox::enqueue($url, $payload, $event, $message, $runnerId, $stderr);
         AppLog::errorThrottled('crash_webhook', 'failed to deliver ' . $event . ' notification', [
             'runner' => $runnerId,
             'stderr' => $stderr,

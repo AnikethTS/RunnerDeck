@@ -30,6 +30,65 @@ final class WebhookOutbox
     }
 
     /**
+     * Operator view: no payload, no full webhook URL.
+     *
+     * @return list<array{
+     *     id: string,
+     *     event: string,
+     *     runner: ?string,
+     *     message: string,
+     *     attempts: int,
+     *     next_at: int,
+     *     created_at: int,
+     *     last_error: string,
+     *     host: string
+     * }>
+     */
+    public static function pending(): array
+    {
+        $out = [];
+        foreach (self::load()['items'] as $item) {
+            $url = (string) ($item['url'] ?? '');
+            $host = parse_url($url, PHP_URL_HOST);
+            $out[] = [
+                'id' => (string) ($item['id'] ?? ''),
+                'event' => is_string($item['event'] ?? null) ? (string) $item['event'] : '',
+                'runner' => is_string($item['runner'] ?? null) ? (string) $item['runner'] : null,
+                'message' => is_string($item['message'] ?? null) ? (string) $item['message'] : '',
+                'attempts' => (int) ($item['attempts'] ?? 0),
+                'next_at' => (int) ($item['next_at'] ?? 0),
+                'created_at' => (int) ($item['created_at'] ?? 0),
+                'last_error' => is_string($item['last_error'] ?? null)
+                    ? (string) $item['last_error']
+                    : '',
+                'host' => is_string($host) && $host !== '' ? $host : 'webhook',
+            ];
+        }
+        return $out;
+    }
+
+    public static function drop(string $id): bool
+    {
+        if (preg_match('/^[a-f0-9]{64}$/', $id) !== 1) {
+            return false;
+        }
+        $data = self::load();
+        $kept = [];
+        foreach ($data['items'] as $item) {
+            if (($item['id'] ?? '') !== $id) {
+                $kept[] = $item;
+            }
+        }
+        if (count($kept) === count($data['items'])) {
+            return false;
+        }
+        $data['items'] = $kept;
+        self::write($data);
+        AppLog::info('webhook.outbox.drop', 'dropped pending webhook ' . substr($id, 0, 8));
+        return true;
+    }
+
+    /**
      * @param array<string, mixed> $payload
      */
     public static function enqueue(
@@ -37,12 +96,17 @@ final class WebhookOutbox
         array $payload,
         string $event,
         string $message,
-        ?string $runner
+        ?string $runner,
+        string $lastError = ''
     ): void {
         $id = self::id($url, $event, $message, $runner);
         $data = self::load();
-        foreach ($data['items'] as $item) {
+        foreach ($data['items'] as $i => $item) {
             if (($item['id'] ?? '') === $id) {
+                if ($lastError !== '') {
+                    $data['items'][$i]['last_error'] = substr($lastError, 0, 240);
+                    self::write($data);
+                }
                 return;
             }
         }
@@ -57,6 +121,7 @@ final class WebhookOutbox
             'attempts' => 0,
             'next_at' => $now + 30,
             'created_at' => $now,
+            'last_error' => substr($lastError, 0, 240),
         ];
         if (count($data['items']) > self::MAX_ITEMS) {
             $data['items'] = array_slice($data['items'], -self::MAX_ITEMS);
@@ -102,6 +167,7 @@ final class WebhookOutbox
                 continue;
             }
             $attempts++;
+            $item['last_error'] = 'retry failed';
             if ($attempts >= self::MAX_ATTEMPTS) {
                 AppLog::errorThrottled('crash_webhook', 'gave up retrying crash notification', [
                     'runner' => is_string($item['runner'] ?? null) ? (string) $item['runner'] : null,

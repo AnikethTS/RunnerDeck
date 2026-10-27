@@ -157,4 +157,38 @@ final class CrashHistory
             return [];
         }
     }
+
+    /**
+     * UTC day buckets, oldest first. Missing days are zero.
+     *
+     * @return list<array{day: string, count: int}>
+     */
+    public static function countsByUtcDay(int $days = 7): array
+    {
+        $days = max(1, min(31, $days));
+        $now = time();
+        $map = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $map[gmdate('Y-m-d', $now - ($i * 86400))] = 0;
+        }
+        $cutoff = $now - ($days * 86400);
+        try {
+            $db = self::db();
+            $stmt = $db->prepare('SELECT ts FROM crash_events WHERE ts >= ?');
+            $stmt->execute([$cutoff]);
+            foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+                $day = gmdate('Y-m-d', (int) $row['ts']);
+                if (isset($map[$day])) {
+                    $map[$day]++;
+                }
+            }
+        } catch (\Throwable) {
+            // empty buckets
+        }
+        $out = [];
+        foreach ($map as $day => $count) {
+            $out[] = ['day' => $day, 'count' => $count];
+        }
+        return $out;
+    }
 }
