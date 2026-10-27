@@ -8,6 +8,10 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- **Landing page**: platform table matches current CI (Ubuntu 22.04,
+  Debian 12 apt, Fedora / Rocky / RHEL UBI dnf, macOS 15), and the feature
+  list covers tabbed Settings plus history / crashes / outbox / bundles.
+
 - **E2E CI**: cache Playwright Chromium and skip `--with-deps` on
   `ubuntu-latest` (the image already has the libraries; apt was ~6 minutes).
 
