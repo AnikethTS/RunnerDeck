@@ -24,6 +24,9 @@ if ($path === null) {
     exit;
 }
 
+// $path is host-YYYY-MM-DD.json under storage/bundles after isDay() and
+// realpath prefix checks in HostBundleSnapshot::pathFor() — not a free path.
+// nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename
 $payload = file_get_contents($path);
 if ($payload === false) {
     http_response_code(500);
