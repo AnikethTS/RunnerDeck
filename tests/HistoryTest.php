@@ -89,7 +89,7 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecordIsBestEffortWhenPathIsUnwritable(): void
     {
-        putenv('RUNNERDECK_HISTORY_FILE=/nonexistent-root-only-path/history.sqlite');
+        putenv('RUNNERDECK_HISTORY_FILE=/dev/null/runnerdeck-unwritable/history.sqlite');
 
         \RunnerDeck\Host\History::record(1.0, 1);
 

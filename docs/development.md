@@ -40,7 +40,10 @@ by mocking `action=status` responses, and `action=queue` is mocked so
 tests never walk live workflow runs).
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-on `ubuntu-latest` and `macos-latest` (PHP 8.1), a dedicated Alpine (musl)
+on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, and `macos-15` (PHP 8.1),
+PHPUnit on those hosts plus `ubuntu-22.04-arm`, distro-`apt` PHPUnit on
+Ubuntu 22.04 and Debian 12, distro-`dnf` PHPUnit on Fedora, Rocky 9, and
+RHEL UBI 9, a dedicated Alpine (musl)
 container (PHP 8.5.12, same digest as the Dockerfile), and the
 [Docker image](docker.md) itself (`docker build` + env/lib assertions +
 boot + hit `action=status` through the real port mapping) for every
@@ -119,6 +122,7 @@ runnerdeck/
   run.sh            local php -S entry (also starts watch-auto-restart)
   bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
+  bin/ci-apt-phpunit.sh       Composer + PHPUnit for distro apt/dnf PHP jobs
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml
