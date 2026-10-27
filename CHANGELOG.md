@@ -10,7 +10,7 @@ follows [SemVer](https://semver.org/).
 
 - **CI scanners**: Shellcheck on `run.sh` and `bin/*.sh`, gitleaks on PRs,
   Trivy on the GHCR image at release, and Playwright screenshot snapshots
-  of the README/landing stills so UI drift fails the e2e job.
+  of the README/landing stills (dark mode) so UI drift fails the e2e job.
 
 ### Changed
 

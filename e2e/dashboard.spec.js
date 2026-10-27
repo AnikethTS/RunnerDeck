@@ -1027,7 +1027,18 @@ test('ops pages do not overflow at 390px', async ({ page }) => {
   await assertNoHorizontalOverflow(page);
 });
 
+async function enableDarkMode(page) {
+  const baseURL = test.info().project.use.baseURL;
+  await page.context().addCookies([{
+    name: 'runnerdeck-theme',
+    value: 'dark',
+    url: `${baseURL}/`,
+  }]);
+  await page.emulateMedia({ colorScheme: 'dark' });
+}
+
 async function expectReadmeShot(page, name, opts = {}) {
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.mouse.move(0, 0);
   await page.evaluate(() => {
     const el = document.activeElement;
@@ -1049,6 +1060,7 @@ async function expectReadmeShot(page, name, opts = {}) {
 }
 
 test('README dashboard screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
   await mockReadmeStatus(page, [
     fixtureRunner({ id: 'runner-base', agent_name: 'e2e-runner-base' }),
     fixtureRunner({
@@ -1069,12 +1081,14 @@ test('README dashboard screenshot stays current', async ({ page }) => {
 });
 
 test('README settings screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
   await page.goto('/settings.php');
   await expect(page.getByRole('tab', { name: 'GitHub' })).toBeVisible();
   await expectReadmeShot(page, 'settings', { fullPage: true });
 });
 
 test('README add-runner screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
   await mockReadmeStatus(page, [fixtureRunner()]);
   await page.goto('/');
   await page.locator('#btn-refresh').click();
@@ -1084,6 +1098,7 @@ test('README add-runner screenshot stays current', async ({ page }) => {
 });
 
 test('README live-log screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
   await mockReadmeStatus(page, [fixtureRunner()]);
   await mockLogStream(page);
   await page.goto('/');

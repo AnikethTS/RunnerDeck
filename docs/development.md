@@ -32,9 +32,10 @@ npm run audit     # npm audit (see scripts/npm-audit.mjs)
 npm run e2e       # Playwright — see e2e/dashboard.spec.js
 ```
 
-`npm run e2e:update-shots` regenerates the README/landing PNGs (and copies
-them into `docs/screenshots/`). Prefer generating those on Ubuntu so they
-match CI; Fedora/macOS font stacks will otherwise fail the pixel compare.
+`npm run e2e:update-shots` regenerates the README/landing PNGs in dark
+mode (and copies them into `docs/screenshots/`). Prefer generating those
+on Ubuntu so they match CI; Fedora/macOS font stacks will otherwise fail
+the pixel compare.
 
 `npm run e2e` boots a real `php -S` server and drives the real dashboard in
 a real (headless) browser — see the comment at the top of
