@@ -248,31 +248,42 @@ jobs:
       - name: Install Composer and run PHPUnit
         run: bash bin/ci-apt-phpunit.sh
 
-  wsl-test:
-    name: Unit tests (WSL2 Ubuntu 22.04, apt PHP)
-    runs-on: windows-2022
-    timeout-minutes: 25
-    permissions:
-      contents: read
-      actions: write
+  dnf-php-test:
+    name: Unit tests (${{ matrix.name }}, dnf PHP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Fedora", image: "fedora:latest" }
+          - { name: "Rocky 9", image: "rockylinux:9" }
+          - { name: "RHEL UBI 9", image: "redhat/ubi9:latest" }
+    container:
+      image: ${{ matrix.image }}
     steps:
+      - name: Install git, curl, unzip, and distro PHP
+        run: |
+          set -euo pipefail
+          . /etc/os-release
+          dnf -y --setopt=install_weak_deps=0 install \
+            ca-certificates curl git unzip tar findutils
+          # EL9 AppStream default PHP is 8.0; enable 8.2 (posix/pcntl in php-process).
+          if [ "${ID}" != fedora ] && [ "${VERSION_ID%%.*}" = 9 ]; then
+            dnf -y module reset php || true
+            dnf -y module enable php:8.2
+          fi
+          dnf -y --setopt=install_weak_deps=0 install \
+            php-cli php-process php-xml php-mbstring php-pdo php-curl
+          dnf -y --setopt=install_weak_deps=0 install php-json || true
+          dnf -y --setopt=install_weak_deps=0 install php-pecl-zip || \
+            dnf -y --setopt=install_weak_deps=0 install php-zip || true
+          php -v
+          php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: Vampire/setup-wsl@887f39deb6c0976365e546926fe66f41b77d65ff # v6.1.0
-        with:
-          distribution: Ubuntu-22.04
-          wsl-version: "2"
-          update: true
-          set-as-default: true
-          wsl-shell-user: root
-          additional-packages: >-
-            ca-certificates curl git unzip
-            php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
-
-      # Ubuntu-22.04's WSL distro ID is "Ubuntu", not "Ubuntu-22.04".
-      # Use the wrapper Vampire/setup-wsl installs instead of `wsl -d`.
-      - name: PHPUnit inside WSL2
-        shell: wsl-bash {0}
+      - name: Install Composer and run PHPUnit
         run: bash bin/ci-apt-phpunit.sh
 
   alpine-smoke-test:

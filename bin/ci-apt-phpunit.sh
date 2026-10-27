@@ -1,21 +1,11 @@
 #!/usr/bin/env bash
-# Distro-package PHP (apt) + Composer + PHPUnit. Used by the Ubuntu 22.04 /
-# Debian 12 container jobs and the WSL2 Ubuntu 22.04 job.
+# Distro-package PHP + Composer + PHPUnit. Used by the apt (Ubuntu/Debian)
+# and dnf (Fedora / Rocky / RHEL UBI) container jobs.
 set -euo pipefail
 
 export COMPOSER_ALLOW_SUPERUSER=1
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# WSL checkout lives on /mnt/d (9P). Composer extract + PHPUnit from there
-# takes many minutes; copy onto the Linux disk first.
-if [[ "$root" == /mnt/* ]]; then
-    dest=/tmp/runnerdeck-ci
-    rm -rf "$dest"
-    mkdir -p "$dest"
-    tar -C "$root" --exclude='./.git' --exclude='./vendor' --exclude='./node_modules' -cf - . \
-        | tar -C "$dest" -xf -
-    root="$dest"
-fi
 cd "$root"
 
 php -v
