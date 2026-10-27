@@ -23,11 +23,11 @@ final class SystemStats
         $totalMemKb = self::totalMemKb();
 
         return [
-            'cpu_percent' => $cores > 0 ? min(100.0, $cpuSum / $cores) : null,
+            'cpu_percent' => $cores > 0 ? (float) min(100.0, $cpuSum / $cores) : null,
             'cpu_cores' => $cores,
             'mem_used_kb' => $memUsedKb,
             'mem_total_kb' => $totalMemKb,
-            'mem_percent' => $totalMemKb ? min(100.0, ($memUsedKb / $totalMemKb) * 100) : null,
+            'mem_percent' => $totalMemKb ? (float) min(100.0, ($memUsedKb / $totalMemKb) * 100) : null,
         ];
     }
 

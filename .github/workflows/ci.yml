@@ -266,7 +266,8 @@ jobs:
         run: |
           set -euo pipefail
           . /etc/os-release
-          dnf -y --setopt=install_weak_deps=0 install \
+          # EL9 ships curl-minimal, which conflicts with curl unless erased.
+          dnf -y --setopt=install_weak_deps=0 --allowerasing install \
             ca-certificates curl git unzip tar findutils
           # EL9 AppStream default PHP is 8.0; enable 8.2 (posix/pcntl in php-process).
           if [ "${ID}" != fedora ] && [ "${VERSION_ID%%.*}" = 9 ]; then
