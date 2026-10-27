@@ -68,9 +68,9 @@ final class HostingWarnings
         $html = '<div id="hosting-warnings">' . "\n";
         foreach ($items as $row) {
             $cls = $row['level'] === 'info' ? 'banner banner-info' : 'banner banner-warning';
-            $html .= '  <div class="' . $cls . '" role="status">'
+            $html .= '  <div class="' . $cls . '" role="status"><div class="page-shell">'
                 . htmlspecialchars($row['text'], ENT_QUOTES, 'UTF-8')
-                . "</div>\n";
+                . "</div></div>\n";
         }
         return $html . "</div>\n";
     }

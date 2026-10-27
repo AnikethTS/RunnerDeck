@@ -22,8 +22,8 @@ $events = CrashHistory::exportEvents(100);
 
 Layout::htmlOpen('RunnerDeck — Crashes');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('crashes.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>
@@ -45,6 +45,7 @@ Layout::topbarEnd();
     <?php if ($events === []) : ?>
       <p class="muted">No crash events in the last 7 days.</p>
     <?php else : ?>
+      <div class="table-scroll">
       <table class="ops-table">
         <thead>
           <tr><th>When (UTC)</th><th>Slot</th><th>Agent</th></tr>
@@ -59,6 +60,7 @@ Layout::topbarEnd();
           <?php endforeach; ?>
         </tbody>
       </table>
+      </div>
     <?php endif; ?>
   </main>
 <?php

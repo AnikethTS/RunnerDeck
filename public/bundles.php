@@ -28,11 +28,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 $csrfToken = Csrf::token();
 $rows = HostBundleSnapshot::list();
+$dlHelp = Layout::hoverHelp('Download this day’s JSON. TOTP is never in the file.');
+$delHelp = Layout::hoverHelp('Delete this snapshot file. Does not change running settings.');
 
 Layout::htmlOpen('RunnerDeck — Bundles');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('bundles.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>
@@ -53,6 +55,7 @@ Layout::topbarEnd();
     <?php if ($rows === []) : ?>
       <p class="muted">No snapshot files yet.</p>
     <?php else : ?>
+      <div class="table-scroll">
       <table class="ops-table">
         <thead>
           <tr><th>UTC day</th><th>Size</th><th>Written</th><th></th></tr>
@@ -65,19 +68,21 @@ Layout::topbarEnd();
               <td><?= htmlspecialchars(gmdate('Y-m-d H:i:s', $row['mtime'])) ?></td>
               <td class="ops-row-actions">
                 <a
-                  class="btn btn-sm"
+                  class="btn btn-sm help-hover"
                   href="download_snapshot.php?day=<?= htmlspecialchars($row['day']) ?>"
+                  <?= $dlHelp ?>
                 >Download</a>
                 <form method="post">
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
                   <input type="hidden" name="delete_day" value="<?= htmlspecialchars($row['day']) ?>" />
-                  <button type="submit" class="btn btn-sm">Delete</button>
+                  <button type="submit" class="btn btn-sm help-hover"<?= $delHelp ?>>Delete</button>
                 </form>
               </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
+      </div>
     <?php endif; ?>
   </main>
 <?php

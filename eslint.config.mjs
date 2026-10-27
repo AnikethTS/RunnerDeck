@@ -10,7 +10,10 @@ export default [
       globals: {
         window: 'readonly',
         document: 'readonly',
+        history: 'readonly',
         location: 'readonly',
+        Element: 'readonly',
+        HTMLElement: 'readonly',
         fetch: 'readonly',
         localStorage: 'readonly',
         EventSource: 'readonly',

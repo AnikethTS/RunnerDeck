@@ -558,18 +558,28 @@ test('Local process sorts independently by CPU and uptime, including absent valu
 
 test('settings page toggles scope fields and persists a change', async ({ page }) => {
   await page.goto('/settings.php');
-  await expect(page.locator('#this-host')).toBeVisible();
-  await expect(page.locator('#this-host')).toContainText('php -S');
+  await expect(page.getByRole('tab', { name: 'GitHub' })).toBeVisible();
   await expect(page.locator('#settings-org-field')).toBeVisible();
-  await expect(page.locator('#settings-session-idle')).toBeVisible();
-  await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
   await expect(page.locator('#settings-github-app-id')).toBeVisible();
-  await expect(page.locator('#settings-slot-cpu')).toBeVisible();
-  await expect(page.locator('input[name="syslog"]')).toBeVisible();
-  await expect(page.locator('a[href="download_bundle.php"]')).toBeVisible();
-  await expect(page.locator('input[name="include_secrets"]')).toBeVisible();
   await expect(page.locator('#settings-repo-field')).toBeHidden();
 
+  await page.getByRole('tab', { name: 'Pool' }).click();
+  await expect(page.locator('input[name="auto_clear_work"]')).toBeVisible();
+  await expect(page.locator('#settings-slot-cpu')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Alerts' }).click();
+  await expect(page.locator('input[name="syslog"]')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Access' }).click();
+  await expect(page.locator('#settings-session-idle')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Host' }).click();
+  await expect(page.locator('#this-host')).toBeVisible();
+  await expect(page.locator('#this-host')).toContainText('php -S');
+  await expect(page.locator('a[href="download_bundle.php"]')).toBeVisible();
+  await expect(page.locator('input[name="include_secrets"]')).toBeVisible();
+
+  await page.getByRole('tab', { name: 'GitHub' }).click();
   await page.locator('#settings-scope').selectOption('repo');
   await expect(page.locator('#settings-org-field')).toBeHidden();
   await expect(page.locator('#settings-repo-field')).toBeVisible();
@@ -577,7 +587,7 @@ test('settings page toggles scope fields and persists a change', async ({ page }
   await page.locator('#settings-repo').fill('e2e-org/e2e-repo');
   await page.locator('#settings-save').click();
 
-  await expect(page).toHaveURL(/index\.php$/);
+  await expect(page).toHaveURL(/index\.php(?:#.*)?$/);
   await expect(page.locator('.org-tag')).toContainText('e2e-org/e2e-repo');
 });
 
@@ -608,19 +618,21 @@ test('settings page shows a validation error and keeps entered values', async ({
   await page.goto('/settings.php');
   await page.locator('#settings-scope').selectOption('org');
   await page.locator('#settings-org').fill('e2e-org');
+  await page.getByRole('tab', { name: 'Alerts' }).click();
   // A scheme browsers accept as a valid URL (so native type="url" validation
   // doesn't block the submit) but that our own scheme allowlist rejects —
   // this exercises the server-side check, not the browser's.
   await page.locator('#settings-crash-webhook-url').fill('ftp://example.com');
   await page.locator('#settings-save').click();
 
-  await expect(page).toHaveURL(/settings\.php$/);
+  await expect(page).toHaveURL(/settings\.php(?:#.*)?$/);
   await expect(page.locator('.setup-error')).toContainText('crash webhook url must start with');
   await expect(page.locator('#settings-org')).toHaveValue('e2e-org');
 });
 
 test('settings page test-webhook button reports delivery failure', async ({ page }) => {
   await page.goto('/settings.php');
+  await page.getByRole('tab', { name: 'Alerts' }).click();
   await page.locator('#settings-crash-webhook-url').fill('https://127.0.0.1:1/unreachable');
   await page.locator('#settings-test-webhook').click();
 
@@ -917,4 +929,80 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
   await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('build');
   await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('unit');
   await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('success');
+});
+
+async function assertNoHorizontalOverflow(page) {
+  const extra = await page.evaluate(
+    () => Math.ceil(document.documentElement.scrollWidth - window.innerWidth),
+  );
+  expect(extra).toBeLessThanOrEqual(1);
+}
+
+test('dashboard layout stays aligned and does not overflow at 1280px', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expect(page.locator('.topbar-inner')).toBeVisible();
+  await expect(page.locator('.topbar-brand')).toBeVisible();
+  await expect(page.locator('.page-nav-link[aria-current="page"]')).toHaveText('Dashboard');
+  const statCols = await page.locator('.stat-grid').evaluate(
+    (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+  );
+  expect(statCols).toBe(3);
+  await assertNoHorizontalOverflow(page);
+});
+
+test('dashboard and settings are usable at 390px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.locator('.stat-grid')).toBeVisible();
+  const statCols = await page.locator('.stat-grid').evaluate(
+    (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+  );
+  expect(statCols).toBe(1);
+  await expect(page.locator('#btn-add-runner')).toBeVisible();
+  await assertNoHorizontalOverflow(page);
+
+  await page.goto('/settings.php');
+  await expect(page.getByRole('tab', { name: 'GitHub' })).toBeVisible();
+  const tabDir = await page.locator('.settings-tabs').evaluate(
+    (el) => getComputedStyle(el).flexDirection,
+  );
+  expect(tabDir).toBe('row');
+  await page.getByRole('tab', { name: 'Pool' }).click();
+  await expect(page.locator('#settings-slot-cpu')).toBeVisible();
+  await assertNoHorizontalOverflow(page);
+});
+
+test('history charts stack on a phone-sized viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/history.php');
+  const cols = await page.locator('.history-grid').evaluate(
+    (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
+  );
+  expect(cols).toBe(1);
+  await assertNoHorizontalOverflow(page);
+});
+
+test('header nav stays on one row and reaches History at 390px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.locator('.topbar-brand')).toBeVisible();
+  const wrap = await page.locator('.page-nav').evaluate(
+    (el) => getComputedStyle(el).flexWrap,
+  );
+  expect(wrap).toBe('nowrap');
+  await page.locator('.page-nav a[href="history.php"]').click();
+  await expect(page).toHaveURL(/history\.php/);
+  await expect(page.locator('.page-nav-link[aria-current="page"]')).toHaveText('History');
+  await assertNoHorizontalOverflow(page);
+});
+
+test('ops pages do not overflow at 390px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/outbox.php');
+  await expect(page.locator('.ops-main')).toBeVisible();
+  await assertNoHorizontalOverflow(page);
+  await page.goto('/crashes.php');
+  await expect(page.locator('.ops-main')).toBeVisible();
+  await assertNoHorizontalOverflow(page);
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Ui;
 
+use RunnerDeck\Core\Layout;
 use RunnerDeck\GitHub\GithubAuth;
 use RunnerDeck\Host\SlotDisk;
 
@@ -252,7 +253,11 @@ final class DashboardView
         $stopDis = $running ? '' : ' disabled';
         $drainDis = $running ? '' : ' disabled';
         $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
-        $pauseLabel = !empty($runner['auto_restart_paused']) ? 'Resume AR' : 'Pause AR';
+        $paused = !empty($runner['auto_restart_paused']);
+        $pauseLabel = $paused ? 'Resume AR' : 'Pause AR';
+        $pauseHelp = $paused
+            ? 'Allow auto-restart on this slot again.'
+            : 'Hold auto-restart for this slot only. Crashes still flag.';
         $forceIdleHidden = !empty($runner['stuck_busy_flagged']) ? '' : ' hidden';
 
         return ''
@@ -269,26 +274,47 @@ final class DashboardView
             . '      <td>' . self::localCell($runner) . '</td>' . "\n"
             . '      <td>' . "\n"
             . '        <pre class="log-preview">' . self::e($logPreview) . '</pre>' . "\n"
-            . '        <button class="log-link" data-action="view-log">View live log &rarr;</button>' . "\n"
+            . '        <button class="log-link" data-action="view-log"'
+            . Layout::hoverHelp('Open a live tail of this slot’s runner.log.')
+            . '>View live log &rarr;</button>' . "\n"
             . '      </td>' . "\n"
             . '      <td>' . "\n"
             . '        <div class="row-actions">' . "\n"
             . '          <button class="btn btn-sm btn-good" data-action="start"'
-            . $startDis . '>Start</button>' . "\n"
+            . $startDis
+            . Layout::hoverHelp('Start this slot’s runner process.')
+            . '>Start</button>' . "\n"
             . '          <button class="btn btn-sm btn-critical" data-action="stop"'
-            . $stopDis . '>Stop</button>' . "\n"
+            . $stopDis
+            . Layout::hoverHelp('Stop this slot now. An in-progress job is interrupted.')
+            . '>Stop</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="drain"'
-            . $drainDis . '>Drain</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="restart">Restart</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="pause-auto-restart">'
+            . $drainDis
+            . Layout::hoverHelp('Wait until GitHub shows idle, then stop. Keeps the current job.')
+            . '>Drain</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="restart"'
+            . Layout::hoverHelp('Stop then start this slot immediately.')
+            . '>Restart</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="rolling-restart"'
+            . Layout::hoverHelp('Wait for idle, then start again so this slot is not double-busy.')
+            . '>Roll restart</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="pause-auto-restart"'
+            . Layout::hoverHelp($pauseHelp) . '>'
             . $pauseLabel . '</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="rename">Rename</button>' . "\n"
+            . '          <button class="btn btn-sm" data-action="rename"'
+            . Layout::hoverHelp('Change the GitHub runner name for this slot.')
+            . '>Rename</button>' . "\n"
             . '          <button class="btn btn-sm" data-action="clear-work"'
-            . $clearDis . '>Clear work</button>' . "\n"
+            . $clearDis
+            . Layout::hoverHelp('Delete this slot’s _work directory. Refuses while running.')
+            . '>Clear work</button>' . "\n"
             . '          <button class="btn btn-sm btn-critical" data-action="force-idle"'
-            . $forceIdleHidden . '>Force idle</button>' . "\n"
-            . '          <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>' . "\n"
+            . $forceIdleHidden
+            . Layout::hoverHelp('GitHub still says busy but the process is gone. Clear that stuck flag.')
+            . '>Force idle</button>' . "\n"
+            . '          <button class="btn btn-sm btn-critical" data-action="delete"'
+            . Layout::hoverHelp('Deregister on GitHub and remove this slot from the host.')
+            . '>Delete</button>' . "\n"
             . '        </div>' . "\n"
             . '      </td>' . "\n"
             . '    </tr>' . "\n";
@@ -448,7 +474,9 @@ final class DashboardView
         $count = (int) $n;
         $text = $count === 1 ? '1 crash (7d)' : $count . ' crashes (7d)';
         return '<div class="row-flag"><button type="button" class="crash-history-btn" data-action="crash-history" '
-            . 'aria-label="Show crash times for the last 7 days">'
+            . 'aria-label="Show crash times for the last 7 days"'
+            . Layout::hoverHelp('Show when this slot crashed in the last 7 days.')
+            . '>'
             . self::badge($text, 'warning') . '</button></div>';
     }
 
@@ -483,7 +511,9 @@ final class DashboardView
             . '<option value="error">Error</option>'
             . '<option value="info">Info</option>'
             . '</select></label>' . "\n"
-            . '          <button type="button" id="btn-clear-applog" class="btn btn-sm">Clear</button>' . "\n"
+            . '          <button type="button" id="btn-clear-applog" class="btn btn-sm"'
+            . Layout::hoverHelp('Wipe current and rotated app logs, then write one cleared line.')
+            . '>Clear</button>' . "\n"
             . "        </div>\n"
             . '        <div id="app-log-body">' . self::errorsBody($normalized) . "</div>\n"
             . "      </details>\n";
@@ -601,7 +631,9 @@ final class DashboardView
             $items .= '<li><span class="runner-name">' . $name . '</span>'
                 . ' <span class="muted">' . $status . $busy . '</span>'
                 . ' <button type="button" class="btn btn-sm btn-critical" data-action="remove-orphan" data-name="'
-                . $name . '">Remove from GitHub</button></li>';
+                . $name . '"'
+                . Layout::hoverHelp('Deregister this name on GitHub. No local slot on this host.')
+                . '>Remove from GitHub</button></li>';
         }
         if ($items === '') {
             return '';

@@ -6,24 +6,29 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **E2E CI**: cache Playwright Chromium and skip `--with-deps` on
+  `ubuntu-latest` (the image already has the libraries; apt was ~6 minutes).
+
+- **Header**: sticky bar, brand links home, version on every page, org/label
+  chip next to Log out, and a single-row page nav that scrolls on a narrow
+  screen. Page help is on the link itself, not an extra **i** per item.
+
 ### Added
 
-- **Log retention**: optional days (1–365) to delete idle-slot `runner.log`,
-  `runner.log.1`, and `_diag` files older than that. Never while the process
-  is running. Never deletes `_work`. Runs from watch, including maintenance.
+- **Responsive shell**: shared page gutter and max width so the top bar,
+  banners, main, settings, and ops pages line up. Stats, charts, settings
+  tabs, and tables adapt at 900 / 720 / 520 px.
 
-- **GitHub API quota**: last `X-RateLimit-*` from `gh api --include`. Banner
-  when remaining is under 100 or ≤10% of the limit. The GitHub stats card
-  shows remaining/limit when known. Missing headers fail open.
+- **Settings sections**: GitHub, Pool, Alerts, Access, and Host are tabs
+  instead of one long page. Save still writes every tab. Sticky Save bar
+  stays at the bottom.
 
-- **Outbox gave up**: after 8 failed webhook retries, a dashboard banner
-  points at Outbox for 7 days. A later successful delivery or a drop clears
-  it.
-
-- **Pin runner package SHA-256**: Settings / `RUNNERDECK_AGENT_SHA`. Add
-  and Upgrade refuse a GitHub checksum that does not match. If GitHub omits
-  the checksum, the downloaded file is still checked. The agent-behind
-  banner is suppressed while a pin is set.
+- **Help on controls**: an **i** next to stats, and hover text on page
+  names and pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
+  the rest state what they do. Help cards sit below the control (or above
+  if there is no room) so they stay on screen.
 
 - **Host history page** (`history.php`): 24h CPU, runner RSS, and pool disk-free
   charts from samples already written on dashboard polls. Dashboard sparklines

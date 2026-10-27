@@ -53,36 +53,98 @@ final class Layout
 
     public static function topbarStart(): void
     {
+        $version = htmlspecialchars(Config::version(), ENT_QUOTES, 'UTF-8');
         echo '  <header class="topbar">' . "\n";
+        echo '    <div class="topbar-inner page-shell">' . "\n";
+        echo '      <div class="topbar-lead">' . "\n";
+        echo '        <a class="topbar-brand" href="index.php">' . "\n";
         if (self::hasLogo()) {
-            echo '    <img src="assets/logo.png" alt="Logo" class="logo" />' . "\n";
+            echo '          <img src="assets/logo.png" alt="" class="logo" />' . "\n";
         }
-        echo "    <h1>RunnerDeck</h1>\n";
+        echo "          <h1 class=\"topbar-name\">RunnerDeck</h1>\n";
+        echo "        </a>\n";
+        echo '        <div class="topbar-meta">' . "\n";
+        echo '          <span class="edition-tag">Community</span>' . "\n";
+        echo '          <span class="version-tag">v' . $version . "</span>\n";
+        echo '          <a id="update-available" class="update-badge"'
+            . ' href="https://github.com/AnikethTS/RunnerDeck/releases/latest"'
+            . ' target="_blank" rel="noopener noreferrer" hidden></a>' . "\n";
+        echo "        </div>\n";
+        echo "      </div>\n";
     }
 
     public static function topbarEndStart(): void
     {
         echo '    <div class="topbar-end">' . "\n";
+        self::scopeChip();
     }
 
     public static function pageNav(string $current): void
     {
         $links = [
-            'index.php' => 'Dashboard',
-            'history.php' => 'History',
-            'crashes.php' => 'Crashes',
-            'outbox.php' => 'Outbox',
-            'bundles.php' => 'Bundles',
-            'settings.php' => 'Settings',
+            'index.php' => [
+                'Dashboard',
+                'This host’s runner pool, GitHub jobs, and start/stop.',
+            ],
+            'history.php' => [
+                'History',
+                '24-hour CPU, memory, and pool disk-free charts from local samples.',
+            ],
+            'crashes.php' => [
+                'Crashes',
+                'Seven UTC days of crash counts and the recent crash list. No GitHub.',
+            ],
+            'outbox.php' => [
+                'Outbox',
+                'Failed crash-webhook posts waiting to retry. This page does not send.',
+            ],
+            'bundles.php' => [
+                'Bundles',
+                'Daily host-bundle JSON files. Download or delete. TOTP is never included.',
+            ],
+            'settings.php' => [
+                'Settings',
+                'Org/repo, automation, webhook, GitHub App, login, and host copy.',
+            ],
         ];
         echo '      <nav class="page-nav" aria-label="Host pages">' . "\n";
-        foreach ($links as $href => $label) {
+        foreach ($links as $href => [$label, $help]) {
             $currentAttr = $current === $href ? ' aria-current="page"' : '';
             echo '        <a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
-                . '" class="page-nav-link"' . $currentAttr . '>'
+                . '" class="page-nav-link help-hover"' . $currentAttr
+                . self::hoverHelp($help) . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . "</a>\n";
         }
         echo "      </nav>\n";
+    }
+
+    public static function scopeChip(): void
+    {
+        if (!Config::isConfigured()) {
+            return;
+        }
+        try {
+            $place = Config::scope() === 'repo' ? Config::repo() : Config::org();
+        } catch (\RuntimeException) {
+            return;
+        }
+        $label = Config::label();
+        $text = $place . ' · ' . $label;
+        $safe = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        echo '      <span class="org-tag" title="' . $safe . '">' . $safe . "</span>\n";
+    }
+
+    /** Hover card text for toolbar buttons (CSS ::after). */
+    public static function hoverHelp(string $text): string
+    {
+        return ' data-help="' . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '"';
+    }
+
+    public static function infoIcon(string $text): string
+    {
+        $e = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return '<button type="button" class="help-tip" data-help="' . $e
+            . '" aria-label="' . $e . '">i</button>';
     }
 
     public static function logoutForm(string $csrfToken): void
@@ -93,7 +155,8 @@ final class Layout
         echo '      <form method="post" action="logout.php" class="logout-form">' . "\n";
         echo '        <input type="hidden" name="csrf_token" value="'
             . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />' . "\n";
-        echo '        <button type="submit" class="btn btn-sm">Log out</button>' . "\n";
+        echo '        <button type="submit" class="btn btn-sm help-hover"'
+            . self::hoverHelp('End this TOTP session.') . '>Log out</button>' . "\n";
         echo "      </form>\n";
     }
 
@@ -103,8 +166,9 @@ final class Layout
         $sunHidden = $theme === 'dark' ? ' hidden' : '';
         $moonHidden = $theme === 'dark' ? '' : ' hidden';
 
-        echo '    <button id="btn-theme-toggle" class="btn btn-sm" type="button"'
-            . ' aria-label="Toggle theme" title="Toggle theme">' . "\n";
+        echo '    <button id="btn-theme-toggle" class="btn btn-sm topbar-icon-btn help-hover" type="button"'
+            . ' aria-label="Toggle theme"'
+            . self::hoverHelp('Switch between light and dark. Saved in a cookie.') . '>' . "\n";
         echo '      <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24"'
             . ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"'
             . ' stroke-linejoin="round"' . $sunHidden . '>' . "\n";
@@ -124,6 +188,7 @@ final class Layout
         echo '        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>' . "\n";
         echo "      </svg>\n";
         echo "    </button>\n";
+        echo "    </div>\n";
         echo "    </div>\n";
         echo "  </header>\n";
     }

@@ -27,11 +27,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
 $csrfToken = Csrf::token();
 $items = WebhookOutbox::pending();
+$dropHelp = Layout::hoverHelp(
+    'Remove this item so it will not retry. A later real event can enqueue again.'
+);
 
 Layout::htmlOpen('RunnerDeck — Outbox');
 Layout::topbarStart();
-Layout::topbarEndStart();
 Layout::pageNav('outbox.php');
+Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
 Layout::topbarEnd();
 ?>
@@ -49,6 +52,7 @@ Layout::topbarEnd();
     <?php if ($items === []) : ?>
       <p class="muted">Nothing waiting to retry.</p>
     <?php else : ?>
+      <div class="table-scroll">
       <table class="ops-table">
         <thead>
           <tr>
@@ -76,13 +80,14 @@ Layout::topbarEnd();
                 <form method="post">
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
                   <input type="hidden" name="drop_id" value="<?= htmlspecialchars((string) $item['id']) ?>" />
-                  <button type="submit" class="btn btn-sm">Drop</button>
+                  <button type="submit" class="btn btn-sm help-hover"<?= $dropHelp ?>>Drop</button>
                 </form>
               </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
+      </div>
     <?php endif; ?>
   </main>
 <?php
