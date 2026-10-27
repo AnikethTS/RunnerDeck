@@ -106,9 +106,9 @@ runnerdeck/
   src/
     bootstrap.php   autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Core/           Config, Settings, Auth, TOTP, CSRF, session, layout, log, shell
-    GitHub/         gh client, GitHub App, queue cache, agent version, orphans
+    GitHub/         gh client, GitHub App, queue cache, agent version, orphans, backoff/clock/quota
     Host/           pressure, host mode, metrics, cgroups, history, disk
-    Pool/           runner dirs, start/stop, drain, rolling restart, crash state
+    Pool/           runner dirs, start/stop, drain, rolling restart, crash state, log retention
     Alert/          crash webhook, outbox retry, syslog, queue/long-job alerts
     Ui/             dashboard snapshot and first-paint HTML
     Http/           API router (`RunnerDeck\Http\Api`)
@@ -117,7 +117,7 @@ runnerdeck/
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
   run.sh            local php -S entry (also starts watch-auto-restart)
-  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot
+  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)

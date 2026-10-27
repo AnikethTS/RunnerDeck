@@ -23,6 +23,7 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS');
         \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
     }
 
@@ -37,6 +38,7 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_LONG_JOB_MINUTES');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
 
@@ -86,5 +88,14 @@ final class WatchHeartbeatTest extends TestCase
     {
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
+    }
+
+    #[RunInSeparateProcess]
+    public function testLogRetentionNeedsHeartbeat(): void
+    {
+        putenv('RUNNERDECK_LOG_RETENTION_DAYS=14');
+        $text = \RunnerDeck\Host\WatchHeartbeat::warning(false);
+        $this->assertNotNull($text);
+        $this->assertStringContainsString('log retention', $text);
     }
 }

@@ -82,6 +82,26 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('rate-limited', $banner['text']);
     }
 
+    public function testHealthBannerWhenGhQuotaLow(): void
+    {
+        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+            'gh_quota' => 'GitHub API quota is low (50/5000 remaining).',
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('quota is low', $banner['text']);
+    }
+
+    public function testHealthBannerWhenWebhookGaveUp(): void
+    {
+        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+            'webhook_gave_up' => 'Crash webhook gave up after max retries (runner_crash). See Outbox.',
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('gave up', $banner['text']);
+    }
+
     public function testHealthBannerWhenClockSkew(): void
     {
         $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
@@ -331,6 +351,25 @@ final class DashboardViewTest extends TestCase
         ]);
         $this->assertSame('2 MB', $cards['pool_disk']);
         $this->assertSame('across 2 slots', $cards['pool_disk_sub']);
+        $this->assertSame('org/repo reachable', $cards['github_sub']);
+    }
+
+    public function testStatsCardsShowGithubQuotaWhenConnected(): void
+    {
+        $cards = \RunnerDeck\Ui\DashboardView::statsCards([
+            'stats' => ['running' => 0, 'total' => 1, 'avg_cpu_percent' => null, 'total_rss_kb' => null],
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'gh_remaining' => 4200,
+            'gh_limit' => 5000,
+            'system' => [
+                'cpu_percent' => 1.0,
+                'cpu_cores' => 1,
+                'mem_used_kb' => 1024,
+                'mem_total_kb' => 2048,
+                'mem_percent' => 50.0,
+            ],
+        ]);
+        $this->assertSame('4200/5000 API left', $cards['github_sub']);
     }
 
     public function testErrorsPanelEscapesAndListsNewestFirst(): void

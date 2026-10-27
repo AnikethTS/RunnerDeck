@@ -50,6 +50,10 @@ final class DashboardView
         if ($backoff !== '') {
             return ['hidden' => false, 'text' => $backoff];
         }
+        $quota = (string) ($snapshot['gh_quota'] ?? '');
+        if ($quota !== '') {
+            return ['hidden' => false, 'text' => $quota];
+        }
         $h = is_array($snapshot['health'] ?? null) ? $snapshot['health'] : [];
         $loggedIn = (bool) ($h['logged_in'] ?? false);
         $orgOk = (bool) ($h['org_access_ok'] ?? false);
@@ -64,6 +68,10 @@ final class DashboardView
         $skew = (string) ($snapshot['clock_skew'] ?? '');
         if ($skew !== '') {
             return ['hidden' => false, 'text' => $skew];
+        }
+        $gaveUp = (string) ($snapshot['webhook_gave_up'] ?? '');
+        if ($gaveUp !== '') {
+            return ['hidden' => false, 'text' => $gaveUp];
         }
         if ($loggedIn && $orgOk) {
             $behind = (int) ($snapshot['agent_behind_count'] ?? 0);
@@ -107,6 +115,20 @@ final class DashboardView
         return '';
     }
 
+    /** @param array<string, mixed> $snapshot */
+    private static function githubSub(array $snapshot): string
+    {
+        $remaining = $snapshot['gh_remaining'] ?? null;
+        $limit = $snapshot['gh_limit'] ?? null;
+        if (is_int($remaining) && is_int($limit) && $limit > 0) {
+            return $remaining . '/' . $limit . ' API left';
+        }
+        if (is_int($remaining)) {
+            return $remaining . ' API left';
+        }
+        return 'org/repo reachable';
+    }
+
     /**
      * @param array<string, mixed> $snapshot
      * @return array<string, string>
@@ -138,7 +160,9 @@ final class DashboardView
             'active_sub' => 'of ' . $total . ' configured',
             'github' => $connected ? 'Connected' : 'Issue',
             'github_class' => 'stat-value ' . ($connected ? 'stat-good' : 'stat-critical'),
-            'github_sub' => $connected ? 'org/repo reachable' : (string) ($h['message'] ?? ''),
+            'github_sub' => $connected
+                ? self::githubSub($snapshot)
+                : (string) ($h['message'] ?? ''),
             'cpu' => is_numeric($avgCpu) ? number_format((float) $avgCpu, 1) . '%' : '—',
             'cpu_sub' => $running ? 'across ' . $running . ' running' : 'no runners active',
             'mem' => $mb !== null ? $mb . ' MB' : '—',

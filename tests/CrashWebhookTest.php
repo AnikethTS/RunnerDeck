@@ -212,6 +212,47 @@ final class CrashWebhookTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testGaveUpBannerAfterMaxAttemptsAndClearsOnSuccess(): void
+    {
+        mkdir($this->tmpDir, 0700, true);
+        $id = hash('sha256', "https://example.com/hook\nrunner_crash\nboom\nrunner-1");
+        file_put_contents($this->tmpDir . '/webhook_outbox.json', json_encode([
+            'items' => [[
+                'id' => $id,
+                'url' => 'https://example.com/hook',
+                'payload' => ['event' => 'runner_crash'],
+                'event' => 'runner_crash',
+                'message' => 'boom',
+                'runner' => 'runner-1',
+                'attempts' => 7,
+                'next_at' => 1000,
+                'created_at' => 1,
+                'last_error' => 'down',
+            ]],
+        ]));
+        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 6, 'stdout' => '', 'stderr' => 'down']);
+        \RunnerDeck\Alert\WebhookOutbox::fakeNow(1000);
+        \RunnerDeck\Alert\CrashWebhook::flushOutbox();
+        $this->assertSame(0, \RunnerDeck\Alert\WebhookOutbox::pendingCount());
+        $text = \RunnerDeck\Alert\WebhookOutbox::warning();
+        $this->assertNotNull($text);
+        $this->assertStringContainsString('gave up', $text);
+        $this->assertFileExists($this->tmpDir . '/webhook_gave_up.json');
+
+        \RunnerDeck\Alert\WebhookOutbox::enqueue(
+            'https://example.com/hook',
+            ['event' => 'ok'],
+            'runner_crash',
+            'later',
+            'runner-2'
+        );
+        \RunnerDeck\Alert\WebhookOutbox::fakeNow(1100);
+        \RunnerDeck\Alert\WebhookOutbox::flush(fn () => true);
+        $this->assertNull(\RunnerDeck\Alert\WebhookOutbox::warning());
+        $this->assertFileDoesNotExist($this->tmpDir . '/webhook_gave_up.json');
+    }
+
+    #[RunInSeparateProcess]
     public function testSyslogEmitsWithoutWebhookUrl(): void
     {
         $seen = [];

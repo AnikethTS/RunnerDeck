@@ -99,7 +99,10 @@ container because the image binds `0.0.0.0`. Skipping TLS while login
 is on still sends the session cookie in the clear.
 It also downloads and executes GitHub's official runner package on first
 use of each runner slot — the same binary GitHub's own setup page would
-have you download by hand, checksum-verified before extraction.
+have you download by hand, checksum-verified before extraction. An
+optional Settings pin (`RUNNERDECK_AGENT_SHA`) refuses a GitHub
+checksum that does not match that SHA-256; if GitHub omits the
+checksum, the downloaded file is still hashed against the pin.
 
 All state-changing API calls (`start`, `stop`, `restart`, `rolling_restart`,
 `rolling_upgrade`, `maintenance`, `pause_auto_restart`, `start_all`,

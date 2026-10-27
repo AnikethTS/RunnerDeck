@@ -181,6 +181,8 @@ final class SettingsTest extends TestCase
             'github_app_installation_id' => '1001',
             'bundle_snapshot' => '1',
             'bundle_snapshot_secrets' => '1',
+            'log_retention_days' => '14',
+            'agent_sha' => str_repeat('AB', 32),
         ]);
         $this->assertTrue($result['ok']);
         $loaded = \RunnerDeck\Core\Settings::load();
@@ -196,6 +198,27 @@ final class SettingsTest extends TestCase
         $this->assertSame('1001', $loaded['RUNNERDECK_GITHUB_APP_INSTALLATION_ID']);
         $this->assertSame('1', $loaded['RUNNERDECK_BUNDLE_SNAPSHOT']);
         $this->assertSame('1', $loaded['RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS']);
+        $this->assertSame('14', $loaded['RUNNERDECK_LOG_RETENTION_DAYS']);
+        $this->assertSame(str_repeat('ab', 32), $loaded['RUNNERDECK_AGENT_SHA']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionRejectsBadLogRetentionAndAgentSha(): void
+    {
+        $days = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'log_retention_days' => '0',
+        ]);
+        $this->assertFalse($days['ok']);
+        $this->assertStringContainsString('log retention', $days['message']);
+        $sha = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'agent_sha' => 'deadbeef',
+        ]);
+        $this->assertFalse($sha['ok']);
+        $this->assertStringContainsString('agent SHA', $sha['message']);
     }
 
     #[RunInSeparateProcess]
