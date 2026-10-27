@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
+use RunnerDeck\Core\Config;
 use RunnerDeck\Core\Settings;
 use RunnerDeck\Pool\Provisioner;
 
@@ -63,6 +64,12 @@ final class AgentTarget
     {
         $latest = self::latest();
         $behind = 0;
+        if (Config::agentSha() !== null) {
+            foreach ($runners as $i => $r) {
+                $runners[$i]['agent_behind'] = false;
+            }
+            return ['runners' => $runners, 'latest' => $latest, 'behind_count' => 0];
+        }
         foreach ($runners as $i => $r) {
             $local = $r['agent_version'] ?? null;
             $isBehind = is_string($latest)

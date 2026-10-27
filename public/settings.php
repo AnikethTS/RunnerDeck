@@ -105,6 +105,8 @@ if (
         'syslog' => ($_POST['syslog'] ?? '') === '1',
         'bundleSnapshot' => ($_POST['bundle_snapshot'] ?? '') === '1',
         'bundleSnapshotSecrets' => ($_POST['bundle_snapshot_secrets'] ?? '') === '1',
+        'logRetentionDays' => (string) ($_POST['log_retention_days'] ?? ''),
+        'agentSha' => (string) ($_POST['agent_sha'] ?? ''),
         'slotCpuPercent' => (string) ($_POST['slot_cpu_percent'] ?? ''),
         'slotMemoryMaxMib' => (string) ($_POST['slot_memory_max_mib'] ?? ''),
         'githubAppId' => (string) ($_POST['github_app_id'] ?? ''),
@@ -153,6 +155,10 @@ if (
         'syslog' => Config::syslogEnabled(),
         'bundleSnapshot' => Config::bundleSnapshotEnabled(),
         'bundleSnapshotSecrets' => Config::bundleSnapshotSecrets(),
+        'logRetentionDays' => Config::logRetentionDays() !== null
+            ? (string) Config::logRetentionDays()
+            : '',
+        'agentSha' => Config::agentSha() ?? '',
         'slotCpuPercent' => Config::slotCpuPercent() !== null
             ? (string) Config::slotCpuPercent()
             : '',
@@ -535,6 +541,43 @@ echo HostingWarnings::html();
           />
           Include crash webhook URL in the daily snapshot
         </label>
+
+        <div class="settings-field">
+          <label for="settings-log-retention">Log retention (days, optional)</label>
+          <input
+            type="number"
+            class="settings-num"
+            id="settings-log-retention"
+            name="log_retention_days"
+            min="1"
+            max="365"
+            step="1"
+            value="<?= htmlspecialchars($current['logRetentionDays']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Delete <code>runner.log</code>, <code>runner.log.1</code>, and
+            <code>_diag</code> files older than this on idle slots. Never while
+            the process is running. Never deletes <code>_work</code>. Needs watch.
+          </p>
+        </div>
+
+        <div class="settings-field">
+          <label for="settings-agent-sha">Pin runner package SHA-256 (optional)</label>
+          <input
+            type="text"
+            id="settings-agent-sha"
+            name="agent_sha"
+            maxlength="64"
+            spellcheck="false"
+            value="<?= htmlspecialchars($current['agentSha']) ?>"
+            placeholder="off"
+          />
+          <p class="settings-hint">
+            Add and Upgrade agents only install this tarball. If GitHub omits the
+            checksum, the pin is checked on the downloaded file instead.
+          </p>
+        </div>
       </section>
 
       <section class="settings-card">

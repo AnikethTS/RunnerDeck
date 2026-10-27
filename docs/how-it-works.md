@@ -44,8 +44,10 @@
   **Safe reboot** drain-stops the pool and sets `reboot_ready` so you
   can reboot the OS yourself — RunnerDeck does not call `reboot`.
   Starting a runner clears that flag. The crash webhook fires once on
-  the rising edge of maintenance or `reboot_ready`. Failed webhook posts
-  retry with backoff. Optional syslog gets the same events.
+  the rising edge of maintenance or `reboot_ready`.   Failed webhook posts
+  retry with backoff. After max retries the dashboard banner says so
+  (Outbox) until a later success or you drop the item. Optional syslog
+  gets the same events.
   **Host pressure** also refuses
   new starts when the pool filesystem or Linux MemAvailable is below
   the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
@@ -114,8 +116,8 @@
   calls the same start path when auto-restart is on, so a crash is
   restarted with no dashboard tab open. That loop writes a heartbeat;
   if watch-backed features are on and it has not ticked, the dashboard
-  banner says so. php-fpm-only hosts with those features off are not
-  nagged. A visible tab may still POST
+  banner says so (including log retention and daily host-bundle snapshots).
+  php-fpm-only hosts with those features off are not nagged. A visible tab may still POST
   `start` as well; starting an already-running slot is a no-op. **Pause AR**
   on a row holds auto-restart for that slot only (crash still flags) so
   you can debug a flaky runner without turning the pool setting off.
@@ -191,14 +193,20 @@
   extra `gh` call. If a slot's local runner package is older than
   GitHub's current download for this OS/arch (cached one hour), the
   row and banner say so. **Upgrade agents** already replaces that
-  package. Settings can **download** a JSON copy of this host's config
+  package. Settings can pin the tarball SHA-256; a pin refuses a
+  mismatched GitHub checksum (and still checks the file if GitHub omits
+  one) and hides the behind nag. Watch can prune idle-slot logs older
+  than a retention window without touching `_work`. GitHub's last
+  `X-RateLimit-*` is shown on the stats card; a banner appears only when
+  remaining is low. Settings can **download** a JSON copy of this host's config
   without the TOTP secret or webhook URL, and **import** it onto
   another box without replacing login. A **host bundle** is the same
   plus slot flags, Pause AR, roster, host mode, and 7-day crash events.
   TOTP never leaves the box; include the webhook URL only if you opt in.
   Restore does not copy runner binaries, `_work`, or `gh` login. An
   optional daily snapshot writes that JSON under `storage/bundles/`
-  (7 UTC days) from watch or an open dashboard tab.
+  (7 UTC days) from watch or an open dashboard tab. Log prune is watch
+  only, never dashboard GET.
 - The UI is just a client of its own API — see **[API.md](../API.md)** for
   every `api.php` action, the two standalone log endpoints, and how to
   get a CSRF token from a script instead of a browser session.

@@ -168,18 +168,22 @@ final class GithubClient
     }
 
     /**
-     * Split `gh api --include` stdout into HTTP Date (if any) and JSON body.
+     * Split `gh api --include` stdout into HTTP Date, rate-limit headers, and JSON body.
      * Output without an HTTP envelope is returned unchanged (fail-open).
      *
-     * @return array{date: ?string, body: string}
+     * @return array{date: ?string, body: string, remaining: ?int, limit: ?int, reset: ?int}
      */
     public static function parseGhOutput(string $raw): array
     {
+        $empty = ['date' => null, 'body' => $raw, 'remaining' => null, 'limit' => null, 'reset' => null];
         $text = str_replace("\r\n", "\n", $raw);
         if (!str_starts_with(ltrim($text), 'HTTP/')) {
-            return ['date' => null, 'body' => $raw];
+            return $empty;
         }
         $date = null;
+        $remaining = null;
+        $limit = null;
+        $reset = null;
         $bodies = [];
         foreach (preg_split('/(?=^HTTP\/)/m', $text) ?: [] as $chunk) {
             $chunk = trim($chunk);
@@ -192,8 +196,23 @@ final class GithubClient
             if ($date === null && preg_match('/^Date:\s*(.+)$/mi', $headers, $m) === 1) {
                 $date = trim($m[1]);
             }
+            if ($remaining === null && preg_match('/^X-RateLimit-Remaining:\s*(\d+)/mi', $headers, $m) === 1) {
+                $remaining = (int) $m[1];
+            }
+            if ($limit === null && preg_match('/^X-RateLimit-Limit:\s*(\d+)/mi', $headers, $m) === 1) {
+                $limit = (int) $m[1];
+            }
+            if ($reset === null && preg_match('/^X-RateLimit-Reset:\s*(\d+)/mi', $headers, $m) === 1) {
+                $reset = (int) $m[1];
+            }
         }
-        return ['date' => $date, 'body' => implode("\n", $bodies)];
+        return [
+            'date' => $date,
+            'body' => implode("\n", $bodies),
+            'remaining' => $remaining,
+            'limit' => $limit,
+            'reset' => $reset,
+        ];
     }
 
     /**
@@ -304,6 +323,7 @@ final class GithubClient
         $parsed = self::parseGhOutput($result['stdout']);
         if ($observeClock) {
             GithubClock::observeHttpDate($parsed['date']);
+            GithubQuota::observe($parsed['remaining'], $parsed['limit'], $parsed['reset']);
         }
         $blob = $result['stderr'] . "\n" . $result['stdout'];
         if ($result['code'] !== 0) {

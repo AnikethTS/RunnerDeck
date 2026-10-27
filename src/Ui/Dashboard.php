@@ -16,6 +16,7 @@ use RunnerDeck\GitHub\GithubAuth;
 use RunnerDeck\GitHub\GithubBackoff;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\GitHub\GithubClock;
+use RunnerDeck\GitHub\GithubQuota;
 use RunnerDeck\Host\DiskAlert;
 use RunnerDeck\Host\History;
 use RunnerDeck\Host\HostMode;
@@ -93,6 +94,7 @@ final class Dashboard
             }
         }
 
+        $quotaSnap = GithubQuota::snapshot();
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
@@ -109,7 +111,11 @@ final class Dashboard
             ],
             'auth_stale' => GithubAuth::staleWarning($loggedIn, $orgAccessOk, $message),
             'gh_backoff' => GithubBackoff::warning(),
+            'gh_quota' => GithubQuota::warning(),
+            'gh_remaining' => $quotaSnap['remaining'],
+            'gh_limit' => $quotaSnap['limit'],
             'clock_skew' => GithubClock::warning(),
+            'webhook_gave_up' => WebhookOutbox::warning(),
             'webhook_outbox' => WebhookOutbox::pendingCount(),
             'runners' => $runners,
             'stats' => $stats,

@@ -85,6 +85,7 @@ final class WebhookOutbox
         $data['items'] = $kept;
         self::write($data);
         AppLog::info('webhook.outbox.drop', 'dropped pending webhook ' . substr($id, 0, 8));
+        self::clearGaveUp();
         return true;
     }
 
@@ -164,6 +165,7 @@ final class WebhookOutbox
                 continue;
             }
             if ($send($url, $payload)) {
+                self::clearGaveUp();
                 continue;
             }
             $attempts++;
@@ -172,6 +174,11 @@ final class WebhookOutbox
                 AppLog::errorThrottled('crash_webhook', 'gave up retrying crash notification', [
                     'runner' => is_string($item['runner'] ?? null) ? (string) $item['runner'] : null,
                 ]);
+                self::markGaveUp(
+                    (string) ($item['id'] ?? ''),
+                    is_string($item['event'] ?? null) ? (string) $item['event'] : '',
+                    is_string($item['runner'] ?? null) ? (string) $item['runner'] : null
+                );
                 continue;
             }
             $item['attempts'] = $attempts;
@@ -180,6 +187,58 @@ final class WebhookOutbox
         }
         $data['items'] = $kept;
         self::write($data);
+    }
+
+    public static function warning(): ?string
+    {
+        $path = self::gaveUpPath();
+        if (!is_file($path)) {
+            return null;
+        }
+        $decoded = json_decode((string) file_get_contents($path), true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        $at = (int) ($decoded['at'] ?? 0);
+        if ($at < 1 || (self::now() - $at) > 7 * 86400) {
+            return null;
+        }
+        $event = is_string($decoded['event'] ?? null) && $decoded['event'] !== ''
+            ? (string) $decoded['event']
+            : 'crash webhook';
+        return 'Crash webhook gave up after max retries (' . $event
+            . '). See Outbox. A later successful delivery clears this.';
+    }
+
+    public static function clearGaveUp(): void
+    {
+        $path = self::gaveUpPath();
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    private static function markGaveUp(string $id, string $event, ?string $runner): void
+    {
+        $dir = Settings::storageDir();
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return;
+        }
+        $path = self::gaveUpPath();
+        $tmp = $path . '.tmp';
+        file_put_contents($tmp, json_encode([
+            'at' => self::now(),
+            'id' => $id,
+            'event' => $event,
+            'runner' => $runner,
+        ], JSON_PRETTY_PRINT));
+        chmod($tmp, 0600);
+        rename($tmp, $path);
+    }
+
+    private static function gaveUpPath(): string
+    {
+        return Settings::storageDir() . '/webhook_gave_up.json';
     }
 
     private static function backoffSeconds(int $attempts): int
