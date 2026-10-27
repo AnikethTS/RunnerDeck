@@ -178,7 +178,8 @@
   .section-lede { font-family: var(--sans); color: var(--text-muted); text-align: center; max-width: 560px; margin: 0 auto 36px; }
 
   .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  @media (max-width: 720px) { .feature-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .feature-grid { grid-template-columns: 1fr; } }
   .feature-card {
     background: var(--page-plane);
     border: 1px solid var(--gridline);
@@ -286,7 +287,7 @@
       <img class="shot reveal" src="screenshots/dashboard.png" alt="RunnerDeck dashboard showing stat cards, CPU/RAM history charts, and a table of runners" />
       <img class="shot reveal" src="screenshots/live-log.png" alt="Live log viewer with search highlighting matching lines" />
       <img class="shot reveal" src="screenshots/add-runner.png" alt="The Add Runner dialog" />
-      <img class="shot reveal" src="screenshots/settings.png" alt="The Settings page — repository scope, automation, and notification options" />
+      <img class="shot reveal" src="screenshots/settings.png" alt="The Settings page — GitHub, Pool, Alerts, Access, and Host as tabs" />
     </div>
   </div>
 </section>
@@ -328,6 +329,14 @@
         <h3>Crash-loop protection, with a heads-up</h3>
         <p>Auto-restart brings a crashed runner back up, backing off after a few failed attempts instead of retrying forever. An optional webhook — Slack and Discord URLs detected automatically — tells you the moment it happens, even with no dashboard tab open.</p>
       </div>
+      <div class="feature-card reveal">
+        <h3>History, crashes, outbox, bundles</h3>
+        <p>Host CPU/RAM history, per-runner crash counts, a webhook outbox that retries and then tells you it gave up, and a daily host bundle you can download if the machine dies. Same local files the dashboard already keeps.</p>
+      </div>
+      <div class="feature-card reveal">
+        <h3>Settings that fit on a laptop</h3>
+        <p>GitHub, Pool, Alerts, Access, and Host are tabs, not one long scroll. Hover help on Drain, Pause AR, and the rest. The shell stays lined up from the sticky header down to a phone-width table.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -335,7 +344,7 @@
 <section>
   <div class="wrap">
     <h2 class="reveal">Runs on what you're already on</h2>
-    <p class="section-lede reveal">Modern versions of Linux, macOS, and Windows, not every version ever shipped. See the README for the exact version floors.</p>
+    <p class="section-lede reveal">Modern versions of Linux, macOS, and Windows, not every version ever shipped. See <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/getting-started.md#platform-support">Getting started</a> for the exact version floors.</p>
     <table class="platform-table reveal">
       <thead>
         <tr><th>Platform</th><th>Support</th><th>Notes</th></tr>
@@ -344,22 +353,22 @@
         <tr>
           <td>Linux</td>
           <td class="support">Native</td>
-          <td>PHP 8.1+ with <code>posix</code>/<code>pcntl</code>. CI-tested on Ubuntu (latest + 22.04) and a dedicated Alpine/musl smoke test.</td>
+          <td>PHP 8.1+ with <code>posix</code>/<code>pcntl</code> (Fedora/RHEL: install <code>php-process</code>). CI runs PHPUnit on Ubuntu latest and 22.04 (x64 + arm), distro <code>apt</code> PHP on Ubuntu 22.04 and Debian 12, distro <code>dnf</code> PHP on Fedora, Rocky 9, and RHEL UBI 9, plus an Alpine/musl boot smoke.</td>
         </tr>
         <tr>
           <td>macOS</td>
           <td class="support">Native</td>
-          <td>Process liveness falls back to <code>ps</code>/<code>lsof</code> (no <code>/proc</code> on Darwin). CI-tested on macOS latest.</td>
+          <td>Process liveness falls back to <code>ps</code>/<code>lsof</code> (no <code>/proc</code> on Darwin). CI unit-tests PHP 8.1 and 8.5 on macOS 15, and 8.5 on macOS latest. Homebrew sets the real macOS version floor.</td>
         </tr>
         <tr>
           <td>Windows</td>
           <td class="support">Via WSL2</td>
-          <td><code>run.ps1</code> forwards into WSL2, a real Linux kernel, so it inherits the Linux support above.</td>
+          <td><code>run.ps1</code> forwards into WSL2, a real Linux kernel, so it inherits the Linux support above. No native Windows PHP — <code>posix</code>/<code>pcntl</code> are not available there.</td>
         </tr>
         <tr>
           <td>Docker</td>
           <td class="support">docker compose up</td>
-          <td>Alternative to installing PHP or WSL2 at all — <code>docker compose up --build</code>. CI-tested build + boot on every push.</td>
+          <td>Alternative to installing PHP or WSL2 at all — <code>docker compose up --build</code>. CI builds the image and boots it on every push.</td>
         </tr>
       </tbody>
     </table>
@@ -377,8 +386,8 @@
         <p class="plan-desc">What's on this page. Self-hosted and local-only, MIT licensed. It runs on your own machine and talks to your own GitHub account — nothing leaves it.</p>
         <ul class="plan-list">
           <li>Full runner lifecycle: add, start, stop, rename, delete</li>
-          <li>Live CPU/RAM, uptime, and a local history chart</li>
-          <li>Org or single-repo scope</li>
+          <li>Live CPU/RAM, crash history, webhook outbox, host bundles</li>
+          <li>Org or single-repo scope, GitHub App or <code>gh</code> login</li>
           <li>No telemetry, no account required</li>
         </ul>
         <a class="btn" href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/getting-started.md#first-time-setup" target="_blank" rel="noopener noreferrer">Get started</a>
