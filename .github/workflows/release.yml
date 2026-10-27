@@ -12,7 +12,7 @@ jobs:
   release:
     name: Build and publish release
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: write
       packages: write
@@ -79,3 +79,15 @@ jobs:
             ghcr.io/anikethts/runnerdeck:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Scan the published GHCR image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          image-ref: ghcr.io/anikethts/runnerdeck:${{ github.ref_name }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
