@@ -168,6 +168,35 @@ if (
 }
 
 $csrfToken = Csrf::token();
+$initialTab = 'github';
+if (is_string($error) && str_contains($error, 'webhook')) {
+    $initialTab = 'alerts';
+}
+$help = [
+    'autoRestart' => Layout::infoIcon(
+        'Watch starts a slot whose process died if you did not stop it. Pause AR skips that slot.'
+    ),
+    'scale' => Layout::infoIcon(
+        'Needs watch-auto-restart.php. Starts idle slots when GitHub jobs wait on this label.'
+    ),
+    'syslog' => Layout::infoIcon(
+        'RFC5424 datagram to /dev/log. Fail-open if the socket is missing.'
+    ),
+    'test' => Layout::hoverHelp(
+        'POST a test payload to the URL as typed. Not retried. No need to save first.'
+    ),
+    'dlSettings' => Layout::hoverHelp('JSON of settings only. Omits TOTP and the crash webhook URL.'),
+    'dlBundle' => Layout::hoverHelp(
+        'Settings plus slot flags, Pause AR, roster, host mode, and 7-day crashes. No TOTP.'
+    ),
+    'dlSecrets' => Layout::hoverHelp(
+        'Same host bundle, including the crash webhook URL if you tick the box.'
+    ),
+    'import' => Layout::hoverHelp(
+        'Merge a settings or host-bundle JSON onto this box. Does not replace login or binaries.'
+    ),
+    'save' => Layout::hoverHelp('Write these settings to storage/settings.json and apply them.'),
+];
 
 Layout::htmlOpen('RunnerDeck — Settings');
 Layout::topbarStart();
@@ -180,15 +209,8 @@ echo HostingWarnings::html();
 
   <main class="settings-main">
     <header class="settings-header">
-      <a href="index.php" class="settings-back">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-        Dashboard
-      </a>
       <h2>Settings</h2>
-      <p class="muted">This host only — org, automation, alerts, and login.</p>
+      <p class="muted">This host only. Pick a section — Save writes every tab.</p>
     </header>
     <?php if ($notice !== null) : ?>
       <p class="settings-flash" role="status"><?= htmlspecialchars($notice) ?></p>
@@ -205,11 +227,36 @@ echo HostingWarnings::html();
       </section>
     <?php endif; ?>
 
-    <?= HostingWarnings::settingsCardHtml(); ?>
+    <div class="settings-layout">
+      <nav
+        class="settings-tabs"
+        role="tablist"
+        aria-label="Settings sections"
+        data-initial-tab="<?= htmlspecialchars($initialTab) ?>"
+      >
+        <button type="button" role="tab" id="tab-github" data-tab="github"
+                aria-controls="panel-github" aria-selected="true">GitHub</button>
+        <button type="button" role="tab" id="tab-pool" data-tab="pool"
+                aria-controls="panel-pool" aria-selected="false" tabindex="-1">Pool</button>
+        <button type="button" role="tab" id="tab-alerts" data-tab="alerts"
+                aria-controls="panel-alerts" aria-selected="false" tabindex="-1">Alerts</button>
+        <button type="button" role="tab" id="tab-access" data-tab="access"
+                aria-controls="panel-access" aria-selected="false" tabindex="-1">Access</button>
+        <button type="button" role="tab" id="tab-host" data-tab="host"
+                aria-controls="panel-host" aria-selected="false" tabindex="-1">Host</button>
+      </nav>
 
+    <div class="settings-panels">
     <form method="post" class="settings-form" id="settings-form">
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
 
+      <section
+        class="settings-panel"
+        id="panel-github"
+        role="tabpanel"
+        data-tab-panel="github"
+        aria-labelledby="tab-github"
+      >
       <section class="settings-card">
         <h3>Repository</h3>
         <p class="settings-hint">Which GitHub org or repo this pool registers against.</p>
@@ -270,6 +317,7 @@ echo HostingWarnings::html();
           Needs App ID, installation ID, and a PEM private key (stored in
           <code>storage/github_app.pem</code>, never in settings JSON).
         </p>
+        <div class="settings-grid">
         <div class="settings-field">
           <label for="settings-github-app-id">App ID (optional)</label>
           <input
@@ -296,12 +344,13 @@ echo HostingWarnings::html();
             placeholder="off"
           />
         </div>
+        </div>
         <div class="settings-field">
           <label for="settings-github-app-pem">Private key PEM</label>
           <textarea
             id="settings-github-app-pem"
             name="github_app_private_key"
-            rows="6"
+            rows="4"
             placeholder="<?= $current['githubAppKeyPresent']
                 ? 'Key is saved. Paste a new PEM to replace it.'
                 : '-----BEGIN PRIVATE KEY-----' ?>"
@@ -312,7 +361,16 @@ echo HostingWarnings::html();
           </p>
         </div>
       </section>
+      </section>
 
+      <section
+        class="settings-panel"
+        id="panel-pool"
+        role="tabpanel"
+        data-tab-panel="pool"
+        aria-labelledby="tab-pool"
+        hidden
+      >
       <section class="settings-card">
         <h3>Automation</h3>
         <p class="settings-hint">What happens when a runner is idle, busy, or dies.</p>
@@ -335,6 +393,7 @@ echo HostingWarnings::html();
             <?= $current['autoRestart'] ? 'checked' : '' ?>
           />
           Auto-restart crashed runners
+          <?= $help['autoRestart'] ?>
         </label>
 
         <label class="checkbox-label">
@@ -345,8 +404,10 @@ echo HostingWarnings::html();
             <?= $current['scaleToQueue'] ? 'checked' : '' ?>
           />
           Start stopped slots when jobs are waiting on this label
+          <?= $help['scale'] ?>
         </label>
 
+        <div class="settings-grid">
         <div class="settings-field">
           <label for="settings-pool-cap">Pool cap (optional)</label>
           <input
@@ -382,7 +443,7 @@ echo HostingWarnings::html();
           </p>
         </div>
 
-        <label class="checkbox-label">
+        <label class="checkbox-label settings-span">
           <input
             type="checkbox"
             name="auto_clear_work"
@@ -512,6 +573,7 @@ echo HostingWarnings::html();
           />
           <p class="settings-hint">Wait for GitHub <code>busy=false</code> before stop. 1–3600, default 600.</p>
         </div>
+        </div>
 
         <label class="checkbox-label">
           <input
@@ -536,7 +598,16 @@ echo HostingWarnings::html();
           Include crash webhook URL in the daily snapshot
         </label>
       </section>
+      </section>
 
+      <section
+        class="settings-panel"
+        id="panel-alerts"
+        role="tabpanel"
+        data-tab-panel="alerts"
+        aria-labelledby="tab-alerts"
+        hidden
+      >
       <section class="settings-card">
         <h3>Notifications</h3>
         <p class="settings-hint">Optional webhook for crash-loop, host mode, queue/long-job alerts, and disk.
@@ -551,6 +622,7 @@ echo HostingWarnings::html();
             <?= $current['syslog'] ? 'checked' : '' ?>
           />
           Send crash and alert events to local syslog
+          <?= $help['syslog'] ?>
         </label>
         <p class="settings-hint">
           RFC5424 datagram to <code>/dev/log</code> (or <code>RUNNERDECK_SYSLOG_SOCKET</code>).
@@ -567,7 +639,12 @@ echo HostingWarnings::html();
               placeholder="https://hooks.slack.com/services/..."
               value="<?= htmlspecialchars($current['crashWebhookUrl']) ?>"
             />
-            <button type="button" id="settings-test-webhook" class="btn btn-sm">Test</button>
+            <button
+              type="button"
+              id="settings-test-webhook"
+              class="btn btn-sm help-hover"
+              <?= $help['test'] ?>
+            >Test</button>
           </div>
           <p id="settings-test-webhook-result" class="muted" hidden></p>
           <p class="settings-hint">
@@ -576,6 +653,7 @@ echo HostingWarnings::html();
           </p>
         </div>
 
+        <div class="settings-grid">
         <div class="settings-field">
           <label for="settings-crash-webhook-threshold">Notify at N crashes in 7 days</label>
           <input
@@ -605,8 +683,18 @@ echo HostingWarnings::html();
           />
           <p class="settings-hint">Same URL. Fires once when a slot or the pool total first reaches N GiB.</p>
         </div>
+        </div>
+      </section>
       </section>
 
+      <section
+        class="settings-panel"
+        id="panel-access"
+        role="tabpanel"
+        data-tab-panel="access"
+        aria-labelledby="tab-access"
+        hidden
+      >
       <section class="settings-card">
         <h3>Login</h3>
         <p class="settings-hint">
@@ -639,9 +727,19 @@ echo HostingWarnings::html();
           </p>
         </div>
       </section>
+      </section>
 
     </form>
 
+    <section
+      class="settings-panel"
+      id="panel-host"
+      role="tabpanel"
+      data-tab-panel="host"
+      aria-labelledby="tab-host"
+      hidden
+    >
+    <?= HostingWarnings::settingsCardHtml(); ?>
     <section class="settings-card">
       <h3>This host copy</h3>
       <p class="settings-hint">
@@ -653,10 +751,12 @@ echo HostingWarnings::html();
         <code>gh</code> credentials — Start re-registers empty slots.
       </p>
       <div class="settings-actions-row">
-        <a href="download_settings.php" class="btn btn-sm" download="runnerdeck-settings.json">
+        <a href="download_settings.php" class="btn btn-sm help-hover"<?= $help['dlSettings'] ?>
+          download="runnerdeck-settings.json">
           Download settings
         </a>
-        <a href="download_bundle.php" class="btn btn-sm" download="runnerdeck-host-bundle.json">
+        <a href="download_bundle.php" class="btn btn-sm help-hover"<?= $help['dlBundle'] ?>
+          download="runnerdeck-host-bundle.json">
           Download host bundle
         </a>
         <form method="post" action="download_bundle.php">
@@ -665,12 +765,14 @@ echo HostingWarnings::html();
             <input type="checkbox" name="include_secrets" value="1" />
             Include crash webhook URL
           </label>
-          <button type="submit" class="btn btn-sm">Download bundle with webhook</button>
+          <button type="submit" class="btn btn-sm help-hover"<?= $help['dlSecrets'] ?>>
+            Download bundle with webhook
+          </button>
         </form>
         <form method="post" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
           <input type="file" name="settings_file" accept="application/json,.json" required />
-          <button type="submit" name="import_settings" value="1" class="btn btn-sm">
+          <button type="submit" name="import_settings" value="1" class="btn btn-sm help-hover"<?= $help['import'] ?>>
             Import
           </button>
         </form>
@@ -699,13 +801,23 @@ echo HostingWarnings::html();
         </div>
       </section>
     <?php endif; ?>
+    </section>
+    </div>
+    </div>
 
     <div class="settings-actions">
-      <button type="submit" form="settings-form" id="settings-save" class="btn btn-good">Save</button>
+      <button type="submit" form="settings-form" id="settings-save" class="btn btn-good help-hover"<?= $help['save'] ?>>
+        Save
+      </button>
       <?php if ($error !== null) : ?>
         <p class="setup-error"><?= htmlspecialchars($error) ?></p>
       <?php endif; ?>
     </div>
   </main>
 <?php
-Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js', 'assets/js/webhook-test.js']);
+Layout::htmlClose([
+    'assets/js/theme.js',
+    'assets/js/scope-toggle.js',
+    'assets/js/webhook-test.js',
+    'assets/js/settings-tabs.js',
+]);

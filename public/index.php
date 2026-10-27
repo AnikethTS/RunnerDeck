@@ -59,6 +59,51 @@ $accountLabel = $needsSetup
 $dash = is_array($snapshot) ? $snapshot : [];
 $history = is_array($dash['history'] ?? null) ? $dash['history'] : [];
 $stats = DashboardView::statsCards($dash);
+$tip = [
+    'active' => Layout::infoIcon('How many slots on this host have a local runner process up.'),
+    'github' => Layout::infoIcon(
+        'Whether org/repo is reachable. Subtitle is remaining GitHub API quota when known.'
+    ),
+    'cpu' => Layout::infoIcon('Average CPU across running runner processes, not the whole machine.'),
+    'mem' => Layout::infoIcon('RSS of running runner processes added together.'),
+    'sysCpu' => Layout::infoIcon(
+        'Whole-machine CPU. New starts are refused when this host is under pressure.'
+    ),
+    'sysRam' => Layout::infoIcon('Whole-machine RAM used. Same pressure check as System CPU.'),
+    'poolDisk' => Layout::infoIcon('Disk used by runner slot directories on this host, including _work.'),
+    'refresh' => Layout::hoverHelp('Reload pool status from this host and GitHub.'),
+    'export' => Layout::hoverHelp('Download the current dashboard snapshot as JSON.'),
+    'add' => Layout::hoverHelp('Create a new slot and install GitHub’s runner package on this host.'),
+    'startAll' => Layout::hoverHelp('Start every stopped slot that is allowed to run.'),
+    'stopAll' => Layout::hoverHelp(
+        'SIGTERM every local runner process now. Jobs in progress are interrupted.'
+    ),
+    'drainAll' => Layout::hoverHelp(
+        'Wait until each slot is idle on GitHub, then stop it. Busy slots keep the job.'
+    ),
+    'rollAll' => Layout::hoverHelp(
+        'Drain and start slots one at a time so the pool is not all-offline at once.'
+    ),
+    'upgrade' => Layout::hoverHelp(
+        'Replace each slot’s runner package with GitHub’s current download, one at a time.'
+    ),
+    'maint' => Layout::hoverHelp('Refuse new starts until you resume. Running slots keep going.'),
+    'reboot' => Layout::hoverHelp(
+        'Drain the pool, then mark this host safe to reboot. Does not reboot the OS.'
+    ),
+    'poolSize' => Layout::infoIcon(
+        'How many runner slots this host should have (1–30). Apply adds or removes slots.'
+    ),
+    'apply' => Layout::hoverHelp('Add or remove slots so the pool matches this size.'),
+    'bulkStart' => Layout::hoverHelp('Start the selected stopped slots.'),
+    'bulkStop' => Layout::hoverHelp('Stop the selected slots now.'),
+    'bulkDrain' => Layout::hoverHelp('Wait for GitHub idle, then stop the selected slots.'),
+    'bulkRoll' => Layout::hoverHelp('Drain and start the selected slots one at a time.'),
+    'bulkDelete' => Layout::hoverHelp('Deregister and remove the selected slots from this host.'),
+    'bulkClear' => Layout::hoverHelp(
+        'Clear _work on selected idle slots. Refuses while the process is running.'
+    ),
+];
 $banner = DashboardView::healthBanner($dash);
 $updated = DashboardView::lastUpdated($dash);
 $rowsHtml = DashboardView::rowsHtml(is_array($dash['runners'] ?? null) ? $dash['runners'] : []);
@@ -134,25 +179,27 @@ Layout::topbarEnd();
   <?php else : ?>
     <a class="skip-link" href="#runner-filter">Skip to runners</a>
     <div id="health-banner" class="banner"<?= $banner['hidden'] ? ' hidden' : '' ?>>
-      <?= htmlspecialchars($banner['text']) ?>
+      <div class="page-shell"><?= htmlspecialchars($banner['text']) ?></div>
     </div>
       <?= HostingWarnings::html() ?>
     <noscript>
       <p class="banner banner-info">
+        <span class="page-shell">
         Status on this page is from the last load. Refresh to update.
         Start, stop, and live logs need JavaScript.
+        </span>
       </p>
     </noscript>
 
     <main>
       <div class="stat-grid">
         <div class="stat-card">
-          <span class="stat-label">Active Runners</span>
+          <span class="stat-label">Active Runners <?= $tip['active'] ?></span>
           <span class="stat-value" id="stat-active"><?= htmlspecialchars((string) $stats['active']) ?></span>
           <span class="stat-sub" id="stat-active-sub"><?= htmlspecialchars((string) $stats['active_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">GitHub API</span>
+          <span class="stat-label">GitHub API <?= $tip['github'] ?></span>
           <span
             class="<?= htmlspecialchars((string) $stats['github_class']) ?>"
             id="stat-github"
@@ -160,17 +207,17 @@ Layout::topbarEnd();
           <span class="stat-sub" id="stat-github-sub"><?= htmlspecialchars((string) $stats['github_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Avg CPU</span>
+          <span class="stat-label">Avg CPU <?= $tip['cpu'] ?></span>
           <span class="stat-value" id="stat-cpu"><?= htmlspecialchars((string) $stats['cpu']) ?></span>
           <span class="stat-sub" id="stat-cpu-sub"><?= htmlspecialchars((string) $stats['cpu_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total Memory</span>
+          <span class="stat-label">Total Memory <?= $tip['mem'] ?></span>
           <span class="stat-value" id="stat-mem"><?= htmlspecialchars((string) $stats['mem']) ?></span>
           <span class="stat-sub" id="stat-mem-sub"><?= htmlspecialchars((string) $stats['mem_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">System CPU</span>
+          <span class="stat-label">System CPU <?= $tip['sysCpu'] ?></span>
           <span
             class="<?= htmlspecialchars((string) $stats['sys_cpu_class']) ?>"
             id="stat-sys-cpu"
@@ -178,7 +225,7 @@ Layout::topbarEnd();
           <span class="stat-sub" id="stat-sys-cpu-sub"><?= htmlspecialchars((string) $stats['sys_cpu_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">System RAM</span>
+          <span class="stat-label">System RAM <?= $tip['sysRam'] ?></span>
           <span
             class="<?= htmlspecialchars((string) $stats['sys_mem_class']) ?>"
             id="stat-sys-mem"
@@ -186,7 +233,7 @@ Layout::topbarEnd();
           <span class="stat-sub" id="stat-sys-mem-sub"><?= htmlspecialchars((string) $stats['sys_mem_sub']) ?></span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Pool disk</span>
+          <span class="stat-label">Pool disk <?= $tip['poolDisk'] ?></span>
           <span class="stat-value" id="stat-pool-disk"><?= htmlspecialchars((string) $stats['pool_disk']) ?></span>
           <span
             class="stat-sub"
@@ -260,8 +307,8 @@ Layout::topbarEnd();
       </section>
 
       <div class="toolbar">
-        <button id="btn-refresh" class="btn">Refresh</button>
-        <button id="btn-export" type="button" class="btn">Export JSON</button>
+        <button id="btn-refresh" class="btn help-hover"<?= $tip['refresh'] ?>>Refresh</button>
+        <button id="btn-export" type="button" class="btn help-hover"<?= $tip['export'] ?>>Export JSON</button>
         <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
         <input type="search" id="runner-filter" class="filter-input"
                placeholder="Filter by name, label, or version…" />
@@ -273,30 +320,30 @@ Layout::topbarEnd();
           <option value="mismatch">Mismatch</option>
         </select>
         <span class="spacer"></span>
-        <button id="btn-add-runner" class="btn">+ Add Runner</button>
-        <button id="btn-start-all" class="btn btn-good">Start All</button>
-        <button id="btn-stop-all" class="btn btn-critical">Stop All</button>
-        <button id="btn-drain-all" class="btn">Drain All</button>
-        <button id="btn-rolling-restart-all" class="btn">Rolling Restart</button>
-        <button id="btn-rolling-upgrade" class="btn">Upgrade agents</button>
-        <button id="btn-maintenance" class="btn">Maintenance</button>
-        <button id="btn-safe-reboot" class="btn">Safe reboot</button>
+        <button id="btn-add-runner" class="btn help-hover"<?= $tip['add'] ?>>+ Add Runner</button>
+        <button id="btn-start-all" class="btn btn-good help-hover"<?= $tip['startAll'] ?>>Start All</button>
+        <button id="btn-stop-all" class="btn btn-critical help-hover"<?= $tip['stopAll'] ?>>Stop All</button>
+        <button id="btn-drain-all" class="btn help-hover"<?= $tip['drainAll'] ?>>Drain All</button>
+        <button id="btn-rolling-restart-all" class="btn help-hover"<?= $tip['rollAll'] ?>>Rolling Restart</button>
+        <button id="btn-rolling-upgrade" class="btn help-hover"<?= $tip['upgrade'] ?>>Upgrade agents</button>
+        <button id="btn-maintenance" class="btn help-hover"<?= $tip['maint'] ?>>Maintenance</button>
+        <button id="btn-safe-reboot" class="btn help-hover"<?= $tip['reboot'] ?>>Safe reboot</button>
         <form id="pool-size-form" class="pool-form">
-          <label for="pool-size">Pool size</label>
+          <label for="pool-size">Pool size <?= $tip['poolSize'] ?></label>
           <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
-          <button type="submit" class="btn">Apply</button>
+          <button type="submit" class="btn help-hover"<?= $tip['apply'] ?>>Apply</button>
         </form>
       </div>
 
       <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
         <span id="bulk-actions-count" class="muted"></span>
         <span class="spacer"></span>
-        <button id="btn-bulk-start" class="btn btn-sm btn-good">Start</button>
-        <button id="btn-bulk-stop" class="btn btn-sm btn-critical">Stop</button>
-        <button id="btn-bulk-drain" class="btn btn-sm">Drain</button>
-        <button id="btn-bulk-rolling-restart" class="btn btn-sm">Roll restart</button>
-        <button id="btn-bulk-delete" class="btn btn-sm btn-critical">Delete</button>
-        <button id="btn-bulk-clear" class="btn btn-sm">Clear</button>
+        <button id="btn-bulk-start" class="btn btn-sm btn-good help-hover"<?= $tip['bulkStart'] ?>>Start</button>
+        <button id="btn-bulk-stop" class="btn btn-sm btn-critical help-hover"<?= $tip['bulkStop'] ?>>Stop</button>
+        <button id="btn-bulk-drain" class="btn btn-sm help-hover"<?= $tip['bulkDrain'] ?>>Drain</button>
+        <button id="btn-bulk-rolling-restart" class="btn btn-sm help-hover"<?= $tip['bulkRoll'] ?>>Roll restart</button>
+        <button id="btn-bulk-delete" class="btn btn-sm btn-critical help-hover"<?= $tip['bulkDelete'] ?>>Delete</button>
+        <button id="btn-bulk-clear" class="btn btn-sm help-hover"<?= $tip['bulkClear'] ?>>Clear</button>
       </div>
 
       <div class="runner-table-wrap">
@@ -425,11 +472,13 @@ Layout::topbarEnd();
   <?php endif; ?>
 
   <footer class="footer">
+    <div class="page-shell">
     <a href="https://github.com/AnikethTS/RunnerDeck"
        target="_blank" rel="noopener noreferrer">RunnerDeck on GitHub</a>
     <span class="footer-sep">&middot;</span>
     <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/LICENSE"
        target="_blank" rel="noopener noreferrer">MIT License</a>
+    </div>
   </footer>
 <?php
 if ($needsSetup) {

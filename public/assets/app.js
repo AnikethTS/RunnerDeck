@@ -82,6 +82,9 @@ function initDashboard() {
     const maintBtn = document.getElementById('btn-maintenance');
     if (maintBtn) {
       maintBtn.textContent = snapshot.maintenance ? 'Resume host' : 'Maintenance';
+      maintBtn.dataset.help = snapshot.maintenance
+        ? 'Allow this host to start runners again.'
+        : 'Refuse new starts until you resume. Running slots keep going.';
     }
     lastUpdatedEl.textContent = snapshot.view && snapshot.view.updated
       ? snapshot.view.updated
@@ -164,10 +167,14 @@ function initDashboard() {
       hintBtn.hidden = false;
       hintBtn.textContent = 'Start idle slots';
       hintBtn.dataset.queueHint = 'start';
+      hintBtn.classList.add('help-hover');
+      hintBtn.dataset.help = 'Start stopped slots that can pick up these queued jobs.';
     } else if (data.hint_action === 'add') {
       hintBtn.hidden = false;
       hintBtn.textContent = 'Add runner';
       hintBtn.dataset.queueHint = 'add';
+      hintBtn.classList.add('help-hover');
+      hintBtn.dataset.help = 'Add a slot if this host can take another runner.';
     } else {
       hintBtn.hidden = true;
       delete hintBtn.dataset.queueHint;

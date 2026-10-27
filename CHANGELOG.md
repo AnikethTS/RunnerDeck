@@ -8,6 +8,19 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **Responsive shell**: shared page gutter and max width so the top bar,
+  banners, main, settings, and ops pages line up. Stats, charts, settings
+  tabs, and tables adapt at 900 / 720 / 520 px.
+
+- **Settings sections**: GitHub, Pool, Alerts, Access, and Host are tabs
+  instead of one long page. Save still writes every tab. Sticky Save bar
+  stays at the bottom.
+
+- **Help on controls**: an **i** next to page names and stats, and hover
+  text on pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
+  the rest state what they do. Help cards sit below the control (or above
+  if there is no room) so they stay on screen.
+
 - **Host history page** (`history.php`): 24h CPU, runner RSS, and pool disk-free
   charts from samples already written on dashboard polls. Dashboard sparklines
   stay at one hour. Missing sqlite fails open.

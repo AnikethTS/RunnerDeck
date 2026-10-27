@@ -54,10 +54,11 @@ final class Layout
     public static function topbarStart(): void
     {
         echo '  <header class="topbar">' . "\n";
+        echo '    <div class="topbar-inner page-shell">' . "\n";
         if (self::hasLogo()) {
-            echo '    <img src="assets/logo.png" alt="Logo" class="logo" />' . "\n";
+            echo '      <img src="assets/logo.png" alt="Logo" class="logo" />' . "\n";
         }
-        echo "    <h1>RunnerDeck</h1>\n";
+        echo "      <h1>RunnerDeck</h1>\n";
     }
 
     public static function topbarEndStart(): void
@@ -68,21 +69,54 @@ final class Layout
     public static function pageNav(string $current): void
     {
         $links = [
-            'index.php' => 'Dashboard',
-            'history.php' => 'History',
-            'crashes.php' => 'Crashes',
-            'outbox.php' => 'Outbox',
-            'bundles.php' => 'Bundles',
-            'settings.php' => 'Settings',
+            'index.php' => [
+                'Dashboard',
+                'This host’s runner pool, GitHub jobs, and start/stop.',
+            ],
+            'history.php' => [
+                'History',
+                '24-hour CPU, memory, and pool disk-free charts from local samples.',
+            ],
+            'crashes.php' => [
+                'Crashes',
+                'Seven UTC days of crash counts and the recent crash list. No GitHub.',
+            ],
+            'outbox.php' => [
+                'Outbox',
+                'Failed crash-webhook posts waiting to retry. This page does not send.',
+            ],
+            'bundles.php' => [
+                'Bundles',
+                'Daily host-bundle JSON files. Download or delete. TOTP is never included.',
+            ],
+            'settings.php' => [
+                'Settings',
+                'Org/repo, automation, webhook, GitHub App, login, and host copy.',
+            ],
         ];
         echo '      <nav class="page-nav" aria-label="Host pages">' . "\n";
-        foreach ($links as $href => $label) {
+        foreach ($links as $href => [$label, $help]) {
             $currentAttr = $current === $href ? ' aria-current="page"' : '';
-            echo '        <a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
+            echo '        <span class="page-nav-item">'
+                . '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8')
                 . '" class="page-nav-link"' . $currentAttr . '>'
-                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . "</a>\n";
+                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>'
+                . self::infoIcon($help) . "</span>\n";
         }
         echo "      </nav>\n";
+    }
+
+    /** Hover card text for toolbar buttons (CSS ::after). */
+    public static function hoverHelp(string $text): string
+    {
+        return ' data-help="' . htmlspecialchars($text, ENT_QUOTES, 'UTF-8') . '"';
+    }
+
+    public static function infoIcon(string $text): string
+    {
+        $e = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return '<button type="button" class="help-tip" data-help="' . $e
+            . '" aria-label="' . $e . '">i</button>';
     }
 
     public static function logoutForm(string $csrfToken): void
@@ -93,7 +127,8 @@ final class Layout
         echo '      <form method="post" action="logout.php" class="logout-form">' . "\n";
         echo '        <input type="hidden" name="csrf_token" value="'
             . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '" />' . "\n";
-        echo '        <button type="submit" class="btn btn-sm">Log out</button>' . "\n";
+        echo '        <button type="submit" class="btn btn-sm help-hover"'
+            . self::hoverHelp('End this TOTP session.') . '>Log out</button>' . "\n";
         echo "      </form>\n";
     }
 
@@ -103,8 +138,9 @@ final class Layout
         $sunHidden = $theme === 'dark' ? ' hidden' : '';
         $moonHidden = $theme === 'dark' ? '' : ' hidden';
 
-        echo '    <button id="btn-theme-toggle" class="btn btn-sm" type="button"'
-            . ' aria-label="Toggle theme" title="Toggle theme">' . "\n";
+        echo '    <button id="btn-theme-toggle" class="btn btn-sm help-hover" type="button"'
+            . ' aria-label="Toggle theme"'
+            . self::hoverHelp('Switch between light and dark. Saved in a cookie.') . '>' . "\n";
         echo '      <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24"'
             . ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"'
             . ' stroke-linejoin="round"' . $sunHidden . '>' . "\n";
@@ -124,6 +160,7 @@ final class Layout
         echo '        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>' . "\n";
         echo "      </svg>\n";
         echo "    </button>\n";
+        echo "    </div>\n";
         echo "    </div>\n";
         echo "  </header>\n";
     }

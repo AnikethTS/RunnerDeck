@@ -136,6 +136,8 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-action="rolling-restart"', $html);
         $this->assertStringContainsString('data-action="pause-auto-restart"', $html);
         $this->assertStringContainsString('Pause AR', $html);
+        $this->assertStringContainsString('Hold auto-restart for this slot only', $html);
+        $this->assertStringContainsString('Wait until GitHub shows idle', $html);
     }
 
     public function testRowHtmlShowsOlderAgentPackage(): void

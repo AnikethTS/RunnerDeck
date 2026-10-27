@@ -46,6 +46,10 @@ final class LayoutTest extends TestCase
 
         $this->assertStringContainsString('<html lang="en" data-theme="dark">', $html);
         $this->assertStringContainsString('<title>RunnerDeck — Settings</title>', $html);
+        $this->assertStringContainsString(
+            'name="viewport" content="width=device-width, initial-scale=1.0"',
+            $html
+        );
         $this->assertStringContainsString('assets/style.css?v=', $html);
         $this->assertStringContainsString('rel="icon" href="assets/logo.png"', $html);
         $this->assertStringNotContainsString('manifest.webmanifest', $html);
@@ -60,6 +64,7 @@ final class LayoutTest extends TestCase
         \RunnerDeck\Core\Layout::topbarEnd();
         $html = (string) ob_get_clean();
 
+        $this->assertStringContainsString('class="topbar-inner page-shell"', $html);
         $this->assertStringContainsString('class="topbar-end"', $html);
         $this->assertStringContainsString('id="btn-theme-toggle"', $html);
         $this->assertStringContainsString('id="theme-icon-sun"', $html);
@@ -82,5 +87,15 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('href="crashes.php"', $html);
         $this->assertStringContainsString('href="outbox.php"', $html);
         $this->assertStringContainsString('href="bundles.php"', $html);
+        $this->assertStringContainsString('class="help-tip"', $html);
+        $this->assertStringContainsString('24-hour CPU', $html);
+    }
+
+    public function testInfoIconEscapesHelpText(): void
+    {
+        $html = \RunnerDeck\Core\Layout::infoIcon('wait <script>x</script>');
+        $this->assertStringContainsString('class="help-tip"', $html);
+        $this->assertStringContainsString('data-help="wait &lt;script&gt;x&lt;/script&gt;"', $html);
+        $this->assertStringNotContainsString('<script>x</script>', $html);
     }
 }
