@@ -263,16 +263,17 @@ jobs:
           distribution: Ubuntu-22.04
           wsl-version: "2"
           update: true
+          set-as-default: true
+          wsl-shell-user: root
           additional-packages: >-
             ca-certificates curl git unzip
             php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
 
+      # Ubuntu-22.04's WSL distro ID is "Ubuntu", not "Ubuntu-22.04".
+      # Use the wrapper Vampire/setup-wsl installs instead of `wsl -d`.
       - name: PHPUnit inside WSL2
-        shell: powershell
-        run: |
-          $unix = (wsl -d Ubuntu-22.04 -- wslpath -a "${{ github.workspace }}").Trim()
-          if ([string]::IsNullOrWhiteSpace($unix)) { throw "wslpath failed" }
-          wsl -d Ubuntu-22.04 --user root -- bash -lc "cd '$unix' && bash bin/ci-apt-phpunit.sh"
+        shell: wsl-bash {0}
+        run: bash bin/ci-apt-phpunit.sh
 
   alpine-smoke-test:
     name: Boot smoke test (Alpine/musl)

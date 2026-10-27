@@ -13,5 +13,8 @@ php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'
 
 curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php
 php /tmp/composer-setup.php --install-dir=/tmp --filename=composer
-php /tmp/composer install --prefer-dist --no-progress
+# post-install-cmd sets core.hooksPath; skip it in CI. Container checkouts
+# are often owned by a different uid than the job user, so git config
+# fails with "dubious ownership" (exit 128).
+php /tmp/composer install --prefer-dist --no-progress --no-scripts
 php /tmp/composer run test
