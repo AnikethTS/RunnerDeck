@@ -1039,6 +1039,9 @@ async function enableDarkMode(page) {
 
 async function expectReadmeShot(page, name, opts = {}) {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.addStyleTag({
+    content: 'html,body,*{scrollbar-width:none!important} *::-webkit-scrollbar{display:none!important}',
+  });
   await page.mouse.move(0, 0);
   await page.evaluate(() => {
     const el = document.activeElement;

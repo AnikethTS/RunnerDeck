@@ -221,32 +221,19 @@ jobs:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Same image used to generate README stills, so screenshot pixels match.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
-        with:
-          php-version: "8.3.36"
-          extensions: posix, pcntl, json, pdo_sqlite
-          coverage: none
-
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "24"
-          cache: npm
+      - name: Install PHP for php -S
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends php-cli php-sqlite3
 
       - name: Install JS dev tooling
         run: npm ci
-
-      # ubuntu-latest already has Chromium's system libs. --with-deps still
-      # runs apt and pulls ~80MB of fonts, which was ~6 minutes of this job.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright's Chromium
-        run: npx playwright install chromium
 
       - name: Run E2E tests
         run: npm run e2e
@@ -255,7 +242,9 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 7
 
   apt-php-test:
