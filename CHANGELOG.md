@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **CI scanners**: Shellcheck on `run.sh` and `bin/*.sh`, gitleaks on PRs,
+  Trivy on the GHCR image at release, and Playwright screenshot snapshots
+  of the README/landing stills (dark mode) so UI drift fails the e2e job.
+
 ### Changed
 
 - **Landing page**: platform table matches current CI (Ubuntu 22.04,

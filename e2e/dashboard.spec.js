@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { copyFile, readFile } from 'node:fs/promises';
 
 // This suite drives the real PHP backend (php -S) and the real app.js in a
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
@@ -156,6 +156,26 @@ async function mockStatus(page, runners, extra = {}) {
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ ...fixtureSnapshot(runners), ...extra }),
+  }));
+}
+
+async function mockReadmeStatus(page, runners) {
+  const snap = fixtureSnapshot(runners);
+  snap.health = { logged_in: true, org_access_ok: true, message: '' };
+  snap.system = {
+    cpu_percent: 12.5,
+    cpu_cores: 8,
+    mem_percent: 20,
+    mem_used_kb: 204800,
+    mem_total_kb: 1024000,
+  };
+  snap.view.updated = 'updated 12:00:00 PM';
+  snap.view.banner_text = '';
+  snap.view.banner_hidden = true;
+  await page.route('**/api.php*action=status*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(snap),
   }));
 }
 
@@ -1005,4 +1025,91 @@ test('ops pages do not overflow at 390px', async ({ page }) => {
   await page.goto('/crashes.php');
   await expect(page.locator('.ops-main')).toBeVisible();
   await assertNoHorizontalOverflow(page);
+});
+
+async function enableDarkMode(page) {
+  const baseURL = test.info().project.use.baseURL;
+  await page.context().addCookies([{
+    name: 'runnerdeck-theme',
+    value: 'dark',
+    url: `${baseURL}/`,
+  }]);
+  await page.emulateMedia({ colorScheme: 'dark' });
+}
+
+async function expectReadmeShot(page, name, opts = {}) {
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.addStyleTag({
+    content: 'html,body,*{scrollbar-width:none!important} *::-webkit-scrollbar{display:none!important}',
+  });
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => {
+    const el = document.activeElement;
+    if (el && typeof el.blur === 'function') el.blur();
+  });
+  await expect(page).toHaveScreenshot(`${name}.png`, opts);
+  const src = `.github/screenshots/${name}.png`;
+  const dest = `docs/screenshots/${name}.png`;
+  if (test.info().config.updateSnapshots !== 'none') {
+    await copyFile(src, dest);
+    return;
+  }
+  const committed = await readFile(src);
+  const published = await readFile(dest);
+  expect(
+    committed.equals(published),
+    `${name}.png must be identical in .github/screenshots and docs/screenshots`,
+  ).toBe(true);
+}
+
+test('README dashboard screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
+  await mockReadmeStatus(page, [
+    fixtureRunner({ id: 'runner-base', agent_name: 'e2e-runner-base' }),
+    fixtureRunner({
+      id: 'runner-1',
+      agent_name: 'e2e-runner-1',
+      local_running: false,
+      pid: null,
+      cpu_percent: null,
+      rss_kb: null,
+      github: { status: 'offline', busy: false, labels: [] },
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('tr[data-runner="runner-base"]')).toBeVisible();
+  await expect(page.locator('#health-banner')).toBeHidden();
+  await expectReadmeShot(page, 'dashboard', { fullPage: true });
+});
+
+test('README settings screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
+  await page.goto('/settings.php');
+  await expect(page.getByRole('tab', { name: 'GitHub' })).toBeVisible();
+  await expectReadmeShot(page, 'settings', { fullPage: true });
+});
+
+test('README add-runner screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
+  await mockReadmeStatus(page, [fixtureRunner()]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#btn-add-runner').click();
+  await expect(page.locator('#add-runner-modal')).toBeVisible();
+  await expectReadmeShot(page, 'add-runner');
+});
+
+test('README live-log screenshot stays current', async ({ page }) => {
+  await enableDarkMode(page);
+  await mockReadmeStatus(page, [fixtureRunner()]);
+  await mockLogStream(page);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('tr[data-runner="runner-base"] .log-link').click();
+  await expect(page.locator('#log-modal')).toBeVisible();
+  await emitLogLine(page, 'Listening for Jobs');
+  await emitLogLine(page, '2026-10-27 Job succeeded');
+  await expect(page.locator('#log-modal-body')).toContainText('Listening for Jobs');
+  await expectReadmeShot(page, 'live-log');
 });

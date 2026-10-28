@@ -32,12 +32,27 @@ npm run audit     # npm audit (see scripts/npm-audit.mjs)
 npm run e2e       # Playwright — see e2e/dashboard.spec.js
 ```
 
+`npm run e2e:update-shots` regenerates the README/landing PNGs in dark
+mode (and copies them into `docs/screenshots/`). Generate them in the
+same Playwright image CI uses
+(`mcr.microsoft.com/playwright:v1.64.1-noble`); host Fedora/macOS fonts
+will otherwise fail the pixel compare.
+
 `npm run e2e` boots a real `php -S` server and drives the real dashboard in
 a real (headless) browser — see the comment at the top of
 `e2e/dashboard.spec.js` for exactly what is and isn't real in there (GitHub
 itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses, and `action=queue` is mocked so
 tests never walk live workflow runs).
+
+CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh` and
+`bin/*.sh`, and **gitleaks** on the git history (placeholders in tests and
+the Settings PEM hint are allowlisted in `.gitleaks.toml`). Playwright
+compares dashboard, Settings, Add Runner, and live-log screenshots to
+`.github/screenshots/` (and those files must match `docs/screenshots/`).
+`.github/workflows/release.yml` scans the published
+`ghcr.io/anikethts/runnerdeck` image with Trivy (CRITICAL/HIGH, unfixed
+ignored) after push.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, and `macos-15` (PHP 8.1),

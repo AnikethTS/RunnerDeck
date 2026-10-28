@@ -1,0 +1,11 @@
+# Allow documented placeholders and unit-test fixtures. Real PEMs and tokens
+# still fail the scan anywhere else.
+title = "RunnerDeck"
+
+[allowlist]
+description = "Test fixtures and UI placeholders, not live credentials"
+paths = [
+    '''tests/GithubAppTest\.php''',
+    '''tests/AppLogTest\.php''',
+    '''public/settings\.php''',
+]
