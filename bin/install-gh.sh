@@ -1,8 +1,8 @@
 #!/bin/sh
 # Pin used by the Docker image and Alpine CI. Bump both values together.
 set -eu
-GH_VERSION=2.100.0
-GH_SHA256=e4d4bb4498e8d007abe545b6568926793ace1b6447da598294a610018cb164be
+GH_VERSION=2.103.3
+GH_SHA256=4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d
 DEST="${1:-/usr/local/bin/gh}"
 
 tmp="$(mktemp -d)"
