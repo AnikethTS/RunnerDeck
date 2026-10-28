@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- Pin GitHub CLI **2.103.3** in the Docker image (Go 1.27.3, `x/net` 0.60.0,
+  `x/mod` 0.41.0) so Trivy on GHCR is not blocked by CVE-2026-56864,
+  CVE-2026-56865, CVE-2026-78667, CVE-2026-78669, CVE-2026-97031, and
+  CVE-2026-111943 in the older `gh` 2.100.0 binary.
+
 ## [1.10.0] - 2026-10-28
 
 ### Added
