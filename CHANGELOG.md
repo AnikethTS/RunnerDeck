@@ -14,6 +14,8 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- **README and landing stills**: dashboard, live log, Add Runner, and
+  Settings screenshots are dark mode (header, tabs, and current Settings).
 - **Landing page**: platform table matches current CI (Ubuntu 22.04,
   Debian 12 apt, Fedora / Rocky / RHEL UBI dnf, macOS 15), and the feature
   list covers tabbed Settings plus history / crashes / outbox / bundles.
