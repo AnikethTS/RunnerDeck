@@ -44,11 +44,11 @@ Windows via WSL2).
 
 | Dashboard | Live log |
 |---|---|
-| ![Dashboard overview](.github/screenshots/dashboard.png) | ![Live log search highlighting matches](.github/screenshots/live-log.png) |
+| ![Dashboard overview (dark mode)](.github/screenshots/dashboard.png?v=dark) | ![Live log search highlighting matches (dark mode)](.github/screenshots/live-log.png?v=dark) |
 
 | Add runner | Settings |
 |---|---|
-| ![Add runner dialog](.github/screenshots/add-runner.png) | ![Settings page](.github/screenshots/settings.png) |
+| ![Add runner dialog (dark mode)](.github/screenshots/add-runner.png?v=dark) | ![Settings page (dark mode)](.github/screenshots/settings.png?v=dark) |
 
 ## Why this exists
 
