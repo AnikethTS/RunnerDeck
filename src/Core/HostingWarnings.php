@@ -35,13 +35,15 @@ final class HostingWarnings
                     . ' (docs/hosting.md).',
             ];
         }
-        $out[] = [
-            'level' => 'warning',
-            'text' => 'TOTP is the only gate this process can see. Prefer'
-                . ' Tailscale, or an IP allowlist / mTLS on 443'
-                . ' (docs/hosting.md). A VPS compromise is an org/repo'
-                . ' compromise.',
-        ];
+        if (ClientGate::blocked()) {
+            $out[] = [
+                'level' => 'warning',
+                'text' => 'TOTP is the only gate this process can see. Prefer'
+                    . ' Tailscale, or an IP allowlist / mTLS on 443'
+                    . ' (docs/hosting.md). A VPS compromise is an org/repo'
+                    . ' compromise.',
+            ];
+        }
         if (self::sapi() === 'cli-server') {
             $out[] = [
                 'level' => 'info',
@@ -97,6 +99,7 @@ final class HostingWarnings
             'label' => 'TRUST_PROXY',
             'value' => Config::trustProxy() ? 'On' : 'Off',
         ];
+        $rows[] = ['label' => 'Extra gate', 'value' => ClientGate::extraGateFact()];
         return $rows;
     }
 

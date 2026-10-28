@@ -204,6 +204,33 @@ final class SettingsTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testSaveSettingsActionStoresIpAllowlistAndMtls(): void
+    {
+        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'ip_allowlist' => "203.0.113.9\n192.168.0.0/16",
+            'require_mtls' => '1',
+        ]);
+        $this->assertTrue($result['ok']);
+        $loaded = \RunnerDeck\Core\Settings::load();
+        $this->assertSame('203.0.113.9,192.168.0.0/16', $loaded['RUNNERDECK_IP_ALLOWLIST']);
+        $this->assertSame('1', $loaded['RUNNERDECK_REQUIRE_MTLS']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSaveSettingsActionRejectsBadIpAllowlist(): void
+    {
+        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+            'scope' => 'org',
+            'org' => 'acme',
+            'ip_allowlist' => 'not-an-ip',
+        ]);
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('IP allowlist', $result['message']);
+    }
+
+    #[RunInSeparateProcess]
     public function testSaveSettingsActionRejectsBadLogRetentionAndAgentSha(): void
     {
         $days = \RunnerDeck\Http\Action\SaveSettingsAction::save([

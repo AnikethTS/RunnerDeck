@@ -2,8 +2,8 @@
 
 > **Warnings when this is not localhost.** The dashboard, Settings, and
 > login page show banners if the Host is a real hostname or the request
-> is HTTPS: missing TLS, TOTP as the only gate this process can see,
-> `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a
+> is HTTPS: missing TLS, TOTP as the only gate when the extra gate is
+> missing, `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a
 > non-loopback client. Loopback HTTP (`127.0.0.1` / `localhost`) stays
 > quiet. Settings also has a **This host** card with those facts even
 > on localhost. `php bin/doctor.php` also warns on a non-loopback bind.
@@ -22,11 +22,10 @@ substitute for `gh` + runner binaries on that same host.
 3. **Do not publish PHP on the internet.** Keep php-fpm on
    `127.0.0.1:9000` or `./run.sh` on `127.0.0.1:8090`. Docker’s compose
    file similarly maps `127.0.0.1:8090:8090` unless you change it.
-4. **Do not leave TOTP as the only gate on 443.** The UI drives `gh` and
-   the runner pool on this host. A public login page is a guessable
-   door; a VPS compromise is an org/repo compromise. Prefer no public
-   443 (Tailscale, WireGuard, SSH tunnel). If 443 must be public, add
-   an IP allowlist and/or client certificates — see
+4. **Do not leave TOTP as the only gate on 443.** PHP now 403s a public
+   Host unless Settings/env has an IP allowlist match or verified mTLS.
+   Prefer no public 443 (Tailscale, WireGuard, SSH tunnel). Proxy
+   allowlist/mTLS examples remain defense in depth — see
    [Beyond TOTP](#beyond-totp-on-443).
 
 Skipping login or TLS while the UI is reachable beyond loopback means
@@ -108,7 +107,29 @@ it does not replace network policy.
 Headscale, WireGuard) and open the UI only there. SSH remains how you
 recover a lost authenticator.
 
-**If 443 is on the internet**, uncomment an IP allowlist and/or mTLS in:
+PHP enforces that extra gate on pages, login, and the API. Loopback Host
+or `REMOTE_ADDR`, Tailscale `100.64.0.0/10`, and IPv6 `fd00::/8` skip it
+so you can recover over SSH at `http://127.0.0.1:8090/`. LAN Wi-Fi is
+not skipped — add `192.168.0.0/16` (or your prefix) to the allowlist.
+`RUNNERDECK_TRUST_PROXY` only chooses whether the allowlist uses
+`REMOTE_ADDR` or the left-most `X-Forwarded-For` hop; it is not a
+bypass. `health.php` and `metrics.php` stay HTTP 200 without the extra
+gate — restrict scrape sources at the proxy.
+
+Set the allowlist or “Require verified client certificate” on
+**Settings → Access**, or:
+
+```bash
+export RUNNERDECK_IP_ALLOWLIST=203.0.113.10,192.168.0.0/16
+export RUNNERDECK_REQUIRE_MTLS=1
+```
+
+Env wins over Settings. Empty allowlist + mTLS off on a public Host is
+403, not fail-open.
+
+**If 443 is on the internet**, also uncomment an IP allowlist and/or
+mTLS in the proxy (defense in depth). For mTLS, pass
+`SSL_CLIENT_VERIFY` into PHP:
 
 - [deploy/Caddyfile.restricted](../deploy/Caddyfile.restricted)
 - [deploy/nginx-restricted.conf.example](../deploy/nginx-restricted.conf.example)
@@ -138,9 +159,11 @@ balancer, Cloudflare → origin), set:
 export RUNNERDECK_TRUST_PROXY=1
 ```
 
-Only do this when you trust the hop that sets `X-Forwarded-Proto`. Anyone
-who can talk to PHP directly could then forge that header. Prefer keeping
-PHP on loopback so random clients never reach it.
+Only do this when you trust the hop that sets `X-Forwarded-Proto` and
+`X-Forwarded-For`. Anyone who can talk to PHP directly could then forge
+those headers (including the allowlist IP). Prefer keeping PHP on
+loopback so random clients never reach it. The flag does not skip the
+extra gate.
 
 ## Health check
 

@@ -13,6 +13,8 @@ final class HostingWarningsTest extends TestCase
     {
         \RunnerDeck\Core\HostingWarnings::fakeSapi(null);
         putenv('RUNNERDECK_TRUST_PROXY');
+        putenv('RUNNERDECK_IP_ALLOWLIST');
+        putenv('RUNNERDECK_REQUIRE_MTLS');
         $_SERVER = [];
     }
 
@@ -52,7 +54,7 @@ final class HostingWarningsTest extends TestCase
         $this->assertNotSame([], $msgs);
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('not HTTPS', $joined);
-        $this->assertStringContainsString('TOTP is the only gate', $joined);
+        $this->assertStringNotContainsString('TOTP is the only gate', $joined);
         $this->assertStringContainsString('docs/hosting.md', $joined);
     }
 
@@ -60,13 +62,25 @@ final class HostingWarningsTest extends TestCase
     public function testHttpsHostnameWarnsTotpOnlyNotMissingTls(): void
     {
         $_SERVER['HTTPS'] = 'on';
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
 
         $msgs = \RunnerDeck\Core\HostingWarnings::messages();
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('TOTP is the only gate', $joined);
         $this->assertStringNotContainsString('not HTTPS', $joined);
+    }
+
+    #[RunInSeparateProcess]
+    public function testTotpOnlyDroppedWhenAllowlistMatches(): void
+    {
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
+
+        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
+        $this->assertStringNotContainsString('TOTP is the only gate', $joined);
     }
 
     #[RunInSeparateProcess]

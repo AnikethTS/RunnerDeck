@@ -52,6 +52,7 @@ final class SaveSettingsAction
         $appPem = trim((string) ($post['github_app_private_key'] ?? ''));
         $logRetention = trim((string) ($post['log_retention_days'] ?? ''));
         $agentSha = strtolower(trim((string) ($post['agent_sha'] ?? '')));
+        $ipAllowlist = trim((string) ($post['ip_allowlist'] ?? ''));
 
         if ($scope === 'org' && $org === '') {
             return ['ok' => false, 'message' => 'org is required for org scope'];
@@ -179,6 +180,15 @@ final class SaveSettingsAction
             return ['ok' => false, 'message' => 'could not save GitHub App private key'];
         }
 
+        $parsedAllowlist = Config::parseIpAllowlist($ipAllowlist);
+        if ($parsedAllowlist === null) {
+            return [
+                'ok' => false,
+                'message' => 'IP allowlist must be comma or newline separated IPv4/IPv6 addresses or CIDRs (up to 64)',
+            ];
+        }
+        $ipAllowlist = implode(',', $parsedAllowlist);
+
         Settings::save([
             'RUNNERDECK_SCOPE' => $scope,
             'RUNNERDECK_ORG' => $scope === 'org' ? $org : '',
@@ -212,6 +222,8 @@ final class SaveSettingsAction
             'RUNNERDECK_SLOT_MEMORY_MAX_MIB' => $slotMem,
             'RUNNERDECK_GITHUB_APP_ID' => $appId,
             'RUNNERDECK_GITHUB_APP_INSTALLATION_ID' => $appInstall,
+            'RUNNERDECK_IP_ALLOWLIST' => $ipAllowlist,
+            'RUNNERDECK_REQUIRE_MTLS' => ($post['require_mtls'] ?? '') === '1' ? '1' : '',
         ]);
 
         $bits = ['scope=' . $scope];

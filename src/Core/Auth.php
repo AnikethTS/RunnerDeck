@@ -82,6 +82,7 @@ final class Auth
 
     public static function requirePageAccess(): void
     {
+        ClientGate::enforce('html');
         if (self::isLoggedIn() || self::anonymousAccessAllowed()) {
             return;
         }
@@ -94,6 +95,7 @@ final class Auth
 
     public static function rejectApiIfProtected(): void
     {
+        ClientGate::enforce('json');
         if (self::isLoggedIn() || self::anonymousAccessAllowed()) {
             return;
         }
@@ -114,6 +116,7 @@ final class Auth
 
     public static function rejectPlainIfProtected(): void
     {
+        ClientGate::enforce('plain');
         if (self::isLoggedIn() || self::anonymousAccessAllowed()) {
             return;
         }

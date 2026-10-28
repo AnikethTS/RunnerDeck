@@ -112,6 +112,8 @@ if (
         'githubAppId' => (string) ($_POST['github_app_id'] ?? ''),
         'githubAppInstallationId' => (string) ($_POST['github_app_installation_id'] ?? ''),
         'githubAppKeyPresent' => GithubApp::hasPrivateKey(),
+        'ipAllowlist' => (string) ($_POST['ip_allowlist'] ?? ''),
+        'requireMtls' => ($_POST['require_mtls'] ?? '') === '1',
     ];
 } else {
     try {
@@ -170,6 +172,8 @@ if (
             ? (string) GithubApp::installationId()
             : '',
         'githubAppKeyPresent' => GithubApp::hasPrivateKey(),
+        'ipAllowlist' => Config::ipAllowlistRaw(),
+        'requireMtls' => Config::requireMtls(),
     ];
 }
 
@@ -769,6 +773,37 @@ echo HostingWarnings::html();
             Sign out after this many minutes with no requests (1–1440). Hidden tabs count as idle.
           </p>
         </div>
+      </section>
+      <section class="settings-card">
+        <h3>Public hostname extra gate</h3>
+        <p class="settings-hint">
+          Loopback, Tailscale (<code>100.64.0.0/10</code>), and IPv6 ULA skip this.
+          Any other Host (including LAN names) needs an allowlist match or verified
+          mTLS. Empty allowlist and mTLS off is HTTP 403. Recover over SSH at
+          <code>http://127.0.0.1:8090/</code> or set env on the box. Env overrides
+          these fields. <code>TRUST_PROXY</code> only chooses which IP is compared
+          to the allowlist, not whether the gate applies.
+        </p>
+        <div class="settings-field">
+          <label for="settings-ip-allowlist">IP allowlist</label>
+          <textarea
+            id="settings-ip-allowlist"
+            name="ip_allowlist"
+            rows="4"
+            placeholder="203.0.113.10&#10;192.168.0.0/16"
+          ><?= htmlspecialchars($current['ipAllowlist']) ?></textarea>
+          <p class="settings-hint">Comma or newline separated IPs or CIDRs. Not a secret.</p>
+        </div>
+        <label class="checkbox-label">
+          <input type="checkbox" name="require_mtls" value="1"
+            <?= $current['requireMtls'] ? 'checked' : '' ?> />
+          Require verified client certificate
+        </label>
+        <p class="settings-hint">
+          Proxy must pass <code>SSL_CLIENT_VERIFY=SUCCESS</code> (see
+          <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/hosting.md">hosting.md</a>).
+          Missing header is fail-closed.
+        </p>
       </section>
       </section>
 
