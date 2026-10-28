@@ -6,50 +6,9 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-
-- **CI scanners**: Shellcheck on `run.sh` and `bin/*.sh`, gitleaks on PRs,
-  Trivy on the GHCR image at release, and Playwright screenshot snapshots
-  of the README/landing stills (dark mode) so UI drift fails the e2e job.
-
-### Changed
-
-- **README and landing stills**: dashboard, live log, Add Runner, and
-  Settings screenshots are dark mode (header, tabs, and current Settings).
-- **Landing page**: platform table matches current CI (Ubuntu 22.04,
-  Debian 12 apt, Fedora / Rocky / RHEL UBI dnf, macOS 15), and the feature
-  list covers tabbed Settings plus history / crashes / outbox / bundles.
-
-- **E2E CI**: cache Playwright Chromium and skip `--with-deps` on
-  `ubuntu-latest` (the image already has the libraries; apt was ~6 minutes).
-
-- **Header**: sticky bar, brand links home, version on every page, org/label
-  chip next to Log out, and a single-row page nav that scrolls on a narrow
-  screen. Page help is on the link itself, not an extra **i** per item.
+## [1.10.0] - 2026-10-28
 
 ### Added
-
-- **CI on older hosts**: PHPUnit and boot smokes on Ubuntu 22.04 (x64 and
-  arm) and macOS 15, distro `apt` PHP on Ubuntu 22.04 and Debian 12, and
-  distro `dnf` PHP on Fedora, Rocky 9, and RHEL UBI 9 (`php-process` for
-  posix/pcntl). The existing `ubuntu-latest` / `macos-latest` job names
-  stay. GitHub no longer hosts macOS 13; macOS 14 retires 2 Nov 2026.
-  PHPUnit now asserts posix/pcntl/`pdo_sqlite`, `/proc` RAM, listener
-  pid checks, cgroup v2 writes, and linux/darwin/windows runner packages
-  so those distro jobs fail if the host PHP is incomplete.
-
-- **Responsive shell**: shared page gutter and max width so the top bar,
-  banners, main, settings, and ops pages line up. Stats, charts, settings
-  tabs, and tables adapt at 900 / 720 / 520 px.
-
-- **Settings sections**: GitHub, Pool, Alerts, Access, and Host are tabs
-  instead of one long page. Save still writes every tab. Sticky Save bar
-  stays at the bottom.
-
-- **Help on controls**: an **i** next to stats, and hover text on page
-  names and pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
-  the rest state what they do. Help cards sit below the control (or above
-  if there is no room) so they stay on screen.
 
 - **Host history page** (`history.php`): 24h CPU, runner RSS, and pool disk-free
   charts from samples already written on dashboard polls. Dashboard sparklines
@@ -76,11 +35,69 @@ follows [SemVer](https://semver.org/).
   included; crash webhook only with opt-in. Runs from watch (including
   maintenance) or an open dashboard tab. Not from `health.php` / `/metrics.php`.
 
+- **Log retention**: optional days (1–365) to delete idle-slot `runner.log`,
+  `runner.log.1`, and `_diag` files older than that. Never while the process
+  is running. Never deletes `_work`. Runs from watch, including maintenance.
+
+- **GitHub API quota**: last `X-RateLimit-*` from `gh api --include`. Banner
+  when remaining is under 100 or ≤10% of the limit. The GitHub stats card
+  shows remaining/limit when known. Missing headers fail open.
+
+- **Outbox gave up**: after 8 failed webhook retries, a dashboard banner
+  points at Outbox for 7 days. A later successful delivery or a drop clears
+  it.
+
+- **Pin runner package SHA-256**: Settings / `RUNNERDECK_AGENT_SHA`. Add
+  and Upgrade refuse a GitHub checksum that does not match. If GitHub omits
+  the checksum, the downloaded file is still checked. The agent-behind
+  banner is suppressed while a pin is set.
+
+- **Help on controls**: an **i** next to stats, and hover text on page
+  names and pool/settings buttons, so Drain, Pause AR, Outbox, Bundles, and
+  the rest state what they do. Help cards sit below the control (or above
+  if there is no room) so they stay on screen.
+
+- **Settings sections**: GitHub, Pool, Alerts, Access, and Host are tabs
+  instead of one long page. Save still writes every tab. Sticky Save bar
+  stays at the bottom.
+
+- **Responsive shell**: shared page gutter and max width so the top bar,
+  banners, main, settings, and ops pages line up. Stats, charts, settings
+  tabs, and tables adapt at 900 / 720 / 520 px.
+
+- **CI on older hosts**: PHPUnit and boot smokes on Ubuntu 22.04 (x64 and
+  arm) and macOS 15, distro `apt` PHP on Ubuntu 22.04 and Debian 12, and
+  distro `dnf` PHP on Fedora, Rocky 9, and RHEL UBI 9 (`php-process` for
+  posix/pcntl). The existing `ubuntu-latest` / `macos-latest` job names
+  stay. GitHub no longer hosts macOS 13; macOS 14 retires 2 Nov 2026.
+  PHPUnit now asserts posix/pcntl/`pdo_sqlite`, `/proc` RAM, listener
+  pid checks, cgroup v2 writes, and linux/darwin/windows runner packages
+  so those distro jobs fail if the host PHP is incomplete.
+
+- **CI scanners**: Shellcheck on `run.sh` and `bin/*.sh`, gitleaks on PRs,
+  Trivy on the GHCR image at release, and Playwright screenshot snapshots
+  of the README/landing stills (dark mode) so UI drift fails the e2e job.
+
 ### Changed
 
 - Split `src/` into PSR-4 folders that match namespaces: `Core`, `GitHub`,
   `Host`, `Pool`, `Alert`, `Ui`, and `Http` (router plus one class per
   `api.php` action). Autoload is still `RunnerDeck\` → `src/`.
+
+- **Header**: sticky bar, brand links home, version on every page, org/label
+  chip next to Log out, and a single-row page nav that scrolls on a narrow
+  screen. Page help is on the link itself, not an extra **i** per item.
+
+- **Landing page**: platform table matches current CI (Ubuntu 22.04,
+  Debian 12 apt, Fedora / Rocky / RHEL UBI dnf, macOS 15), and the feature
+  list covers tabbed Settings plus history / crashes / outbox / bundles.
+
+- **README and landing stills**: dashboard, live log, Add Runner, and
+  Settings screenshots are dark mode (header, tabs, and current Settings).
+
+- **E2E CI**: Playwright runs in the pinned `mcr.microsoft.com/playwright`
+  image so screenshot pixels match the stills. Chromium is not installed
+  via `--with-deps` on the GitHub-hosted Ubuntu image.
 
 ## [1.9.0] - 2026-10-24
 
