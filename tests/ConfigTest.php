@@ -22,6 +22,7 @@ final class ConfigTest extends TestCase
         'RUNNERDECK_CRASH_WEBHOOK_THRESHOLD', 'RUNNERDECK_DRAIN_TIMEOUT',
         'RUNNERDECK_DISK_WEBHOOK_THRESHOLD', 'RUNNERDECK_SESSION_IDLE_MINUTES',
         'RUNNERDECK_TRUST_PROXY',
+        'RUNNERDECK_IP_ALLOWLIST', 'RUNNERDECK_REQUIRE_MTLS',
         'RUNNERDECK_SYSLOG', 'RUNNERDECK_SYSLOG_SOCKET',
         'RUNNERDECK_SLOT_CPU_PERCENT', 'RUNNERDECK_SLOT_MEMORY_MAX_MIB',
         'RUNNERDECK_GITHUB_APP_ID', 'RUNNERDECK_GITHUB_APP_INSTALLATION_ID',
@@ -345,5 +346,16 @@ final class ConfigTest extends TestCase
         $this->assertSame($sha, \RunnerDeck\Core\Config::agentSha());
         putenv('RUNNERDECK_AGENT_SHA=not-a-sha');
         $this->assertNull(\RunnerDeck\Core\Config::agentSha());
+    }
+
+    #[RunInSeparateProcess]
+    public function testIpAllowlistAndRequireMtls(): void
+    {
+        $this->assertSame('', \RunnerDeck\Core\Config::ipAllowlistRaw());
+        $this->assertFalse(\RunnerDeck\Core\Config::requireMtls());
+        putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9,192.168.0.0/16');
+        putenv('RUNNERDECK_REQUIRE_MTLS=1');
+        $this->assertSame(['203.0.113.9', '192.168.0.0/16'], \RunnerDeck\Core\Config::ipAllowlistCidrs());
+        $this->assertTrue(\RunnerDeck\Core\Config::requireMtls());
     }
 }

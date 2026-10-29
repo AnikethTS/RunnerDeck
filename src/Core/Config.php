@@ -355,6 +355,58 @@ final class Config
         return getenv('RUNNERDECK_TRUST_PROXY') === '1';
     }
 
+    public static function ipAllowlistRaw(): string
+    {
+        return (string) (getenv('RUNNERDECK_IP_ALLOWLIST') ?: '');
+    }
+
+    public static function requireMtls(): bool
+    {
+        return getenv('RUNNERDECK_REQUIRE_MTLS') === '1';
+    }
+
+    /**
+     * Valid CIDRs or single IPs from env/settings. Empty string is empty list.
+     *
+     * @return list<string>
+     */
+    public static function ipAllowlistCidrs(): array
+    {
+        return self::parseIpAllowlist(self::ipAllowlistRaw()) ?? [];
+    }
+
+    /**
+     * Comma or newline separated IPs/CIDRs. Null when any entry is invalid.
+     *
+     * @return list<string>|null
+     */
+    public static function parseIpAllowlist(string $raw): ?array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+        $chunks = preg_split('/[\s,]+/', $raw) ?: [];
+        $out = [];
+        foreach ($chunks as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            if (!ClientGate::isValidCidrOrIp($part)) {
+                return null;
+            }
+            if (!in_array($part, $out, true)) {
+                $out[] = $part;
+            }
+            if (count($out) > 64) {
+                return null;
+            }
+        }
+
+        return $out;
+    }
+
     public static function syslogEnabled(): bool
     {
         return getenv('RUNNERDECK_SYSLOG') === '1';

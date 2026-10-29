@@ -165,9 +165,12 @@ $bind = getenv('RUNNERDECK_BIND_HOST') ?: '127.0.0.1';
 if ($bind === '127.0.0.1' || $bind === '::1') {
     ok('bind', $bind . ' (loopback)', $color);
 } else {
+    $extra = Config::ipAllowlistCidrs() !== [] || Config::requireMtls()
+        ? 'IP allowlist or mTLS is set'
+        : 'neither IP allowlist nor mTLS — PHP will 403 public Host (docs/hosting.md)';
     $warnings += warn(
         'bind',
-        "{$bind} — TOTP required; put TLS in front and do not leave TOTP as the only gate on 443 (docs/hosting.md)",
+        "{$bind} — TOTP required; put TLS in front; {$extra}",
         $color
     );
 }

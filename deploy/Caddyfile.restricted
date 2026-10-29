@@ -32,6 +32,8 @@ runnerdeck.example.com {
 	php_fastcgi 127.0.0.1:9000 {
 		dial_timeout 5s
 		read_timeout 35m
+		# With tls client_auth mode require, tell PHP the extra gate is on:
+		# env SSL_CLIENT_VERIFY SUCCESS
 	}
 
 	file_server

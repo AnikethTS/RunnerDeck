@@ -24,6 +24,9 @@ final class AuthTest extends TestCase
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTH_TOTP_SECRET');
         putenv('RUNNERDECK_SESSION_IDLE_MINUTES');
+        putenv('RUNNERDECK_IP_ALLOWLIST');
+        putenv('RUNNERDECK_REQUIRE_MTLS');
+        \RunnerDeck\Core\ClientGate::$denyHandler = null;
         @unlink($this->lockoutFile);
         @unlink($dir . '/auth_recovery.json');
         @unlink($dir . '/auth_session.json');
@@ -258,6 +261,66 @@ final class AuthTest extends TestCase
 
         $_SESSION['session_epoch'] = 0;
         $this->assertFalse(\RunnerDeck\Core\Auth::isLoggedIn());
+    }
+
+    #[RunInSeparateProcess]
+    public function testRequirePageAccessDeniesPublicHostBeforeLoginRedirect(): void
+    {
+        $this->setSecret();
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $format = null;
+        \RunnerDeck\Core\ClientGate::$denyHandler = static function (string $fmt) use (&$format): void {
+            $format = $fmt;
+            throw new \RuntimeException('client-gate-denied');
+        };
+        try {
+            \RunnerDeck\Core\Auth::requirePageAccess();
+            $this->fail('expected extra-gate deny before login redirect');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('client-gate-denied', $e->getMessage());
+        }
+        $this->assertSame('html', $format);
+    }
+
+    #[RunInSeparateProcess]
+    public function testRejectApiIfProtectedDeniesJsonOnPublicHost(): void
+    {
+        $this->setSecret();
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $format = null;
+        \RunnerDeck\Core\ClientGate::$denyHandler = static function (string $fmt) use (&$format): void {
+            $format = $fmt;
+            throw new \RuntimeException('client-gate-denied');
+        };
+        try {
+            \RunnerDeck\Core\Auth::rejectApiIfProtected();
+            $this->fail('expected extra-gate deny');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('client-gate-denied', $e->getMessage());
+        }
+        $this->assertSame('json', $format);
+    }
+
+    #[RunInSeparateProcess]
+    public function testRejectPlainIfProtectedDeniesOnPublicHost(): void
+    {
+        $this->setSecret();
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $format = null;
+        \RunnerDeck\Core\ClientGate::$denyHandler = static function (string $fmt) use (&$format): void {
+            $format = $fmt;
+            throw new \RuntimeException('client-gate-denied');
+        };
+        try {
+            \RunnerDeck\Core\Auth::rejectPlainIfProtected();
+            $this->fail('expected extra-gate deny');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('client-gate-denied', $e->getMessage());
+        }
+        $this->assertSame('plain', $format);
     }
 
     #[RunInSeparateProcess]

@@ -13,6 +13,12 @@ follows [SemVer](https://semver.org/).
   CVE-2026-56865, CVE-2026-78667, CVE-2026-78669, CVE-2026-97031, and
   CVE-2026-111943 in the older `gh` 2.100.0 binary.
 
+- PHP refuses public Host / public client IP unless an extra gate is on:
+  `RUNNERDECK_IP_ALLOWLIST` match or `RUNNERDECK_REQUIRE_MTLS=1` with
+  `SSL_CLIENT_VERIFY=SUCCESS`. Loopback, Tailscale CGNAT, and IPv6 ULA skip
+  this. Empty allowlist is fail-closed. `health.php` / `metrics.php` stay
+  ungated. `TRUST_PROXY` only chooses which IP the allowlist checks.
+
 ## [1.10.0] - 2026-10-28
 
 ### Added

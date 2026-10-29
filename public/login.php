@@ -5,9 +5,12 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Auth;
+use RunnerDeck\Core\ClientGate;
 use RunnerDeck\Core\Csrf;
 use RunnerDeck\Core\HostingWarnings;
 use RunnerDeck\Core\Layout;
+
+ClientGate::enforce('html');
 
 if (!Auth::isEnabled()) {
     if (Auth::anonymousAccessAllowed()) {
