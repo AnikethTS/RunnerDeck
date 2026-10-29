@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Live job on a busy row**: workflow, job name (link to the run), and
+  elapsed time. Org scope reads in-progress runs on the org, so the row
+  is not limited to recently pushed repos. Missing GitHub data fails open.
+
 ### Security
 
 - Pin GitHub CLI **2.103.3** in the Docker image (Go 1.27.3, `x/net` 0.60.0,

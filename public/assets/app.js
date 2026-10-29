@@ -253,7 +253,7 @@ function initDashboard() {
       }
       const meta = document.createElement('span');
       meta.className = 'muted';
-      meta.textContent = [job.repo, job.workflow].filter(Boolean).join(' · ');
+      meta.textContent = [job.workflow, job.duration, job.repo].filter(Boolean).join(' · ');
       host.append(title, ' ', meta);
     });
   }

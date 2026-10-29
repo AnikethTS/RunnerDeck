@@ -239,6 +239,7 @@ final class QueuedJobs
                 'runner_name' => $runner,
                 'started_at' => $started > 0 ? gmdate('c', $started) : '',
                 'duration_sec' => $durationSec,
+                'duration' => $durationSec > 0 ? self::formatWait($durationSec) : '',
             ];
         }
         return $out;
@@ -332,6 +333,7 @@ final class QueuedJobs
         $jobs = [];
         $live = [];
         $recent = [];
+        $seenRuns = [];
         $truncated = count($repos) >= self::MAX_REPOS;
         foreach ($repos as $repo) {
             $runs = self::runsForRepo($repo);
@@ -339,17 +341,14 @@ final class QueuedJobs
                 $truncated = true;
             }
             foreach ($runs as $runId) {
+                $seenRuns[$repo . '#' . $runId] = true;
                 $payload = self::tryGetJson(
                     'repos/' . $repo . '/actions/runs/' . $runId . '/jobs?per_page=50'
                 );
                 if ($payload === null) {
                     continue;
                 }
-                foreach (self::pickLiveJobs($payload, $repo) as $job) {
-                    if (count($live) < 30) {
-                        $live[] = $job;
-                    }
-                }
+                self::appendLive($live, self::pickLiveJobs($payload, $repo));
                 foreach (self::pickRecentJobs($payload, $repo) as $job) {
                     if (count($recent) < 30) {
                         $recent[] = $job;
@@ -358,6 +357,7 @@ final class QueuedJobs
                 foreach (self::pickQueuedJobs($payload, $repo, $label) as $job) {
                     $jobs[] = $job;
                     if (count($jobs) >= self::MAX_JOBS) {
+                        self::appendOrgInProgress($live, $seenRuns);
                         return [
                             'ok' => true,
                             'label' => $label,
@@ -373,6 +373,8 @@ final class QueuedJobs
             }
         }
 
+        self::appendOrgInProgress($live, $seenRuns);
+
         return [
             'ok' => true,
             'label' => $label,
@@ -383,6 +385,92 @@ final class QueuedJobs
             'recent' => $recent,
             'message' => '',
         ];
+    }
+
+    /**
+     * Org scope has no waiting-jobs list, and the queued scan only walks a
+     * few recently pushed repos. In-progress runs are listed on the org so a
+     * busy row still gets its job when that repo was not in the scan.
+     *
+     * @param list<array<string, mixed>> $live
+     * @param array<string, true> $seenRuns
+     */
+    private static function appendOrgInProgress(array &$live, array $seenRuns): void
+    {
+        if (Config::scope() !== 'org') {
+            return;
+        }
+        $org = Config::org();
+        $payload = self::tryGetJson(
+            'orgs/' . $org . '/actions/runs?status=in_progress&per_page=20'
+        );
+        if ($payload === null) {
+            return;
+        }
+        $runs = $payload['workflow_runs'] ?? [];
+        if (!is_array($runs)) {
+            return;
+        }
+        $n = 0;
+        foreach ($runs as $run) {
+            if (!is_array($run) || $n >= 20) {
+                break;
+            }
+            $n++;
+            $repo = '';
+            $repository = $run['repository'] ?? null;
+            if (is_array($repository)) {
+                $repo = (string) ($repository['full_name'] ?? '');
+            }
+            $runId = (int) ($run['id'] ?? 0);
+            if ($repo === '' || !str_contains($repo, '/') || $runId < 1) {
+                continue;
+            }
+            if (isset($seenRuns[$repo . '#' . $runId])) {
+                continue;
+            }
+            $jobsPayload = self::tryGetJson(
+                'repos/' . $repo . '/actions/runs/' . $runId . '/jobs?per_page=50'
+            );
+            if ($jobsPayload === null) {
+                continue;
+            }
+            $picked = self::pickLiveJobs($jobsPayload, $repo);
+            $runUrl = (string) ($run['html_url'] ?? '');
+            if ($runUrl !== '') {
+                foreach ($picked as $i => $job) {
+                    if (($job['html_url'] ?? '') === '') {
+                        $picked[$i]['html_url'] = $runUrl;
+                    }
+                }
+            }
+            self::appendLive($live, $picked);
+        }
+    }
+
+    /**
+     * @param list<array<string, mixed>> $live
+     * @param list<array<string, mixed>> $jobs
+     */
+    private static function appendLive(array &$live, array $jobs): void
+    {
+        $seen = [];
+        foreach ($live as $job) {
+            $seen[(int) ($job['id'] ?? 0)] = true;
+        }
+        foreach ($jobs as $job) {
+            $id = (int) ($job['id'] ?? 0);
+            if ($id > 0 && isset($seen[$id])) {
+                continue;
+            }
+            if (count($live) >= 30) {
+                return;
+            }
+            $live[] = $job;
+            if ($id > 0) {
+                $seen[$id] = true;
+            }
+        }
     }
 
     /** @return list<string> owner/repo */

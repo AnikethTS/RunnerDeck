@@ -155,7 +155,83 @@ final class QueuedJobsTest extends TestCase
         $this->assertCount(1, $live);
         $this->assertSame('acme-1', $live[0]['runner_name']);
         $this->assertSame('lint', $live[0]['name']);
+        $this->assertSame('CI', $live[0]['workflow']);
         $this->assertSame('acme/app', $live[0]['repo']);
+        $this->assertSame('', $live[0]['duration']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testOrgInProgressRunOutsideRecentReposStillPaintsLiveJob(): void
+    {
+        $this->isolate();
+        putenv('RUNNERDECK_SCOPE=org');
+        putenv('RUNNERDECK_ORG=acme');
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+            if (in_array('auth', $cmd, true)) {
+                return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
+            }
+            $path = (string) end($cmd);
+            if (str_contains($path, 'orgs/acme/repos')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([['full_name' => 'acme/app']]),
+                    'stderr' => '',
+                ];
+            }
+            if (str_contains($path, 'orgs/acme/actions/runs?status=in_progress')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([
+                        'workflow_runs' => [[
+                            'id' => 55,
+                            'html_url' => 'https://github.com/acme/other/actions/runs/55',
+                            'repository' => ['full_name' => 'acme/other'],
+                        ]],
+                    ]),
+                    'stderr' => '',
+                ];
+            }
+            if (str_contains($path, 'repos/acme/app/actions/runs')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode(['workflow_runs' => []]),
+                    'stderr' => '',
+                ];
+            }
+            if (str_contains($path, 'repos/acme/other/actions/runs/55/jobs')) {
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([
+                        'jobs' => [[
+                            'id' => 90,
+                            'name' => 'build',
+                            'status' => 'in_progress',
+                            'runner_name' => 'acme-1',
+                            'html_url' => 'https://github.com/acme/other/actions/runs/55/job/90',
+                            'workflow_name' => 'CI',
+                            'started_at' => date('c', time() - 120),
+                        ]],
+                    ]),
+                    'stderr' => '',
+                ];
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => $path];
+        });
+
+        $snap = \RunnerDeck\GitHub\QueuedJobs::snapshot();
+
+        $this->assertTrue($snap['ok']);
+        $this->assertSame([], $snap['jobs']);
+        $this->assertCount(1, $snap['live']);
+        $this->assertSame('build', $snap['live'][0]['name']);
+        $this->assertSame('CI', $snap['live'][0]['workflow']);
+        $this->assertSame('acme-1', $snap['live'][0]['runner_name']);
+        $this->assertSame('acme/other', $snap['live'][0]['repo']);
+        $this->assertSame(
+            'https://github.com/acme/other/actions/runs/55/job/90',
+            $snap['live'][0]['html_url']
+        );
+        $this->assertSame('2m', $snap['live'][0]['duration']);
     }
 
     public function testFormatWait(): void
