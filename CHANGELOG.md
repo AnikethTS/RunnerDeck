@@ -23,7 +23,8 @@ follows [SemVer](https://semver.org/).
 
 - `HostBundle` and `HostBundleSnapshot` live in `RunnerDeck\Host`. `DiskAlert`
   lives in `RunnerDeck\Alert`. CI-only scripts live in `scripts/ci/`.
-  Operator commands stay in `bin/`. Public URLs are unchanged.
+  Shellcheck follows that path. Operator commands stay in `bin/`. Public
+  URLs are unchanged.
 
 ## [1.10.0] - 2026-10-28
 

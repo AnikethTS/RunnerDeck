@@ -45,9 +45,10 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses, and `action=queue` is mocked so
 tests never walk live workflow runs).
 
-CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh` and
-`bin/*.sh`, and **gitleaks** on the git history (placeholders in tests and
-the Settings PEM hint are allowlisted in `.gitleaks.toml`). Playwright
+CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh`,
+`scripts/ci/*.sh`, and any `bin/*.sh`, and **gitleaks** on the git history
+(placeholders in tests and the Settings PEM hint are allowlisted in
+`.gitleaks.toml`). Playwright
 compares dashboard, Settings, Add Runner, and live-log screenshots to
 `.github/screenshots/` (and those files must match `docs/screenshots/`).
 `.github/workflows/release.yml` scans the published

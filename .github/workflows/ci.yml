@@ -116,7 +116,9 @@ jobs:
           sudo mv /tmp/shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
 
       - name: Lint shell scripts
-        run: shellcheck -x -S warning run.sh bin/*.sh
+        run: |
+          shopt -s nullglob
+          shellcheck -x -S warning run.sh bin/*.sh scripts/ci/*.sh
 
   gitleaks:
     name: Secret scan
