@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RunnerDeck\Host;
 
 use RunnerDeck\Alert\CrashWebhook;
+use RunnerDeck\Alert\DiskAlert;
 use RunnerDeck\Core\Config;
 use RunnerDeck\Core\Settings;
 

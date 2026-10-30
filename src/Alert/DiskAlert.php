@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace RunnerDeck\Host;
+namespace RunnerDeck\Alert;
 
-use RunnerDeck\Alert\CrashWebhook;
 use RunnerDeck\Core\Config;
 use RunnerDeck\Core\Settings;
+use RunnerDeck\Host\SlotDisk;
 
 final class DiskAlert
 {

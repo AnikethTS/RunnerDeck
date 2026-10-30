@@ -42,7 +42,7 @@ final class AutoRestartTest extends TestCase
         putenv('RUNNERDECK_AUTO_CLEAR_WORK');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
         putenv('RUNNERDECK_HISTORY_FILE');
-        \RunnerDeck\Core\HostBundleSnapshot::fakeNow(null);
+        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(null);
         exec('rm -rf ' . escapeshellarg(dirname($this->dir)));
     }
 
@@ -215,7 +215,7 @@ final class AutoRestartTest extends TestCase
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         putenv('RUNNERDECK_HISTORY_FILE=' . dirname($this->dir) . '/storage/db/history.sqlite');
         \RunnerDeck\Host\HostMode::restore(true, false);
-        \RunnerDeck\Core\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
         $this->assertSame([], \RunnerDeck\Pool\AutoRestart::tick());
         $day = gmdate('Y-m-d', 1_700_000_000);
         $this->assertFileExists(dirname($this->dir) . '/storage/bundles/host-' . $day . '.json');

@@ -45,9 +45,10 @@ itself is never contacted; runner data for the richer UI tests is supplied
 by mocking `action=status` responses, and `action=queue` is mocked so
 tests never walk live workflow runs).
 
-CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh` and
-`bin/*.sh`, and **gitleaks** on the git history (placeholders in tests and
-the Settings PEM hint are allowlisted in `.gitleaks.toml`). Playwright
+CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh`,
+`scripts/ci/*.sh`, and any `bin/*.sh`, and **gitleaks** on the git history
+(placeholders in tests and the Settings PEM hint are allowlisted in
+`.gitleaks.toml`). Playwright
 compares dashboard, Settings, Add Runner, and live-log screenshots to
 `.github/screenshots/` (and those files must match `docs/screenshots/`).
 `.github/workflows/release.yml` scans the published
@@ -125,9 +126,9 @@ runnerdeck/
     bootstrap.php   autoload (`RunnerDeck\` → `src/`) + env bootstrap
     Core/           Config, Settings, Auth, TOTP, CSRF, session, layout, log, shell
     GitHub/         gh client, GitHub App, queue cache, agent version, orphans, backoff/clock/quota
-    Host/           pressure, host mode, metrics, cgroups, history, disk
+    Host/           pressure, host mode, metrics, cgroups, history, host bundle
     Pool/           runner dirs, start/stop, drain, rolling restart, crash state, log retention
-    Alert/          crash webhook, outbox retry, syslog, queue/long-job alerts
+    Alert/          crash webhook, disk alert, outbox retry, syslog, queue/long-job alerts
     Ui/             dashboard snapshot and first-paint HTML
     Http/           API router (`RunnerDeck\Http\Api`)
     Http/Action/    one class per `api.php?action=` (`RunnerDeck\Http\Action\`)
@@ -137,7 +138,7 @@ runnerdeck/
   run.sh            local php -S entry (also starts watch-auto-restart)
   bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
-  bin/ci-apt-phpunit.sh       Composer + PHPUnit for distro apt/dnf PHP jobs
+  scripts/ci/                 CI-only scripts (distro PHPUnit, smoke status, pinned gh install)
   run.ps1           Windows entry point (forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml

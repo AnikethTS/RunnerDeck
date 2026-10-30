@@ -6,7 +6,7 @@ namespace RunnerDeck\Pool;
 
 use RunnerDeck\Alert\CrashWebhook;
 use RunnerDeck\Core\Config;
-use RunnerDeck\Core\HostBundleSnapshot;
+use RunnerDeck\Host\HostBundleSnapshot;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\GitHub\QueuedJobs;
 use RunnerDeck\Host\HostMode;
