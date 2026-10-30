@@ -5,7 +5,7 @@
 # to the same value as RUNNERDECK_AUTH_TOTP_SECRET and this script logs in.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 base="${SMOKE_BASE:-http://127.0.0.1:8090}"
 url="${1:-${base}/api.php?action=status}"
 out="${2:-response.json}"

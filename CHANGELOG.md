@@ -6,10 +6,11 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
+### Added
 
-- Settings sections, the org/repo scope fields, and the webhook test are
-  server-rendered. The live dashboard still updates in the browser.
+- **Live job on a busy row**: workflow, job name (link to the run), and
+  elapsed time. Org scope reads in-progress runs on the org, so the row
+  is not limited to recently pushed repos. Missing GitHub data fails open.
 
 ### Security
 
@@ -18,11 +19,26 @@ follows [SemVer](https://semver.org/).
   CVE-2026-56865, CVE-2026-78667, CVE-2026-78669, CVE-2026-97031, and
   CVE-2026-111943 in the older `gh` 2.100.0 binary.
 
+- A public hostname reached from a loopback proxy (`php -S` on
+  `127.0.0.1`) still loads, but the dashboard and `php bin/doctor.php`
+  warn when neither an IP allowlist nor mTLS is set. php-fpm still
+  enforces the extra gate because it sees the real client.
+
 - PHP refuses public Host / public client IP unless an extra gate is on:
   `RUNNERDECK_IP_ALLOWLIST` match or `RUNNERDECK_REQUIRE_MTLS=1` with
   `SSL_CLIENT_VERIFY=SUCCESS`. Loopback, Tailscale CGNAT, and IPv6 ULA skip
   this. Empty allowlist is fail-closed. `health.php` / `metrics.php` stay
   ungated. `TRUST_PROXY` only chooses which IP the allowlist checks.
+
+### Changed
+
+- Settings sections, the org/repo scope fields, and the webhook test are
+  server-rendered. The live dashboard still updates in the browser.
+
+- `HostBundle` and `HostBundleSnapshot` live in `RunnerDeck\Host`. `DiskAlert`
+  lives in `RunnerDeck\Alert`. CI-only scripts live in `scripts/ci/`.
+  Shellcheck follows that path. Operator commands stay in `bin/`. Public
+  URLs are unchanged.
 
 ## [1.10.0] - 2026-10-28
 

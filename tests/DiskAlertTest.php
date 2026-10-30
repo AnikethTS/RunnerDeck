@@ -48,9 +48,9 @@ final class DiskAlertTest extends TestCase
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $over = \RunnerDeck\Host\DiskAlert::KIB_PER_GIB;
-        \RunnerDeck\Host\DiskAlert::check([$this->runner($over)], $over);
-        \RunnerDeck\Host\DiskAlert::check([$this->runner($over + 10)], $over + 10);
+        $over = \RunnerDeck\Alert\DiskAlert::KIB_PER_GIB;
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over + 10)], $over + 10);
 
         $this->assertCount(2, $bodies);
         $slot = json_decode((string) $bodies[0], true);
@@ -68,15 +68,15 @@ final class DiskAlertTest extends TestCase
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $over = \RunnerDeck\Host\DiskAlert::KIB_PER_GIB;
-        \RunnerDeck\Host\DiskAlert::check([$this->runner($over)], $over);
+        $over = \RunnerDeck\Alert\DiskAlert::KIB_PER_GIB;
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(2, $n);
 
-        \RunnerDeck\Host\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(2, $n);
 
-        \RunnerDeck\Host\DiskAlert::check([$this->runner(1)], 1);
-        \RunnerDeck\Host\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner(1)], 1);
+        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(4, $n);
     }
 }

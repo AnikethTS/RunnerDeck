@@ -167,7 +167,10 @@
   **scale to queue** is on. **Pool cap** blocks starts above N running
   slots. **Idle stop** (minutes, opt-in) stops GitHub-idle slots
   when the queue is empty. The same payload's `live` jobs paint the
-  current job on a busy row; `recent` paints the last completed jobs.
+  current job on a busy row (job name links to the run, plus workflow
+  and elapsed time). Org scope also lists in-progress runs on the org,
+  so that line is not limited to the recently pushed repos. `recent`
+  paints the last completed jobs.
   GitHub names this host registered that have no local slot show in
   **GitHub runners not on this host** (Remove from GitHub). Row
   HTML, stats, and the recent-log panel come from PHP; JS swaps that

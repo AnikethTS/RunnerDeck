@@ -924,6 +924,7 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
         repo: 'acme/app',
         html_url: 'https://example.test/job/10',
         runner_name: 'e2e-runner-base',
+        duration: '4m',
       }],
       recent: [{
         id: 8,
@@ -947,6 +948,12 @@ test('queued jobs panel lists waiting work and a start hint', async ({ page }) =
   await expect(page.locator('#queue-hint')).toContainText('stopped slot');
   await expect(page.locator('#queue-hint-btn')).toHaveText('Start idle slots');
   await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('build');
+  await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('CI');
+  await expect(page.locator('tr[data-runner="runner-1"] .live-job')).toContainText('4m');
+  await expect(page.locator('tr[data-runner="runner-1"] .live-job a')).toHaveAttribute(
+    'href',
+    'https://example.test/job/10',
+  );
   await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('unit');
   await expect(page.locator('tr[data-runner="runner-1"] .last-jobs')).toContainText('success');
 });

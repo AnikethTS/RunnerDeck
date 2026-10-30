@@ -6,7 +6,7 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Auth;
 use RunnerDeck\Core\Csrf;
-use RunnerDeck\Core\HostBundle;
+use RunnerDeck\Host\HostBundle;
 
 Auth::rejectPlainIfProtected();
 

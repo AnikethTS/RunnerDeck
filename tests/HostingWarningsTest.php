@@ -54,8 +54,29 @@ final class HostingWarningsTest extends TestCase
         $this->assertNotSame([], $msgs);
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('not HTTPS', $joined);
-        $this->assertStringNotContainsString('TOTP is the only gate', $joined);
+        $this->assertStringContainsString('loopback proxy', $joined);
         $this->assertStringContainsString('docs/hosting.md', $joined);
+        $this->assertSame(
+            'Not applied (proxy is loopback)',
+            \RunnerDeck\Core\ClientGate::extraGateFact()
+        );
+    }
+
+    #[RunInSeparateProcess]
+    public function testProxyGapSilentWhenAllowlistIsSet(): void
+    {
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
+
+        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
+        $this->assertStringNotContainsString('loopback proxy', $joined);
+        $this->assertStringNotContainsString('TOTP is the only gate', $joined);
+        $this->assertSame(
+            'Skipped (loopback or tailnet)',
+            \RunnerDeck\Core\ClientGate::extraGateFact()
+        );
     }
 
     #[RunInSeparateProcess]

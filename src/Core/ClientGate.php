@@ -113,8 +113,29 @@ final class ClientGate
         return self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
     }
 
+    /**
+     * Public Host arrived from a loopback proxy, and neither allowlist nor
+     * mTLS is configured. The extra gate is skipped, so the page still loads.
+     */
+    public static function proxyHidesExtraGate(): bool
+    {
+        $host = HostingWarnings::requestHost();
+        if ($host === '' || self::hostIsLoopbackName($host)) {
+            return false;
+        }
+        $remote = self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if (!self::ipIsLoopback($remote)) {
+            return false;
+        }
+
+        return Config::ipAllowlistCidrs() === [] && !Config::requireMtls();
+    }
+
     public static function extraGateFact(): string
     {
+        if (self::proxyHidesExtraGate()) {
+            return 'Not applied (proxy is loopback)';
+        }
         if (self::skipExtraGate()) {
             return 'Skipped (loopback or tailnet)';
         }
