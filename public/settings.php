@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
+use RunnerDeck\Alert\CrashWebhook;
 use RunnerDeck\Http\Action\SaveSettingsAction;
 use RunnerDeck\Core\Auth;
 use RunnerDeck\Core\Config;
@@ -18,6 +19,7 @@ Auth::requirePageAccess();
 
 $error = null;
 $notice = null;
+$webhookResult = null;
 $recoveryCodes = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::verifyRequest()) {
@@ -35,6 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             Auth::revokeOtherSessions();
             $notice = 'Other sessions are signed out. This one stays open.';
+        }
+    } elseif (isset($_POST['test_webhook'])) {
+        $url = trim((string) ($_POST['crash_webhook_url'] ?? ''));
+        if ($url === '' || !CrashWebhook::isValidUrl($url)) {
+            $webhookResult = [
+                'ok' => false,
+                'message' => 'Enter a webhook URL starting with http:// or https:// first.',
+            ];
+        } else {
+            $webhookResult = CrashWebhook::sendTest($url);
         }
     } elseif (isset($_POST['import_settings'])) {
         $file = $_FILES['settings_file'] ?? null;
@@ -179,9 +191,16 @@ if (
 
 $csrfToken = Csrf::token();
 $initialTab = 'github';
-if (is_string($error) && str_contains($error, 'webhook')) {
+if ($webhookResult !== null || (is_string($error) && str_contains($error, 'webhook'))) {
     $initialTab = 'alerts';
 }
+$settingsTabs = [
+    'github' => 'GitHub',
+    'pool' => 'Pool',
+    'alerts' => 'Alerts',
+    'access' => 'Access',
+    'host' => 'Host',
+];
 $help = [
     'autoRestart' => Layout::infoIcon(
         'Watch starts a slot whose process died if you did not stop it. Pause AR skips that slot.'
@@ -238,22 +257,22 @@ echo HostingWarnings::html();
     <?php endif; ?>
 
     <div class="settings-layout">
-      <nav
-        class="settings-tabs"
-        role="tablist"
-        aria-label="Settings sections"
-        data-initial-tab="<?= htmlspecialchars($initialTab) ?>"
-      >
-        <button type="button" role="tab" id="tab-github" data-tab="github"
-                aria-controls="panel-github" aria-selected="true">GitHub</button>
-        <button type="button" role="tab" id="tab-pool" data-tab="pool"
-                aria-controls="panel-pool" aria-selected="false" tabindex="-1">Pool</button>
-        <button type="button" role="tab" id="tab-alerts" data-tab="alerts"
-                aria-controls="panel-alerts" aria-selected="false" tabindex="-1">Alerts</button>
-        <button type="button" role="tab" id="tab-access" data-tab="access"
-                aria-controls="panel-access" aria-selected="false" tabindex="-1">Access</button>
-        <button type="button" role="tab" id="tab-host" data-tab="host"
-                aria-controls="panel-host" aria-selected="false" tabindex="-1">Host</button>
+      <nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+        <?php foreach ($settingsTabs as $tabId => $tabLabel) : ?>
+          <input
+            class="settings-tab-radio"
+            type="radio"
+            name="settings_section"
+            id="section-<?= htmlspecialchars($tabId) ?>"
+            <?= $initialTab === $tabId ? 'checked' : '' ?>
+          />
+          <label
+            for="section-<?= htmlspecialchars($tabId) ?>"
+            role="tab"
+            id="tab-<?= htmlspecialchars($tabId) ?>"
+            aria-controls="panel-<?= htmlspecialchars($tabId) ?>"
+          ><?= htmlspecialchars($tabLabel) ?></label>
+        <?php endforeach; ?>
       </nav>
 
     <div class="settings-panels">
@@ -379,7 +398,6 @@ echo HostingWarnings::html();
         role="tabpanel"
         data-tab-panel="pool"
         aria-labelledby="tab-pool"
-        hidden
       >
       <section class="settings-card">
         <h3>Automation</h3>
@@ -653,7 +671,6 @@ echo HostingWarnings::html();
         role="tabpanel"
         data-tab-panel="alerts"
         aria-labelledby="tab-alerts"
-        hidden
       >
       <section class="settings-card">
         <h3>Notifications</h3>
@@ -687,13 +704,22 @@ echo HostingWarnings::html();
               value="<?= htmlspecialchars($current['crashWebhookUrl']) ?>"
             />
             <button
-              type="button"
+              type="submit"
+              name="test_webhook"
+              value="1"
               id="settings-test-webhook"
               class="btn btn-sm help-hover"
               <?= $help['test'] ?>
             >Test</button>
           </div>
-          <p id="settings-test-webhook-result" class="muted" hidden></p>
+          <?php if (is_array($webhookResult)) : ?>
+            <p
+              id="settings-test-webhook-result"
+              class="<?= !empty($webhookResult['ok']) ? 'muted' : 'muted setup-error' ?>"
+            ><?= htmlspecialchars($webhookResult['message']) ?></p>
+          <?php else : ?>
+            <p id="settings-test-webhook-result" class="muted" hidden></p>
+          <?php endif; ?>
           <p class="settings-hint">
             Slack and Discord URLs get a native payload; anything else gets JSON.
             Test sends the URL as typed — no need to save first.
@@ -740,7 +766,6 @@ echo HostingWarnings::html();
         role="tabpanel"
         data-tab-panel="access"
         aria-labelledby="tab-access"
-        hidden
       >
       <section class="settings-card">
         <h3>Login</h3>
@@ -815,7 +840,6 @@ echo HostingWarnings::html();
       role="tabpanel"
       data-tab-panel="host"
       aria-labelledby="tab-host"
-      hidden
     >
     <?= HostingWarnings::settingsCardHtml(); ?>
     <section class="settings-card">
@@ -893,9 +917,4 @@ echo HostingWarnings::html();
     </div>
   </main>
 <?php
-Layout::htmlClose([
-    'assets/js/theme.js',
-    'assets/js/scope-toggle.js',
-    'assets/js/webhook-test.js',
-    'assets/js/settings-tabs.js',
-]);
+Layout::htmlClose(['assets/js/theme.js']);

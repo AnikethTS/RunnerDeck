@@ -987,11 +987,42 @@ main {
   color: var(--text-primary);
   background: color-mix(in srgb, var(--brand) 8%, transparent);
 }
-.settings-tabs [role="tab"][aria-selected="true"] {
+.settings-tab-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.settings-tab-radio:focus-visible + [role="tab"] {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.settings-layout:has(#section-github:checked) #tab-github,
+.settings-layout:has(#section-pool:checked) #tab-pool,
+.settings-layout:has(#section-alerts:checked) #tab-alerts,
+.settings-layout:has(#section-access:checked) #tab-access,
+.settings-layout:has(#section-host:checked) #tab-host {
   color: var(--text-primary);
   background: var(--surface-1);
   border-color: var(--border);
   font-weight: 600;
+}
+.settings-panel { display: none; }
+.settings-layout:has(#section-github:checked) #panel-github,
+.settings-layout:has(#section-pool:checked) #panel-pool,
+.settings-layout:has(#section-alerts:checked) #panel-alerts,
+.settings-layout:has(#section-access:checked) #panel-access,
+.settings-layout:has(#section-host:checked) #panel-host {
+  display: block;
+}
+form:has(select[name="scope"] option[value="repo"]:checked) [id$="-org-field"],
+form:has(select[name="scope"] option[value="org"]:checked) [id$="-repo-field"] {
+  display: none;
 }
 .settings-panels { min-width: 0; }
 .settings-panel[hidden] { display: none; }

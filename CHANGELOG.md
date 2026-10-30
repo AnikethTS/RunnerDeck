@@ -6,6 +6,11 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Settings sections, the org/repo scope fields, and the webhook test are
+  server-rendered. The live dashboard still updates in the browser.
+
 ### Security
 
 - Pin GitHub CLI **2.103.3** in the Docker image (Go 1.27.3, `x/net` 0.60.0,
