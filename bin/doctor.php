@@ -6,6 +6,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\HostingWarnings;
 use RunnerDeck\GitHub\GithubApp;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\Host\HostPressure;
@@ -164,6 +165,9 @@ echo "\nHosting\n";
 $bind = getenv('RUNNERDECK_BIND_HOST') ?: '127.0.0.1';
 if ($bind === '127.0.0.1' || $bind === '::1') {
     ok('bind', $bind . ' (loopback)', $color);
+    if (Config::ipAllowlistCidrs() === [] && !Config::requireMtls()) {
+        $warnings += warn('extra gate', HostingWarnings::proxyGapText(), $color);
+    }
 } else {
     $extra = Config::ipAllowlistCidrs() !== [] || Config::requireMtls()
         ? 'IP allowlist or mTLS is set'
