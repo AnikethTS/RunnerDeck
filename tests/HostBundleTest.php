@@ -54,8 +54,8 @@ final class HostBundleTest extends TestCase
         \RunnerDeck\Host\HostMode::restore(true, false);
         \RunnerDeck\Pool\CrashHistory::record('runner-1', 'acme-1');
 
-        $bundle = \RunnerDeck\Core\HostBundle::export();
-        $this->assertTrue(\RunnerDeck\Core\HostBundle::isBundle($bundle));
+        $bundle = \RunnerDeck\Host\HostBundle::export();
+        $this->assertTrue(\RunnerDeck\Host\HostBundle::isBundle($bundle));
         $this->assertSame('acme', $bundle['settings']['RUNNERDECK_ORG']);
         $this->assertArrayNotHasKey('RUNNERDECK_AUTH_TOTP_SECRET', $bundle['settings']);
         $this->assertArrayNotHasKey('RUNNERDECK_CRASH_WEBHOOK_URL', $bundle['settings']);
@@ -79,7 +79,7 @@ final class HostBundleTest extends TestCase
             'RUNNERDECK_AUTH_TOTP_SECRET' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://example.com/hook',
         ]);
-        $bundle = \RunnerDeck\Core\HostBundle::export(true);
+        $bundle = \RunnerDeck\Host\HostBundle::export(true);
         $this->assertSame(
             'https://example.com/hook',
             $bundle['secrets']['RUNNERDECK_CRASH_WEBHOOK_URL']
@@ -105,8 +105,8 @@ final class HostBundleTest extends TestCase
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $result = \RunnerDeck\Core\HostBundle::import([
-            'kind' => \RunnerDeck\Core\HostBundle::KIND,
+        $result = \RunnerDeck\Host\HostBundle::import([
+            'kind' => \RunnerDeck\Host\HostBundle::KIND,
             'version' => 1,
             'settings' => [
                 'RUNNERDECK_SCOPE' => 'org',
@@ -157,8 +157,8 @@ final class HostBundleTest extends TestCase
     #[RunInSeparateProcess]
     public function testImportRejectsUnknownVersion(): void
     {
-        $result = \RunnerDeck\Core\HostBundle::import([
-            'kind' => \RunnerDeck\Core\HostBundle::KIND,
+        $result = \RunnerDeck\Host\HostBundle::import([
+            'kind' => \RunnerDeck\Host\HostBundle::KIND,
             'version' => 99,
         ]);
         $this->assertFalse($result['ok']);

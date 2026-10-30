@@ -19,6 +19,12 @@ follows [SemVer](https://semver.org/).
   this. Empty allowlist is fail-closed. `health.php` / `metrics.php` stay
   ungated. `TRUST_PROXY` only chooses which IP the allowlist checks.
 
+### Changed
+
+- `HostBundle` and `HostBundleSnapshot` live in `RunnerDeck\Host`. `DiskAlert`
+  lives in `RunnerDeck\Alert`. CI-only scripts live in `scripts/ci/`.
+  Operator commands stay in `bin/`. Public URLs are unchanged.
+
 ## [1.10.0] - 2026-10-28
 
 ### Added

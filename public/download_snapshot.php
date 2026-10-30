@@ -5,7 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\HostBundleSnapshot;
+use RunnerDeck\Host\HostBundleSnapshot;
 
 Auth::rejectPlainIfProtected();
 

@@ -11,7 +11,7 @@ use RunnerDeck\Core\Csrf;
 use RunnerDeck\Core\HostingWarnings;
 use RunnerDeck\Core\Layout;
 use RunnerDeck\GitHub\GithubApp;
-use RunnerDeck\Core\HostBundle;
+use RunnerDeck\Host\HostBundle;
 use RunnerDeck\Core\SettingsPortable;
 
 Auth::requirePageAccess();

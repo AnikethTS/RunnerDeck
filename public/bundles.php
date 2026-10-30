@@ -7,7 +7,7 @@ require __DIR__ . '/../src/bootstrap.php';
 use RunnerDeck\Core\Auth;
 use RunnerDeck\Core\Config;
 use RunnerDeck\Core\Csrf;
-use RunnerDeck\Core\HostBundleSnapshot;
+use RunnerDeck\Host\HostBundleSnapshot;
 use RunnerDeck\Core\Layout;
 
 Auth::requirePageAccess();

@@ -5,7 +5,7 @@ set -euo pipefail
 
 export COMPOSER_ALLOW_SUPERUSER=1
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 
 php -v

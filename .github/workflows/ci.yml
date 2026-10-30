@@ -215,7 +215,7 @@ jobs:
           php -S 127.0.0.1:8090 -t public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          bash bin/ci-smoke-status.sh
+          bash scripts/ci/ci-smoke-status.sh
 
   e2e-test:
     name: E2E tests (Playwright)
@@ -273,7 +273,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Composer and run PHPUnit
-        run: bash bin/ci-apt-phpunit.sh
+        run: bash scripts/ci/ci-apt-phpunit.sh
 
   dnf-php-test:
     name: Unit tests (${{ matrix.name }}, dnf PHP)
@@ -313,7 +313,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Composer and run PHPUnit
-        run: bash bin/ci-apt-phpunit.sh
+        run: bash scripts/ci/ci-apt-phpunit.sh
 
   alpine-smoke-test:
     name: Boot smoke test (Alpine/musl)
@@ -334,7 +334,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install gh CLI (the base image has none; RunnerDeck shells out to it)
-        run: sh bin/install-gh.sh
+        run: sh scripts/ci/install-gh.sh
 
       - name: Boot the dashboard and hit the status endpoint
         env:
@@ -344,7 +344,7 @@ jobs:
           php -S 127.0.0.1:8090 -t public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          bash bin/ci-smoke-status.sh
+          bash scripts/ci/ci-smoke-status.sh
 
   docker-smoke-test:
     name: Boot smoke test (Docker)
@@ -390,5 +390,5 @@ jobs:
             runnerdeck:ci
           trap 'docker rm -f runnerdeck-ci >/dev/null 2>&1 || true' EXIT
           RUNNERDECK_SMOKE_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ \
-            bash bin/ci-smoke-status.sh
+            bash scripts/ci/ci-smoke-status.sh
           docker logs runnerdeck-ci
