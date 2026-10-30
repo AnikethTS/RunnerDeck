@@ -13,6 +13,11 @@ follows [SemVer](https://semver.org/).
   CVE-2026-56865, CVE-2026-78667, CVE-2026-78669, CVE-2026-97031, and
   CVE-2026-111943 in the older `gh` 2.100.0 binary.
 
+- A public hostname reached from a loopback proxy (`php -S` on
+  `127.0.0.1`) still loads, but the dashboard and `php bin/doctor.php`
+  warn when neither an IP allowlist nor mTLS is set. php-fpm still
+  enforces the extra gate because it sees the real client.
+
 - PHP refuses public Host / public client IP unless an extra gate is on:
   `RUNNERDECK_IP_ALLOWLIST` match or `RUNNERDECK_REQUIRE_MTLS=1` with
   `SSL_CLIENT_VERIFY=SUCCESS`. Loopback, Tailscale CGNAT, and IPv6 ULA skip

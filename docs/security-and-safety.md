@@ -32,12 +32,15 @@ supported, but it's opt-in and has two parts, both required together:
    Proxying `./run.sh` (`php -S`) is the same TLS story with a four-worker
    cap. Full steps: **[Hosting](hosting.md)**. Without TLS, the login code
    and session cookie both travel the network in the clear, which defeats
-   the point of requiring a login at all. PHP 403s public Host unless an
-   IP allowlist or verified mTLS is actually on (Settings → Access, or
-   env). Proxy examples remain defense in depth. Skip public 443 when
-   you can ([Beyond TOTP](hosting.md#beyond-totp-on-443)). The UI
-   repeats remaining hosting issues as banners when Host is not
-   localhost or the request is HTTPS.
+   the point of requiring a login at all. PHP 403s a public client unless
+   an IP allowlist or verified mTLS is actually on (Settings → Access, or
+   env). A same-machine proxy to `php -S` still serves a public hostname,
+   because PHP only sees `127.0.0.1`; the banner and `php bin/doctor.php`
+   warn when no allowlist or mTLS is set. php-fpm applies the gate.
+   Proxy examples remain defense in depth. Skip public 443 when you can
+   ([Beyond TOTP](hosting.md#beyond-totp-on-443)). The UI repeats
+   remaining hosting issues as banners when Host is not localhost or the
+   request is HTTPS.
 
 `./run.sh` is PHP’s built-in server on `127.0.0.1` — four workers, a live
 log occupying one of them, no php-fpm isolation. Fine for one operator.

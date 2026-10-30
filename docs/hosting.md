@@ -3,10 +3,12 @@
 > **Warnings when this is not localhost.** The dashboard, Settings, and
 > login page show banners if the Host is a real hostname or the request
 > is HTTPS: missing TLS, TOTP as the only gate when the extra gate is
-> missing, `php -S` instead of php-fpm, and `RUNNERDECK_TRUST_PROXY` from a
-> non-loopback client. Loopback HTTP (`127.0.0.1` / `localhost`) stays
-> quiet. Settings also has a **This host** card with those facts even
-> on localhost. `php bin/doctor.php` also warns on a non-loopback bind.
+> missing or a loopback proxy hides the client, `php -S` instead of
+> php-fpm, and `RUNNERDECK_TRUST_PROXY` from a non-loopback client.
+> Loopback HTTP (`127.0.0.1` / `localhost`) stays quiet. Settings also
+> has a **This host** card with those facts even on localhost.
+> `php bin/doctor.php` warns on a non-loopback bind, and on a loopback
+> bind that has neither an allowlist nor mTLS.
 
 RunnerDeck is still a **single-user operator UI** for runners on **this
 machine**. “Cloud hosting” here means: a VPS or home server where Caddy,
@@ -107,10 +109,15 @@ it does not replace network policy.
 Headscale, WireGuard) and open the UI only there. SSH remains how you
 recover a lost authenticator.
 
-PHP enforces that extra gate on pages, login, and the API. Loopback Host
-or `REMOTE_ADDR`, Tailscale `100.64.0.0/10`, and IPv6 `fd00::/8` skip it
-so you can recover over SSH at `http://127.0.0.1:8090/`. LAN Wi-Fi is
-not skipped — add `192.168.0.0/16` (or your prefix) to the allowlist.
+PHP enforces that extra gate on pages, login, and the API when it can
+see a public client. Loopback Host, Tailscale `100.64.0.0/10`, and IPv6
+`fd00::/8` skip it so you can recover over SSH at
+`http://127.0.0.1:8090/`. A same-machine reverse proxy to `php -S`
+(`127.0.0.1:8090`) also skips it: PHP sees `REMOTE_ADDR=127.0.0.1` and
+still serves the page. The dashboard banner and `php bin/doctor.php`
+say so when no allowlist or mTLS is set. php-fpm still enforces the
+gate, because `REMOTE_ADDR` is the real client. LAN Wi-Fi is not
+skipped — add `192.168.0.0/16` (or your prefix) to the allowlist.
 `RUNNERDECK_TRUST_PROXY` only chooses whether the allowlist uses
 `REMOTE_ADDR` or the left-most `X-Forwarded-For` hop; it is not a
 bypass. `health.php` and `metrics.php` stay HTTP 200 without the extra
@@ -124,8 +131,9 @@ export RUNNERDECK_IP_ALLOWLIST=203.0.113.10,192.168.0.0/16
 export RUNNERDECK_REQUIRE_MTLS=1
 ```
 
-Env wins over Settings. Empty allowlist + mTLS off on a public Host is
-403, not fail-open.
+Env wins over Settings. Empty allowlist + mTLS off on a public client
+is 403, not fail-open. The same empty gate behind a loopback proxy is
+a warning, not a 403.
 
 **If 443 is on the internet**, also uncomment an IP allowlist and/or
 mTLS in the proxy (defense in depth). For mTLS, pass
