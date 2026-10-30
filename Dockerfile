@@ -1,4 +1,4 @@
-FROM php:8.6.0RC3-cli-alpine@sha256:8f0fe962ba9ba54e7792dc8a588f22e3e3bf728fe7bbd54e074dacb272590440
+FROM php:8.6.0RC4-cli-alpine@sha256:c9c90988b028655d7601a8d780ab5e068abd1c5f430cc0ee642755b94dd46583
 
 RUN apk add --no-cache bash curl tar sqlite-dev git \
         icu-libs krb5-libs libgcc libstdc++ libintl openssl lttng-ust zlib \
