@@ -464,7 +464,7 @@ Layout::topbarEnd();
   </footer>
 <?php
 if ($needsSetup) {
-    Layout::htmlClose(['assets/js/theme.js', 'assets/js/scope-toggle.js']);
+    Layout::htmlClose(['assets/js/theme.js']);
 } else {
     $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
     echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";

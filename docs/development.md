@@ -120,7 +120,7 @@ runnerdeck/
     totp_setup.php  optional TOTP enroll / rotate
     health.php      unauthenticated `{"ok":true}` probe (no version; `ready` / `pressure` / `reboot_ready`)
     metrics.php     Prometheus text (local pool/pressure/queue cache/outbox; no GitHub)
-    assets/         app.js (dashboard), js/theme.js, js/settings-tabs.js, style.css
+    assets/         app.js (live dashboard), js/theme.js (theme and help tips), style.css
                     (shared --page-gutter / --page-max; 900 / 720 / 520 breakpoints), logo.png
   src/
     bootstrap.php   autoload (`RunnerDeck\` → `src/`) + env bootstrap

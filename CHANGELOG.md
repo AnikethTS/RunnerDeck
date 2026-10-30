@@ -32,6 +32,9 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- Settings sections, the org/repo scope fields, and the webhook test are
+  server-rendered. The live dashboard still updates in the browser.
+
 - `HostBundle` and `HostBundleSnapshot` live in `RunnerDeck\Host`. `DiskAlert`
   lives in `RunnerDeck\Alert`. CI-only scripts live in `scripts/ci/`.
   Shellcheck follows that path. Operator commands stay in `bin/`. Public
