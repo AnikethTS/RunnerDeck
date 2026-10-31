@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-31
+
 ### Added
 
 - **Live job on a busy row**: workflow, job name (link to the run), and
