@@ -2,6 +2,7 @@ FROM php:8.6.0RC4-cli-alpine@sha256:c9c90988b028655d7601a8d780ab5e068abd1c5f430c
 
 RUN apk add --no-cache bash curl tar sqlite-dev git \
         icu-libs krb5-libs libgcc libstdc++ libintl openssl lttng-ust zlib \
+    && apk upgrade --no-cache brotli-libs curl libcurl \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-install pcntl posix pdo_sqlite \
     && apk del .build-deps

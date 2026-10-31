@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-10-31
+
+### Security
+
+- The GHCR image upgrades Alpine `brotli-libs` to 1.2.1-r0 and `curl` /
+  `libcurl` to 8.23.0-r0. The `v1.11.0` publish scan stopped on
+  CVE-2026-111497 (critical) and CVE-2026-92392 (high).
+
 ## [1.11.0] - 2026-10-31
 
 ### Added
