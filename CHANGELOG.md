@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-31
+
 ### Added
 
 - **Live job on a busy row**: workflow, job name (link to the run), and
@@ -13,6 +15,9 @@ follows [SemVer](https://semver.org/).
   is not limited to recently pushed repos. Missing GitHub data fails open.
 
 ### Security
+
+- Pin dev-only `minimatch` to **11.0.1** (GHSA-g3hv-75wg-m249). ESLint and
+  stylelint still run. This is not a runtime dependency.
 
 - Pin GitHub CLI **2.103.3** in the Docker image (Go 1.27.3, `x/net` 0.60.0,
   `x/mod` 0.41.0) so Trivy on GHCR is not blocked by CVE-2026-56864,
