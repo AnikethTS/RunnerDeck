@@ -59,6 +59,8 @@ compares dashboard, Settings, Add Runner, and live-log screenshots to
 `ghcr.io/anikethts/runnerdeck` image with Trivy (CRITICAL/HIGH, unfixed
 ignored) after push.
 
+The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and Windows hosted runners, dispatches `scripts/ci/e2e-probe-workflow.yml` onto it, and waits for the job to pass. It needs a dedicated, throwaway test repository, a repository variable `E2E_REPO` (`owner/repo`), and a secret `E2E_RUNNER_TOKEN`: a fine-grained token limited to that one repo with Administration, Actions and Contents read/write. Keep that repo private and empty of anything else, since a runner executes its workflows. Without the secret the job skips on pull requests and fails on pushes, schedules and manual runs. Fork pull requests never get the secret.
+
 CI also enforces a minimum line coverage (`scripts/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
 
 The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `scripts/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.

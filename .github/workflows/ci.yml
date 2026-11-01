@@ -302,6 +302,53 @@ jobs:
           New-Item -ItemType Directory -Path $scratch | Out-Null
           php scripts/ci/windows-smoke.php $scratch
 
+  e2e-real-runner:
+    name: Real runner end-to-end (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
+      E2E_REPO: ${{ vars.E2E_REPO }}
+      E2E_TAG: rd-e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check end-to-end configuration
+        id: gate
+        shell: bash
+        run: |
+          if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "::notice::E2E_RUNNER_TOKEN or E2E_REPO is not configured; skipping the real runner test"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          php-version: "8.5.12"
+          extensions: json, pdo_sqlite
+          coverage: none
+
+      - name: Register a real runner, run a job on it, and clean up
+        if: steps.gate.outputs.enabled == 'true'
+        shell: bash
+        run: bash scripts/ci/e2e-real-runner.sh
+
+      - name: Remove leftover runners and runs
+        if: always() && steps.gate.outputs.enabled == 'true'
+        shell: bash
+        run: bash scripts/ci/e2e-real-runner.sh cleanup
+
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
