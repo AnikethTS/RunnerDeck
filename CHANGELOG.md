@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- CI job that registers a real runner through the dashboard API on Linux, macOS and Windows, dispatches a workflow onto it in a dedicated test repo, and checks the job succeeds.
+
 - Stricter CI: a line-coverage gate (75%), PHPUnit runs in random order with three seeds, risky tests and notices fail the run, PHP 8.2/8.3/8.4 unit-test jobs, and a nightly scheduled run.
 
 - CI also tests and boot-smokes on Intel macOS (`macos-15-intel`).

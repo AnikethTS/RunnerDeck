@@ -1,0 +1,19 @@
+name: runnerdeck-e2e
+run-name: e2e ${{ inputs.tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Label of the runner this run must land on
+        required: true
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: [self-hosted, "${{ inputs.tag }}"]
+    timeout-minutes: 10
+    steps:
+      - name: Report where this ran
+        run: echo "ran on ${{ runner.os }} ${{ runner.arch }} with tag ${{ inputs.tag }}"
