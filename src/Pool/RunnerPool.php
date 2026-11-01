@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RunnerDeck\Pool;
 
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Platform;
 use RunnerDeck\Core\Shell;
 use RunnerDeck\GitHub\AgentVersion;
 use RunnerDeck\Host\SlotDisk;
@@ -28,6 +29,12 @@ final class RunnerPool
     public static function fakeLiveListeners(?array $map): void
     {
         self::$liveListenersFake = $map;
+        self::$listenersCache = null;
+        self::$listenersCachedAt = 0;
+    }
+
+    public static function resetListenersCache(): void
+    {
         self::$listenersCache = null;
         self::$listenersCachedAt = 0;
     }
@@ -191,6 +198,13 @@ final class RunnerPool
             return $cache;
         }
 
+        if (Platform::isWindows()) {
+            $map = WindowsProcess::processStats();
+            $cache = $map;
+            $cachedAt = microtime(true);
+            return $map;
+        }
+
         $result = Shell::exec(['ps', '-eo', 'pid=,%cpu=,rss=,etimes='], 5);
         $map = [];
         if ($result['code'] === 0) {
@@ -224,10 +238,29 @@ final class RunnerPool
             return self::$listenersCache;
         }
 
-        $map = PHP_OS_FAMILY === 'Darwin' ? self::liveListenersByDirDarwin() : self::liveListenersByDirLinux();
+        $map = match (true) {
+            Platform::isWindows() => self::liveListenersByDirWindows(),
+            PHP_OS_FAMILY === 'Darwin' => self::liveListenersByDirDarwin(),
+            default => self::liveListenersByDirLinux(),
+        };
 
         self::$listenersCache = $map;
         self::$listenersCachedAt = microtime(true);
+        return $map;
+    }
+
+    /** @return array<string, int> runner dir => pid, keyed as glob() spells the pool dirs */
+    private static function liveListenersByDirWindows(): array
+    {
+        $byKey = WindowsProcess::listenersByDirKey();
+        $map = [];
+        $poolDir = Config::poolDir();
+        foreach (glob("$poolDir/runner-*", GLOB_ONLYDIR) ?: [] as $path) {
+            $pid = $byKey[Platform::pathKey($path)] ?? null;
+            if ($pid !== null) {
+                $map[$path] = $pid;
+            }
+        }
         return $map;
     }
 
@@ -291,6 +324,9 @@ final class RunnerPool
         $pid = (int) trim(file_get_contents($pidFile) ?: '0');
         if ($pid <= 0) {
             return [false, null];
+        }
+        if (Platform::isWindows()) {
+            return [WindowsProcess::isListener($pid), $pid];
         }
         if (!posix_kill($pid, 0)) {
             return [false, $pid];

@@ -42,7 +42,7 @@ function fail(string $label, string $detail, bool $color): int
 
 function commandExists(string $bin): bool
 {
-    return Shell::exec(['which', $bin], 5)['code'] === 0;
+    return \RunnerDeck\Core\Platform::commandExists($bin);
 }
 
 echo "RunnerDeck doctor\n";
@@ -77,7 +77,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
         );
     }
 }
-foreach (['posix', 'pcntl'] as $ext) {
+foreach (\RunnerDeck\Core\Platform::isWindows() ? [] : ['posix', 'pcntl'] as $ext) {
     if (extension_loaded($ext)) {
         ok("ext-{$ext}", '', $color);
     } else {
@@ -91,7 +91,15 @@ if (extension_loaded('pdo_sqlite')) {
 }
 
 echo "\nExternal tools\n";
-if (commandExists('bash')) {
+if (\RunnerDeck\Core\Platform::isWindows()) {
+    foreach (['powershell.exe', 'taskkill'] as $tool) {
+        if (commandExists($tool)) {
+            ok($tool, '', $color);
+        } else {
+            $failures += fail($tool, 'needed to start, stop and inspect runner processes on Windows', $color);
+        }
+    }
+} elseif (commandExists('bash')) {
     ok('bash', '', $color);
 } else {
     $failures += fail('bash', 'run.sh needs bash — Alpine and some minimal distros don\'t ship it by default', $color);

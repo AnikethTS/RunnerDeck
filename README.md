@@ -38,7 +38,7 @@ Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
 That's the whole setup. Machine not ready yet? Run `php bin/doctor.php` to
 check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux/macOS native,
-Windows via WSL2).
+Windows native or via WSL2).
 
 ## Screenshots
 

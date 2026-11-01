@@ -59,8 +59,10 @@ compares dashboard, Settings, Add Runner, and live-log screenshots to
 `ghcr.io/anikethts/runnerdeck` image with Trivy (CRITICAL/HIGH, unfixed
 ignored) after push.
 
+The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `scripts/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
+
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
-on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, and `macos-15` (PHP 8.1),
+on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-15`, and Intel `macos-15-intel` (PHP 8.1),
 PHPUnit on those hosts plus `ubuntu-22.04-arm`, distro-`apt` PHPUnit on
 Ubuntu 22.04 and Debian 12, distro-`dnf` PHPUnit on Fedora, Rocky 9, and
 RHEL UBI 9, a dedicated Alpine (musl)
@@ -143,7 +145,7 @@ runnerdeck/
   bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   scripts/ci/                 CI-only scripts (distro PHPUnit, smoke status, pinned gh install)
-  run.ps1           Windows entry point (forwards into WSL2)
+  run.ps1           Windows entry point (native; -Wsl forwards into WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml
 ```

@@ -525,11 +525,17 @@ final class Config
         }
 
         $candidates = [
-            getenv('HOME') . '/.local/bin/gh',
+            Platform::home() . '/.local/bin/gh',
             '/usr/local/bin/gh',
             '/usr/bin/gh',
             '/opt/homebrew/bin/gh',
         ];
+        if (Platform::isWindows()) {
+            $candidates = [
+                (getenv('ProgramFiles') ?: 'C:\\Program Files') . '\\GitHub CLI\\gh.exe',
+                (getenv('LOCALAPPDATA') ?: '') . '\\Programs\\GitHub CLI\\gh.exe',
+            ];
+        }
         foreach ($candidates as $path) {
             if (is_executable($path)) {
                 return $resolved = $path;
@@ -551,7 +557,9 @@ final class Config
             return $resolved = null;
         }
 
-        $default = getenv('HOME') . '/.config/gh';
+        $default = Platform::isWindows()
+            ? (getenv('APPDATA') ?: Platform::home()) . '/GitHub CLI'
+            : Platform::home() . '/.config/gh';
         return $resolved = is_file("$default/hosts.yml") ? $default : null;
     }
 }

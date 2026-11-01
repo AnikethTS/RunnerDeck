@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Wait for the app and check action=status snapshot shape.
-# Host/Alpine smokes use loopback php -S (no TOTP). Docker binds 0.0.0.0
-# inside the container and requires TOTP — set RUNNERDECK_SMOKE_TOTP_SECRET
-# to the same value as RUNNERDECK_AUTH_TOTP_SECRET and this script logs in.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

@@ -8,15 +8,15 @@ shipped." Be specific about what that means before assuming an old box works:
 | Platform | Support | Notes |
 |---|---|---|
 | Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. Patch the host runtime to 8.2.35+, 8.3.36+, 8.4.27+, or 8.5.12+ (CVE-2026-109618 / CVE-2026-109619). PHP 8.1 is EOL with no official patch — use a distro backport or move up. CI unit-tests PHP 8.1 and 8.5.12 on `ubuntu-latest`, PHP 8.1 / 8.3.36 / 8.5.12 on `ubuntu-22.04` (x64) and PHP 8.1 on `ubuntu-22.04-arm`, plus distro-`apt` PHPUnit on Ubuntu 22.04 and Debian 12, plus distro-`dnf` PHPUnit on Fedora, Rocky 9, and RHEL UBI 9 (posix/pcntl from `php-process`), plus a dedicated Alpine (musl) smoke test on the same PHP 8.5.12 image digest as the Dockerfile — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
-| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI unit-tests PHP 8.5.12 on `macos-latest` and PHP 8.1 / 8.5.12 on `macos-15` (oldest GitHub-hosted macOS still offered after macos-14's 2 Nov 2026 retirement; macos-13 is already gone). Boot smokes PHP 8.1 on `macos-latest` and `macos-15`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
-| Windows | Via WSL2 | Run `.\run.ps1` — it forwards into WSL and runs `run.sh` there, so it inherits the Linux support above (WSL2 *is* a real Linux kernel). Requires **Windows 10 build 2004 (May 2020 update, 19041) or later, or Windows 11** — that's WSL2's own minimum, not something this project adds. There is no native-Windows code path and no WSL1 fallback: this app depends on `posix_kill`/`pcntl` (`SIGTERM`) for stopping runner processes, PHP does not ship those extensions on Windows, and WSL1 has no real Linux kernel for `/proc` to work the way this app expects. |
+| macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI unit-tests PHP 8.5.12 on `macos-latest` and PHP 8.1 / 8.5.12 on `macos-15`, and PHP 8.5.12 on Intel `macos-15-intel` (oldest GitHub-hosted macOS still offered after macos-14's 2 Nov 2026 retirement; macos-13 is already gone). Boot smokes PHP 8.1 on `macos-latest`, `macos-15`, and `macos-15-intel`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
+| Windows | Native, or via WSL2 | `.\run.ps1` runs natively and manages **Windows** runners (`config.cmd`/`run.cmd`), so `runs-on: windows` jobs work. Needs PHP 8.1+ on `PATH` (`winget install PHP.PHP`), `gh`, and the `curl`/`tar` that ship with Windows 10 1803+. Processes are controlled through PowerShell, `tasklist` and `taskkill` instead of `posix`/`pcntl`. Limits on Windows: stop is always a forced `taskkill /T /F` (a running job is killed, not drained by signal); `php -S` is single-threaded there, so an open live log blocks other requests until it closes (use php-fpm-style hosting for multi-user setups); cgroup caps (`RUNNERDECK_SLOT_*`) and syslog do nothing; CI runs the Windows unit tests and a real process-control smoke on `windows-latest` and `windows-2022` (PHP 8.1 and 8.5), not the full suite (it is Unix-only). `.\run.ps1 -Wsl` instead forwards into WSL2 and manages **Linux** runners inside it (Windows 10 build 19041+/11; no WSL1). |
 | Docker | Alternative to native/WSL2 | Enroll TOTP first (`docker compose run --rm -it runnerdeck php bin/setup-totp.php`), then `docker compose up --build` — see [Docker](docker.md). |
 
 ## Prerequisites
 
 - **PHP CLI 8.1+** with the `posix` extension (process liveness checks) and
   `pcntl` (signal constants). Both are standard in most distro `php-cli`
-  packages. On Windows, install these inside WSL2, not on the Windows side.
+  packages. Not needed on native Windows (no such extensions there); with `-Wsl`, install them inside WSL2.
   - Debian/Ubuntu (incl. WSL2): `apt install php-cli`
   - Fedora: `dnf install php-cli php-process`
   - macOS (Homebrew): `brew install php`
@@ -68,8 +68,9 @@ a setup script too.
    support](#platform-support) above):
 
    ```powershell
-   .\run.ps1
+   .\run.ps1             # native Windows runners
    .\run.ps1 -Port 9000
+   .\run.ps1 -Wsl        # Linux runners inside WSL2
    ```
 
 2. **Open `http://127.0.0.1:8090/`.** If nothing's configured yet, you'll
