@@ -20,6 +20,7 @@ winpath() {
 scratch="$(winpath "${RUNNER_TEMP:-${TMPDIR:-/tmp}}")/rd-e2e-${tag}"
 
 cleanup_github() {
+  set +o pipefail
   gh api "repos/${repo}/actions/runners" --paginate --jq '.runners[] | "\(.id) \(.name)"' 2>/dev/null |
     while read -r id name; do
       case "$name" in
@@ -31,6 +32,15 @@ cleanup_github() {
     while read -r run_id; do
       gh run cancel "$run_id" -R "$repo" >/dev/null 2>&1 || true
     done
+}
+
+preflight() {
+  if ! gh api "repos/${repo}" --jq '"repo " + .full_name + " private=" + (.private|tostring)'; then
+    echo "token cannot read ${repo}" >&2
+    return 1
+  fi
+  gh api "repos/${repo}/actions/runners" --jq '"runners visible: " + (.total_count|tostring)' ||
+    { echo "token cannot list runners on ${repo} (needs Administration)" >&2; return 1; }
 }
 
 if [ "$mode" = "cleanup" ]; then
@@ -81,6 +91,8 @@ on_exit() {
 }
 trap on_exit EXIT
 trap 'exit 130' INT TERM
+
+preflight
 
 mkdir -p "${scratch}/pool" "${scratch}/storage/db"
 export RUNNERDECK_SCOPE=repo
