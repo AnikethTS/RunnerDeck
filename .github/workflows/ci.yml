@@ -337,12 +337,12 @@ jobs:
       - name: Register a real runner, run a job on it, and clean up
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: bash scripts/ci/e2e-real-runner.sh
+        run: ./scripts/ci/e2e-real-runner.sh
 
       - name: Remove leftover runners and runs
         if: always() && steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: bash scripts/ci/e2e-real-runner.sh cleanup
+        run: ./scripts/ci/e2e-real-runner.sh cleanup
 
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})

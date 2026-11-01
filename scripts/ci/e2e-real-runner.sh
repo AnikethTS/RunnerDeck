@@ -116,22 +116,9 @@ if [ -z "$token" ]; then
   exit 1
 fi
 
-echo "Publishing probe workflow to ${repo}"
-probe="${root}/scripts/ci/e2e-probe-workflow.yml"
-path=".github/workflows/${workflow}"
-encoded="$(base64 <"$probe" | tr -d '\n')"
-remote_sha=""
-remote_content=""
-if existing="$(gh api "repos/${repo}/contents/${path}" 2>/dev/null)"; then
-  remote_sha="$(php -r 'echo json_decode($argv[1], true)["sha"] ?? "";' -- "$existing")"
-  remote_content="$(php -r 'echo str_replace("\n", "", json_decode($argv[1], true)["content"] ?? "");' -- "$existing")"
-fi
-if [ "$remote_content" != "$encoded" ]; then
-  args=(-X PUT "repos/${repo}/contents/${path}" -f message="Update e2e probe workflow" -f content="$encoded")
-  if [ -n "$remote_sha" ]; then
-    args+=(-f sha="$remote_sha")
-  fi
-  gh api "${args[@]}" >/dev/null
+if ! gh api "repos/${repo}/contents/.github/workflows/${workflow}" >/dev/null 2>&1; then
+  echo "${repo} has no .github/workflows/${workflow}; copy scripts/ci/e2e-probe-workflow.yml there once" >&2
+  exit 1
 fi
 
 echo "Adding an ephemeral runner through the dashboard API"
