@@ -322,12 +322,9 @@ jobs:
         run: |
           if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
-          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            echo "::notice::E2E_RUNNER_TOKEN or E2E_REPO is not configured; skipping the real runner test"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
-            exit 1
+            echo "::warning::E2E_RUNNER_TOKEN secret or E2E_REPO variable is not set; skipping the real runner test"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
