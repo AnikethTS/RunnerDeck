@@ -4,7 +4,12 @@
          bootstrap="vendor/autoload.php"
          colors="true"
          failOnWarning="true"
-         failOnDeprecation="true">
+         failOnDeprecation="true"
+         failOnRisky="true"
+         failOnNotice="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         cacheResult="false">
     <extensions>
         <bootstrap class="Tests\CiProgressExtension"/>
     </extensions>
