@@ -56,9 +56,12 @@
   `reboot_ready`) so a monitor can see the box should not take more
   work. The pressure webhook is not sent from that probe.
   `public/metrics.php` is a Prometheus scrape of local counters only.
-- Before any **Stop**, the dashboard checks GitHub's `busy` flag for that
-  runner and asks for confirmation if it's mid-job (or if that status can't
-  be verified at all — it fails closed, not open).
+- **Stop**, **Restart**, **Drain**, **Roll restart**, **Upgrade agents**,
+  **Clear work**, and removing a GitHub-only runner ask before they run.
+  The same dialog covers Stop all, Drain all, and the matching bulk
+  actions. Before any **Stop**, the dashboard still checks GitHub's `busy`
+  flag and asks again if it's mid-job (or if that status can't be verified
+  at all — it fails closed, not open).
 - **Add Runner** allocates the next free slot and lets you give it its own
   GitHub-registered name. Optional **ephemeral** passes `--ephemeral` to
   `config.sh`: the slot takes one job, exits, and RunnerDeck
@@ -188,6 +191,8 @@
   (a handful of workers; a live log holds one). php-fpm is documented in
   [Hosting](hosting.md). A TLS hostname or non-localhost Host shows
   warning banners (missing TLS, TOTP-only 443, `php -S`, TRUST_PROXY).
+  Those banners, and the dashboard health line (older runner package,
+  maintenance, auth), stay pinned under the top bar while you scroll.
   Settings → **This host** lists Host, bind, HTTPS, server, TOTP, and
   TRUST_PROXY for the current request even on localhost.
 - **Recent log** on the dashboard is `storage/runnerdeck.log` (start/stop/

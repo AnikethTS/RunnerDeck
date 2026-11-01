@@ -54,6 +54,7 @@ final class Layout
     public static function topbarStart(): void
     {
         $version = htmlspecialchars(Config::version(), ENT_QUOTES, 'UTF-8');
+        echo '<div class="sticky-head">' . "\n";
         echo '  <header class="topbar">' . "\n";
         echo '    <div class="topbar-inner page-shell">' . "\n";
         echo '      <div class="topbar-lead">' . "\n";
@@ -160,7 +161,7 @@ final class Layout
         echo "      </form>\n";
     }
 
-    public static function topbarEnd(): void
+    public static function topbarEnd(bool $keepStickyOpen = false): void
     {
         $theme = self::cookieTheme();
         $sunHidden = $theme === 'dark' ? ' hidden' : '';
@@ -191,12 +192,33 @@ final class Layout
         echo "    </div>\n";
         echo "    </div>\n";
         echo "  </header>\n";
+        if (!$keepStickyOpen) {
+            echo "</div>\n";
+        }
+    }
+
+    public static function stickyHeadEnd(): void
+    {
+        echo "</div>\n";
     }
 
     /** @param list<string> $modules */
     public static function htmlClose(array $modules = []): void
     {
+        echo <<<'HTML'
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-content modal-content-small">
+      <p id="confirm-modal-message"></p>
+      <div class="modal-actions">
+        <button type="button" id="confirm-modal-cancel" class="btn">Cancel</button>
+        <button type="button" id="confirm-modal-ok" class="btn btn-critical">Continue</button>
+      </div>
+    </div>
+  </div>
+
+HTML;
         $public = dirname(__DIR__, 2) . '/public';
+        $modules = array_values(array_unique(array_merge(['assets/js/confirm.js'], $modules)));
         foreach ($modules as $module) {
             $full = $public . '/' . $module;
             $v = is_file($full) ? (string) filemtime($full) : '0';

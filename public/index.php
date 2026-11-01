@@ -114,7 +114,7 @@ Layout::topbarEndStart();
 if (!$needsSetup) {
     Layout::logoutForm($csrfToken);
 }
-Layout::topbarEnd();
+Layout::topbarEnd(!$needsSetup);
 ?>
 
   <?php if ($needsSetup) : ?>
@@ -159,7 +159,6 @@ Layout::topbarEnd();
       </div>
     </main>
   <?php else : ?>
-    <a class="skip-link" href="#runner-filter">Skip to runners</a>
     <div id="health-banner" class="banner"<?= $banner['hidden'] ? ' hidden' : '' ?>>
       <div class="page-shell"><?= htmlspecialchars($banner['text']) ?></div>
     </div>
@@ -172,6 +171,8 @@ Layout::topbarEnd();
         </span>
       </p>
     </noscript>
+      <?php Layout::stickyHeadEnd(); ?>
+    <a class="skip-link" href="#runner-filter">Skip to runners</a>
 
     <main>
       <div class="stat-grid">
@@ -382,16 +383,6 @@ Layout::topbarEnd();
           <span class="muted">(leave blank for the full log)</span>
         </div>
         <pre id="log-modal-body" class="log-view"></pre>
-      </div>
-    </div>
-
-    <div id="confirm-modal" class="modal" hidden>
-      <div class="modal-content modal-content-small">
-        <p id="confirm-modal-message"></p>
-        <div class="modal-actions">
-          <button id="confirm-modal-cancel" class="btn">Cancel</button>
-          <button id="confirm-modal-ok" class="btn btn-critical">Stop anyway</button>
-        </div>
       </div>
     </div>
 

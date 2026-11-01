@@ -72,7 +72,11 @@ Layout::topbarEnd();
                   href="download_snapshot.php?day=<?= htmlspecialchars($row['day']) ?>"
                   <?= $dlHelp ?>
                 >Download</a>
-                <form method="post">
+                <form
+                  method="post"
+                  data-confirm="Delete the host snapshot for <?= htmlspecialchars($row['day']) ?>?"
+                  data-confirm-ok="Delete"
+                >
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
                   <input type="hidden" name="delete_day" value="<?= htmlspecialchars($row['day']) ?>" />
                   <button type="submit" class="btn btn-sm help-hover"<?= $delHelp ?>>Delete</button>

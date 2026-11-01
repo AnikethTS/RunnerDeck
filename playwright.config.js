@@ -22,10 +22,17 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: 'list',
+  forbidOnly: !!process.env.CI,
+  timeout: 20_000,
+  maxFailures: process.env.CI ? 5 : 0,
+  reporter: process.env.CI
+    ? [['./e2e/progress-reporter.js'], ['list']]
+    : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 800 },
+    actionTimeout: 5_000,
+    navigationTimeout: 10_000,
   },
   webServer: {
     command: `php -S 127.0.0.1:${PORT} -t public`,

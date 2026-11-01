@@ -6,7 +6,8 @@ let activeStream = null;
 let currentLogRunnerId = null;
 
 export function closeLogViewer() {
-  document.getElementById('log-modal').hidden = true;
+  const logModal = document.getElementById('log-modal');
+  if (logModal) logModal.hidden = true;
   if (activeStream) {
     activeStream.close();
     activeStream = null;
@@ -83,30 +84,48 @@ export function openLogViewer(runnerId) {
   };
 }
 
-export function confirmModal(message) {
+export function confirmModal(message, okLabel = 'Continue') {
   if (confirmOpen) {
+    return Promise.resolve(false);
+  }
+  const modal = document.getElementById('confirm-modal');
+  const okBtn = document.getElementById('confirm-modal-ok');
+  const cancelBtn = document.getElementById('confirm-modal-cancel');
+  if (!modal || !okBtn || !cancelBtn) {
     return Promise.resolve(false);
   }
   confirmOpen = true;
   closeLogViewer();
 
   return new Promise((resolve) => {
-    const modal = document.getElementById('confirm-modal');
     document.getElementById('confirm-modal-message').textContent = message;
+    okBtn.textContent = okLabel;
     modal.hidden = false;
+    cancelBtn.focus();
     const cleanup = (result) => {
       modal.hidden = true;
       confirmOpen = false;
       okBtn.removeEventListener('click', onOk);
       cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
       resolve(result);
     };
-    const okBtn = document.getElementById('confirm-modal-ok');
-    const cancelBtn = document.getElementById('confirm-modal-cancel');
     const onOk = () => cleanup(true);
     const onCancel = () => cleanup(false);
+    const onBackdrop = (event) => {
+      if (event.target === modal) cleanup(false);
+    };
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cleanup(false);
+      }
+    };
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
   });
 }
 
@@ -203,7 +222,7 @@ export function initModals(fetchStatus) {
       let { status, data } = await post('rename', { runner, name });
       if (status === 409) {
         renameModal.hidden = true;
-        const proceed = await confirmModal(data.message);
+        const proceed = await confirmModal(data.message, 'Rename');
         if (!proceed) {
           renameModal.hidden = false;
           return;
