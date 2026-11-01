@@ -464,6 +464,7 @@ test('log search highlights existing and streamed text, and resets on reopening'
   await mockStatus(page, [fixtureRunner()]);
   await mockLogStream(page);
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   const open = page.locator('[data-action="view-log"]');
   await open.click();
   const search = page.getByRole('searchbox', { name: 'Search log' });
@@ -497,6 +498,7 @@ test('log stream stops retrying and redirects when the session expires', async (
   await mockStatus(page, [fixtureRunner()]);
   await mockLogStream(page);
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await page.locator('[data-action="view-log"]').click();
 
   await page.unroute('**/api.php*action=status*');
@@ -521,6 +523,7 @@ test('log search treats markup and regex characters as literal text', async ({ p
   await mockLogStream(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await page.locator('[data-action="view-log"]').click();
   const search = page.getByRole('searchbox', { name: 'Search log' });
   const body = page.locator('#log-modal-body');
