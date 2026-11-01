@@ -6,6 +6,13 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The dashboard reuses one GitHub runner list for about 8 seconds and
+  measures every slot's disk in a single `du` about every 30 seconds. A
+  status or queue poll that is still in flight is not started again.
+  Busy/idle can lag about 8 seconds, and disk size about 30.
+
 ## [1.11.1] - 2026-10-31
 
 ### Security

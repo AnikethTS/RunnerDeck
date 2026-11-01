@@ -129,10 +129,25 @@ function initDashboard() {
     });
   });
 
-  async function fetchStatus() {
-    const res = await fetch('api.php?action=status&lines=5&view=1');
-    if (redirectIfUnauthenticated(res.status)) return;
-    render(await res.json());
+  let statusFlight = null;
+
+  function fetchStatus(opts) {
+    const join = opts && opts.join;
+    if (join && statusFlight) return statusFlight;
+    const prev = statusFlight;
+    const run = (async () => {
+      if (prev) {
+        try { await prev; } catch { /* the in-flight poll renders on its own */ }
+      }
+      const res = await fetch('api.php?action=status&lines=5&view=1');
+      if (redirectIfUnauthenticated(res.status)) return;
+      render(await res.json());
+    })();
+    statusFlight = run;
+    void run.finally(() => {
+      if (statusFlight === run) statusFlight = null;
+    });
+    return run;
   }
 
   function renderQueue(data) {
@@ -203,14 +218,29 @@ function initDashboard() {
     });
   }
 
-  async function fetchQueue() {
-    try {
-      const res = await fetch('api.php?action=queue');
-      if (redirectIfUnauthenticated(res.status)) return;
-      renderQueue(await res.json());
-    } catch {
-      /* keep last paint */
-    }
+  let queueFlight = null;
+
+  function fetchQueue(opts) {
+    const join = opts && opts.join;
+    if (join && queueFlight) return queueFlight;
+    const prev = queueFlight;
+    const run = (async () => {
+      if (prev) {
+        try { await prev; } catch { /* keep last paint */ }
+      }
+      try {
+        const res = await fetch('api.php?action=queue');
+        if (redirectIfUnauthenticated(res.status)) return;
+        renderQueue(await res.json());
+      } catch {
+        /* keep last paint */
+      }
+    })();
+    queueFlight = run;
+    void run.finally(() => {
+      if (queueFlight === run) queueFlight = null;
+    });
+    return run;
   }
 
   async function checkForUpdates() {
@@ -774,8 +804,8 @@ function initDashboard() {
 
   function startPolling() {
     stopPolling();
-    statusTimer = setInterval(fetchStatus, POLL_MS);
-    queueTimer = setInterval(fetchQueue, QUEUE_MS);
+    statusTimer = setInterval(() => { fetchStatus({ join: true }); }, POLL_MS);
+    queueTimer = setInterval(() => { fetchQueue({ join: true }); }, QUEUE_MS);
   }
 
   document.addEventListener('visibilitychange', () => {

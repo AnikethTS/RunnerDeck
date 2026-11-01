@@ -21,6 +21,11 @@ final class Shell
         self::$fake = $handler;
     }
 
+    public static function isFaked(): bool
+    {
+        return self::$fake !== null;
+    }
+
     /**
      * @param list<string> $cmd
      * @return array{code: int, stdout: string, stderr: string}

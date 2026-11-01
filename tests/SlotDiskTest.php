@@ -19,6 +19,7 @@ final class SlotDiskTest extends TestCase
 
     protected function tearDown(): void
     {
+        \RunnerDeck\Core\Shell::fake(null);
         \RunnerDeck\Host\SlotDisk::resetCache();
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
@@ -52,6 +53,32 @@ final class SlotDiskTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
+    }
+
+    public function testPrimeMeasuresEverySlotInOneDu(): void
+    {
+        $a = $this->dir . '/a';
+        $b = $this->dir . '/b';
+        mkdir($a . '/_work', 0755, true);
+        mkdir($b . '/_work', 0755, true);
+        file_put_contents($a . '/runner.log', 'log');
+        $calls = 0;
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calls): array {
+            $calls++;
+            $out = '';
+            foreach (array_slice($cmd, 2) as $path) {
+                $out .= "10\t{$path}\n";
+            }
+            return ['code' => 0, 'stdout' => $out, 'stderr' => ''];
+        });
+
+        \RunnerDeck\Host\SlotDisk::prime([$a, $b]);
+
+        $this->assertSame(1, $calls);
+        $this->assertSame(20, \RunnerDeck\Host\SlotDisk::inspect($a)['kb']);
+        $this->assertSame(10, \RunnerDeck\Host\SlotDisk::inspect($b)['kb']);
+        $this->assertTrue(\RunnerDeck\Host\SlotDisk::inspect($a)['can_clear']);
+        $this->assertSame(1, $calls);
     }
 
     public function testFormatKbUsesGbThenMbThenKb(): void
