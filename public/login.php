@@ -55,8 +55,9 @@ $csrfToken = Csrf::token();
 Layout::htmlOpen('RunnerDeck — Log in');
 Layout::topbarStart();
 Layout::topbarEndStart();
-Layout::topbarEnd();
+Layout::topbarEnd(true);
 echo HostingWarnings::html();
+Layout::stickyHeadEnd();
 ?>
 
   <main class="setup-main">

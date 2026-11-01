@@ -464,6 +464,7 @@ test('log search highlights existing and streamed text, and resets on reopening'
   await mockStatus(page, [fixtureRunner()]);
   await mockLogStream(page);
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   const open = page.locator('[data-action="view-log"]');
   await open.click();
   const search = page.getByRole('searchbox', { name: 'Search log' });
@@ -497,6 +498,7 @@ test('log stream stops retrying and redirects when the session expires', async (
   await mockStatus(page, [fixtureRunner()]);
   await mockLogStream(page);
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await page.locator('[data-action="view-log"]').click();
 
   await page.unroute('**/api.php*action=status*');
@@ -521,6 +523,7 @@ test('log search treats markup and regex characters as literal text', async ({ p
   await mockLogStream(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await page.locator('[data-action="view-log"]').click();
   const search = page.getByRole('searchbox', { name: 'Search log' });
   const body = page.locator('#log-modal-body');
@@ -804,6 +807,56 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('tr[data-runner="fat"] button[data-action="rolling-restart"]')).toBeVisible();
 });
 
+test('destructive actions ask first and cancel does not post', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner({ id: 'runner-1', agent_name: 'e2e-1', can_clear_work: true })]);
+  const posts = [];
+  await page.route('**/api.php*', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.fallback();
+      return;
+    }
+    posts.push(route.request().url());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, message: 'ok' }),
+    });
+  });
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+
+  const ask = async (click, label) => {
+    await click();
+    await expect(page.locator('#confirm-modal')).toBeVisible();
+    await expect(page.locator('#confirm-modal-ok')).toHaveText(label);
+    await expect(page.locator('#confirm-modal-cancel')).toBeFocused();
+    await page.locator('#confirm-modal-cancel').click();
+    await expect(page.locator('#confirm-modal')).toBeHidden();
+    expect(posts).toEqual([]);
+  };
+
+  await ask(() => page.locator('#btn-stop-all').click(), 'Stop all');
+  await ask(() => page.locator('#btn-drain-all').click(), 'Drain');
+  await ask(() => page.locator('#btn-rolling-upgrade').click(), 'Upgrade');
+  await ask(
+    () => page.locator('tr[data-runner="runner-1"] button[data-action="stop"]').click(),
+    'Stop',
+  );
+  await ask(
+    () => page.locator('tr[data-runner="runner-1"] button[data-action="clear-work"]').click(),
+    'Clear',
+  );
+  await ask(
+    () => page.locator('tr[data-runner="runner-1"] button[data-action="delete"]').click(),
+    'Delete',
+  );
+
+  await page.locator('#btn-stop-all').click();
+  await page.locator('#confirm-modal-ok').click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]).toContain('action=stop_all');
+});
+
 test('rolling restart posts the selected slots', async ({ page }) => {
   const runners = [
     fixtureRunner({ id: 'runner-1', agent_name: 'e2e-1' }),
@@ -825,6 +878,7 @@ test('rolling restart posts the selected slots', async ({ page }) => {
   await page.goto('/');
   await page.locator('#btn-refresh').click();
   await page.locator('tr[data-runner="runner-1"] button[data-action="rolling-restart"]').click();
+  await page.locator('#confirm-modal-ok').click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0].url).toContain('action=rolling_restart');
   expect(posts[0].body).toContain('runner=runner-1');
@@ -833,6 +887,7 @@ test('rolling restart posts the selected slots', async ({ page }) => {
   await page.locator('tr[data-runner="runner-1"] input.row-select').check();
   await page.locator('tr[data-runner="runner-2"] input.row-select').check();
   await page.locator('#btn-bulk-rolling-restart').click();
+  await page.locator('#confirm-modal-ok').click();
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1].url).toContain('action=bulk_rolling_restart');
   expect(posts[1].body).toMatch(/runners=runner-1%2Crunner-2|runners=runner-2%2Crunner-1/);
@@ -870,6 +925,7 @@ test('drain wait shows remaining seconds from the status poll', async ({ page })
     window.__DRAIN_TIMEOUT__ = 4;
   });
   await page.locator('tr[data-runner="runner-1"] button[data-action="drain"]').click();
+  await page.locator('#confirm-modal-ok').click();
   await expect(page.locator('tr[data-runner="runner-1"] button[data-action="drain"]'))
     .toHaveText(/Busy · \d+s/);
   await expect(page.locator('#confirm-modal')).toBeVisible({ timeout: 8000 });

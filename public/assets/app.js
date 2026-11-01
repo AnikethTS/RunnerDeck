@@ -27,22 +27,35 @@ function initDashboard() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
   }
 
+  function setBanner(text, hidden) {
+    bannerEl.hidden = hidden;
+    bannerEl.className = 'banner';
+    if (hidden) return;
+    let shell = bannerEl.querySelector('.page-shell');
+    if (!shell) {
+      bannerEl.replaceChildren();
+      shell = document.createElement('div');
+      shell.className = 'page-shell';
+      bannerEl.append(shell);
+    }
+    shell.textContent = text;
+  }
+
   function render(snapshot) {
     lastSnapshot = snapshot;
     exportBtn.disabled = false;
     const h = snapshot.health;
     if (snapshot.view && typeof snapshot.view.banner_text === 'string') {
-      bannerEl.hidden = Boolean(snapshot.view.banner_hidden);
-      bannerEl.className = 'banner';
-      bannerEl.textContent = snapshot.view.banner_text;
+      setBanner(snapshot.view.banner_text, Boolean(snapshot.view.banner_hidden));
     } else if (!h.logged_in || !h.org_access_ok) {
-      bannerEl.hidden = false;
-      bannerEl.className = 'banner';
-      bannerEl.textContent = !h.logged_in
-        ? `gh CLI is not authenticated: ${h.message}`
-        : `gh CLI is logged in but cannot read runners: ${h.message}`;
+      setBanner(
+        !h.logged_in
+          ? `gh CLI is not authenticated: ${h.message}`
+          : `gh CLI is logged in but cannot read runners: ${h.message}`,
+        false,
+      );
     } else {
-      bannerEl.hidden = true;
+      setBanner('', true);
     }
 
     renderStats(snapshot);
@@ -137,7 +150,7 @@ function initDashboard() {
     const prev = statusFlight;
     const run = (async () => {
       if (prev) {
-        try { await prev; } catch { /* the in-flight poll renders on its own */ }
+        await prev.catch(() => {});
       }
       const res = await fetch('api.php?action=status&lines=5&view=1');
       if (redirectIfUnauthenticated(res.status)) return;
@@ -412,6 +425,7 @@ function initDashboard() {
       if (idsStillBusy(ids)) {
         const proceed = await confirmModal(
           'Still busy after waiting for the job to finish. Stop anyway and interrupt it?',
+          'Stop anyway',
         );
         if (!proceed) return;
         await runWithBusyGuard(action, { ...params, force: '1' });
@@ -426,7 +440,7 @@ function initDashboard() {
   async function runWithBusyGuard(action, params) {
     let { status, data } = await post(action, params);
     if (status === 409) {
-      const proceed = await confirmModal(data.message);
+      const proceed = await confirmModal(data.message, 'Continue');
       if (!proceed) return;
       ({ data } = await post(action, { ...params, force: '1' }));
     }
@@ -485,10 +499,25 @@ function initDashboard() {
       return;
     }
     if (action === 'stop' || action === 'restart') {
-      await withLoading(btn, action === 'stop' ? 'Stopping…' : 'Restarting…', () => runWithBusyGuard(action, { runner }));
+      const name = tr.dataset.agentName || runner;
+      const stopping = action === 'stop';
+      const sure = await confirmModal(
+        stopping
+          ? `Stop ${name}? A job in progress is interrupted.`
+          : `Restart ${name}? A job in progress is interrupted.`,
+        stopping ? 'Stop' : 'Restart',
+      );
+      if (!sure) return;
+      await withLoading(btn, stopping ? 'Stopping…' : 'Restarting…', () => runWithBusyGuard(action, { runner }));
       return;
     }
     if (action === 'drain') {
+      const name = tr.dataset.agentName || runner;
+      const sure = await confirmModal(
+        `Drain ${name}? It stops when GitHub reports it idle.`,
+        'Drain',
+      );
+      if (!sure) return;
       await drainThenStop('stop', { runner }, [runner]);
       return;
     }
@@ -503,12 +532,24 @@ function initDashboard() {
       return;
     }
     if (action === 'rolling-restart') {
+      const name = tr.dataset.agentName || runner;
+      const sure = await confirmModal(
+        `Drain and restart ${name}? Other slots keep running.`,
+        'Roll restart',
+      );
+      if (!sure) return;
       await withLoading(btn, 'Rolling…', () =>
         runWithBusyGuard('rolling_restart', rollingParams({ runner })),
       );
       return;
     }
     if (action === 'clear-work') {
+      const name = tr.dataset.agentName || runner;
+      const sure = await confirmModal(
+        `Clear _work on ${name}? Checked-out job files on this slot are deleted.`,
+        'Clear',
+      );
+      if (!sure) return;
       await withLoading(btn, 'Clearing…', async () => {
         const { data } = await post('clear_work', { runner });
         if (!data.ok) showToast(data.message);
@@ -520,6 +561,7 @@ function initDashboard() {
       const name = tr.dataset.agentName || runner;
       const sure = await confirmModal(
         `Clear ${name} on GitHub? Local files stay. The next Start re-registers this slot.`,
+        'Clear',
       );
       if (!sure) return;
       await withLoading(btn, 'Clearing…', async () => {
@@ -534,6 +576,7 @@ function initDashboard() {
       const sure = await confirmModal(
         `Permanently delete ${runner} (${name})? This deregisters it from GitHub and deletes its local files, `
         + 'including logs. This cannot be undone.',
+        'Delete',
       );
       if (!sure) return;
       await withLoading(btn, 'Deleting…', () => runWithBusyGuard('delete_runner', { runner }));
@@ -573,6 +616,11 @@ function initDashboard() {
       if (!btn) return;
       const name = btn.getAttribute('data-name') || '';
       if (!name) return;
+      const sure = await confirmModal(
+        `Remove ${name} from GitHub? This host has no local slot for it.`,
+        'Remove',
+      );
+      if (!sure) return;
       await withLoading(btn, 'Removing…', () => runWithBusyGuard('remove_orphan', { name }));
     });
   }
@@ -584,7 +632,10 @@ function initDashboard() {
   const clearApplogBtn = document.getElementById('btn-clear-applog');
   if (clearApplogBtn) {
     clearApplogBtn.addEventListener('click', async (e) => {
-      const sure = await confirmModal('Clear the operator log on this host? Rotated files are wiped too.');
+      const sure = await confirmModal(
+        'Clear the operator log on this host? Rotated files are wiped too.',
+        'Clear',
+      );
       if (!sure) return;
       await withLoading(e.currentTarget, 'Clearing…', async () => {
         const { data } = await post('clear_applog');
@@ -603,24 +654,44 @@ function initDashboard() {
     });
   });
 
-  document.getElementById('btn-stop-all').addEventListener('click', (e) => {
+  document.getElementById('btn-stop-all').addEventListener('click', async (e) => {
+    const sure = await confirmModal(
+      'Stop every runner now? Jobs in progress are interrupted.',
+      'Stop all',
+    );
+    if (!sure) return;
     withLoading(e.currentTarget, 'Stopping All…', () => runWithBusyGuard('stop_all', {}));
   });
 
-  document.getElementById('btn-drain-all').addEventListener('click', (e) => {
+  document.getElementById('btn-drain-all').addEventListener('click', async (e) => {
+    const sure = await confirmModal(
+      'Drain every runner? Each slot stops when GitHub reports it idle.',
+      'Drain',
+    );
+    if (!sure) return;
     const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
     withLoading(e.currentTarget, 'Draining…', () => drainThenStop('stop_all', {}, ids));
   });
 
-  document.getElementById('btn-rolling-restart-all').addEventListener('click', (e) => {
+  document.getElementById('btn-rolling-restart-all').addEventListener('click', async (e) => {
     const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
     if (!ids.length) return;
+    const sure = await confirmModal(
+      'Drain and restart every slot, one at a time?',
+      'Roll restart',
+    );
+    if (!sure) return;
     withLoading(e.currentTarget, 'Rolling…', () =>
       runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
     );
   });
 
-  document.getElementById('btn-rolling-upgrade').addEventListener('click', (e) => {
+  document.getElementById('btn-rolling-upgrade').addEventListener('click', async (e) => {
+    const sure = await confirmModal(
+      'Replace each slot’s runner package with GitHub’s current download, one at a time?',
+      'Upgrade',
+    );
+    if (!sure) return;
     withLoading(e.currentTarget, 'Upgrading…', () =>
       runWithBusyGuard('rolling_upgrade', rollingParams({})),
     );
@@ -631,7 +702,7 @@ function initDashboard() {
     const msg = on
       ? 'Drain-stop every runner and refuse starts until you resume this host?'
       : 'Leave maintenance? Runners stay stopped until you start them.';
-    const sure = await confirmModal(msg);
+    const sure = await confirmModal(msg, on ? 'Drain' : 'Resume');
     if (!sure) return;
     withLoading(e.currentTarget, on ? 'Draining…' : 'Resuming…', async () => {
       await runWithBusyGuard('maintenance', rollingParams({ enabled: on ? '1' : '0' }));
@@ -643,6 +714,7 @@ function initDashboard() {
     safeRebootBtn.addEventListener('click', async (e) => {
       const sure = await confirmModal(
         'Drain-stop every runner so this machine is safe to reboot? This does not reboot for you.',
+        'Drain',
       );
       if (!sure) return;
       const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
@@ -680,12 +752,23 @@ function initDashboard() {
     });
   });
 
-  document.getElementById('btn-bulk-stop').addEventListener('click', (e) => {
+  document.getElementById('btn-bulk-stop').addEventListener('click', async (e) => {
+    const count = selectedRunners.size;
+    const sure = await confirmModal(
+      `Stop ${count} runner${count === 1 ? '' : 's'}? Jobs in progress are interrupted.`,
+      'Stop',
+    );
+    if (!sure) return;
     withLoading(e.currentTarget, 'Stopping…', () => runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') }));
   });
 
-  document.getElementById('btn-bulk-drain').addEventListener('click', (e) => {
+  document.getElementById('btn-bulk-drain').addEventListener('click', async (e) => {
     const ids = [...selectedRunners];
+    const sure = await confirmModal(
+      `Drain ${ids.length} runner${ids.length === 1 ? '' : 's'}? Each stops when GitHub reports it idle.`,
+      'Drain',
+    );
+    if (!sure) return;
     withLoading(
       e.currentTarget,
       'Draining…',
@@ -693,8 +776,13 @@ function initDashboard() {
     );
   });
 
-  document.getElementById('btn-bulk-rolling-restart').addEventListener('click', (e) => {
+  document.getElementById('btn-bulk-rolling-restart').addEventListener('click', async (e) => {
     const ids = [...selectedRunners];
+    const sure = await confirmModal(
+      `Drain and restart ${ids.length} slot${ids.length === 1 ? '' : 's'}, one at a time?`,
+      'Roll restart',
+    );
+    if (!sure) return;
     withLoading(e.currentTarget, 'Rolling…', () =>
       runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
     );
@@ -705,6 +793,7 @@ function initDashboard() {
     const sure = await confirmModal(
       `Permanently delete ${count} runner${count === 1 ? '' : 's'}? This deregisters `
       + 'each from GitHub and deletes its local files, including logs. This cannot be undone.',
+      'Delete',
     );
     if (!sure) return;
     await withLoading(e.currentTarget, 'Deleting…', async () => {

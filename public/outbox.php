@@ -77,7 +77,11 @@ Layout::topbarEnd();
               <td><?= htmlspecialchars((string) $item['attempts']) ?></td>
               <td><?= htmlspecialchars((string) $item['last_error']) ?></td>
               <td>
-                <form method="post">
+                <form
+                  method="post"
+                  data-confirm="Drop this webhook delivery? It will not be retried."
+                  data-confirm-ok="Drop"
+                >
                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
                   <input type="hidden" name="drop_id" value="<?= htmlspecialchars((string) $item['id']) ?>" />
                   <button type="submit" class="btn btn-sm help-hover"<?= $dropHelp ?>>Drop</button>

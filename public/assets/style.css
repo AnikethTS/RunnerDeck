@@ -132,10 +132,12 @@ body {
   box-sizing: border-box;
 }
 
-.topbar {
+.sticky-head {
   position: sticky;
   top: 0;
   z-index: 40;
+}
+.topbar {
   background: var(--surface-1);
   border-bottom: 1px solid var(--border);
 }

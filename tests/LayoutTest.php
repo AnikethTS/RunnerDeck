@@ -78,6 +78,8 @@ final class LayoutTest extends TestCase
         $this->assertTrue(\RunnerDeck\Core\Layout::hasLogo());
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);
+        $this->assertStringContainsString('class="sticky-head"', $html);
+        $this->assertStringEndsWith("</header>\n</div>\n", $html);
     }
 
     #[RunInSeparateProcess]

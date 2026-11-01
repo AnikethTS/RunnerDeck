@@ -8,6 +8,16 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- Dashboard and hosting alerts stay pinned under the top bar while the
+  page scrolls, including the older-runner notice.
+- CI prints `[1/N]` as each Playwright and PHPUnit test starts. The
+  browser suite fails a missed click in 5 seconds, stops after 5
+  failures, and checks that cancel on stop, drain, upgrade, clear work,
+  and delete does not call the API.
+- Stop, restart, drain, roll restart, upgrade, clear work, and removing a
+  GitHub-only runner ask before they run. Settings import, recovery-code
+  regeneration, signing out other sessions, snapshot delete, and outbox
+  drop do too. The confirm button names the action.
 - The dashboard reuses one GitHub runner list for about 8 seconds and
   measures every slot's disk in a single `du` about every 30 seconds. A
   status or queue poll that is still in flight is not started again.

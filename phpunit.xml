@@ -5,6 +5,9 @@
          colors="true"
          failOnWarning="true"
          failOnDeprecation="true">
+    <extensions>
+        <bootstrap class="Tests\CiProgressExtension"/>
+    </extensions>
     <testsuites>
         <testsuite name="unit">
             <directory>tests</directory>

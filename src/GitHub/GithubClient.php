@@ -83,9 +83,7 @@ final class GithubClient
      */
     public static function listRunners(): array
     {
-        // Tests drive Shell::fake and need every call. Production shares one
-        // list across the php -S workers so the 5s dashboard poll does not
-        // start a `gh api --paginate` on every request.
+        // A faked shell must see every call. The file cache is for production only.
         if (Shell::isFaked()) {
             return self::fetchRunnerList();
         }

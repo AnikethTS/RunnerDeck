@@ -13,11 +13,7 @@ final class SlotDisk
     /** @var array{at: float, byDir: array<string, array{kb: ?int, can_clear: bool}>}|null */
     private static ?array $cache = null;
 
-    /**
-     * Measure every slot in one `du` so discover does not walk `_work` per runner.
-     *
-     * @param list<string> $dirs
-     */
+    /** @param list<string> $dirs */
     public static function prime(array $dirs): void
     {
         $now = microtime(true);

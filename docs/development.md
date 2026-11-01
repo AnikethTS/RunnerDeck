@@ -38,6 +38,10 @@ same Playwright image CI uses
 (`mcr.microsoft.com/playwright:v1.64.1-noble`); host Fedora/macOS fonts
 will otherwise fail the pixel compare.
 
+CI prints `[1/N]` as each Playwright and PHPUnit test starts, and stops
+the browser suite after 5 failures. A click that does not land fails in
+5 seconds.
+
 `npm run e2e` boots a real `php -S` server and drives the real dashboard in
 a real (headless) browser — see the comment at the top of
 `e2e/dashboard.spec.js` for exactly what is and isn't real in there (GitHub

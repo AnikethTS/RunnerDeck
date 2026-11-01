@@ -232,8 +232,9 @@ Layout::topbarStart();
 Layout::pageNav('settings.php');
 Layout::topbarEndStart();
 Layout::logoutForm($csrfToken);
-Layout::topbarEnd();
+Layout::topbarEnd(true);
 echo HostingWarnings::html();
+Layout::stickyHeadEnd();
 ?>
 
   <main class="settings-main">
@@ -871,7 +872,12 @@ echo HostingWarnings::html();
             Download bundle with webhook
           </button>
         </form>
-        <form method="post" enctype="multipart/form-data">
+        <form
+          method="post"
+          enctype="multipart/form-data"
+          data-confirm="Import this file onto the saved settings? Login and runner binaries stay."
+          data-confirm-ok="Import"
+        >
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
           <input type="file" name="settings_file" accept="application/json,.json" required />
           <button type="submit" name="import_settings" value="1" class="btn btn-sm help-hover"<?= $help['import'] ?>>
@@ -888,13 +894,21 @@ echo HostingWarnings::html();
           A stolen cookie can still start and stop runners until it expires.
         </p>
         <div class="settings-actions-row">
-          <form method="post">
+          <form
+            method="post"
+            data-confirm="Regenerate recovery codes? The codes you have now stop working."
+            data-confirm-ok="Regenerate"
+          >
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
             <button type="submit" name="regenerate_recovery" value="1" class="btn btn-sm">
               Regenerate recovery codes
             </button>
           </form>
-          <form method="post">
+          <form
+            method="post"
+            data-confirm="Sign out every other session on this host?"
+            data-confirm-ok="Sign out"
+          >
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
             <button type="submit" name="revoke_sessions" value="1" class="btn btn-sm">
               Sign out other sessions
