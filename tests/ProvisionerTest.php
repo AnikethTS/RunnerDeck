@@ -97,6 +97,21 @@ final class ProvisionerTest extends TestCase
         $this->assertSame('actions-runner-linux-x64.tar.gz', $picked['filename']);
     }
 
+    public function testMatchDownloadAcceptsWindowsMachineNames(): void
+    {
+        $x64 = ['os' => 'win', 'architecture' => 'x64', 'filename' => 'win-x64.zip'];
+        $arm = ['os' => 'win', 'architecture' => 'arm64', 'filename' => 'win-arm64.zip'];
+
+        $pick = fn (string $machine): string => \RunnerDeck\Pool\Provisioner::matchDownload(
+            [$arm, $x64],
+            'Windows',
+            $machine
+        )['filename'];
+
+        $this->assertSame('win-x64.zip', $pick('AMD64'));
+        $this->assertSame('win-arm64.zip', $pick('ARM64'));
+    }
+
     public function testMatchDownloadMapsLinuxArmAndDarwinAndWindows(): void
     {
         $linuxArm = ['os' => 'linux', 'architecture' => 'arm64', 'filename' => 'linux-arm64.tar.gz'];

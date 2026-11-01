@@ -248,6 +248,7 @@ final class Provisioner
             throw new \RuntimeException('unsupported OS: ' . $osFamily);
         }
 
+        $machine = strtolower($machine);
         $archMap = [
             'x86_64' => 'x64', 'amd64' => 'x64',
             'aarch64' => 'arm64', 'arm64' => 'arm64',

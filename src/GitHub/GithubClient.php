@@ -409,7 +409,64 @@ final class GithubClient
                 $result['body']
             );
         }
+        if ($decoded === []) {
+            return self::downloadsFromLatestRelease();
+        }
         return $decoded;
+    }
+
+    /**
+     * @return array<int, array{
+     *     os: string, architecture: string, download_url: string, filename: string, sha256_checksum?: string
+     * }>
+     */
+    private static function downloadsFromLatestRelease(): array
+    {
+        $result = self::runApi(['repos/actions/runner/releases/latest'], 15);
+        $release = $result['ok'] ? json_decode($result['body'], true) : null;
+        if (!is_array($release)) {
+            self::fail(
+                'gh.list_downloads',
+                'GitHub listed no runner downloads and the latest runner release could not be read: '
+                    . trim($result['stderr']),
+                $result['stderr']
+            );
+        }
+        return self::downloadsFromRelease($release);
+    }
+
+    /**
+     * Same shape as the runners/downloads endpoint, built from a runner release.
+     * New repositories can get an empty list from that endpoint.
+     *
+     * @param array<string, mixed> $release
+     * @return array<int, array{
+     *     os: string, architecture: string, download_url: string, filename: string, sha256_checksum?: string
+     * }>
+     */
+    public static function downloadsFromRelease(array $release): array
+    {
+        $out = [];
+        $assets = is_array($release['assets'] ?? null) ? $release['assets'] : [];
+        foreach ($assets as $asset) {
+            $name = is_array($asset) ? (string) ($asset['name'] ?? '') : '';
+            $pattern = '/^actions-runner-(linux|osx|win)-(x64|arm64|arm)-\d+\.\d+\.\d+\.(tar\.gz|zip)$/';
+            if (preg_match($pattern, $name, $m) !== 1) {
+                continue;
+            }
+            $entry = [
+                'os' => $m[1],
+                'architecture' => $m[2],
+                'download_url' => (string) ($asset['browser_download_url'] ?? ''),
+                'filename' => $name,
+            ];
+            $digest = (string) ($asset['digest'] ?? '');
+            if (str_starts_with($digest, 'sha256:')) {
+                $entry['sha256_checksum'] = substr($digest, 7);
+            }
+            $out[] = $entry;
+        }
+        return $out;
     }
 
     /**
