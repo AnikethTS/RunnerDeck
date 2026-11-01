@@ -6,6 +6,16 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- CI also tests and boot-smokes on Intel macOS (`macos-15-intel`).
+
+- Native Windows support. `run.ps1` now runs the dashboard on Windows and
+  manages Windows runners (`config.cmd`/`run.cmd`, zip package), so
+  `runs-on: windows` jobs work. Process control uses PowerShell/CIM and
+  `taskkill`; stop is always forced. `run.ps1 -Wsl` keeps the old
+  WSL2-for-Linux-runners path. A CI job on `windows-latest` and `windows-2022` runs the Windows tests and a real process-control smoke.
+
 ### Changed
 
 - Dashboard and hosting alerts stay pinned under the top bar while the

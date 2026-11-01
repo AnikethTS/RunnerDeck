@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
+use RunnerDeck\Core\Platform;
 use RunnerDeck\Core\Shell;
 use RunnerDeck\Pool\RunnerPool;
 
@@ -38,6 +39,10 @@ final class SystemStats
             return $cores;
         }
 
+        if (Platform::isWindows()) {
+            return $cores = max(1, (int) getenv('NUMBER_OF_PROCESSORS'));
+        }
+
         $result = PHP_OS_FAMILY === 'Darwin'
             ? Shell::exec(['sysctl', '-n', 'hw.ncpu'], 3)
             : Shell::exec(['nproc'], 3);
@@ -53,6 +58,11 @@ final class SystemStats
         static $mem = false;
         if ($mem !== false) {
             return $mem;
+        }
+
+        if (Platform::isWindows()) {
+            $memory = \RunnerDeck\Pool\WindowsProcess::memoryKb();
+            return $mem = $memory[0] ?? null;
         }
 
         if (PHP_OS_FAMILY === 'Darwin') {

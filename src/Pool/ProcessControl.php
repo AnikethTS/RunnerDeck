@@ -6,6 +6,7 @@ namespace RunnerDeck\Pool;
 
 use RunnerDeck\Core\AppLog;
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Platform;
 use RunnerDeck\Core\Shell;
 use RunnerDeck\GitHub\AgentRoster;
 use RunnerDeck\GitHub\GithubClient;
@@ -101,15 +102,24 @@ final class ProcessControl
         }
 
         RunnerLog::rotateIfOversized($r->dir);
-        $result = Shell::exec(
-            ['bash', '-c', self::CLOSE_FDS_PREFIX . 'nohup ./run.sh > runner.log 2>&1 & echo $!'],
-            10,
-            $r->dir
-        );
+        if (Platform::isWindows()) {
+            $result = WindowsProcess::spawnRunner($r->dir);
+        } else {
+            $result = Shell::exec(
+                ['bash', '-c', self::CLOSE_FDS_PREFIX . 'nohup ./run.sh > runner.log 2>&1 & echo $!'],
+                10,
+                $r->dir
+            );
+        }
         $newPid = ProcessDecision::parseSpawnedPid($result['stdout']);
         if ($newPid <= 0) {
             $message = "failed to start {$r->id}: " . trim($result['stderr']);
             return self::fail('process.start', $message, $r->id, $result['stderr']);
+        }
+
+        if (Platform::isWindows()) {
+            // The spawned pid is cmd.exe's, not the listener's.
+            $newPid = self::awaitListener($r->dir) ?? $newPid;
         }
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
@@ -117,6 +127,20 @@ final class ProcessControl
         HostMode::setRebootReady(false);
         AppLog::info('process.start', "{$r->id} started (pid {$newPid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} started (pid {$newPid})"];
+    }
+
+    private static function awaitListener(string $dir): ?int
+    {
+        $tries = (self::$termWaitFake ?? 1) === 0 ? 1 : 10;
+        for ($i = 0; $i < $tries; $i++) {
+            RunnerPool::resetListenersCache();
+            $pid = RunnerPool::liveListenersByDir()[$dir] ?? null;
+            if ($pid !== null) {
+                return $pid;
+            }
+            self::pause(500000);
+        }
+        return null;
     }
 
     public static function stopIndividual(RunnerInfo $r): array
@@ -157,6 +181,11 @@ final class ProcessControl
 
     private static function terminate(int $pid): bool
     {
+        if (Platform::isWindows() && self::$killFake === null) {
+            WindowsProcess::kill($pid);
+            self::pause(200000);
+            return !self::isAlive($pid);
+        }
         self::signal($pid, SIGTERM);
         $wait = self::$termWaitFake ?? self::TERM_WAIT_SECONDS;
         $deadline = time() + max(0, $wait);
@@ -209,6 +238,9 @@ final class ProcessControl
         }
         if (self::$killFake !== null) {
             return false;
+        }
+        if (Platform::isWindows()) {
+            return WindowsProcess::exists($pid);
         }
         return posix_kill($pid, 0);
     }
@@ -413,14 +445,14 @@ final class ProcessControl
 
         $trash = rtrim($dir, '/') . '.deleting';
         if (is_dir($trash)) {
-            Shell::exec(['rm', '-rf', $trash], 60);
+            self::removeTree($trash);
         }
         $target = $dir;
         if (@rename($dir, $trash)) {
             $target = $trash;
         }
 
-        $result = Shell::exec(['rm', '-rf', $target], 60);
+        $result = self::removeTree($target);
         if ($result['code'] !== 0) {
             $detail = trim($result['stderr']);
             $message = "failed to delete files at {$target}"
@@ -432,6 +464,18 @@ final class ProcessControl
         }
 
         return ['ok' => true, 'message' => '', 'stderr' => ''];
+    }
+
+    /** @return array{code: int, stdout: string, stderr: string} */
+    private static function removeTree(string $path): array
+    {
+        if (!Platform::isWindows()) {
+            return Shell::exec(['rm', '-rf', $path], 60);
+        }
+        SlotDisk::removeTree($path);
+        clearstatcache(true, $path);
+        $left = is_dir($path);
+        return ['code' => $left ? 1 : 0, 'stdout' => '', 'stderr' => $left ? "could not remove {$path}" : ''];
     }
 
     /** Stops the runner and, if it was configured, deregisters it from GitHub and clears local registration files. */

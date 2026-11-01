@@ -22,8 +22,11 @@
   runner" page uses), verifies its checksum, extracts it, runs
   `bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine,
   where the Docker image installs those libs via apk), requests a fresh
-  org registration token, and runs `config.sh` — the same flow you'd do by
-  hand, done for you. No manual pre-setup step.
+  org registration token, and runs `config.sh` (`config.cmd` on Windows,
+  where the package is a zip extracted with `tar`) — the same flow you'd do
+  by hand, done for you. No manual pre-setup step. On Windows, runner names
+  and labels are limited to letters, digits, `.`, `_`, `-` because
+  `config.cmd` goes through `cmd.exe`.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
   `/proc` fallback if the pidfile is missing) and waits up to 20s for it
   to exit, then `SIGKILL` if it is still alive. Stop fails if the process
@@ -49,7 +52,7 @@
   (Outbox) until a later success or you drop the item. Optional syslog
   gets the same events.
   **Host pressure** also refuses
-  new starts when the pool filesystem or Linux MemAvailable is below
+  new starts when the pool filesystem or free RAM (Linux MemAvailable, Windows FreePhysicalMemory) is below
   the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
   keep going. `public/health.php` stays an unauthenticated liveness
   probe (`ok: true`) and adds `ready` plus `pressure` (and
@@ -72,9 +75,9 @@
   does the same deregistration, then renames the slot out of the pool and
   removes the directory (binaries, config, logs) — always confirmed
   separately from the busy check, since there's no undo.
-- Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based,
-  cross-platform). Optional Linux **cgroup v2** CPU/memory caps apply on
-  start only; missing cgroup support fails open. A
+- Each running runner's **CPU%/RAM/uptime** is shown live (`ps`-based on
+  Linux/macOS, CIM on Windows). Optional Linux **cgroup v2** CPU/memory caps apply on
+  start only; missing cgroup support (always, on Windows) fails open. A
   rolling pool-wide history chart backed by a small local SQLite
   file (`storage/db/history.sqlite`). Dashboard charts show the last hour;
   **History** shows 24h CPU, runner RSS, and pool disk free (same samples,

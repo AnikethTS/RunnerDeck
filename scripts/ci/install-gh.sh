@@ -1,5 +1,4 @@
 #!/bin/sh
-# Pin used by the Docker image and Alpine CI. Bump both values together.
 set -eu
 GH_VERSION=2.103.3
 GH_SHA256=4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
+use RunnerDeck\Core\Platform;
 use RunnerDeck\Core\Shell;
 
 final class SlotDisk
@@ -63,7 +64,7 @@ final class SlotDisk
             return;
         }
 
-        $result = Shell::exec(array_merge(['du', '-sk'], $paths), 8);
+        $result = self::du($paths);
         if ($result['code'] !== 0) {
             return;
         }
@@ -118,7 +119,7 @@ final class SlotDisk
 
         $kb = 0;
         if ($paths !== []) {
-            $result = Shell::exec(array_merge(['du', '-sk'], $paths), 8);
+            $result = self::du($paths);
             $kb = self::parseDuKb($result);
         }
 
@@ -145,12 +146,43 @@ final class SlotDisk
         return ['ok' => true, 'message' => 'work directory cleared'];
     }
 
+    /**
+     * @param list<string> $paths
+     * @return array{code: int, stdout: string, stderr: string}
+     */
+    private static function du(array $paths): array
+    {
+        if (!Platform::isWindows()) {
+            return Shell::exec(array_merge(['du', '-sk'], $paths), 8);
+        }
+        $lines = [];
+        foreach ($paths as $path) {
+            $bytes = 0;
+            if (is_file($path)) {
+                $bytes = (int) @filesize($path);
+            } elseif (is_dir($path)) {
+                $items = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::LEAVES_ONLY,
+                    \RecursiveIteratorIterator::CATCH_GET_CHILD
+                );
+                foreach ($items as $item) {
+                    if ($item->isFile() && !$item->isLink()) {
+                        $bytes += (int) $item->getSize();
+                    }
+                }
+            }
+            $lines[] = (int) ceil($bytes / 1024) . "\t" . $path;
+        }
+        return ['code' => 0, 'stdout' => implode("\n", $lines), 'stderr' => ''];
+    }
+
     public static function resetCache(): void
     {
         self::$cache = null;
     }
 
-    private static function removeTree(string $path): void
+    public static function removeTree(string $path): void
     {
         if (!is_dir($path)) {
             return;

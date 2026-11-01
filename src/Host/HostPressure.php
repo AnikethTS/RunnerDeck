@@ -146,6 +146,9 @@ final class HostPressure
         if (self::$ramFake !== null) {
             return (self::$ramFake)();
         }
+        if (\RunnerDeck\Core\Platform::isWindows()) {
+            return \RunnerDeck\Pool\WindowsProcess::memoryKb()[1] ?? null;
+        }
         $meminfo = @file_get_contents('/proc/meminfo');
         if ($meminfo !== false && preg_match('/^MemAvailable:\s+(\d+)\s+kB/m', $meminfo, $m)) {
             return (int) $m[1];

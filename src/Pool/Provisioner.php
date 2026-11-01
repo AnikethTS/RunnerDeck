@@ -6,6 +6,7 @@ namespace RunnerDeck\Pool;
 
 use RunnerDeck\Core\AppLog;
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Platform;
 use RunnerDeck\Core\Shell;
 use RunnerDeck\GitHub\AgentRoster;
 use RunnerDeck\GitHub\GithubClient;
@@ -14,7 +15,7 @@ final class Provisioner
 {
     public static function ensureInstalled(string $dir, bool $replace = false): array
     {
-        if (!$replace && is_file("$dir/config.sh")) {
+        if (!$replace && is_file("$dir/" . Platform::runnerScript('config'))) {
             return ['ok' => true, 'message' => 'runner binaries already present'];
         }
 
@@ -63,9 +64,12 @@ final class Provisioner
             );
         }
 
-        $extract = self::isZipArchive($download['filename'])
-            ? Shell::exec(['unzip', '-q', $archivePath, '-d', $dir], 120)
-            : Shell::exec(['tar', 'xzf', $archivePath, '-C', $dir], 120);
+        // tar.exe on Windows 10+ reads zips; unzip is absent.
+        $extract = match (true) {
+            Platform::isWindows() => Shell::exec(['tar', '-xf', $archivePath, '-C', $dir], 120),
+            self::isZipArchive($download['filename']) => Shell::exec(['unzip', '-q', $archivePath, '-d', $dir], 120),
+            default => Shell::exec(['tar', 'xzf', $archivePath, '-C', $dir], 120),
+        };
         @unlink($archivePath);
 
         if ($extract['code'] !== 0) {
@@ -73,7 +77,9 @@ final class Provisioner
             return self::fail('provision.extract', $message, stderr: $extract['stderr']);
         }
 
-        Shell::exec(['chmod', '+x', "$dir/config.sh", "$dir/run.sh"], 5);
+        if (!Platform::isWindows()) {
+            Shell::exec(['chmod', '+x', "$dir/config.sh", "$dir/run.sh"], 5);
+        }
 
         $deps = self::installOsDependencies($dir);
         if (!$deps['ok']) {
@@ -100,19 +106,27 @@ final class Provisioner
             return ['ok' => true, 'message' => "{$name} already configured"];
         }
 
+        $labels = Config::provisionLabelsFor($dir);
+        if (Platform::isWindows() && !self::batchSafe($name, $labels)) {
+            return self::unsafeForBatch($name);
+        }
+
         try {
             $registrationUrl = self::registrationUrl();
             $token = GithubClient::registrationToken();
         } catch (\RuntimeException $e) {
             return self::fail('provision.registration_token', $e->getMessage(), $name);
         }
+        if (Platform::isWindows() && !self::batchSafe($registrationUrl, $token)) {
+            return self::unsafeForBatch($name);
+        }
 
         $cmd = [
-            './config.sh',
+            ...(Platform::isWindows() ? ['cmd.exe', '/d', '/c', 'config.cmd'] : ['./config.sh']),
             '--url', $registrationUrl,
             '--token', $token,
             '--name', $name,
-            '--labels', Config::provisionLabelsFor($dir),
+            '--labels', $labels,
             '--work', '_work',
             '--unattended',
             '--replace',
@@ -124,12 +138,32 @@ final class Provisioner
 
         if ($config['code'] !== 0) {
             $output = trim($config['stderr'] . "\n" . $config['stdout']);
-            $message = "config.sh failed for {$name}: {$output}";
+            $message = Platform::runnerScript('config') . " failed for {$name}: {$output}";
             return self::fail('provision.config', $message, $name, $output);
         }
 
         AgentRoster::remember($name);
         return ['ok' => true, 'message' => "{$name} configured"];
+    }
+
+    private static function batchSafe(string ...$args): bool
+    {
+        foreach ($args as $arg) {
+            if (!Platform::isSafeBatchArg($arg)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** @return array{ok: false, message: string} */
+    private static function unsafeForBatch(string $name): array
+    {
+        return self::fail(
+            'provision.config',
+            "refusing to pass '{$name}' to config.cmd — use only letters, digits, dot, underscore and hyphen",
+            $name
+        );
     }
 
     /**

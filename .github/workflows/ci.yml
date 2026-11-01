@@ -148,19 +148,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Protect-main ruleset requires every CI job name. Do not rename.
           - { os: ubuntu-latest, php: "8.1", label: "8.1" }
           - { os: ubuntu-latest, php: "8.5.12", label: "8.5" }
           - { os: macos-latest, php: "8.5.12", label: "8.5" }
-          # Oldest GitHub-hosted Ubuntu still offered (22.04 retires Apr 2027).
           - { os: ubuntu-22.04, php: "8.1", label: "8.1" }
           - { os: ubuntu-22.04, php: "8.3.36", label: "8.3" }
           - { os: ubuntu-22.04, php: "8.5.12", label: "8.5" }
           - { os: ubuntu-22.04-arm, php: "8.1", label: "8.1" }
-          # Oldest macOS image that remains after macos-14's 2 Nov 2026 retirement.
-          # macos-13 is already gone; macos-14 is in brownout.
           - { os: macos-15, php: "8.1", label: "8.1" }
           - { os: macos-15, php: "8.5.12", label: "8.5" }
+          - { os: macos-15-intel, php: "8.5.12", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -188,6 +185,40 @@ jobs:
       - name: Run test suite
         run: composer run test
 
+  windows-test:
+    name: Windows tests (${{ matrix.os }}, PHP ${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, php: "8.5.12", label: "8.5" }
+          - { os: windows-2022, php: "8.1", label: "8.1" }
+          - { os: windows-2022, php: "8.5.12", label: "8.5" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Windows unit tests
+        run: vendor/bin/phpunit tests/WindowsSupportTest.php
+
+      - name: Real process control smoke (PowerShell, CIM, taskkill)
+        shell: pwsh
+        run: |
+          $scratch = Join-Path $env:RUNNER_TEMP "runnerdeck-smoke"
+          New-Item -ItemType Directory -Path $scratch | Out-Null
+          php scripts/ci/windows-smoke.php $scratch
+
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -200,6 +231,7 @@ jobs:
           - macos-latest
           - ubuntu-22.04
           - macos-15
+          - macos-15-intel
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -223,7 +255,6 @@ jobs:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Same image used to generate README stills, so screenshot pixels match.
     container:
       image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
     steps:
@@ -295,11 +326,8 @@ jobs:
         run: |
           set -euo pipefail
           . /etc/os-release
-          # EL9 ships curl-minimal, which conflicts with curl unless erased.
-          # dnf5 (Fedora 44+) requires --allowerasing after `install`.
           dnf -y --setopt=install_weak_deps=0 install --allowerasing \
             ca-certificates curl git unzip tar findutils
-          # EL9 AppStream default PHP is 8.0; enable 8.2 (posix/pcntl in php-process).
           if [ "${ID}" != fedora ] && [ "${VERSION_ID%%.*}" = 9 ]; then
             dnf -y module reset php || true
             dnf -y module enable php:8.2
@@ -327,7 +355,6 @@ jobs:
       - name: Install git, bash, curl, and required PHP extensions
         run: |
           apk add --no-cache git bash curl tar sqlite-dev
-          # PHPIZE_DEPS is a space-separated package list from the PHP image.
           # shellcheck disable=SC2086
           apk add --no-cache --virtual .build-deps $PHPIZE_DEPS
           docker-php-ext-install pcntl posix pdo_sqlite
