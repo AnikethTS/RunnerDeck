@@ -63,6 +63,12 @@ final class RunnerPool
             return (int) substr($a, 7) <=> (int) substr($b, 7);
         });
 
+        $dirs = [];
+        foreach ($ids as $id) {
+            $dirs[] = $poolDir . '/' . $id;
+        }
+        SlotDisk::prime($dirs);
+
         $result = [];
         foreach ($ids as $id) {
             $result[$id] = self::inspect($poolDir, $id, $logLines);

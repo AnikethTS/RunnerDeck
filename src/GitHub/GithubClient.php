@@ -6,6 +6,7 @@ namespace RunnerDeck\GitHub;
 
 use RunnerDeck\Core\AppLog;
 use RunnerDeck\Core\Config;
+use RunnerDeck\Core\Settings;
 use RunnerDeck\Core\Shell;
 
 final class GithubClient
@@ -82,6 +83,50 @@ final class GithubClient
      */
     public static function listRunners(): array
     {
+        // Tests drive Shell::fake and need every call. Production shares one
+        // list across the php -S workers so the 5s dashboard poll does not
+        // start a `gh api --paginate` on every request.
+        if (Shell::isFaked()) {
+            return self::fetchRunnerList();
+        }
+
+        $fresh = self::readRunnerListCache(false);
+        if ($fresh !== null) {
+            return $fresh;
+        }
+
+        $lock = self::openRunnerListLock();
+        if ($lock !== null && flock($lock, LOCK_EX | LOCK_NB)) {
+            try {
+                $fresh = self::readRunnerListCache(false);
+                if ($fresh !== null) {
+                    return $fresh;
+                }
+                $runners = self::fetchRunnerList();
+                self::writeRunnerListCache($runners);
+                return $runners;
+            } finally {
+                flock($lock, LOCK_UN);
+                fclose($lock);
+            }
+        }
+        if (is_resource($lock)) {
+            fclose($lock);
+        }
+
+        $stale = self::readRunnerListCache(true);
+        if ($stale !== null) {
+            return $stale;
+        }
+
+        return self::fetchRunnerList();
+    }
+
+    /**
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>
+     */
+    private static function fetchRunnerList(): array
+    {
         $path = self::accountBase() . '/actions/runners?per_page=100';
         $result = self::runApi(['--paginate', $path, '-q', '.runners[]'], 30);
         if (!$result['ok']) {
@@ -93,6 +138,65 @@ final class GithubClient
         } catch (\RuntimeException $e) {
             self::fail('gh.list_runners', $e->getMessage(), $result['body'], true);
         }
+    }
+
+    /**
+     * @return array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>|null
+     */
+    private static function readRunnerListCache(bool $allowStale): ?array
+    {
+        $raw = @file_get_contents(self::runnerListCachePath());
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (
+            !is_array($decoded)
+            || !isset($decoded['fetched_at'], $decoded['runners'])
+            || !is_array($decoded['runners'])
+        ) {
+            return null;
+        }
+        $age = time() - (int) $decoded['fetched_at'];
+        if ($age > ($allowStale ? 60 : 8)) {
+            return null;
+        }
+        /** @var array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}> $runners */
+        $runners = $decoded['runners'];
+        return $runners;
+    }
+
+    /**
+     * @param array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}> $runners
+     */
+    private static function writeRunnerListCache(array $runners): void
+    {
+        $path = self::runnerListCachePath();
+        $payload = json_encode(['fetched_at' => time(), 'runners' => $runners]);
+        if (!is_string($payload)) {
+            return;
+        }
+        $tmp = $path . '.tmp';
+        if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
+            return;
+        }
+        @rename($tmp, $path);
+    }
+
+    /** @return resource|null */
+    private static function openRunnerListLock()
+    {
+        $dir = Settings::storageDir();
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return null;
+        }
+        $lock = @fopen($dir . '/gh_runners_cache.json.lock', 'c');
+        return $lock === false ? null : $lock;
+    }
+
+    private static function runnerListCachePath(): string
+    {
+        return Settings::storageDir() . '/gh_runners_cache.json';
     }
 
     /**

@@ -159,7 +159,11 @@
   you're managing runners for, which is why it's opt-in rather than on
   by default.
 - The dashboard **polls** `action=status&view=1` every 5s only while the tab is
-  visible (whole-machine load is in that snapshot). **Queued jobs** for
+  visible (whole-machine load is in that snapshot). A poll still in flight is
+  not started again. The GitHub runner list is reused for about 8 seconds
+  across those polls, and every slot's disk is measured in one `du` about
+  every 30 seconds, so busy/idle can lag about 8 seconds and disk size
+  about 30. **Queued jobs** for
   this pool's label are a separate `action=queue` poll (~20s) with a
   ~25s disk cache — GitHub has no org-wide waiting-jobs API, so org
   scope only looks at a few recently pushed repos. The panel is a

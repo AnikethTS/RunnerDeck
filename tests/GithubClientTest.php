@@ -114,6 +114,28 @@ final class GithubClientTest extends TestCase
         $this->assertSame(1, $runners['acme-1']['id']);
     }
 
+    public function testListRunnersReusesAFreshFileCache(): void
+    {
+        $path = $this->dir . '/gh_runners_cache.json';
+        file_put_contents($path, json_encode([
+            'fetched_at' => time(),
+            'runners' => [
+                'acme-1' => [
+                    'id' => 7,
+                    'status' => 'online',
+                    'busy' => true,
+                    'labels' => ['self-hosted'],
+                    'os' => 'Linux',
+                ],
+            ],
+        ]));
+
+        $runners = \RunnerDeck\GitHub\GithubClient::listRunners();
+
+        $this->assertTrue($runners['acme-1']['busy']);
+        $this->assertSame(7, $runners['acme-1']['id']);
+    }
+
     #[RunInSeparateProcess]
     public function testGetJsonDecodesGhApiStdout(): void
     {
