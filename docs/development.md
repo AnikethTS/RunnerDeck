@@ -59,6 +59,8 @@ compares dashboard, Settings, Add Runner, and live-log screenshots to
 `ghcr.io/anikethts/runnerdeck` image with Trivy (CRITICAL/HIGH, unfixed
 ignored) after push.
 
+CI also enforces a minimum line coverage (`scripts/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
+
 The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `scripts/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test

@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- Stricter CI: a line-coverage gate (75%), PHPUnit runs in random order with three seeds, risky tests and notices fail the run, PHP 8.2/8.3/8.4 unit-test jobs, and a nightly scheduled run.
+
 - CI also tests and boot-smokes on Intel macOS (`macos-15-intel`).
 
 - Native Windows support. `run.ps1` now runs the dashboard on Windows and
