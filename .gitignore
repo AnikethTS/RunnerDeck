@@ -22,3 +22,5 @@
 /node_modules/
 /playwright-report/
 /test-results/
+/playwright-live-report/
+/test-results-live/
