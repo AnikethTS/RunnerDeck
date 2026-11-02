@@ -168,7 +168,8 @@ final class Provisioner
 
     /**
      * GitHub's Linux tarball ships bin/installdependencies.sh (libicu, libkrb5,
-     * …). Skip on Alpine: that script is apt/yum only; the image installs the
+     * …), which needs root, so it runs through passwordless sudo when not root.
+     * Skipped on macOS and Windows, and on Alpine: that script is apt/yum only; the image installs the
      * libs via apk instead.
      *
      * @return array{ok: bool, message: string}
@@ -179,12 +180,20 @@ final class Provisioner
         if (!is_file($script)) {
             return ['ok' => true, 'message' => 'no OS dependency script'];
         }
+        if (Platform::isWindows() || PHP_OS_FAMILY === 'Darwin') {
+            return ['ok' => true, 'message' => 'no OS libraries to install on this platform'];
+        }
         if (is_file('/etc/alpine-release')) {
             return ['ok' => true, 'message' => 'skipping installdependencies.sh on Alpine'];
         }
 
         Shell::exec(['chmod', '+x', $script], 5);
-        $deps = Shell::exec(['bash', $script], 180, $dir);
+        $cmd = ['bash', $script];
+        $root = function_exists('posix_geteuid') && posix_geteuid() === 0;
+        if (!$root && is_executable('/usr/bin/sudo')) {
+            $cmd = ['sudo', '-n', ...$cmd];
+        }
+        $deps = Shell::exec($cmd, 180, $dir);
         if ($deps['code'] !== 0) {
             $output = trim($deps['stderr'] . "\n" . $deps['stdout']);
             $message = 'failed to install runner OS libraries (libicu, libkrb5, …): '

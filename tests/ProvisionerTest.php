@@ -271,6 +271,22 @@ final class ProvisionerTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testInstallOsDependenciesSkipsOnWindows(): void
+    {
+        \RunnerDeck\Core\Platform::fakeWindows(true);
+        mkdir($this->dir . '/bin', 0755, true);
+        file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\n");
+        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+            self::fail('nothing should run on Windows: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::installOsDependencies($this->dir);
+
+        \RunnerDeck\Core\Platform::fakeWindows(null);
+        $this->assertTrue($result['ok']);
+    }
+
+    #[RunInSeparateProcess]
     public function testInstallOsDependenciesRunsGithubScript(): void
     {
         mkdir($this->dir . '/bin', 0755, true);
@@ -280,7 +296,7 @@ final class ProvisionerTest extends TestCase
             if (($cmd[0] ?? '') === 'chmod') {
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
-            if (($cmd[0] ?? '') === 'bash' && str_contains((string) ($cmd[1] ?? ''), 'installdependencies.sh')) {
+            if (in_array('bash', $cmd, true) && str_contains(implode(' ', $cmd), 'installdependencies.sh')) {
                 $ran = true;
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
@@ -290,9 +306,8 @@ final class ProvisionerTest extends TestCase
         $result = \RunnerDeck\Pool\Provisioner::installOsDependencies($this->dir);
 
         $this->assertTrue($result['ok']);
-        if (is_file('/etc/alpine-release')) {
+        if (is_file('/etc/alpine-release') || PHP_OS_FAMILY === 'Darwin') {
             $this->assertFalse($ran);
-            $this->assertStringContainsString('Alpine', $result['message']);
             return;
         }
         $this->assertTrue($ran);
@@ -308,7 +323,7 @@ final class ProvisionerTest extends TestCase
             if (($cmd[0] ?? '') === 'chmod') {
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
-            if (($cmd[0] ?? '') === 'bash') {
+            if (in_array('bash', $cmd, true)) {
                 return ['code' => 1, 'stdout' => '', 'stderr' => 'E: Unable to locate package libicu'];
             }
             self::fail('unexpected command: ' . implode(' ', $cmd));
@@ -316,7 +331,7 @@ final class ProvisionerTest extends TestCase
 
         $result = \RunnerDeck\Pool\Provisioner::installOsDependencies($this->dir);
 
-        if (is_file('/etc/alpine-release')) {
+        if (is_file('/etc/alpine-release') || PHP_OS_FAMILY === 'Darwin') {
             $this->assertTrue($result['ok']);
             return;
         }
