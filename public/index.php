@@ -46,7 +46,7 @@ if ($needsSetup && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $csrfToken = Csrf::token();
 
-$snapshot = $needsSetup ? null : Dashboard::snapshot(5);
+$snapshot = $needsSetup ? null : Dashboard::localSnapshot(5);
 $dash = is_array($snapshot) ? $snapshot : [];
 $history = is_array($dash['history'] ?? null) ? $dash['history'] : [];
 $stats = DashboardView::statsCards($dash);
