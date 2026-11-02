@@ -362,6 +362,12 @@ final class GithubClient
                 $result['stderr']
             );
         }
+        self::forgetRunnerList();
+    }
+
+    public static function forgetRunnerList(): void
+    {
+        @unlink(self::runnerListCachePath());
     }
 
     public static function registrationToken(): string
