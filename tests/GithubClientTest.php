@@ -211,4 +211,33 @@ final class GithubClientTest extends TestCase
         }
         $this->assertTrue(\RunnerDeck\GitHub\GithubBackoff::isCooling());
     }
+
+    public function testDownloadsFromReleaseMapsAssetsLikeTheDownloadsEndpoint(): void
+    {
+        $release = ['assets' => [
+            [
+                'name' => 'actions-runner-win-x64-2.338.2.zip',
+                'browser_download_url' => 'https://example.test/win.zip',
+                'digest' => 'sha256:' . str_repeat('a', 64),
+            ],
+            [
+                'name' => 'actions-runner-linux-x64-2.338.2.tar.gz',
+                'browser_download_url' => 'https://example.test/l.tgz',
+            ],
+            [
+                'name' => 'actions-runner-linux-x64-2.338.2.tar.gz.sha256',
+                'browser_download_url' => 'https://example.test/x',
+            ],
+            ['name' => 'notes.txt'],
+        ]];
+
+        $downloads = \RunnerDeck\GitHub\GithubClient::downloadsFromRelease($release);
+
+        $this->assertCount(2, $downloads);
+        $this->assertSame('win', $downloads[0]['os']);
+        $this->assertSame('x64', $downloads[0]['architecture']);
+        $this->assertSame(str_repeat('a', 64), $downloads[0]['sha256_checksum']);
+        $this->assertArrayNotHasKey('sha256_checksum', $downloads[1]);
+        $this->assertSame('linux', $downloads[1]['os']);
+    }
 }

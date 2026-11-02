@@ -204,4 +204,25 @@ final class DashboardTest extends TestCase
         $this->assertSame('crash_threshold', $decoded['event']);
         $this->assertSame(1, $decoded['crash_count_7d']);
     }
+
+    #[RunInSeparateProcess]
+    public function testLocalSnapshotNeverCallsGithub(): void
+    {
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        $gh = false;
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$gh): array {
+            if (str_ends_with((string) ($cmd[0] ?? ''), 'gh') || ($cmd[0] ?? '') === 'curl') {
+                $gh = true;
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => ''];
+        });
+
+        $local = \RunnerDeck\Ui\Dashboard::localSnapshot();
+
+        $this->assertFalse($gh);
+        $this->assertCount(1, $local['runners']);
+        $this->assertSame('runner-1', $local['runners'][0]['id']);
+        $this->assertNull($local['runners'][0]['github']);
+        $this->assertTrue($local['health']['logged_in']);
+    }
 }

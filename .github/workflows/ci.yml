@@ -322,9 +322,6 @@ jobs:
         run: |
           if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
-          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            echo "::notice::E2E_RUNNER_TOKEN or E2E_REPO is not configured; skipping the real runner test"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
           else
             echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
             exit 1
@@ -340,12 +337,12 @@ jobs:
       - name: Register a real runner, run a job on it, and clean up
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: bash scripts/ci/e2e-real-runner.sh
+        run: ./scripts/ci/e2e-real-runner.sh
 
       - name: Remove leftover runners and runs
         if: always() && steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: bash scripts/ci/e2e-real-runner.sh cleanup
+        run: ./scripts/ci/e2e-real-runner.sh cleanup
 
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})

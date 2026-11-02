@@ -28,6 +28,46 @@ use RunnerDeck\Pool\RunnerPool;
 
 final class Dashboard
 {
+    /**
+     * First-paint data from this host only. The page renders this without
+     * waiting on GitHub; the status poll fills in the GitHub columns.
+     *
+     * @return array<string, mixed>
+     */
+    public static function localSnapshot(int $logLines = 5): array
+    {
+        $runners = [];
+        $hasEphemeral = false;
+        foreach (RunnerPool::discover($logLines) as $info) {
+            $row = $info->toArray();
+            $row['github'] = null;
+            $hasEphemeral = $hasEphemeral || $info->ephemeral;
+            $runners[] = $row;
+        }
+
+        $stats = self::computeStats($runners);
+        $pressure = HostPressure::snapshot();
+        $diskFree = $pressure['disk_free_kb'] ?? null;
+        History::record(
+            $stats['avg_cpu_percent'] ?? 0.0,
+            $stats['total_rss_kb'] ?? 0,
+            is_int($diskFree) ? $diskFree : null
+        );
+
+        return [
+            'generated_at' => time(),
+            'maintenance' => HostMode::isMaintenance(),
+            'reboot_ready' => HostMode::isRebootReady(),
+            'watch_warning' => WatchHeartbeat::warning($hasEphemeral),
+            'pressure' => $pressure,
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'runners' => $runners,
+            'stats' => $stats,
+            'system' => SystemStats::snapshot(),
+            'history' => self::historyView(),
+        ];
+    }
+
     public static function snapshot(int $logLines = 15): array
     {
         $ghRunners = [];
