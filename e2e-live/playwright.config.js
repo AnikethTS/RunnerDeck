@@ -16,7 +16,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   timeout: 10 * 60_000,
   expect: { timeout: 30_000 },
-  reporter: [['list'], ['html', { open: 'never', outputFolder: '../playwright-live-report' }]],
+  reporter: [
+    ['../e2e/progress-reporter.js'],
+    ['list'],
+    ['html', { open: 'never', outputFolder: '../playwright-live-report' }],
+  ],
   outputDir: '../test-results-live',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,

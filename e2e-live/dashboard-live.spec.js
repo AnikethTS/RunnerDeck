@@ -88,10 +88,12 @@ test('every header tab opens quickly', async () => {
   ];
   const windows = process.platform === 'win32';
   const limit = windows ? 10_000 : 4_000;
-  const queueSettled = page.waitForResponse((r) => r.url().includes('action=queue'), { timeout: 60_000 });
+  const queueSettled = windows
+    ? page.waitForResponse((r) => r.url().includes('action=queue'), { timeout: 60_000 })
+    : null;
   await page.goto('/');
   await expect(page.locator('.stat-grid')).toBeVisible();
-  if (windows) await queueSettled;
+  if (queueSettled) await queueSettled;
   for (const [label, url] of tabs) {
     const started = Date.now();
     await page.locator('nav.page-nav').getByRole('link', { name: label, exact: true }).click();
