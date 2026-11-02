@@ -323,8 +323,8 @@ jobs:
           if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::E2E_RUNNER_TOKEN secret or E2E_REPO variable is not set; skipping the real runner test"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
+            exit 1
           fi
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
