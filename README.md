@@ -17,7 +17,7 @@
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](docs/docker.md)
 
 [![Linux](https://img.shields.io/badge/Linux-native-FCC624?logo=linux&logoColor=black)](docs/getting-started.md#platform-support)
-[![Windows](https://img.shields.io/badge/Windows-native-0078D6?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxyZWN0IHg9IjIiIHk9IjMiIHdpZHRoPSI5LjUiIGhlaWdodD0iOC41Ii8%2BPHJlY3QgeD0iMTIuNSIgeT0iMyIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48cmVjdCB4PSIyIiB5PSIxMi41IiB3aWR0aD0iOS41IiBoZWlnaHQ9IjguNSIvPjxyZWN0IHg9IjEyLjUiIHk9IjEyLjUiIHdpZHRoPSI5LjUiIGhlaWdodD0iOC41Ii8%2BPC9zdmc%2B)](docs/getting-started.md#platform-support)
+[![Windows](https://img.shields.io/badge/Windows-native-0078D6)](docs/getting-started.md#platform-support)
 [![macOS](https://img.shields.io/badge/macOS-native-000000?logo=apple&logoColor=white)](docs/getting-started.md#platform-support)
 
 ![Dashboard in use](.github/screenshots/demo.gif)
@@ -37,7 +37,7 @@ little vanilla JS.
 |---|---|---|
 | <img src="https://cdn.simpleicons.org/linux/FCC624" alt="" width="20" /> | **Linux** | Linux runners (x64, arm64, arm) |
 | <img src="https://cdn.simpleicons.org/apple/999999" alt="" width="20" /> | **macOS** | macOS runners (Intel and Apple silicon) |
-| <img src=".github/platform/windows.svg" alt="" width="20" /> | **Windows** | Windows runners (x64, arm64) via `.\run.ps1` |
+| | **Windows** | Windows runners (x64, arm64) via `.\run.ps1` |
 
 Windows is native too, no WSL2 needed, so `runs-on: windows` jobs work. It has
 a few limits (forced stop, a single-worker built-in server); see
@@ -116,3 +116,5 @@ Curious exactly how any of that works under the hood? See
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+Linux, Windows and macOS are trademarks of their respective owners. This project is not affiliated with or endorsed by them.
