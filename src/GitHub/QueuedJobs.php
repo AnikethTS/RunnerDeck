@@ -17,6 +17,11 @@ final class QueuedJobs
     private const MAX_REPOS = 5;
     private const MAX_RUNS = 8;
     private const MAX_JOBS = 20;
+    private const FETCH_BUDGET_SECONDS = 6.0;
+
+    private static float $deadline = 0.0;
+
+    private static bool $timedOut = false;
 
     /**
      * @return array{
@@ -312,6 +317,8 @@ final class QueuedJobs
      */
     private static function fetch(): array
     {
+        self::$deadline = microtime(true) + self::FETCH_BUDGET_SECONDS;
+        self::$timedOut = false;
         $label = Config::label();
         $empty = [
             'ok' => true,
@@ -379,7 +386,7 @@ final class QueuedJobs
             'ok' => true,
             'label' => $label,
             'count' => count($jobs),
-            'truncated' => $truncated,
+            'truncated' => $truncated || self::$timedOut,
             'jobs' => $jobs,
             'live' => $live,
             'recent' => $recent,
@@ -623,6 +630,10 @@ final class QueuedJobs
     /** @return array<int|string, mixed>|null */
     private static function tryGetJson(string $path): ?array
     {
+        if (self::$deadline > 0.0 && microtime(true) > self::$deadline) {
+            self::$timedOut = true;
+            return null;
+        }
         try {
             return GithubClient::getJson($path);
         } catch (\RuntimeException) {

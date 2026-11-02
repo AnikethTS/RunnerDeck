@@ -22,7 +22,7 @@ async function confirmIfAsked(ms = 3000) {
     await ok.waitFor({ state: 'visible', timeout: ms });
     await ok.click();
   } catch {
-    // the action ran without asking
+    return;
   }
 }
 
