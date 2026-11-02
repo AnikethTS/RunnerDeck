@@ -5,10 +5,12 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Auth;
+use RunnerDeck\Core\Session;
 use RunnerDeck\Pool\RunnerLog;
 use RunnerDeck\Pool\RunnerPool;
 
 Auth::rejectPlainIfProtected();
+Session::release();
 
 $id = $_GET['runner'] ?? '';
 if (!RunnerPool::isKnownId($id)) {

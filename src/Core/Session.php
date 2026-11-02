@@ -22,6 +22,13 @@ final class Session
         session_start();
     }
 
+    public static function release(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+    }
+
     public static function requestIsHttps(): bool
     {
         $https = $_SERVER['HTTPS'] ?? '';
