@@ -57,6 +57,19 @@ test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
 });
 
+test.afterEach(async ({}, testInfo) => {
+  if (testInfo.status === testInfo.expectedStatus) return;
+  const toasts = await toast().allInnerTexts().catch(() => []);
+  const addError = await page.locator('#add-runner-error').innerText().catch(() => '');
+  const status = await page.request.get('/api.php?action=status&lines=20').then((r) => r.json()).catch(() => null);
+  console.log(`FAILED: ${testInfo.title}`);
+  console.log(`toasts: ${JSON.stringify(toasts)} add-runner-error: ${JSON.stringify(addError)}`);
+  console.log(`app log: ${JSON.stringify(status && status.errors, null, 1)}`);
+  for (const r of (status && status.runners) || []) {
+    console.log(`${r.id}: running=${r.local_running} configured=${r.configured} log=${JSON.stringify(r.log_tail)}`);
+  }
+});
+
 test.afterAll(async () => {
   await deleteOurRunners();
   await page.close();

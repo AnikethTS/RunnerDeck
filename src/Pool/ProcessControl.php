@@ -165,6 +165,7 @@ final class ProcessControl
             );
         }
         @unlink($pidFile);
+        RunnerPool::resetListenersCache();
         RunnerLog::rotateIfOversized($r->dir);
         AppLog::info('process.stop', "{$r->id} stopped (pid {$pid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} stopped (pid {$pid})"];
