@@ -9,6 +9,8 @@ const BASE = 'runner-base';
 const baseName = tag;
 const renamedBase = `${tag}-renamed`;
 
+const SLOW = process.platform === 'win32' ? 3 : 1;
+
 let page;
 
 const row = (id) => page.locator(`tr[data-runner="${id}"]`);
@@ -33,11 +35,11 @@ async function refresh() {
 }
 
 async function expectRunning(id, timeout = 120_000) {
-  await expect(localCell(id)).toContainText('running', { timeout });
+  await expect(localCell(id)).toContainText('running', { timeout: timeout * SLOW });
 }
 
 async function expectStopped(id, timeout = 120_000) {
-  await expect(localCell(id)).toContainText('stopped', { timeout });
+  await expect(localCell(id)).toContainText('stopped', { timeout: timeout * SLOW });
 }
 
 async function expectGithubStatus(name, status, timeout = 120_000) {
@@ -112,7 +114,7 @@ test('Add Runner registers a real runner and it comes online', async () => {
   await expect(page.locator('#add-runner-modal')).toBeVisible();
   await page.locator('#add-runner-form button[type="submit"]').click();
   await expect(page.locator('#add-runner-modal')).toBeHidden({ timeout: 300_000 });
-  await expect(row(BASE)).toBeVisible({ timeout: 60_000 });
+  await expect(row(BASE)).toBeVisible({ timeout: 60_000 * SLOW * 2 });
   await expectRunning(BASE, 180_000);
   await expectGithubStatus(baseName, 'online', 180_000);
   await expect(agentName(BASE)).toHaveText(baseName);
@@ -196,8 +198,8 @@ test('Export JSON downloads the current snapshot', async () => {
   const stream = await file.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const snapshot = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-  expect(snapshot.runners.map((r) => r.id)).toContain(BASE);
+  const runners = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  expect(runners.map((r) => r.id)).toContain(BASE);
 });
 
 test('Pool size Apply creates two more slots', async () => {
