@@ -45,15 +45,24 @@ final class Dashboard
             $runners[] = $row;
         }
 
+        $stats = self::computeStats($runners);
+        $pressure = HostPressure::snapshot();
+        $diskFree = $pressure['disk_free_kb'] ?? null;
+        History::record(
+            $stats['avg_cpu_percent'] ?? 0.0,
+            $stats['total_rss_kb'] ?? 0,
+            is_int($diskFree) ? $diskFree : null
+        );
+
         return [
             'generated_at' => time(),
             'maintenance' => HostMode::isMaintenance(),
             'reboot_ready' => HostMode::isRebootReady(),
             'watch_warning' => WatchHeartbeat::warning($hasEphemeral),
-            'pressure' => HostPressure::snapshot(),
+            'pressure' => $pressure,
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
             'runners' => $runners,
-            'stats' => self::computeStats($runners),
+            'stats' => $stats,
             'system' => SystemStats::snapshot(),
             'history' => self::historyView(),
         ];
