@@ -16,6 +16,10 @@
 [![SQLite](https://img.shields.io/badge/SQLite-optional-003B57?logo=sqlite&logoColor=white)](docs/how-it-works.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](docs/docker.md)
 
+[![Linux](https://img.shields.io/badge/Linux-native-FCC624?logo=linux&logoColor=black)](docs/getting-started.md#platform-support)
+[![Windows](https://img.shields.io/badge/Windows-native-0078D6)](docs/getting-started.md#platform-support)
+[![macOS](https://img.shields.io/badge/macOS-native-000000?logo=apple&logoColor=white)](docs/getting-started.md#platform-support)
+
 ![Dashboard in use](.github/screenshots/demo.gif)
 
 </div>
@@ -26,6 +30,18 @@ button instead of a pidfile and an SSH session.
 
 No framework, no build step, no dependencies to run it. Just PHP and a
 little vanilla JS.
+
+## Runs natively on
+
+| | Platform | Runners it manages |
+|---|---|---|
+| <img src="https://cdn.simpleicons.org/linux/FCC624" alt="" width="20" /> | **Linux** | Linux runners (x64, arm64, arm) |
+| <img src="https://cdn.simpleicons.org/apple/999999" alt="" width="20" /> | **macOS** | macOS runners (Intel and Apple silicon) |
+| | **Windows** | Windows runners (x64, arm64) via `.\run.ps1` |
+
+Windows is native too, no WSL2 needed, so `runs-on: windows` jobs work. It has
+a few limits (forced stop, a single-worker built-in server); see
+[Platform support](docs/getting-started.md#platform-support).
 
 ## Quick start
 
@@ -100,3 +116,5 @@ Curious exactly how any of that works under the hood? See
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+Linux, Windows and macOS are trademarks of their respective owners. This project is not affiliated with or endorsed by them.
