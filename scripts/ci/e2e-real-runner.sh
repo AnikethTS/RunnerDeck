@@ -32,6 +32,11 @@ cleanup_github() {
     while read -r run_id; do
       gh run cancel "$run_id" -R "$repo" >/dev/null 2>&1 || true
     done
+  gh run list -R "$repo" --workflow "$workflow" --status completed -L 100 --json databaseId,createdAt \
+    --jq '.[] | select((.createdAt | fromdateiso8601) < (now - 900)) | .databaseId' 2>/dev/null |
+    while read -r old_id; do
+      gh run delete "$old_id" -R "$repo" >/dev/null 2>&1 || true
+    done
 }
 
 preflight() {
