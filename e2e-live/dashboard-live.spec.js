@@ -64,7 +64,10 @@ test.afterEach(async ({}, testInfo) => {
   if (testInfo.status === testInfo.expectedStatus) return;
   const toasts = await toast().allInnerTexts().catch(() => []);
   const addError = await page.locator('#add-runner-error').innerText().catch(() => '');
-  const status = await page.evaluate(() => fetch('api.php?action=status&lines=20').then((r) => r.json())).catch(() => null);
+  const raw = await page.evaluate(() => fetch('api.php?action=status&lines=20').then((r) => r.text()))
+    .catch((e) => `fetch failed: ${e.message}`);
+  let status = null;
+  try { status = JSON.parse(raw); } catch { console.log(`status was not JSON: ${String(raw).slice(0, 1500)}`); }
   console.log(`FAILED: ${testInfo.title}`);
   console.log(`toasts: ${JSON.stringify(toasts)} add-runner-error: ${JSON.stringify(addError)}`);
   console.log(`app log: ${JSON.stringify(status && status.errors, null, 1)}`);
@@ -190,9 +193,11 @@ test('a real workflow job runs on the runner', async () => {
 });
 
 test('Clear work empties _work on a stopped runner', async () => {
-  await expect(row(BASE).locator('[data-action="stop"]')).toBeEnabled({ timeout: 60_000 });
-  await row(BASE).locator('[data-action="stop"]').click();
-  await confirmIfAsked();
+  await expect(localCell(BASE)).toContainText(/running|stopped/, { timeout: 60_000 });
+  if ((await localCell(BASE).innerText()).includes('running')) {
+    await row(BASE).locator('[data-action="stop"]').click();
+    await confirmIfAsked();
+  }
   await expectStopped(BASE);
   const clear = row(BASE).locator('[data-action="clear-work"]');
   await expect(clear).toBeEnabled({ timeout: 60_000 });

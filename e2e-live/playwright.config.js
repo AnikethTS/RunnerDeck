@@ -1,11 +1,12 @@
 import { defineConfig } from '@playwright/test';
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const PORT = Number(process.env.E2E_PORT || 8092);
 const tag = process.env.E2E_TAG || `rd-live-${Date.now()}`;
-const scratch = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), 'rd-live-'));
+const scratch = path.join(process.env.RUNNER_TEMP || tmpdir(), `rd-live-${tag}`);
+mkdirSync(scratch, { recursive: true });
 const unix = (p) => p.split(path.sep).join('/');
 process.env.E2E_POOL_DIR = unix(path.join(scratch, 'pool'));
 
