@@ -61,7 +61,24 @@ ignored) after push.
 
 The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and Windows hosted runners, dispatches `scripts/ci/e2e-probe-workflow.yml` onto it, and waits for the job to pass. It needs a dedicated, throwaway test repository containing a copy of `scripts/ci/e2e-probe-workflow.yml` at `.github/workflows/runnerdeck-e2e.yml` (copied once by hand, so the token never needs the Workflows permission), a repository variable `E2E_REPO` (`owner/repo`), and a secret `E2E_RUNNER_TOKEN`: a fine-grained token limited to that one repo with Administration, Actions and Contents read/write. Keep that repo private and empty of anything else, since a runner executes its workflows. Without the secret or variable the job fails. Pull requests from forks skip it, because they never receive the secret. Fork pull requests never get the secret.
 
-The `e2e-live` jobs (Ubuntu latest, macOS latest, Windows latest) run on every pull request. `e2e-live-extended` (Ubuntu 22.04 and 22.04 ARM, macOS 15 Intel, Windows 2022) and the Fedora 44 container job run only on pushes to `main`, nightly and manual runs, because every job shares one GitHub token with a 5,000 calls/hour limit and all of them on every PR would exhaust it. The `e2e-live` job runs `e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
+The `e2e-live` job runs `e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
+
+### Choosing which CI runs
+
+Pull requests get the fast set by default: lint, the secret scan, and the unit suite with the coverage gate. Add labels to run more, as in other projects that use this pattern:
+
+| Label | Adds |
+|---|---|
+| `ci:fast` | Lint, secret scan, unit suite with coverage (always on) |
+| `ci:unit` | Every `Unit ·` job: Linux, macOS, Windows subset, distro containers |
+| `ci:quality` | Random-order test run |
+| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image |
+| `ci:e2e` | Browser UI tests with a mocked API |
+| `ci:live` | Live dashboard and real-runner tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
+| `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
+| `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |
+
+Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label re-runs CI. Fork pull requests never run the live jobs, because they do not receive the secrets.
 
 CI also enforces a minimum line coverage (`scripts/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
 
