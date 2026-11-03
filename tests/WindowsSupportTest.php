@@ -173,17 +173,46 @@ final class WindowsSupportTest extends TestCase
     }
 
     #[RunInSeparateProcess]
-    public function testStopUsesTaskkillTree(): void
+    public function testStopAsksTheRunnerToExitBeforeAnythingIsForced(): void
+    {
+        $runs = $this->stopWith(runnerSurvives: false);
+
+        $this->assertSame([], $runs['taskkill']);
+        $this->assertCount(1, $runs['encoded']);
+        $script = $this->decodeEncodedCommand($runs['encoded'][0]);
+        $this->assertStringContainsString('GenerateConsoleCtrlEvent', $script);
+        $this->assertStringContainsString('$target = 777', $script);
+    }
+
+    #[RunInSeparateProcess]
+    public function testStopFallsBackToTaskkillTreeWhenTheRunnerSurvives(): void
+    {
+        $runs = $this->stopWith(runnerSurvives: true);
+
+        $this->assertSame([['taskkill', '/PID', '777', '/T', '/F']], $runs['taskkill']);
+    }
+
+    /** @return array{taskkill: list<list<string>>, encoded: list<string>} */
+    private function stopWith(bool $runnerSurvives): array
     {
         ProcessControl::fakeTermWait(0);
         RunnerPool::fakeLiveListeners([$this->dir . '/runner-1' => 777]);
-        $killed = [];
-        Shell::fake(function (array $cmd) use (&$killed): array {
+        $runs = ['taskkill' => [], 'encoded' => []];
+        Shell::fake(function (array $cmd) use (&$runs, &$runnerSurvives): array {
             if ($cmd[0] === 'taskkill') {
-                $killed[] = $cmd;
+                $runs['taskkill'][] = $cmd;
+                $runnerSurvives = false;
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
-            return ['code' => 0, 'stdout' => 'INFO: No tasks are running', 'stderr' => ''];
+            if ($cmd[0] === 'powershell.exe' && in_array('-EncodedCommand', $cmd, true)) {
+                $runs['encoded'][] = (string) end($cmd);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($cmd[0] === 'tasklist') {
+                $stdout = $runnerSurvives ? '"Runner.Listener.exe","777","Console"' : 'INFO: No tasks are running';
+                return ['code' => 0, 'stdout' => $stdout, 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
         $info = new RunnerInfo(
             id: 'runner-1',
@@ -198,7 +227,12 @@ final class WindowsSupportTest extends TestCase
         $result = ProcessControl::stopIndividual($info);
 
         $this->assertTrue($result['ok'], $result['message']);
-        $this->assertSame([['taskkill', '/PID', '777', '/T', '/F']], $killed);
+        return $runs;
+    }
+
+    private function decodeEncodedCommand(string $encoded): string
+    {
+        return str_replace("\0", '', (string) base64_decode($encoded, true));
     }
 
     public function testConfigureRefusesUnsafeNameOnWindows(): void

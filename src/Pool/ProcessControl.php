@@ -180,7 +180,7 @@ final class ProcessControl
     private static function terminate(int $pid): bool
     {
         if (Platform::isWindows() && self::$killFake === null) {
-            WindowsProcess::kill($pid);
+            WindowsProcess::stop($pid);
             self::pause(200000);
             return !self::isAlive($pid);
         }
