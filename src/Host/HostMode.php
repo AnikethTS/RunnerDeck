@@ -87,7 +87,7 @@ final class HostMode
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             return;
         }
-        $tmp = self::path() . '.tmp';
+        $tmp = self::path() . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, json_encode([
             'maintenance' => !empty($data['maintenance']),
             'reboot_ready' => !empty($data['reboot_ready']),

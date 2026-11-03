@@ -174,7 +174,7 @@ final class GithubClient
         if (!is_string($payload)) {
             return;
         }
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
             return;
         }

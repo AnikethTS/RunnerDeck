@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- CI job names follow one `Group · Platform · detail` pattern.
+
 - The live dashboard suite also runs on Ubuntu 22.04 (x64 and arm), Intel macOS, Windows 2022, and inside a Fedora 44 container.
 
 - CI job that drives the dashboard in a real browser on Linux, macOS and Windows against real runners, clicking each button and checking the result on GitHub.

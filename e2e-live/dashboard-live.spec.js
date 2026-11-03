@@ -44,7 +44,7 @@ async function expectStopped(id, timeout = 120_000) {
 }
 
 async function expectGithubStatus(name, status, timeout = 120_000) {
-  await expect.poll(async () => (await runnerByName(name))?.status ?? 'absent', { timeout, intervals: [4000] })
+  await expect.poll(async () => (await runnerByName(name))?.status ?? 'absent', { timeout, intervals: [6000] })
     .toBe(status);
 }
 
