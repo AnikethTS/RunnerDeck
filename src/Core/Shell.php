@@ -39,9 +39,15 @@ final class Shell
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
         // Missing helpers (e.g. `ps` on a minimal Fedora container) must not
         // raise php warnings — callers fail open on a non-zero code.
+        error_clear_last();
         $proc = @proc_open($cmd, $descriptors, $pipes, $cwd);
         if (!is_resource($proc)) {
-            return ['code' => -1, 'stdout' => '', 'stderr' => 'failed to start process: ' . implode(' ', $cmd)];
+            $reason = error_get_last()['message'] ?? '';
+            return [
+                'code' => -1,
+                'stdout' => '',
+                'stderr' => 'failed to start process: ' . implode(' ', $cmd) . ($reason !== '' ? " ({$reason})" : ''),
+            ];
         }
 
         fclose($pipes[0]);
