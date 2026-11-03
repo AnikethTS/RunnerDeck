@@ -63,7 +63,7 @@ test.afterEach(async ({}, testInfo) => {
   if (testInfo.status === testInfo.expectedStatus) return;
   const toasts = await toast().allInnerTexts().catch(() => []);
   const addError = await page.locator('#add-runner-error').innerText().catch(() => '');
-  const status = await page.request.get('/api.php?action=status&lines=20').then((r) => r.json()).catch(() => null);
+  const status = await page.evaluate(() => fetch('api.php?action=status&lines=20').then((r) => r.json())).catch(() => null);
   console.log(`FAILED: ${testInfo.title}`);
   console.log(`toasts: ${JSON.stringify(toasts)} add-runner-error: ${JSON.stringify(addError)}`);
   console.log(`app log: ${JSON.stringify(status && status.errors, null, 1)}`);
@@ -114,7 +114,10 @@ test('dashboard reaches GitHub and starts empty', async () => {
 test('Add Runner registers a real runner and it comes online', async () => {
   await page.locator('#btn-add-runner').click();
   await expect(page.locator('#add-runner-modal')).toBeVisible();
+  const added = page.waitForResponse((r) => r.url().includes('action=add_runner'), { timeout: 300_000 });
   await page.locator('#add-runner-form button[type="submit"]').click();
+  const body = await (await added).json();
+  expect(body.ok, `add_runner said: ${JSON.stringify(body)}`).toBe(true);
   await expect(page.locator('#add-runner-modal')).toBeHidden({ timeout: 300_000 });
   await expect(row(BASE)).toBeVisible({ timeout: 60_000 * SLOW * 2 });
   await expectRunning(BASE, 180_000);
@@ -283,15 +286,18 @@ test('Drain All stops idle runners', async () => {
 
 test('Settings save persists and exports', async () => {
   await page.goto('/settings.php');
+  await page.locator('#tab-pool').click();
   const idle = page.locator('#settings-idle-stop');
   await idle.fill('45');
   await page.locator('#settings-save').click();
   await page.goto('/settings.php');
+  await page.locator('#tab-pool').click();
   await expect(page.locator('#settings-idle-stop')).toHaveValue('45');
 
   await page.locator('#settings-idle-stop').fill('');
   await page.locator('#settings-save').click();
   await page.goto('/settings.php');
+  await page.locator('#tab-pool').click();
   await expect(page.locator('#settings-idle-stop')).toHaveValue('');
 
   const res = await page.request.get('/download_settings.php');
