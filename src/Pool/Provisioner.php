@@ -143,6 +143,7 @@ final class Provisioner
         }
 
         AgentRoster::remember($name);
+        GithubClient::forgetRunnerList();
         return ['ok' => true, 'message' => "{$name} configured"];
     }
 

@@ -8,6 +8,7 @@
     "lint:css": "stylelint public/assets/style.css",
     "audit": "node scripts/npm-audit.mjs",
     "e2e": "playwright test",
+    "e2e:live": "playwright test -c e2e-live/playwright.config.js",
     "e2e:update-shots": "playwright test --update-snapshots --grep \"first-run setup|README\""
   },
   "devDependencies": {

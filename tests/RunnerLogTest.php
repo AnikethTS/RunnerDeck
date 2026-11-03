@@ -71,4 +71,23 @@ final class RunnerLogTest extends TestCase
             \RunnerDeck\Pool\RunnerLog::files($this->dir)
         );
     }
+
+    public function testTailReturnsValidUtf8ForConsoleCodepageBytes(): void
+    {
+        $dir = sys_get_temp_dir() . '/runnerdeck-log-utf8-' . uniqid();
+        mkdir($dir, 0755, true);
+        file_put_contents($dir . '/runner.log', "plain\r\n\xFB Connected to GitHub\r\n");
+
+        $lines = \RunnerDeck\Pool\RunnerLog::tail($dir, 5);
+
+        unlink($dir . '/runner.log');
+        rmdir($dir);
+        $this->assertCount(2, $lines);
+        $this->assertSame('plain', $lines[0]);
+        foreach ($lines as $line) {
+            $this->assertSame(1, preg_match('//u', $line));
+        }
+        $this->assertNotFalse(json_encode($lines));
+        $this->assertStringContainsString('Connected to GitHub', $lines[1]);
+    }
 }

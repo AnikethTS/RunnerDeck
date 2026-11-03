@@ -7,6 +7,7 @@ namespace RunnerDeck\Http;
 use RunnerDeck\Core\Auth;
 use RunnerDeck\Core\Config;
 use RunnerDeck\Core\Csrf;
+use RunnerDeck\Core\Session;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\Http\Action\AddRunnerAction;
 use RunnerDeck\Http\Action\BulkDeleteAction;
@@ -97,6 +98,8 @@ final class Api
         'clear_applog' => ClearApplogAction::class,
     ];
 
+    private const SESSION_WRITING_ACTIONS = ['logout', 'totp_begin', 'totp_confirm', 'save_settings'];
+
     public static function run(): never
     {
         header('Content-Type: application/json');
@@ -115,6 +118,7 @@ final class Api
         Auth::rejectApiIfProtected();
 
         if ($method === 'GET') {
+            Session::release();
             $class = self::GET_ACTIONS[$action] ?? null;
             if ($class !== null) {
                 $class::handle();
@@ -135,6 +139,9 @@ final class Api
 
         $class = self::POST_ACTIONS[$action] ?? null;
         if ($class !== null) {
+            if (!in_array($action, self::SESSION_WRITING_ACTIONS, true)) {
+                Session::release();
+            }
             $class::handle();
         }
 
@@ -153,7 +160,7 @@ final class Api
     public static function respond(array $data, int $status = 200): never
     {
         http_response_code($status);
-        echo json_encode($data);
+        echo json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
         exit;
     }
 

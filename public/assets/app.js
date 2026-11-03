@@ -913,15 +913,17 @@ function initDashboard() {
   }
 
   initModals(fetchStatus);
-  checkForUpdates();
 
   document.getElementById('crash-history-close').addEventListener('click', () => {
     document.getElementById('crash-history-modal').hidden = true;
   });
 
   if (window.__SNAPSHOT__) render(window.__SNAPSHOT__);
-  else fetchStatus();
-  fetchQueue();
+  fetchStatus()
+    .catch(() => {})
+    .then(() => fetchQueue())
+    .then(() => checkForUpdates())
+    .catch(() => {});
   if (!document.hidden) startPolling();
 }
 

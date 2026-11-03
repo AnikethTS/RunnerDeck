@@ -84,10 +84,50 @@ final class WindowsProcess
         return $result['code'] === 0 && str_contains($result['stdout'], '"' . $pid . '"');
     }
 
-    // The runner has no window, so a non-forced taskkill cannot stop it.
     public static function kill(int $pid): bool
     {
         return Shell::exec(['taskkill', '/PID', (string) $pid, '/T', '/F'], 15)['code'] === 0;
+    }
+
+    public static function stop(int $pid): void
+    {
+        $script = self::gracefulStopScript($pid);
+        $encoded = base64_encode(implode("\0", str_split($script)) . "\0");
+        Shell::exec(['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', $encoded], 40);
+        if (self::exists($pid)) {
+            self::kill($pid);
+        }
+    }
+
+    public static function gracefulStopScript(int $pid): string
+    {
+        $signatures = implode(' ', [
+            '[DllImport("kernel32.dll", SetLastError=true)] public static extern bool AttachConsole(uint pid);',
+            '[DllImport("kernel32.dll")] public static extern bool FreeConsole();',
+            '[DllImport("kernel32.dll")] public static extern bool SetConsoleCtrlHandler(IntPtr h, bool add);',
+            '[DllImport("kernel32.dll")] public static extern bool GenerateConsoleCtrlEvent(uint e, uint g);',
+        ]);
+
+        return <<<PS
+\$ErrorActionPreference = 'SilentlyContinue'
+\$target = {$pid}
+\$parent = (Get-CimInstance Win32_Process -Filter "ProcessId=\$target").ParentProcessId
+\$sig = '{$signatures}'
+Add-Type -MemberDefinition \$sig -Name Con -Namespace RunnerDeck
+[RunnerDeck.Con]::FreeConsole() | Out-Null
+if ([RunnerDeck.Con]::AttachConsole(\$target)) {
+  [RunnerDeck.Con]::SetConsoleCtrlHandler([IntPtr]::Zero, \$true) | Out-Null
+  [RunnerDeck.Con]::GenerateConsoleCtrlEvent(0, 0) | Out-Null
+  Start-Sleep -Milliseconds 300
+  [RunnerDeck.Con]::FreeConsole() | Out-Null
+}
+for (\$i = 0; \$i -lt 30; \$i++) {
+  if (-not (Get-Process -Id \$target -ErrorAction SilentlyContinue)) { break }
+  Start-Sleep -Milliseconds 500
+}
+\$p = Get-CimInstance Win32_Process -Filter "ProcessId=\$parent"
+if (\$p -and \$p.Name -eq 'cmd.exe') { Stop-Process -Id \$parent -Force }
+PS;
     }
 
     /**

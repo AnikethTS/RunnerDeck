@@ -58,5 +58,8 @@ final class SecurityHeaders
         foreach (self::lines() as $line) {
             header($line);
         }
+        if (PHP_SAPI === 'cli-server') {
+            header('Connection: close');
+        }
     }
 }

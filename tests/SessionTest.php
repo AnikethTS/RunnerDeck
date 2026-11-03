@@ -83,4 +83,24 @@ final class SessionTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $this->assertFalse(\RunnerDeck\Core\Session::remoteIsLoopback());
     }
+
+    #[RunInSeparateProcess]
+    public function testReleaseClosesTheSessionAndKeepsItReadable(): void
+    {
+        $_SERVER['HTTPS'] = 'off';
+        \RunnerDeck\Core\Session::start();
+        $_SESSION['probe'] = 'kept';
+
+        \RunnerDeck\Core\Session::release();
+
+        $this->assertSame(PHP_SESSION_NONE, session_status());
+        $this->assertSame('kept', $_SESSION['probe']);
+    }
+
+    public function testReleaseWithoutASessionIsANoop(): void
+    {
+        \RunnerDeck\Core\Session::release();
+
+        $this->assertSame(PHP_SESSION_NONE, session_status());
+    }
 }

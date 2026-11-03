@@ -100,6 +100,21 @@ final class RunnerLog
         fclose($fh);
 
         $allLines = explode("\n", rtrim((string) $data, "\n"));
-        return array_slice($allLines, -$lines);
+        return array_map(self::cleanLine(...), array_slice($allLines, -$lines));
+    }
+
+    private static function cleanLine(string $line): string
+    {
+        $line = rtrim($line, "\r");
+        if (preg_match('//u', $line) === 1) {
+            return $line;
+        }
+        if (function_exists('iconv')) {
+            $converted = @iconv('CP437', 'UTF-8//IGNORE', $line);
+            if (is_string($converted) && $converted !== '') {
+                return $converted;
+            }
+        }
+        return (string) preg_replace('/[^\x20-\x7E]/', '?', $line);
     }
 }
