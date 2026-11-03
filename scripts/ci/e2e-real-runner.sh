@@ -133,8 +133,20 @@ if [ -z "$token" ]; then
   exit 1
 fi
 
-if ! gh api "repos/${repo}/contents/.github/workflows/${workflow}" >/dev/null 2>&1; then
-  echo "${repo} has no .github/workflows/${workflow}; copy scripts/ci/e2e-probe-workflow.yml there once" >&2
+probe_present=0
+for _ in 1 2 3 4 5; do
+  if probe_out="$(gh api "repos/${repo}/contents/.github/workflows/${workflow}" 2>&1)"; then
+    probe_present=1
+    break
+  fi
+  case "$probe_out" in
+    *"Not Found"* | *"404"*) break ;;
+  esac
+  sleep 6
+done
+if [ "$probe_present" -ne 1 ]; then
+  echo "could not read .github/workflows/${workflow} in ${repo}: ${probe_out}" >&2
+  echo "copy scripts/ci/e2e-probe-workflow.yml there if it is missing" >&2
   exit 1
 fi
 

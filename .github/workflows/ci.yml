@@ -418,7 +418,6 @@ jobs:
     name: E2E · Live dashboard · ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -432,9 +431,15 @@ jobs:
       E2E_REPO: ${{ vars.E2E_REPO }}
       E2E_TAG: rd-livex-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
     steps:
+      - name: Skipped on pull requests (runs on main and nightly)
+        if: github.event_name == 'pull_request'
+        run: echo "This job runs on pushes to main, nightly and manual runs only."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request'
 
       - name: Check end-to-end configuration
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           if [ -z "$GH_TOKEN" ] || [ -z "$E2E_REPO" ]; then
@@ -443,20 +448,24 @@ jobs:
           fi
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        if: github.event_name != 'pull_request'
         with:
           php-version: "8.5.12"
           extensions: json, pdo_sqlite
           coverage: none
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: github.event_name != 'pull_request'
         with:
           node-version: "24"
           cache: npm
 
       - name: Install JS dev tooling
+        if: github.event_name != 'pull_request'
         run: npm ci
 
       - name: Install Chromium
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
@@ -466,10 +475,11 @@ jobs:
           fi
 
       - name: Drive every dashboard button against real runners
+        if: github.event_name != 'pull_request'
         run: npx playwright test -c e2e-live/playwright.config.js
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        if: failure() && github.event_name != 'pull_request'
         with:
           name: live-e2e-${{ matrix.os }}
           path: |
@@ -478,7 +488,7 @@ jobs:
           retention-days: 7
 
       - name: Remove leftover runners and runs
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         shell: bash
         run: ./scripts/ci/e2e-real-runner.sh cleanup
 

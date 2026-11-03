@@ -292,7 +292,11 @@ test('Maintenance refuses starts until resumed', async () => {
 
   await page.locator('#btn-maintenance').click();
   await confirmIfAsked();
-  await expect(page.locator('#health-banner')).not.toContainText('maintenance', { timeout: 60_000 });
+  await expect.poll(async () => {
+    const banner = page.locator('#health-banner');
+    if (!(await banner.isVisible())) return 'hidden';
+    return (await banner.innerText()).includes('maintenance') ? 'maintenance' : 'other';
+  }, { timeout: 60_000, intervals: [2000] }).not.toBe('maintenance');
 });
 
 test('Drain All stops idle runners', async () => {
