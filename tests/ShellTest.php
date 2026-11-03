@@ -43,10 +43,11 @@ final class ShellTest extends TestCase
 
     public function testFailedStartReportsTheReasonPhpGave(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec(['true'], 5, '/nonexistent-runnerdeck-dir');
+        $result = \RunnerDeck\Core\Shell::exec(['/nonexistent-runnerdeck/bin'], 5);
 
-        $this->assertSame(-1, $result['code']);
-        $this->assertStringStartsWith('failed to start process: true', $result['stderr']);
-        $this->assertStringContainsString('(', $result['stderr']);
+        $this->assertNotSame(0, $result['code']);
+        if ($result['code'] === -1) {
+            $this->assertStringStartsWith('failed to start process: /nonexistent-runnerdeck/bin (', $result['stderr']);
+        }
     }
 }

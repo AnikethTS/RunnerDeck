@@ -361,7 +361,7 @@ final class ProvisionerTest extends TestCase
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
             }
-            if (($cmd[0] ?? '') === './config.sh') {
+            if (str_ends_with((string) ($cmd[0] ?? ''), '/config.sh')) {
                 return ['code' => 1, 'stdout' => 'nope', 'stderr' => 'config failed'];
             }
             self::fail('unexpected command: ' . $joined);
@@ -384,7 +384,7 @@ final class ProvisionerTest extends TestCase
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
             }
-            if (($cmd[0] ?? '') === './config.sh') {
+            if (str_ends_with((string) ($cmd[0] ?? ''), '/config.sh')) {
                 $configCmd = $cmd;
                 file_put_contents($this->dir . '/.runner', '{"agentName":"acme-1"}');
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];

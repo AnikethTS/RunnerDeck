@@ -121,8 +121,17 @@ final class Provisioner
             return self::unsafeForBatch($name);
         }
 
+        if (!Platform::isWindows() && !is_file("$dir/config.sh")) {
+            $found = implode(', ', array_slice(array_values(array_diff(scandir($dir) ?: [], ['.', '..'])), 0, 20));
+            return self::fail(
+                'provision.config',
+                "config.sh is missing from {$dir} after installing the runner package (found: {$found})",
+                $name
+            );
+        }
+
         $cmd = [
-            ...(Platform::isWindows() ? ['cmd.exe', '/d', '/c', 'config.cmd'] : ['./config.sh']),
+            ...(Platform::isWindows() ? ['cmd.exe', '/d', '/c', 'config.cmd'] : ["$dir/config.sh"]),
             '--url', $registrationUrl,
             '--token', $token,
             '--name', $name,

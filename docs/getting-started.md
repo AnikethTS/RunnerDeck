@@ -12,6 +12,12 @@ shipped." Be specific about what that means before assuming an old box works:
 | Windows | Native, or via WSL2 | `.\run.ps1` runs natively and manages **Windows** runners (`config.cmd`/`run.cmd`), so `runs-on: windows` jobs work. Needs PHP 8.1+ on `PATH` (`winget install PHP.PHP`), `gh`, and the `curl`/`tar` that ship with Windows 10 1803+. Processes are controlled through PowerShell, `tasklist` and `taskkill` instead of `posix`/`pcntl`. Limits on Windows: stop is always a forced `taskkill /T /F` (a running job is killed, not drained by signal); `php -S` is single-threaded there, so an open live log blocks other requests until it closes (use php-fpm-style hosting for multi-user setups); cgroup caps (`RUNNERDECK_SLOT_*`) and syslog do nothing; CI runs the Windows unit tests and a real process-control smoke on `windows-latest` and `windows-2022` (PHP 8.1 and 8.5), not the full suite (it is Unix-only). `.\run.ps1 -Wsl` instead forwards into WSL2 and manages **Linux** runners inside it (Windows 10 build 19041+/11; no WSL1). |
 | Docker | Alternative to native/WSL2 | Enroll TOTP first (`docker compose run --rm -it runnerdeck php bin/setup-totp.php`), then `docker compose up --build` — see [Docker](docker.md). |
 
+> **Fedora note.** Fedora 45 ships OpenSSL 4, and the GitHub runner's bundled .NET
+> could not load it when this was tested (`No usable version of libssl was found`
+> from `config.sh`). Runners provisioned on Fedora 45 fail to register until GitHub's
+> runner supports OpenSSL 4 or a libssl 3 compatibility package is installed. CI runs
+> the live dashboard suite on Fedora 44.
+
 ## Prerequisites
 
 - **PHP CLI 8.1+** with the `posix` extension (process liveness checks) and

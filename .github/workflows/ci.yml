@@ -460,7 +460,7 @@ jobs:
             -e RUNNERDECK_POOL_DIR=/data/pool \
             -e RUNNERDECK_SETTINGS_FILE=/data/settings.json \
             -e RUNNERDECK_HISTORY_FILE=/data/history.sqlite \
-            fedora:latest bash -lc '
+            fedora:44 bash -lc '
               set -euo pipefail
               mkdir -p /data/pool
               dnf -y --setopt=install_weak_deps=0 install --skip-unavailable \
