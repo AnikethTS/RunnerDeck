@@ -463,7 +463,7 @@ jobs:
             fedora:latest bash -lc '
               set -euo pipefail
               mkdir -p /data/pool
-              dnf -y --setopt=install_weak_deps=0 --skip-unavailable install \
+              dnf -y --setopt=install_weak_deps=0 install --skip-unavailable \
                 php-cli php-process php-xml php-mbstring php-pdo php-curl procps-ng gh tar curl git findutils which \
                 libicu krb5-libs openssl-libs zlib lttng-ust
               php -v
