@@ -67,6 +67,9 @@ oversight.
 - Fill in the test plan: what you ran, and — where it's feasible — how you
   verified the change against a real (even single-runner) pool, not just
   that CI is green.
+- A pull request starts with the fast CI set. A maintainer adds the `ci:full`
+  label before merge to run everything; the labels are listed in
+  [docs/development.md](docs/development.md#choosing-which-ci-runs).
 - Be responsive to review. If a change sits with unaddressed feedback for a
   while, it may get closed to keep the queue honest; you're welcome to
   reopen when you're ready to continue.

@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:
@@ -14,11 +15,50 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
 
 jobs:
+  plan:
+    name: CI · Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      fast: ${{ steps.plan.outputs.fast }}
+      unit: ${{ steps.plan.outputs.unit }}
+      quality: ${{ steps.plan.outputs.quality }}
+      smoke: ${{ steps.plan.outputs.smoke }}
+      e2e: ${{ steps.plan.outputs.e2e }}
+      live: ${{ steps.plan.outputs.live }}
+      live_extended: ${{ steps.plan.outputs.live_extended }}
+    steps:
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          has() { echo "$LABELS" | jq -e --arg l "$1" 'index($l) != null' >/dev/null 2>&1; }
+          everything=false
+          if [ "$EVENT" != "pull_request" ]; then everything=true; fi
+          full=false
+          if has ci:full; then full=true; fi
+          pick() {
+            if [ "$everything" = true ] || [ "$full" = true ] || has "ci:$1"; then echo true; else echo false; fi
+          }
+          {
+            echo "fast=true"
+            echo "unit=$(pick unit)"
+            echo "quality=$(pick quality)"
+            echo "smoke=$(pick smoke)"
+            echo "e2e=$(pick e2e)"
+            echo "live=$(pick live)"
+            if [ "$everything" = true ] || has ci:live-extended; then echo "live_extended=true"; else echo "live_extended=false"; fi
+          } >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
   lint-php:
     name: Lint · PHP
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,6 +103,8 @@ jobs:
 
   lint-js:
     name: Lint · JavaScript and CSS
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -87,6 +129,8 @@ jobs:
 
   actionlint:
     name: Lint · GitHub Actions
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -105,6 +149,8 @@ jobs:
 
   shellcheck:
     name: Lint · Shell scripts
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -125,6 +171,8 @@ jobs:
 
   gitleaks:
     name: Security · Secret scan
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -145,6 +193,8 @@ jobs:
 
   test:
     name: Unit · ${{ matrix.platform }} · PHP ${{ matrix.label }}
+    needs: plan
+    if: needs.plan.outputs.unit == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -193,6 +243,8 @@ jobs:
 
   coverage:
     name: Quality · Coverage gate
+    needs: plan
+    if: needs.plan.outputs.fast == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -234,6 +286,8 @@ jobs:
 
   random-order:
     name: Quality · Random-order tests
+    needs: plan
+    if: needs.plan.outputs.quality == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -268,6 +322,8 @@ jobs:
 
   windows-test:
     name: Unit · ${{ matrix.platform }} · PHP ${{ matrix.label }} (Windows subset)
+    needs: plan
+    if: needs.plan.outputs.unit == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -302,9 +358,10 @@ jobs:
 
   e2e-real-runner:
     name: E2E · Real runner · ${{ matrix.platform }}
+    needs: plan
+    if: needs.plan.outputs.live == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -349,9 +406,10 @@ jobs:
 
   e2e-live:
     name: E2E · Live dashboard · ${{ matrix.platform }}
+    needs: plan
+    if: needs.plan.outputs.live == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -416,6 +474,7 @@ jobs:
 
   e2e-live-extended:
     name: E2E · Live dashboard · ${{ matrix.platform }}
+    needs: plan
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -431,15 +490,15 @@ jobs:
       E2E_REPO: ${{ vars.E2E_REPO }}
       E2E_TAG: rd-livex-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
     steps:
-      - name: Skipped on pull requests (runs on main and nightly)
-        if: github.event_name == 'pull_request'
-        run: echo "This job runs on pushes to main, nightly and manual runs only."
+      - name: Not requested on this pull request
+        if: needs.plan.outputs.live_extended != 'true'
+        run: echo "Add the ci:live-extended label to run this job on a pull request. It always runs on main and nightly."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
 
       - name: Check end-to-end configuration
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         shell: bash
         run: |
           if [ -z "$GH_TOKEN" ] || [ -z "$E2E_REPO" ]; then
@@ -448,24 +507,24 @@ jobs:
           fi
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         with:
           php-version: "8.5.12"
           extensions: json, pdo_sqlite
           coverage: none
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         with:
           node-version: "24"
           cache: npm
 
       - name: Install JS dev tooling
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         run: npm ci
 
       - name: Install Chromium
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
@@ -475,11 +534,11 @@ jobs:
           fi
 
       - name: Drive every dashboard button against real runners
-        if: github.event_name != 'pull_request'
+        if: needs.plan.outputs.live_extended == 'true'
         run: npx playwright test -c e2e-live/playwright.config.js
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure() && github.event_name != 'pull_request'
+        if: failure() && needs.plan.outputs.live_extended == 'true'
         with:
           name: live-e2e-${{ matrix.os }}
           path: |
@@ -488,15 +547,16 @@ jobs:
           retention-days: 7
 
       - name: Remove leftover runners and runs
-        if: always() && github.event_name != 'pull_request'
+        if: always() && needs.plan.outputs.live_extended == 'true'
         shell: bash
         run: ./scripts/ci/e2e-real-runner.sh cleanup
 
   e2e-live-fedora:
     name: E2E · Live dashboard · Fedora 44
+    needs: plan
+    if: needs.plan.outputs.live_extended == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name != 'pull_request'
     env:
       GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
       E2E_REPO: ${{ vars.E2E_REPO }}
@@ -581,6 +641,8 @@ jobs:
 
   smoke-test:
     name: Smoke · ${{ matrix.platform }}
+    needs: plan
+    if: needs.plan.outputs.smoke == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -613,6 +675,8 @@ jobs:
 
   e2e-test:
     name: E2E · Browser UI (mocked API)
+    needs: plan
+    if: needs.plan.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -642,6 +706,8 @@ jobs:
 
   apt-php-test:
     name: Unit · ${{ matrix.name }} · apt PHP
+    needs: plan
+    if: needs.plan.outputs.unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -670,6 +736,8 @@ jobs:
 
   dnf-php-test:
     name: Unit · ${{ matrix.name }} · dnf PHP
+    needs: plan
+    if: needs.plan.outputs.unit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -707,6 +775,8 @@ jobs:
 
   alpine-smoke-test:
     name: Smoke · Alpine (musl)
+    needs: plan
+    if: needs.plan.outputs.smoke == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -737,6 +807,8 @@ jobs:
 
   docker-smoke-test:
     name: Smoke · Docker image
+    needs: plan
+    if: needs.plan.outputs.smoke == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -781,3 +853,25 @@ jobs:
           RUNNERDECK_SMOKE_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ \
             bash scripts/ci/ci-smoke-status.sh
           docker logs runnerdeck-ci
+
+  gate:
+    name: CI · Merge gate
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          EVENT: ${{ github.event_name }}
+          NEEDS: ${{ toJSON(needs) }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          failed="$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key')"
+          if [ -n "$failed" ]; then
+            echo "::error::These jobs did not pass: $failed"
+            exit 1
+          fi
+          if [ "$EVENT" = "pull_request" ] && ! echo "$LABELS" | jq -e 'index("ci:full") != null' >/dev/null; then
+            echo "::error::Add the ci:full label to run the full CI before merging."
+            exit 1
+          fi
