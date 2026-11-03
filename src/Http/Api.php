@@ -160,7 +160,7 @@ final class Api
     public static function respond(array $data, int $status = 200): never
     {
         http_response_code($status);
-        echo json_encode($data);
+        echo json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
         exit;
     }
 

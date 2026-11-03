@@ -457,7 +457,7 @@ Layout::topbarEnd(!$needsSetup);
 if ($needsSetup) {
     Layout::htmlClose(['assets/js/theme.js']);
 } else {
-    $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE;
     echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";
     echo '    window.__SNAPSHOT__ = ' . json_encode($snapshot, $jsonFlags) . ";\n";
     echo '    window.__CSRF__ = ' . json_encode($csrfToken, $jsonFlags) . ";\n";
