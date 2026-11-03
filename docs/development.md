@@ -78,7 +78,7 @@ Pull requests get the fast set by default: lint, the secret scan, and the unit s
 | `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
 | `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |
 
-Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label re-runs CI. Fork pull requests never run the live jobs, because they do not receive the secrets.
+Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label queues another CI run after the current one finishes, and does not cancel it. (ChangeRadar's annotations check attaches to the first run on a commit, and GitHub ignores checks from a cancelled run.) Fork pull requests never run the live jobs, because they do not receive the secrets.
 
 CI also enforces a minimum line coverage (`scripts/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
 
