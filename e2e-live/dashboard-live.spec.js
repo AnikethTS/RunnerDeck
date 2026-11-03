@@ -117,6 +117,7 @@ test('Add Runner registers a real runner and it comes online', async () => {
   const added = page.waitForResponse((r) => r.url().includes('action=add_runner'), { timeout: 300_000 });
   await page.locator('#add-runner-form button[type="submit"]').click();
   const body = await (await added).json();
+  console.log(`add_runner response: ${JSON.stringify(body)}`);
   expect(body.ok, `add_runner said: ${JSON.stringify(body)}`).toBe(true);
   await expect(page.locator('#add-runner-modal')).toBeHidden({ timeout: 300_000 });
   await expect(row(BASE)).toBeVisible({ timeout: 60_000 * SLOW * 2 });
@@ -184,6 +185,7 @@ test('a real workflow job runs on the runner', async () => {
 });
 
 test('Clear work empties _work on a stopped runner', async () => {
+  await expect(row(BASE).locator('[data-action="stop"]')).toBeEnabled({ timeout: 60_000 });
   await row(BASE).locator('[data-action="stop"]').click();
   await confirmIfAsked();
   await expectStopped(BASE);

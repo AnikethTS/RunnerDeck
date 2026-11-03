@@ -117,10 +117,7 @@ final class ProcessControl
             return self::fail('process.start', $message, $r->id, $result['stderr']);
         }
 
-        if (Platform::isWindows()) {
-            // The spawned pid is cmd.exe's, not the listener's.
-            $newPid = self::awaitListener($r->dir) ?? $newPid;
-        }
+        $newPid = self::awaitListener($r->dir) ?? $newPid;
 
         file_put_contents("{$r->dir}/runner.pid", (string) $newPid);
         SlotCgroup::apply($r->id, $newPid);
@@ -131,7 +128,7 @@ final class ProcessControl
 
     private static function awaitListener(string $dir): ?int
     {
-        $tries = (self::$termWaitFake ?? 1) === 0 ? 1 : 10;
+        $tries = (self::$termWaitFake ?? 1) === 0 || Shell::isFaked() ? 1 : 10;
         for ($i = 0; $i < $tries; $i++) {
             RunnerPool::resetListenersCache();
             $pid = RunnerPool::liveListenersByDir()[$dir] ?? null;
