@@ -7,6 +7,7 @@ const PORT = Number(process.env.E2E_PORT || 8092);
 const tag = process.env.E2E_TAG || `rd-live-${Date.now()}`;
 const scratch = mkdtempSync(path.join(process.env.RUNNER_TEMP || tmpdir(), 'rd-live-'));
 const unix = (p) => p.split(path.sep).join('/');
+process.env.E2E_POOL_DIR = unix(path.join(scratch, 'pool'));
 
 export default defineConfig({
   testDir: '.',

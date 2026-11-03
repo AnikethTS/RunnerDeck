@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import {
   tag, ourRunners, runnerByName, deleteOurRunners, dispatchProbe, probeRunConclusion,
@@ -67,6 +68,10 @@ test.afterEach(async ({}, testInfo) => {
   console.log(`FAILED: ${testInfo.title}`);
   console.log(`toasts: ${JSON.stringify(toasts)} add-runner-error: ${JSON.stringify(addError)}`);
   console.log(`app log: ${JSON.stringify(status && status.errors, null, 1)}`);
+  const poolDir = process.env.E2E_POOL_DIR || '';
+  const listing = (() => { try { return readdirSync(poolDir); } catch (e) { return `unreadable: ${e.message}`; } })();
+  console.log(`pool dir ${poolDir}: ${JSON.stringify(listing)}`);
+  console.log(`status snapshot runners: ${JSON.stringify(status && status.runners && status.runners.map((r) => r.id))}`);
   for (const r of (status && status.runners) || []) {
     console.log(`${r.id}: running=${r.local_running} configured=${r.configured} log=${JSON.stringify(r.log_tail)}`);
   }

@@ -54,7 +54,7 @@ final class RunnerPool
     {
         $poolDir = Config::poolDir();
         $ids = [];
-        foreach (glob("$poolDir/runner-*", GLOB_ONLYDIR) ?: [] as $path) {
+        foreach (self::slotDirs($poolDir) as $path) {
             $id = basename($path);
             if (preg_match(self::ID_PATTERN, $id)) {
                 $ids[] = $id;
@@ -81,6 +81,12 @@ final class RunnerPool
             $result[$id] = self::inspect($poolDir, $id, $logLines);
         }
         return $result;
+    }
+
+    /** @return list<string> */
+    private static function slotDirs(string $poolDir): array
+    {
+        return array_values(array_filter(glob("$poolDir/runner-*") ?: [], 'is_dir'));
     }
 
     public static function isKnownId(string $id): bool
@@ -172,7 +178,7 @@ final class RunnerPool
         $poolDir = Config::poolDir();
         $maxNum = 0;
         $hasBase = false;
-        foreach (glob("$poolDir/runner-*", GLOB_ONLYDIR) ?: [] as $path) {
+        foreach (self::slotDirs($poolDir) as $path) {
             $id = basename($path);
             if (!preg_match(self::ID_PATTERN, $id)) {
                 continue;
@@ -255,7 +261,7 @@ final class RunnerPool
         $byKey = WindowsProcess::listenersByDirKey();
         $map = [];
         $poolDir = Config::poolDir();
-        foreach (glob("$poolDir/runner-*", GLOB_ONLYDIR) ?: [] as $path) {
+        foreach (self::slotDirs($poolDir) as $path) {
             $pid = $byKey[Platform::pathKey($path)] ?? null;
             if ($pid !== null) {
                 $map[$path] = $pid;
