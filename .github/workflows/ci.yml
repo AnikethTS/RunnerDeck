@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   lint-php:
-    name: Lint PHP
+    name: Lint · PHP
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -62,7 +62,7 @@ jobs:
         run: composer run stan
 
   lint-js:
-    name: Lint JS
+    name: Lint · JavaScript and CSS
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -86,7 +86,7 @@ jobs:
         run: npm run lint:css
 
   actionlint:
-    name: actionlint
+    name: Lint · GitHub Actions
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -104,7 +104,7 @@ jobs:
         run: actionlint -color
 
   shellcheck:
-    name: Shellcheck
+    name: Lint · Shell scripts
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -124,7 +124,7 @@ jobs:
           shellcheck -x -S warning run.sh bin/*.sh scripts/ci/*.sh
 
   gitleaks:
-    name: Secret scan
+    name: Security · Secret scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -144,26 +144,26 @@ jobs:
         run: gitleaks detect --source . --verbose --redact --exit-code 1
 
   test:
-    name: Unit tests (${{ matrix.os }}, PHP ${{ matrix.label }})
+    name: Unit · ${{ matrix.platform }} · PHP ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, php: "8.1", label: "8.1" }
-          - { os: ubuntu-latest, php: "8.2", label: "8.2" }
-          - { os: ubuntu-latest, php: "8.3", label: "8.3" }
-          - { os: ubuntu-latest, php: "8.4", label: "8.4" }
-          - { os: ubuntu-latest, php: "8.5.12", label: "8.5" }
-          - { os: macos-latest, php: "8.5.12", label: "8.5" }
-          - { os: ubuntu-22.04, php: "8.1", label: "8.1" }
-          - { os: ubuntu-22.04, php: "8.3.36", label: "8.3" }
-          - { os: ubuntu-22.04, php: "8.5.12", label: "8.5" }
-          - { os: ubuntu-22.04-arm, php: "8.1", label: "8.1" }
-          - { os: macos-15, php: "8.1", label: "8.1" }
-          - { os: macos-15, php: "8.5.12", label: "8.5" }
-          - { os: macos-15-intel, php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.1", label: "8.1" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.2", label: "8.2" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.3", label: "8.3" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.4", label: "8.4" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.12", label: "8.5" }
+          - { os: macos-latest, platform: "macOS latest", php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.1", label: "8.1" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.3.36", label: "8.3" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-22.04-arm, platform: "Ubuntu 22.04 ARM", php: "8.1", label: "8.1" }
+          - { os: macos-15, platform: "macOS 15", php: "8.1", label: "8.1" }
+          - { os: macos-15, platform: "macOS 15", php: "8.5.12", label: "8.5" }
+          - { os: macos-15-intel, platform: "macOS 15 Intel", php: "8.5.12", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -192,7 +192,7 @@ jobs:
         run: composer run test
 
   coverage:
-    name: Coverage gate
+    name: Quality · Coverage gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -233,7 +233,7 @@ jobs:
           retention-days: 7
 
   random-order:
-    name: Random-order tests (3 seeds)
+    name: Quality · Random-order tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -267,16 +267,16 @@ jobs:
           done
 
   windows-test:
-    name: Windows tests (${{ matrix.os }}, PHP ${{ matrix.label }})
+    name: Unit · ${{ matrix.platform }} · PHP ${{ matrix.label }} (Windows subset)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, php: "8.5.12", label: "8.5" }
-          - { os: windows-2022, php: "8.1", label: "8.1" }
-          - { os: windows-2022, php: "8.5.12", label: "8.5" }
+          - { os: windows-latest, platform: "Windows latest", php: "8.5.12", label: "8.5" }
+          - { os: windows-2022, platform: "Windows 2022", php: "8.1", label: "8.1" }
+          - { os: windows-2022, platform: "Windows 2022", php: "8.5.12", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -301,14 +301,17 @@ jobs:
           php scripts/ci/windows-smoke.php $scratch
 
   e2e-real-runner:
-    name: Real runner end-to-end (${{ matrix.os }})
+    name: E2E · Real runner · ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu latest" }
+          - { os: macos-latest, platform: "macOS latest" }
+          - { os: windows-latest, platform: "Windows latest" }
     env:
       GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
       E2E_REPO: ${{ vars.E2E_REPO }}
@@ -345,21 +348,17 @@ jobs:
         run: ./scripts/ci/e2e-real-runner.sh cleanup
 
   e2e-live:
-    name: Live dashboard end-to-end (${{ matrix.os }})
+    name: E2E · Live dashboard · ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - ubuntu-22.04
-          - ubuntu-22.04-arm
-          - macos-latest
-          - macos-15-intel
-          - windows-latest
-          - windows-2022
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu latest" }
+          - { os: macos-latest, platform: "macOS latest" }
+          - { os: windows-latest, platform: "Windows latest" }
     env:
       GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
       E2E_REPO: ${{ vars.E2E_REPO }}
@@ -415,11 +414,89 @@ jobs:
         shell: bash
         run: ./scripts/ci/e2e-real-runner.sh cleanup
 
+  e2e-live-extended:
+    name: E2E · Live dashboard · ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04" }
+          - { os: ubuntu-22.04-arm, platform: "Ubuntu 22.04 ARM" }
+          - { os: macos-15-intel, platform: "macOS 15 Intel" }
+          - { os: windows-2022, platform: "Windows 2022" }
+    env:
+      GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
+      E2E_REPO: ${{ vars.E2E_REPO }}
+      E2E_TAG: rd-livex-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+    steps:
+      - name: Skipped on pull requests (runs on main and nightly)
+        if: github.event_name == 'pull_request'
+        run: echo "This job runs on pushes to main, nightly and manual runs only."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request'
+
+      - name: Check end-to-end configuration
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          if [ -z "$GH_TOKEN" ] || [ -z "$E2E_REPO" ]; then
+            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        if: github.event_name != 'pull_request'
+        with:
+          php-version: "8.5.12"
+          extensions: json, pdo_sqlite
+          coverage: none
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: github.event_name != 'pull_request'
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install JS dev tooling
+        if: github.event_name != 'pull_request'
+        run: npm ci
+
+      - name: Install Chromium
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            npx playwright install --with-deps chromium
+          else
+            npx playwright install chromium
+          fi
+
+      - name: Drive every dashboard button against real runners
+        if: github.event_name != 'pull_request'
+        run: npx playwright test -c e2e-live/playwright.config.js
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && github.event_name != 'pull_request'
+        with:
+          name: live-e2e-${{ matrix.os }}
+          path: |
+            playwright-live-report/
+            test-results-live/
+          retention-days: 7
+
+      - name: Remove leftover runners and runs
+        if: always() && github.event_name != 'pull_request'
+        shell: bash
+        run: ./scripts/ci/e2e-real-runner.sh cleanup
+
   e2e-live-fedora:
-    name: Live dashboard end-to-end (Fedora container)
+    name: E2E · Live dashboard · Fedora 44
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name != 'pull_request'
     env:
       GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
       E2E_REPO: ${{ vars.E2E_REPO }}
@@ -503,18 +580,18 @@ jobs:
         run: docker rm -f rd-fedora || true
 
   smoke-test:
-    name: Boot smoke test (${{ matrix.os }})
+    name: Smoke · ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - ubuntu-22.04
-          - macos-15
-          - macos-15-intel
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu latest" }
+          - { os: macos-latest, platform: "macOS latest" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04" }
+          - { os: macos-15, platform: "macOS 15" }
+          - { os: macos-15-intel, platform: "macOS 15 Intel" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -535,7 +612,7 @@ jobs:
           bash scripts/ci/ci-smoke-status.sh
 
   e2e-test:
-    name: E2E tests (Playwright)
+    name: E2E · Browser UI (mocked API)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -564,7 +641,7 @@ jobs:
           retention-days: 7
 
   apt-php-test:
-    name: Unit tests (${{ matrix.name }}, apt PHP)
+    name: Unit · ${{ matrix.name }} · apt PHP
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -592,15 +669,15 @@ jobs:
         run: bash scripts/ci/ci-apt-phpunit.sh
 
   dnf-php-test:
-    name: Unit tests (${{ matrix.name }}, dnf PHP)
+    name: Unit · ${{ matrix.name }} · dnf PHP
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: "Fedora", image: "fedora:latest" }
-          - { name: "Rocky 9", image: "rockylinux:9" }
+          - { name: "Fedora latest", image: "fedora:latest" }
+          - { name: "Rocky Linux 9", image: "rockylinux:9" }
           - { name: "RHEL UBI 9", image: "redhat/ubi9:latest" }
     container:
       image: ${{ matrix.image }}
@@ -629,7 +706,7 @@ jobs:
         run: bash scripts/ci/ci-apt-phpunit.sh
 
   alpine-smoke-test:
-    name: Boot smoke test (Alpine/musl)
+    name: Smoke · Alpine (musl)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -659,7 +736,7 @@ jobs:
           bash scripts/ci/ci-smoke-status.sh
 
   docker-smoke-test:
-    name: Boot smoke test (Docker)
+    name: Smoke · Docker image
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

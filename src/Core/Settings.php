@@ -96,7 +96,7 @@ final class Settings
         }
 
         $json = json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        $tmp = self::path() . '.tmp';
+        $tmp = self::path() . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, $json);
         chmod($tmp, 0600);
         rename($tmp, self::path());

@@ -15,7 +15,7 @@ permissions:
 # PHP is scanned on PRs by Semgrep (p/php + p/security-audit).
 jobs:
   analyze:
-    name: Analyze (javascript-typescript)
+    name: Security · CodeQL (JavaScript)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

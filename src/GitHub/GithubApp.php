@@ -86,7 +86,7 @@ final class GithubApp
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             return false;
         }
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, $pem . "\n");
         chmod($tmp, 0600);
         return rename($tmp, $path);
@@ -197,7 +197,7 @@ final class GithubApp
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             return;
         }
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, json_encode([
             'expires_at' => $expiresAt,
             'token' => $token,

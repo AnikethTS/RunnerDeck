@@ -110,7 +110,7 @@ final class HostBundleSnapshot
         if (!is_string($json)) {
             return;
         }
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         if (@file_put_contents($tmp, $json) === false) {
             return;
         }

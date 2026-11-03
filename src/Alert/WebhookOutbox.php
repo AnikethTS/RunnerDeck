@@ -225,7 +225,7 @@ final class WebhookOutbox
             return;
         }
         $path = self::gaveUpPath();
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, json_encode([
             'at' => self::now(),
             'id' => $id,
@@ -285,7 +285,7 @@ final class WebhookOutbox
             return;
         }
         $path = self::path();
-        $tmp = $path . '.tmp';
+        $tmp = $path . '.' . getmypid() . '.tmp';
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if (!is_string($json)) {
             return;
