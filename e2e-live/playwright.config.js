@@ -32,7 +32,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  webServer: {
+  webServer: process.env.E2E_EXTERNAL_SERVER ? undefined : {
     command: `php -d max_execution_time=0 -S 127.0.0.1:${PORT} -t public`,
     cwd: '..',
     url: `http://127.0.0.1:${PORT}/health.php`,

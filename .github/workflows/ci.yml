@@ -352,7 +352,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os:
+          - ubuntu-latest
+          - ubuntu-22.04
+          - ubuntu-22.04-arm
+          - macos-latest
+          - macos-15-intel
+          - windows-latest
+          - windows-2022
     env:
       GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
       E2E_REPO: ${{ vars.E2E_REPO }}
@@ -407,6 +414,93 @@ jobs:
         if: always()
         shell: bash
         run: ./scripts/ci/e2e-real-runner.sh cleanup
+
+  e2e-live-fedora:
+    name: Live dashboard end-to-end (Fedora container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
+      E2E_REPO: ${{ vars.E2E_REPO }}
+      E2E_TAG: rd-live-${{ github.run_id }}-${{ github.run_attempt }}-fedora
+      E2E_EXTERNAL_SERVER: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check end-to-end configuration
+        run: |
+          if [ -z "$GH_TOKEN" ] || [ -z "$E2E_REPO" ]; then
+            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install JS dev tooling
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the dashboard inside a Fedora container
+        run: |
+          docker run -d --name rd-fedora --network host \
+            -v "$GITHUB_WORKSPACE:/app" -w /app \
+            -e GH_TOKEN \
+            -e RUNNER_ALLOW_RUNASROOT=1 \
+            -e PHP_CLI_SERVER_WORKERS=4 \
+            -e RUNNERDECK_SCOPE=repo \
+            -e RUNNERDECK_REPO="$E2E_REPO" \
+            -e RUNNERDECK_LABEL="$E2E_TAG" \
+            -e RUNNERDECK_POOL_CAP=3 \
+            -e RUNNERDECK_POOL_DIR=/data/pool \
+            -e RUNNERDECK_SETTINGS_FILE=/data/settings.json \
+            -e RUNNERDECK_HISTORY_FILE=/data/history.sqlite \
+            fedora:latest bash -lc '
+              set -euo pipefail
+              mkdir -p /data/pool
+              dnf -y --setopt=install_weak_deps=0 --skip-unavailable install \
+                php-cli php-process php-xml php-mbstring php-pdo php-curl procps-ng gh tar curl git findutils which \
+                libicu krb5-libs openssl-libs zlib lttng-ust
+              php -v
+              exec php -d max_execution_time=0 -S 127.0.0.1:8092 -t public
+            '
+          for _ in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8092/health.php >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker logs rd-fedora
+          exit 1
+
+      - name: Drive every dashboard button against real runners
+        run: npx playwright test -c e2e-live/playwright.config.js
+
+      - name: Container log
+        if: always()
+        run: docker logs rd-fedora || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: live-e2e-fedora
+          path: |
+            playwright-live-report/
+            test-results-live/
+          retention-days: 7
+
+      - name: Remove leftover runners and runs
+        if: always()
+        run: ./scripts/ci/e2e-real-runner.sh cleanup
+
+      - name: Stop the container
+        if: always()
+        run: docker rm -f rd-fedora || true
 
   smoke-test:
     name: Boot smoke test (${{ matrix.os }})
