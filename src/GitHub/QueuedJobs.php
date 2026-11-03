@@ -347,8 +347,17 @@ final class QueuedJobs
             if (count($runs) >= self::MAX_RUNS) {
                 $truncated = true;
             }
-            foreach ($runs as $runId) {
+            foreach ($runs as $run) {
+                $runId = $run['id'];
                 $seenRuns[$repo . '#' . $runId] = true;
+                if ($run['status'] === 'completed') {
+                    foreach (self::recentJobsOfCompletedRun($repo, $run) as $job) {
+                        if (count($recent) < 30) {
+                            $recent[] = $job;
+                        }
+                    }
+                    continue;
+                }
                 $payload = self::tryGetJson(
                     'repos/' . $repo . '/actions/runs/' . $runId . '/jobs?per_page=50'
                 );
@@ -509,7 +518,31 @@ final class QueuedJobs
         return $out;
     }
 
-    /** @return list<int> */
+    /**
+     * A completed run's jobs never change, so they are fetched once and kept.
+     *
+     * @param array{id: int, status: string, updated_at: string} $run
+     * @return list<array<string, mixed>>
+     */
+    private static function recentJobsOfCompletedRun(string $repo, array $run): array
+    {
+        $key = $repo . '#' . $run['id'] . '#' . $run['updated_at'];
+        $cached = $run['updated_at'] !== '' ? CompletedRunCache::get($key) : null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        $payload = self::tryGetJson('repos/' . $repo . '/actions/runs/' . $run['id'] . '/jobs?per_page=50');
+        if ($payload === null) {
+            return [];
+        }
+        $jobs = self::pickRecentJobs($payload, $repo);
+        if ($run['updated_at'] !== '') {
+            CompletedRunCache::put($key, $jobs);
+        }
+        return $jobs;
+    }
+
+    /** @return list<array{id: int, status: string, updated_at: string}> */
     private static function runsForRepo(string $repo): array
     {
         $ids = [];
@@ -530,7 +563,11 @@ final class QueuedJobs
                 }
                 $id = (int) ($run['id'] ?? 0);
                 if ($id > 0) {
-                    $ids[$id] = $id;
+                    $ids[$id] = [
+                        'id' => $id,
+                        'status' => (string) ($run['status'] ?? ''),
+                        'updated_at' => (string) ($run['updated_at'] ?? ''),
+                    ];
                 }
             }
         }

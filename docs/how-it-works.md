@@ -172,7 +172,7 @@
   about 30. **Queued jobs** for
   this pool's label are a separate `action=queue` poll (~20s) with a
   ~25s disk cache — GitHub has no org-wide waiting-jobs API, so org
-  scope only looks at a few recently pushed repos. The panel is a
+  scope only looks at a few recently pushed repos. A completed run's jobs never change, so they are fetched once and kept (`storage/queue_completed_runs.json`); a refresh then costs about three GitHub calls plus one per run that is still queued or in progress. The panel is a
   hint (start idle slots / add a runner); it never auto-starts unless
   **scale to queue** is on. **Pool cap** blocks starts above N running
   slots. **Idle stop** (minutes, opt-in) stops GitHub-idle slots
