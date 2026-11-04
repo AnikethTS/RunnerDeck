@@ -93,7 +93,7 @@ final class DiskAlert
         if ($json === false) {
             return;
         }
-        $tmp = self::path() . '.tmp';
+        $tmp = self::path() . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, $json);
         @chmod($tmp, 0600);
         @rename($tmp, self::path());

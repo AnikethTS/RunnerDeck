@@ -8,6 +8,9 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- CI job names follow one `Group · Platform · detail` pattern.
+- CI runs a fast set on pull requests by default and more with `ci:*` labels (`ci:unit`, `ci:live`, `ci:full`, …), like other projects that gate CI by label. A `CI · Merge gate` job requires `ci:full` before merge.
+
 - The live dashboard suite also runs on Ubuntu 22.04 (x64 and arm), Intel macOS, Windows 2022, and inside a Fedora 44 container.
 
 - CI job that drives the dashboard in a real browser on Linux, macOS and Windows against real runners, clicking each button and checking the result on GitHub.

@@ -63,6 +63,23 @@ The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and 
 
 The `e2e-live` job runs `e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
 
+### Choosing which CI runs
+
+Pull requests get the fast set by default: lint, the secret scan, and the unit suite with the coverage gate. Add labels to run more, as in other projects that use this pattern:
+
+| Label | Adds |
+|---|---|
+| `ci:fast` | Lint, secret scan, unit suite with coverage (always on) |
+| `ci:unit` | Every `Unit ·` job: Linux, macOS, Windows subset, distro containers |
+| `ci:quality` | Random-order test run |
+| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image |
+| `ci:e2e` | Browser UI tests with a mocked API |
+| `ci:live` | Live dashboard and real-runner tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
+| `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
+| `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |
+
+Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label queues another CI run after the current one finishes, and does not cancel it. (ChangeRadar's annotations check attaches to the first run on a commit, and GitHub ignores checks from a cancelled run.) Fork pull requests never run the live jobs, because they do not receive the secrets.
+
 CI also enforces a minimum line coverage (`scripts/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
 
 The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `scripts/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
