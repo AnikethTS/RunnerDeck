@@ -24,6 +24,10 @@ func runTray(opts options, l layout) int {
 	}
 
 	exitCode := 0
+	uninstaller := filepath.Join(l.exeDir, "unins000.exe")
+	_, statErr := os.Stat(uninstaller)
+	canUninstall := statErr == nil
+	uninstall := false
 	quit := make(chan struct{})
 	var (
 		group   *processGroup
@@ -38,6 +42,11 @@ func runTray(opts options, l layout) int {
 		open := systray.AddMenuItem("Open dashboard", "Open RunnerDeck in your browser")
 		logItem := systray.AddMenuItem("Show server log", "Open the server log")
 		systray.AddSeparator()
+		var uninstallClicks <-chan struct{}
+		if canUninstall {
+			item := systray.AddMenuItem("Uninstall RunnerDeck...", "Remove RunnerDeck from this computer")
+			uninstallClicks = item.ClickedCh
+		}
 		quitItem := systray.AddMenuItem("Quit RunnerDeck", "Stop RunnerDeck")
 
 		go func() {
@@ -47,6 +56,10 @@ func runTray(opts options, l layout) int {
 					openBrowser(base)
 				case <-logItem.ClickedCh:
 					_ = exec.Command("notepad.exe", filepath.Join(l.dataDir, "server.log")).Start()
+				case <-uninstallClicks:
+					uninstall = true
+					systray.Quit()
+					return
 				case <-quitItem.ClickedCh:
 					systray.Quit()
 					return
@@ -99,6 +112,10 @@ func runTray(opts options, l layout) int {
 	}
 
 	systray.Run(onReady, onExit)
+	if uninstall {
+		releaseSingleInstance()
+		_ = exec.Command(uninstaller).Start()
+	}
 	return exitCode
 }
 
