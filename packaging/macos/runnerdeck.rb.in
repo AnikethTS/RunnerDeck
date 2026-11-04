@@ -2,7 +2,6 @@ class Runnerdeck < Formula
   desc "Dashboard for managing a pool of self-hosted GitHub Actions runners"
   homepage "https://github.com/AnikethTS/RunnerDeck"
   url "@URL@"
-  version "@VERSION@"
   sha256 "@SHA256@"
   license "MIT"
 
