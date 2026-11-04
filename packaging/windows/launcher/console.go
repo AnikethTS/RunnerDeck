@@ -5,8 +5,19 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 )
+
+type ui interface {
+	step(n, total int, title string)
+	ok(msg string)
+	warn(msg string)
+	fail(msg string)
+	info(msg string)
+	confirm(question string, defaultYes bool) bool
+	runVisible(name string, args ...string) error
+}
 
 type console struct {
 	in          *bufio.Reader
@@ -64,4 +75,12 @@ func parseYesNo(text string, defaultYes bool) bool {
 		return false
 	}
 	return defaultYes
+}
+
+func (c *console) runVisible(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
