@@ -40,9 +40,9 @@ def wait_for(check, seconds: float, interval: float = 0.5) -> bool:
 def find_setup(target: str) -> Path:
     path = Path(target)
     if path.is_dir():
-        found = sorted(path.glob("RunnerDeck-Setup-*.exe"))
+        found = sorted(path.glob("RunnerDeck-*-windows-x64-setup.exe"))
         if not found:
-            fail(f"no RunnerDeck-Setup-*.exe in {path}")
+            fail(f"no RunnerDeck-*-windows-x64-setup.exe in {path}")
         return found[-1]
     return path
 

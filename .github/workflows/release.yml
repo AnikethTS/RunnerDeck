@@ -40,9 +40,6 @@ jobs:
       - name: Checksum the archive
         run: sha256sum "runnerdeck-${GITHUB_REF_NAME}.zip" > "runnerdeck-${GITHUB_REF_NAME}.zip.sha256"
 
-      - name: Install, run and uninstall the Setup wizard silently
-        run: python scripts/package/smoke_installer.py dist
-
       - name: Attest build provenance
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
@@ -109,38 +106,40 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: packaging/windows/launcher/go.mod
+          go-version-file: desktop/go.mod
           cache: false
 
       - name: Build the Windows zip, the single exe and the installer
-        run: python scripts/package/build_windows.py --single-exe --installer
+        run: python tools/package/build.py --target windows
 
       - name: Run the zip build and check it shuts down cleanly
-        run: python scripts/package/smoke_windows.py dist
+        run: python tools/package/smoke_windows.py dist
 
       - name: Run the single exe on its own and check it shuts down cleanly
-        run: python scripts/package/smoke_windows.py dist --single
+        run: python tools/package/smoke_windows.py dist --single
 
       - name: Install, run and uninstall the Setup wizard silently
-        run: python scripts/package/smoke_installer.py dist
+        run: python tools/package/smoke_installer.py dist
 
       - name: Attest build provenance
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
-            dist/RunnerDeck-Setup-*.exe
-            dist/runnerdeck-*-windows-x64.zip
-            dist/runnerdeck-*-windows-x64.exe
+            dist/RunnerDeck-*-windows-x64-setup.exe
+            dist/RunnerDeck-*-windows-x64.exe
+            dist/RunnerDeck-*-windows-x64.zip
 
-      - name: Attach the zip, the exe, their checksums and the attestation to the release
+      - name: Attach the installer, the exe, the zip, their checksums and the attestation to the release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          zip_path="$(ls dist/runnerdeck-*-windows-x64.zip)"
-          exe_path="$(ls dist/runnerdeck-*-windows-x64.exe)"
-          setup_path="$(ls dist/RunnerDeck-Setup-*.exe)"
-          bundle="dist/runnerdeck-windows-x64.sigstore.json"
+          bundle="dist/RunnerDeck-windows-x64.sigstore.json"
           cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
-          gh release upload "${GITHUB_REF_NAME}" "${zip_path}" "${zip_path}.sha256" "${exe_path}" "${exe_path}.sha256" "${setup_path}" "${setup_path}.sha256" "${bundle}" --clobber
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/RunnerDeck-*-windows-x64-setup.exe \
+            dist/RunnerDeck-*-windows-x64.exe \
+            dist/RunnerDeck-*-windows-x64.zip \
+            dist/SHA256SUMS-windows-x64 \
+            "${bundle}" --clobber

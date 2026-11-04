@@ -29,7 +29,7 @@ now — the project's policy on AI-assisted contributions.
 - Add or update tests under `tests/` for anything you change in `src/`.
   `ProcessControl`, `Provisioner`, `ProcessDecision`, `AppLog`, `Api`, `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
   all have existing test files to follow the pattern of.
-- If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
+- If a test in `tests/e2e/dashboard.spec.js` exists because of a specific issue,
   link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`
   comment directly above the `test(...)` call — see the existing tests
   there for the pattern. Helps a future reader understand why that

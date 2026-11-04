@@ -53,17 +53,17 @@ def find_artifact(target: str, pattern: str) -> Path:
 
 def locate_exe(target: str, single: bool, work: Path) -> Path:
     if single:
-        source = find_artifact(target, "runnerdeck-*-windows-x64.exe")
+        source = find_artifact(target, "RunnerDeck-*-windows-x64.exe")
         alone = work / "alone"
         alone.mkdir()
-        shutil.copy2(source, alone / "runnerdeck.exe")
-        return alone / "runnerdeck.exe"
-    archive = find_artifact(target, "runnerdeck-*-windows-x64.zip")
+        shutil.copy2(source, alone / "RunnerDeck.exe")
+        return alone / "RunnerDeck.exe"
+    archive = find_artifact(target, "RunnerDeck-*-windows-x64.zip")
     with zipfile.ZipFile(archive) as zf:
         zf.extractall(work / "pkg")
-    exe = next((work / "pkg").glob("*/runnerdeck.exe"), None)
+    exe = next((work / "pkg").glob("*/RunnerDeck.exe"), None)
     if exe is None:
-        fail("runnerdeck.exe is missing from the zip")
+        fail("RunnerDeck.exe is missing from the zip")
     return exe
 
 

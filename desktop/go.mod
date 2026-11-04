@@ -1,4 +1,4 @@
-module github.com/AnikethTS/RunnerDeck/packaging/windows/launcher
+module github.com/AnikethTS/RunnerDeck/desktop
 
 go 1.26.0
 

@@ -21,9 +21,9 @@ export default defineConfig({
   reporter: [
     ['../e2e/progress-reporter.js'],
     ['list'],
-    ['html', { open: 'never', outputFolder: '../playwright-live-report' }],
+    ['html', { open: 'never', outputFolder: '../../playwright-live-report' }],
   ],
-  outputDir: '../test-results-live',
+  outputDir: '../../test-results-live',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 900 },
@@ -34,7 +34,7 @@ export default defineConfig({
   },
   webServer: process.env.E2E_EXTERNAL_SERVER ? undefined : {
     command: `php -d max_execution_time=0 -S 127.0.0.1:${PORT} -t public`,
-    cwd: '..',
+    cwd: '../..',
     url: `http://127.0.0.1:${PORT}/health.php`,
     reuseExistingServer: false,
     timeout: 60_000,

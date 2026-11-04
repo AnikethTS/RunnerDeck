@@ -7,7 +7,7 @@ RUN apk add --no-cache bash curl tar sqlite-dev git \
     && docker-php-ext-install pcntl posix pdo_sqlite \
     && apk del .build-deps
 
-COPY scripts/ci/install-gh.sh /tmp/install-gh.sh
+COPY tools/ci/install-gh.sh /tmp/install-gh.sh
 RUN sh /tmp/install-gh.sh && rm /tmp/install-gh.sh
 
 WORKDIR /app

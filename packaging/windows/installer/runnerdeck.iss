@@ -25,10 +25,10 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
 LicenseFile={#RepoRoot}\LICENSE
-SetupIconFile=..\launcher\icon.ico
+SetupIconFile=..\..\desktop\cmd\runnerdeck\icon.ico
 UninstallDisplayIcon={app}\RunnerDeck.ico
 OutputDir={#OutputDir}
-OutputBaseFilename=RunnerDeck-Setup-{#AppVersion}
+OutputBaseFilename=RunnerDeck-{#AppVersion}-windows-x64-setup
 Compression=lzma2/ultra
 SolidCompression=yes
 WizardStyle=modern
@@ -48,7 +48,7 @@ Name: "startup"; Description: "Start RunnerDeck when I sign in to Windows"; Flag
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; DestName: "RunnerDeck.exe"; Flags: ignoreversion
-Source: "..\launcher\icon.ico"; DestDir: "{app}"; DestName: "RunnerDeck.ico"; Flags: ignoreversion
+Source: "..\..\desktop\cmd\runnerdeck\icon.ico"; DestDir: "{app}"; DestName: "RunnerDeck.ico"; Flags: ignoreversion
 
 [InstallDelete]
 Type: files; Name: "{autoprograms}\RunnerDeck.lnk"

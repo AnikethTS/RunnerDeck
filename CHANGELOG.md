@@ -6,6 +6,14 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The repository is reorganised. The Go desktop shell moved from `packaging/windows/launcher` to `desktop/`, the build scripts from `scripts/` to `tools/` (`tools/package/build.py --target ...` is now the single build entry point), and the browser tests to `tests/e2e` and `tests/e2e-live`. Windows downloads are renamed to `RunnerDeck-<version>-windows-x64-setup.exe`, `RunnerDeck-<version>-windows-x64.exe` and `RunnerDeck-<version>-windows-x64.zip`, with one `SHA256SUMS-windows-x64` file in place of per-file checksums.
+
+### Fixed
+
+- The release workflow no longer runs the Windows installer smoke test in the source-zip job, where it would have failed.
+
 ### Added
 
 - The installed Windows app now opens RunnerDeck in its own window, drawn with Microsoft Edge WebView2, instead of a browser tab. Closing the window hides it to the tray; the tray menu's Open dashboard brings it back. If WebView2 is missing the app falls back to your browser, and the installer can install WebView2. Starting with Windows now launches into the tray (`--background`).
