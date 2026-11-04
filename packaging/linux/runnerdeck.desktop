@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=RunnerDeck
+GenericName=Runner dashboard
+Comment=Manage a pool of self-hosted GitHub Actions runners
+Exec=runnerdeck --open
+Icon=runnerdeck
+Terminal=true
+Categories=Development;
+Keywords=github;actions;runners;ci;

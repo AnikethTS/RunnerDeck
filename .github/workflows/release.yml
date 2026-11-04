@@ -143,3 +143,52 @@ jobs:
             dist/RunnerDeck-*-windows-x64.zip \
             dist/SHA256SUMS-windows-x64 \
             "${bundle}" --clobber
+
+  linux-package:
+    name: Build and publish the Debian package and Homebrew formula
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch the release source archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${GITHUB_REF_NAME}" --pattern "runnerdeck-${GITHUB_REF_NAME}.zip" --dir "${RUNNER_TEMP}"
+
+      - name: Build the Debian package and the Homebrew formula
+        run: |
+          python3 tools/package/test_package.py
+          python3 tools/package/build.py --target linux-deb --target brew-formula \
+            --source-zip "${RUNNER_TEMP}/runnerdeck-${GITHUB_REF_NAME}.zip" --tag "${GITHUB_REF_NAME}"
+
+      - name: Check the formula is valid Ruby
+        run: ruby -c dist/runnerdeck.rb
+
+      - name: Install, run and remove the package
+        run: python3 tools/package/smoke_linux.py dist
+
+      - name: Attest build provenance
+        id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/RunnerDeck-*-linux-all.deb
+            dist/runnerdeck.rb
+
+      - name: Attach the package, the formula and their checksums to the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bundle="dist/RunnerDeck-linux-all.sigstore.json"
+          cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/RunnerDeck-*-linux-all.deb \
+            dist/SHA256SUMS-linux-all \
+            dist/runnerdeck.rb \
+            "${bundle}" --clobber

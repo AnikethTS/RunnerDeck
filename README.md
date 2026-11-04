@@ -71,6 +71,11 @@ that runs in a console window, and a `.zip` with the same files side by side is 
 attached. The downloads are not code-signed yet, so SmartScreen may ask you to choose
 **More info → Run anyway**. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
 
+**On Debian or Ubuntu:** download `RunnerDeck-<version>-linux-all.deb` from the
+[latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest) and run
+`sudo apt install ./RunnerDeck-<version>-linux-all.deb`. Then start it with `runnerdeck --open`.
+Your settings and runners are stored in `~/.local/share/runnerdeck`.
+
 ## Screenshots
 
 | Dashboard | Live log |

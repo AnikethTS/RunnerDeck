@@ -697,6 +697,39 @@ jobs:
             dist/SHA256SUMS-windows-x64
           retention-days: 7
 
+  package-linux:
+    name: Package · Linux deb
+    needs: plan
+    if: needs.plan.outputs.package == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test the packaging tool
+        run: python3 tools/package/test_package.py
+
+      - name: Build the Debian package and the Homebrew formula
+        run: |
+          git archive --format=zip --prefix="runnerdeck-ci/" -o "${RUNNER_TEMP}/source.zip" HEAD
+          python3 tools/package/build.py --target linux-deb --target brew-formula \
+            --source-zip "${RUNNER_TEMP}/source.zip" --tag "v$(cat VERSION)"
+
+      - name: Check the formula is valid Ruby
+        run: ruby -c dist/runnerdeck.rb
+
+      - name: Install, run and remove the package
+        run: python3 tools/package/smoke_linux.py dist
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runnerdeck-linux-all
+          path: |
+            dist/RunnerDeck-*-linux-all.deb
+            dist/SHA256SUMS-linux-all
+            dist/runnerdeck.rb
+          retention-days: 7
+
   smoke-test:
     name: Smoke · ${{ matrix.platform }}
     needs: plan
@@ -914,7 +947,7 @@ jobs:
 
   gate:
     name: CI · Merge gate
-    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows]
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

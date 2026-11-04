@@ -57,9 +57,24 @@ def copy_app(install_root: Path) -> Path:
     return app_dir
 
 
+def stage_unix(install_root: Path) -> None:
+    copy_app(install_root)
+    shutil.copy2(ROOT / "run.sh", install_root / "run.sh")
+
+
+def launcher_script(app_root: str) -> bytes:
+    text = (COMMON / "runnerdeck").read_text(encoding="utf-8")
+    if "@APP_ROOT@" not in text:
+        sys.exit("packaging/common/runnerdeck has no @APP_ROOT@ placeholder")
+    return text.replace("@APP_ROOT@", app_root).encode("utf-8")
+
+
 @dataclass
 class Context:
     out: Path
     go: str
     version: str
+    source_zip: Path | None = None
+    tag: str | None = None
+    url: str | None = None
     cache: dict = field(default_factory=dict)
