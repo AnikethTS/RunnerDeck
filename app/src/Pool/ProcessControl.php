@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Pool;
 
-use RunnerDeck\Core\AppLog;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Platform;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\Configuration\Config;
 use RunnerDeck\GitHub\AgentRoster;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\Host\HostMode;
 use RunnerDeck\Host\HostPressure;
 use RunnerDeck\Host\SlotCgroup;
 use RunnerDeck\Host\SlotDisk;
+use RunnerDeck\Lifecycle\CrashState;
+use RunnerDeck\Logging\AppLog;
+use RunnerDeck\System\Platform;
+use RunnerDeck\System\Shell;
 
 final class ProcessControl
 {

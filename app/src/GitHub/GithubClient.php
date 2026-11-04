@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\AppLog;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Settings;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\Logging\AppLog;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Configuration\Settings;
+use RunnerDeck\System\Shell;
 
 final class GithubClient
 {

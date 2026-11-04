@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Configuration\Settings;
 use RunnerDeck\Pool\Provisioner;
 
 final class AgentTarget

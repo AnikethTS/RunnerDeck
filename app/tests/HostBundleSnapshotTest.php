@@ -26,12 +26,12 @@ final class HostBundleSnapshotTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(null);
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(null);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(null);
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(null);
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
@@ -48,14 +48,14 @@ final class HostBundleSnapshotTest extends TestCase
     #[RunInSeparateProcess]
     public function testTickIsNoopWhenDisabled(): void
     {
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $this->assertDirectoryDoesNotExist($this->root . '/storage/bundles');
     }
 
     #[RunInSeparateProcess]
     public function testTickWritesUtcDayWithoutWebhook(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'acme',
             'RUNNERDECK_AUTH_TOTP_SECRET' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
@@ -64,8 +64,8 @@ final class HostBundleSnapshotTest extends TestCase
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $t = 1_700_000_000;
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => $t);
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(fn () => $t);
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $day = gmdate('Y-m-d', $t);
         $path = $this->root . '/storage/bundles/host-' . $day . '.json';
         $this->assertFileExists($path);
@@ -73,14 +73,14 @@ final class HostBundleSnapshotTest extends TestCase
         $this->assertStringNotContainsString('example.com/hook', $raw);
         $this->assertStringNotContainsString('GEZDGNBVGY3TQOJQ', $raw);
         $mtime = filemtime($path);
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $this->assertSame($mtime, filemtime($path), 'same UTC day must not rewrite');
     }
 
     #[RunInSeparateProcess]
     public function testTickCanIncludeWebhookWhenOptedIn(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'acme',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://example.com/hook',
@@ -88,8 +88,8 @@ final class HostBundleSnapshotTest extends TestCase
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS=1');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $day = gmdate('Y-m-d', 1_700_000_000);
         $raw = (string) file_get_contents($this->root . '/storage/bundles/host-' . $day . '.json');
         $this->assertStringContainsString('example.com/hook', $raw);
@@ -105,8 +105,8 @@ final class HostBundleSnapshotTest extends TestCase
             $day = sprintf('2026-01-%02d', $i);
             file_put_contents($dir . '/host-' . $day . '.json', '{}');
         }
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => strtotime('2026-01-09 UTC'));
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(fn () => strtotime('2026-01-09 UTC'));
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $files = glob($dir . '/host-*.json') ?: [];
         $this->assertCount(7, $files);
         $this->assertFileDoesNotExist($dir . '/host-2026-01-01.json');
@@ -117,15 +117,15 @@ final class HostBundleSnapshotTest extends TestCase
     public function testListAndDeleteRejectPathTraversal(): void
     {
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
-        \RunnerDeck\Host\HostBundleSnapshot::tick();
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Backup\HostBundleSnapshot::tick();
         $day = gmdate('Y-m-d', 1_700_000_000);
-        $rows = \RunnerDeck\Host\HostBundleSnapshot::list();
+        $rows = \RunnerDeck\Backup\HostBundleSnapshot::list();
         $this->assertSame($day, $rows[0]['day']);
-        $this->assertNotNull(\RunnerDeck\Host\HostBundleSnapshot::pathFor($day));
-        $this->assertNull(\RunnerDeck\Host\HostBundleSnapshot::pathFor('../settings'));
-        $this->assertFalse(\RunnerDeck\Host\HostBundleSnapshot::delete('../settings'));
-        $this->assertTrue(\RunnerDeck\Host\HostBundleSnapshot::delete($day));
-        $this->assertSame([], \RunnerDeck\Host\HostBundleSnapshot::list());
+        $this->assertNotNull(\RunnerDeck\Backup\HostBundleSnapshot::pathFor($day));
+        $this->assertNull(\RunnerDeck\Backup\HostBundleSnapshot::pathFor('../settings'));
+        $this->assertFalse(\RunnerDeck\Backup\HostBundleSnapshot::delete('../settings'));
+        $this->assertTrue(\RunnerDeck\Backup\HostBundleSnapshot::delete($day));
+        $this->assertSame([], \RunnerDeck\Backup\HostBundleSnapshot::list());
     }
 }

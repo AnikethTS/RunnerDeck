@@ -194,7 +194,7 @@ func phpCommand(l layout, env []string, out *os.File, args ...string) *exec.Cmd 
 }
 
 func authEnabled(l layout, env []string) bool {
-	check := `require $argv[1] . "/src/bootstrap.php"; exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);`
+	check := `require $argv[1] . "/src/bootstrap.php"; exit(\RunnerDeck\Configuration\Config::authEnabled() ? 0 : 1);`
 	cmd := exec.Command(l.php, "-r", check, "--", l.app)
 	cmd.Env = env
 	hideWindow(cmd)

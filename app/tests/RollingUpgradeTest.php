@@ -21,7 +21,7 @@ final class RollingUpgradeTest extends TestCase
             logTail: [],
         );
 
-        $result = \RunnerDeck\Pool\RollingUpgrade::run([$r], true, 10);
+        $result = \RunnerDeck\Lifecycle\RollingUpgrade::run([$r], true, 10);
 
         $this->assertTrue($result['ok']);
         $this->assertStringContainsString('No configured runners', $result['message']);

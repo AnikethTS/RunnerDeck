@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
+use RunnerDeck\Security\Auth;
 use RunnerDeck\Pool\RunnerLog;
 use RunnerDeck\Pool\RunnerPool;
 

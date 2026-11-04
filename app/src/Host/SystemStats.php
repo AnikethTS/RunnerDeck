@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
-use RunnerDeck\Core\Platform;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\System\Platform;
+use RunnerDeck\System\Shell;
 use RunnerDeck\Pool\RunnerPool;
 
 // Whole-machine CPU/RAM usage, distinct from Dashboard's per-runner stats.

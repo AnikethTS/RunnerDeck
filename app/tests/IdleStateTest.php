@@ -16,12 +16,12 @@ final class IdleStateTest extends TestCase
         $this->dir = sys_get_temp_dir() . '/runnerdeck-idle-' . uniqid();
         mkdir($this->dir, 0700, true);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $this->dir . '/settings.json');
-        \RunnerDeck\Pool\IdleState::fakeNow(fn () => 1000);
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(fn () => 1000);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Pool\IdleState::fakeNow(null);
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
@@ -29,37 +29,37 @@ final class IdleStateTest extends TestCase
     #[RunInSeparateProcess]
     public function testDueAfterIdleMinutes(): void
     {
-        \RunnerDeck\Pool\IdleState::sync([
+        \RunnerDeck\Lifecycle\IdleState::sync([
             [
                 'id' => 'runner-1',
                 'local_running' => true,
                 'github' => ['busy' => false],
             ],
         ]);
-        $this->assertSame([], \RunnerDeck\Pool\IdleState::dueIds(1));
+        $this->assertSame([], \RunnerDeck\Lifecycle\IdleState::dueIds(1));
 
-        \RunnerDeck\Pool\IdleState::fakeNow(fn () => 1000 + 60);
-        $this->assertSame(['runner-1'], \RunnerDeck\Pool\IdleState::dueIds(1));
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(fn () => 1000 + 60);
+        $this->assertSame(['runner-1'], \RunnerDeck\Lifecycle\IdleState::dueIds(1));
     }
 
     #[RunInSeparateProcess]
     public function testBusyClearsIdleClock(): void
     {
-        \RunnerDeck\Pool\IdleState::sync([
+        \RunnerDeck\Lifecycle\IdleState::sync([
             [
                 'id' => 'runner-1',
                 'local_running' => true,
                 'github' => ['busy' => false],
             ],
         ]);
-        \RunnerDeck\Pool\IdleState::sync([
+        \RunnerDeck\Lifecycle\IdleState::sync([
             [
                 'id' => 'runner-1',
                 'local_running' => true,
                 'github' => ['busy' => true],
             ],
         ]);
-        \RunnerDeck\Pool\IdleState::fakeNow(fn () => 1000 + 600);
-        $this->assertSame([], \RunnerDeck\Pool\IdleState::dueIds(1));
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(fn () => 1000 + 600);
+        $this->assertSame([], \RunnerDeck\Lifecycle\IdleState::dueIds(1));
     }
 }

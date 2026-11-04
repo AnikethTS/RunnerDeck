@@ -14,7 +14,7 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-\RunnerDeck\Core\Config::bootstrapEnv();
+\RunnerDeck\Configuration\Config::bootstrapEnv();
 if (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
-    \RunnerDeck\Core\SecurityHeaders::send();
+    \RunnerDeck\Security\SecurityHeaders::send();
 }

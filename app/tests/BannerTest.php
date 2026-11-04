@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests;
 
 use PHPUnit\Framework\TestCase;
-use RunnerDeck\Core\Banner;
-use RunnerDeck\Core\Config;
+use RunnerDeck\Presentation\Banner;
+use RunnerDeck\Configuration\Config;
 
 final class BannerTest extends TestCase
 {

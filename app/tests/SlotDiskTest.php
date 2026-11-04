@@ -19,7 +19,7 @@ final class SlotDiskTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         \RunnerDeck\Host\SlotDisk::resetCache();
         exec('rm -rf ' . escapeshellarg($this->dir));
     }
@@ -63,7 +63,7 @@ final class SlotDiskTest extends TestCase
         mkdir($b . '/_work', 0755, true);
         file_put_contents($a . '/runner.log', 'log');
         $calls = 0;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calls): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$calls): array {
             $calls++;
             $out = '';
             foreach (array_slice($cmd, 2) as $path) {

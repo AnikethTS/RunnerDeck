@@ -43,26 +43,26 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testLoadReturnsEmptyArrayWhenFileMissing(): void
     {
-        $this->assertSame([], \RunnerDeck\Core\Settings::load());
+        $this->assertSame([], \RunnerDeck\Configuration\Settings::load());
     }
 
     #[RunInSeparateProcess]
     public function testIsConfiguredFalseWhenUnset(): void
     {
-        $this->assertFalse(\RunnerDeck\Core\Settings::isConfigured());
+        $this->assertFalse(\RunnerDeck\Configuration\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testSaveThenLoadRoundTrips(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'repo',
             'RUNNERDECK_REPO' => 'AnikethTS/RunnerDeck',
             'RUNNERDECK_ORG' => '',
             'RUNNERDECK_LABEL' => 'my-label',
         ]);
 
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
 
         $this->assertSame('repo', $loaded['RUNNERDECK_SCOPE']);
         $this->assertSame('AnikethTS/RunnerDeck', $loaded['RUNNERDECK_REPO']);
@@ -74,24 +74,27 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testIsConfiguredTrueAfterSavingOrgScope(): void
     {
-        \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
-        $this->assertTrue(\RunnerDeck\Core\Settings::isConfigured());
+        \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
+        $this->assertTrue(\RunnerDeck\Configuration\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testIsConfiguredFalseWhenRepoScopeMissingRepo(): void
     {
-        \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'repo']);
-        $this->assertFalse(\RunnerDeck\Core\Settings::isConfigured());
+        \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'repo']);
+        $this->assertFalse(\RunnerDeck\Configuration\Settings::isConfigured());
     }
 
     #[RunInSeparateProcess]
     public function testApplyToEnvDoesNotOverrideRealEnvVar(): void
     {
-        \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'from-settings-file']);
+        \RunnerDeck\Configuration\Settings::save([
+            'RUNNERDECK_SCOPE' => 'org',
+            'RUNNERDECK_ORG' => 'from-settings-file',
+        ]);
         putenv('RUNNERDECK_ORG=from-real-env');
 
-        \RunnerDeck\Core\Settings::applyToEnv();
+        \RunnerDeck\Configuration\Settings::applyToEnv();
 
         $this->assertSame('from-real-env', getenv('RUNNERDECK_ORG'));
     }
@@ -99,9 +102,9 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testApplyToEnvSetsUnsetKeysFromSavedSettings(): void
     {
-        \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'repo', 'RUNNERDECK_REPO' => 'owner/repo']);
+        \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'repo', 'RUNNERDECK_REPO' => 'owner/repo']);
 
-        \RunnerDeck\Core\Settings::applyToEnv();
+        \RunnerDeck\Configuration\Settings::applyToEnv();
 
         $this->assertSame('repo', getenv('RUNNERDECK_SCOPE'));
         $this->assertSame('owner/repo', getenv('RUNNERDECK_REPO'));
@@ -110,13 +113,13 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveThenLoadRoundTripsCheckUpdates(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'my-org',
             'RUNNERDECK_CHECK_UPDATES' => '1',
         ]);
 
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
 
         $this->assertSame('1', $loaded['RUNNERDECK_CHECK_UPDATES']);
     }
@@ -124,7 +127,7 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionLogsWithoutWebhookUrl(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'crash_webhook_url' => 'https://example.com/secret-hook',
@@ -142,7 +145,7 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionRejectsInvalidExtraLabels(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'extra_labels' => 'not a label',
@@ -154,20 +157,20 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionStoresNormalizedExtraLabels(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'extra_labels' => 'gpu, linux,gpu',
         ]);
         $this->assertTrue($result['ok']);
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
         $this->assertSame('gpu,linux', $loaded['RUNNERDECK_EXTRA_LABELS']);
     }
 
     #[RunInSeparateProcess]
     public function testSaveSettingsActionStoresPoolCapAndIdleStop(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'pool_cap' => '4',
@@ -186,7 +189,7 @@ final class SettingsTest extends TestCase
             'agent_sha' => str_repeat('AB', 32),
         ]);
         $this->assertTrue($result['ok']);
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
         $this->assertSame('4', $loaded['RUNNERDECK_POOL_CAP']);
         $this->assertSame('10', $loaded['RUNNERDECK_IDLE_STOP_MINUTES']);
         $this->assertSame('15', $loaded['RUNNERDECK_QUEUE_WAIT_MINUTES']);
@@ -206,14 +209,14 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionStoresIpAllowlistAndMtls(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'ip_allowlist' => "203.0.113.9\n192.168.0.0/16",
             'require_mtls' => '1',
         ]);
         $this->assertTrue($result['ok']);
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
         $this->assertSame('203.0.113.9,192.168.0.0/16', $loaded['RUNNERDECK_IP_ALLOWLIST']);
         $this->assertSame('1', $loaded['RUNNERDECK_REQUIRE_MTLS']);
     }
@@ -221,7 +224,7 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionRejectsBadIpAllowlist(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'ip_allowlist' => 'not-an-ip',
@@ -233,14 +236,14 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionRejectsBadLogRetentionAndAgentSha(): void
     {
-        $days = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $days = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'log_retention_days' => '0',
         ]);
         $this->assertFalse($days['ok']);
         $this->assertStringContainsString('log retention', $days['message']);
-        $sha = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $sha = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'agent_sha' => 'deadbeef',
@@ -252,14 +255,14 @@ final class SettingsTest extends TestCase
     #[RunInSeparateProcess]
     public function testSaveSettingsActionStoresMinFreeHeadroom(): void
     {
-        $result = \RunnerDeck\Http\Action\SaveSettingsAction::save([
+        $result = \RunnerDeck\Http\Action\Administration\SaveSettingsAction::save([
             'scope' => 'org',
             'org' => 'acme',
             'min_free_disk_gib' => '2',
             'min_free_ram_mib' => '512',
         ]);
         $this->assertTrue($result['ok']);
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
         $this->assertSame('2', $loaded['RUNNERDECK_MIN_FREE_DISK_GIB']);
         $this->assertSame('512', $loaded['RUNNERDECK_MIN_FREE_RAM_MIB']);
     }
@@ -270,6 +273,6 @@ final class SettingsTest extends TestCase
         putenv('RUNNERDECK_SETTINGS_FILE=/dev/null/runnerdeck-unwritable/settings.json');
 
         $this->expectException(RuntimeException::class);
-        \RunnerDeck\Core\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
+        \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
     }
 }

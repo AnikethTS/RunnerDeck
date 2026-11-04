@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Alert\CrashWebhook;
-use RunnerDeck\Http\Action\SaveSettingsAction;
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Csrf;
-use RunnerDeck\Core\HostingWarnings;
-use RunnerDeck\Core\Layout;
+use RunnerDeck\Alerting\CrashWebhook;
+use RunnerDeck\Http\Action\Administration\SaveSettingsAction;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Security\Csrf;
+use RunnerDeck\Security\HostingWarnings;
+use RunnerDeck\Presentation\Layout;
 use RunnerDeck\GitHub\GithubApp;
-use RunnerDeck\Host\HostBundle;
-use RunnerDeck\Core\SettingsPortable;
+use RunnerDeck\Backup\HostBundle;
+use RunnerDeck\Configuration\SettingsPortable;
 
 Auth::requirePageAccess();
 

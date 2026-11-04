@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Config;
-use RunnerDeck\Pool\CrashState;
-use RunnerDeck\Pool\Drain;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Lifecycle\CrashState;
+use RunnerDeck\Lifecycle\Drain;
 use RunnerDeck\Pool\ProcessControl;
 use RunnerDeck\Pool\RunnerPool;
 

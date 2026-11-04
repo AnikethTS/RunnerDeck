@@ -42,7 +42,7 @@ final class MetricsTest extends TestCase
             'fetched_at' => 1,
             'payload' => ['count' => 3, 'recent' => []],
         ]));
-        $text = \RunnerDeck\Host\Metrics::text();
+        $text = \RunnerDeck\Telemetry\Metrics::text();
         $this->assertStringContainsString('runnerdeck_runners{state="total"} 0', $text);
         $this->assertStringContainsString('runnerdeck_queue_jobs 3', $text);
         $this->assertStringContainsString('runnerdeck_webhook_outbox 0', $text);

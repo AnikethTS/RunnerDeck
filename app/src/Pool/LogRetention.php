@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Pool;
 
-use RunnerDeck\Core\AppLog;
-use RunnerDeck\Core\Config;
+use RunnerDeck\Logging\AppLog;
+use RunnerDeck\Configuration\Config;
 
 /**
  * Delete old runner.log.1 and _diag files on idle slots. Fail-open.

@@ -35,7 +35,7 @@ final class DashboardTest extends TestCase
     protected function tearDown(): void
     {
         \RunnerDeck\GitHub\AgentTarget::fake(null);
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         putenv('RUNNERDECK_POOL_DIR');
@@ -55,7 +55,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
         $spawned = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
             if (($cmd[0] ?? '') === 'bash') {
                 $spawned = true;
                 return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
@@ -65,10 +65,10 @@ final class DashboardTest extends TestCase
 
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Ui\Dashboard::snapshot();
+        \RunnerDeck\Presentation\Dashboard::snapshot();
 
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        $result = \RunnerDeck\Ui\Dashboard::snapshot();
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
 
         $this->assertTrue(
             $result['runners'][0]['should_auto_restart'],
@@ -86,7 +86,7 @@ final class DashboardTest extends TestCase
     {
         $authCalled = false;
         $listCalled = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'auth status')) {
                 $authCalled = true;
@@ -112,7 +112,7 @@ final class DashboardTest extends TestCase
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
 
-        $result = \RunnerDeck\Ui\Dashboard::snapshot();
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
 
         $this->assertTrue($listCalled);
         $this->assertFalse($authCalled);
@@ -128,7 +128,7 @@ final class DashboardTest extends TestCase
     public function testSnapshotUsesAuthStatusOnlyAfterListRunnersFails(): void
     {
         $authCalled = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authCalled): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$authCalled): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'auth status')) {
                 $authCalled = true;
@@ -142,7 +142,7 @@ final class DashboardTest extends TestCase
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
 
-        $result = \RunnerDeck\Ui\Dashboard::snapshot();
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
 
         $this->assertTrue($authCalled);
         $this->assertFalse($result['health']['logged_in']);
@@ -156,7 +156,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
 
         $webhookBody = null;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$webhookBody): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$webhookBody): array {
             if (($cmd[0] ?? '') === 'curl') {
                 $webhookBody = $cmd[array_search('-d', $cmd, true) + 1];
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -166,10 +166,10 @@ final class DashboardTest extends TestCase
 
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Ui\Dashboard::snapshot();
+        \RunnerDeck\Presentation\Dashboard::snapshot();
 
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\Ui\Dashboard::snapshot();
+        \RunnerDeck\Presentation\Dashboard::snapshot();
 
         $this->assertNotNull($webhookBody, 'expected a webhook POST for the crash-loop');
         $decoded = json_decode((string) $webhookBody, true);
@@ -184,7 +184,7 @@ final class DashboardTest extends TestCase
         putenv('RUNNERDECK_AUTO_RESTART=1');
 
         $bodies = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$bodies): array {
             if (($cmd[0] ?? '') === 'curl') {
                 $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -194,10 +194,10 @@ final class DashboardTest extends TestCase
 
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
-        \RunnerDeck\Ui\Dashboard::snapshot();
+        \RunnerDeck\Presentation\Dashboard::snapshot();
 
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
-        \RunnerDeck\Ui\Dashboard::snapshot();
+        \RunnerDeck\Presentation\Dashboard::snapshot();
 
         $this->assertCount(1, $bodies);
         $decoded = json_decode((string) $bodies[0], true);
@@ -210,14 +210,14 @@ final class DashboardTest extends TestCase
     {
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
         $gh = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$gh): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$gh): array {
             if (str_ends_with((string) ($cmd[0] ?? ''), 'gh') || ($cmd[0] ?? '') === 'curl') {
                 $gh = true;
             }
             return ['code' => 1, 'stdout' => '', 'stderr' => ''];
         });
 
-        $local = \RunnerDeck\Ui\Dashboard::localSnapshot();
+        $local = \RunnerDeck\Presentation\Dashboard::localSnapshot();
 
         $this->assertFalse($gh);
         $this->assertCount(1, $local['runners']);

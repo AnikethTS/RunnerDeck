@@ -1,7 +1,7 @@
 # Local secrets/config — copy .env.example instead
 .env
 
-# UI-saved settings (scope/org/repo/label) — see app/src/Core/Settings.php
+# UI-saved settings (scope/org/repo/label) — see app/src/Configuration/Settings.php
 /storage/
 
 # docker-compose's bind-mounted runner pool/settings/history volume

@@ -13,35 +13,35 @@ final class LayoutTest extends TestCase
     public function testHtmlAttrEmptyWithoutCookie(): void
     {
         $_COOKIE = [];
-        $this->assertSame('', \RunnerDeck\Core\Layout::htmlAttr());
-        $this->assertNull(\RunnerDeck\Core\Layout::cookieTheme());
+        $this->assertSame('', \RunnerDeck\Presentation\Layout::htmlAttr());
+        $this->assertNull(\RunnerDeck\Presentation\Layout::cookieTheme());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlAttrAcceptsLightAndDark(): void
     {
-        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'dark';
-        $this->assertSame('dark', \RunnerDeck\Core\Layout::cookieTheme());
-        $this->assertSame(' data-theme="dark"', \RunnerDeck\Core\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Presentation\Layout::THEME_COOKIE] = 'dark';
+        $this->assertSame('dark', \RunnerDeck\Presentation\Layout::cookieTheme());
+        $this->assertSame(' data-theme="dark"', \RunnerDeck\Presentation\Layout::htmlAttr());
 
-        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'light';
-        $this->assertSame(' data-theme="light"', \RunnerDeck\Core\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Presentation\Layout::THEME_COOKIE] = 'light';
+        $this->assertSame(' data-theme="light"', \RunnerDeck\Presentation\Layout::htmlAttr());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlAttrIgnoresUnknownValues(): void
     {
-        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'neon';
-        $this->assertNull(\RunnerDeck\Core\Layout::cookieTheme());
-        $this->assertSame('', \RunnerDeck\Core\Layout::htmlAttr());
+        $_COOKIE[\RunnerDeck\Presentation\Layout::THEME_COOKIE] = 'neon';
+        $this->assertNull(\RunnerDeck\Presentation\Layout::cookieTheme());
+        $this->assertSame('', \RunnerDeck\Presentation\Layout::htmlAttr());
     }
 
     #[RunInSeparateProcess]
     public function testHtmlOpenAppliesThemeAndTitle(): void
     {
-        $_COOKIE[\RunnerDeck\Core\Layout::THEME_COOKIE] = 'dark';
+        $_COOKIE[\RunnerDeck\Presentation\Layout::THEME_COOKIE] = 'dark';
         ob_start();
-        \RunnerDeck\Core\Layout::htmlOpen('RunnerDeck — Settings');
+        \RunnerDeck\Presentation\Layout::htmlOpen('RunnerDeck — Settings');
         $html = (string) ob_get_clean();
 
         $this->assertStringContainsString('<html lang="en" data-theme="dark">', $html);
@@ -59,9 +59,9 @@ final class LayoutTest extends TestCase
     public function testTopbarIncludesThemeToggle(): void
     {
         ob_start();
-        \RunnerDeck\Core\Layout::topbarStart();
-        \RunnerDeck\Core\Layout::topbarEndStart();
-        \RunnerDeck\Core\Layout::topbarEnd();
+        \RunnerDeck\Presentation\Layout::topbarStart();
+        \RunnerDeck\Presentation\Layout::topbarEndStart();
+        \RunnerDeck\Presentation\Layout::topbarEnd();
         $html = (string) ob_get_clean();
 
         $this->assertStringContainsString('class="topbar-inner page-shell"', $html);
@@ -75,7 +75,7 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('<h1 class="topbar-name">RunnerDeck</h1>', $html);
         $this->assertStringContainsString('class="edition-tag"', $html);
         $this->assertStringContainsString('id="update-available"', $html);
-        $this->assertTrue(\RunnerDeck\Core\Layout::hasLogo());
+        $this->assertTrue(\RunnerDeck\Presentation\Layout::hasLogo());
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);
         $this->assertStringContainsString('class="sticky-head"', $html);
@@ -86,7 +86,7 @@ final class LayoutTest extends TestCase
     public function testPageNavMarksCurrent(): void
     {
         ob_start();
-        \RunnerDeck\Core\Layout::pageNav('history.php');
+        \RunnerDeck\Presentation\Layout::pageNav('history.php');
         $html = (string) ob_get_clean();
         $this->assertStringContainsString('aria-label="Host pages"', $html);
         $this->assertStringContainsString('href="history.php"', $html);
@@ -106,7 +106,7 @@ final class LayoutTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_LABEL=self-hosted-runnerdeck');
         ob_start();
-        \RunnerDeck\Core\Layout::scopeChip();
+        \RunnerDeck\Presentation\Layout::scopeChip();
         $html = (string) ob_get_clean();
         $this->assertStringContainsString('class="org-tag"', $html);
         $this->assertStringContainsString('acme · self-hosted-runnerdeck', $html);
@@ -122,7 +122,7 @@ final class LayoutTest extends TestCase
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_REPO');
         ob_start();
-        \RunnerDeck\Core\Layout::scopeChip();
+        \RunnerDeck\Presentation\Layout::scopeChip();
         $html = (string) ob_get_clean();
         $this->assertSame('', $html);
         putenv('RUNNERDECK_SCOPE');
@@ -130,7 +130,7 @@ final class LayoutTest extends TestCase
 
     public function testInfoIconEscapesHelpText(): void
     {
-        $html = \RunnerDeck\Core\Layout::infoIcon('wait <script>x</script>');
+        $html = \RunnerDeck\Presentation\Layout::infoIcon('wait <script>x</script>');
         $this->assertStringContainsString('class="help-tip"', $html);
         $this->assertStringContainsString('data-help="wait &lt;script&gt;x&lt;/script&gt;"', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);

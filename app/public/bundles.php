@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Csrf;
-use RunnerDeck\Host\HostBundleSnapshot;
-use RunnerDeck\Core\Layout;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Security\Csrf;
+use RunnerDeck\Backup\HostBundleSnapshot;
+use RunnerDeck\Presentation\Layout;
 
 Auth::requirePageAccess();
 

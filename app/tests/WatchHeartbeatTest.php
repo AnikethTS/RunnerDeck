@@ -24,12 +24,12 @@ final class WatchHeartbeatTest extends TestCase
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
         putenv('RUNNERDECK_LOG_RETENTION_DAYS');
-        \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
+        \RunnerDeck\Telemetry\WatchHeartbeat::fakeNow(null);
     }
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Host\WatchHeartbeat::fakeNow(null);
+        \RunnerDeck\Telemetry\WatchHeartbeat::fakeNow(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_AUTO_RESTART');
         putenv('RUNNERDECK_SCALE_TO_QUEUE');
@@ -45,14 +45,14 @@ final class WatchHeartbeatTest extends TestCase
     #[RunInSeparateProcess]
     public function testWarningSilentWhenWatchFeaturesOff(): void
     {
-        $this->assertNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
+        $this->assertNull(\RunnerDeck\Telemetry\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
     public function testWarningWhenAutoRestartOnAndNoTick(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        $text = \RunnerDeck\Host\WatchHeartbeat::warning(false);
+        $text = \RunnerDeck\Telemetry\WatchHeartbeat::warning(false);
         $this->assertNotNull($text);
         $this->assertStringContainsString('watch-auto-restart.php', $text);
     }
@@ -61,9 +61,9 @@ final class WatchHeartbeatTest extends TestCase
     public function testTouchClearsStaleWarning(): void
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
-        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => 1_700_000_000);
-        \RunnerDeck\Host\WatchHeartbeat::touch();
-        $this->assertNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
+        \RunnerDeck\Telemetry\WatchHeartbeat::fakeNow(fn () => 1_700_000_000);
+        \RunnerDeck\Telemetry\WatchHeartbeat::touch();
+        $this->assertNull(\RunnerDeck\Telemetry\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
@@ -71,30 +71,30 @@ final class WatchHeartbeatTest extends TestCase
     {
         putenv('RUNNERDECK_AUTO_RESTART=1');
         $t = 1_700_000_000;
-        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => $t);
-        \RunnerDeck\Host\WatchHeartbeat::touch();
-        \RunnerDeck\Host\WatchHeartbeat::fakeNow(fn () => $t + 21);
-        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
+        \RunnerDeck\Telemetry\WatchHeartbeat::fakeNow(fn () => $t);
+        \RunnerDeck\Telemetry\WatchHeartbeat::touch();
+        \RunnerDeck\Telemetry\WatchHeartbeat::fakeNow(fn () => $t + 21);
+        $this->assertNotNull(\RunnerDeck\Telemetry\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
     public function testEphemeralNeedsHeartbeatEvenWhenFlagsOff(): void
     {
-        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(true));
+        $this->assertNotNull(\RunnerDeck\Telemetry\WatchHeartbeat::warning(true));
     }
 
     #[RunInSeparateProcess]
     public function testBundleSnapshotNeedsHeartbeat(): void
     {
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
-        $this->assertNotNull(\RunnerDeck\Host\WatchHeartbeat::warning(false));
+        $this->assertNotNull(\RunnerDeck\Telemetry\WatchHeartbeat::warning(false));
     }
 
     #[RunInSeparateProcess]
     public function testLogRetentionNeedsHeartbeat(): void
     {
         putenv('RUNNERDECK_LOG_RETENTION_DAYS=14');
-        $text = \RunnerDeck\Host\WatchHeartbeat::warning(false);
+        $text = \RunnerDeck\Telemetry\WatchHeartbeat::warning(false);
         $this->assertNotNull($text);
         $this->assertStringContainsString('log retention', $text);
     }

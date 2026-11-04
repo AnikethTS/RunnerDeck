@@ -28,15 +28,15 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentReturnsEmptyArrayWhenNothingRecorded(): void
     {
-        $this->assertSame([], \RunnerDeck\Host\History::recent());
+        $this->assertSame([], \RunnerDeck\Telemetry\History::recent());
     }
 
     #[RunInSeparateProcess]
     public function testRecordThenRecentRoundTrips(): void
     {
-        \RunnerDeck\Host\History::record(42.5, 102400);
+        \RunnerDeck\Telemetry\History::record(42.5, 102400);
 
-        $samples = \RunnerDeck\Host\History::recent();
+        $samples = \RunnerDeck\Telemetry\History::recent();
 
         $this->assertCount(1, $samples);
         $this->assertSame(42.5, $samples[0]['avg_cpu']);
@@ -48,19 +48,19 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecordStoresDiskFreeKb(): void
     {
-        \RunnerDeck\Host\History::record(1.0, 1000, 2048);
-        $samples = \RunnerDeck\Host\History::recent();
+        \RunnerDeck\Telemetry\History::record(1.0, 1000, 2048);
+        $samples = \RunnerDeck\Telemetry\History::recent();
         $this->assertSame(2048, $samples[0]['disk_free_kb']);
     }
 
     #[RunInSeparateProcess]
     public function testRecentDayKeepsSamplesOlderThanOneHour(): void
     {
-        \RunnerDeck\Host\History::record(10.0, 1000);
+        \RunnerDeck\Telemetry\History::record(10.0, 1000);
         $db = new PDO('sqlite:' . $this->dbFile);
         $db->prepare('UPDATE samples SET ts = ?')->execute([time() - 7200]);
-        $this->assertSame([], \RunnerDeck\Host\History::recent());
-        $this->assertCount(1, \RunnerDeck\Host\History::recent(\RunnerDeck\Host\History::DAY_SECONDS));
+        $this->assertSame([], \RunnerDeck\Telemetry\History::recent());
+        $this->assertCount(1, \RunnerDeck\Telemetry\History::recent(\RunnerDeck\Telemetry\History::DAY_SECONDS));
     }
 
     public function testDownsampleKeepsEndpoints(): void
@@ -69,7 +69,7 @@ final class HistoryTest extends TestCase
         for ($i = 0; $i < 20; $i++) {
             $samples[] = ['i' => $i];
         }
-        $out = \RunnerDeck\Host\History::downsample($samples, 5);
+        $out = \RunnerDeck\Telemetry\History::downsample($samples, 5);
         $this->assertCount(5, $out);
         $this->assertSame(0, $out[0]['i']);
         $this->assertSame(19, $out[4]['i']);
@@ -78,12 +78,12 @@ final class HistoryTest extends TestCase
     #[RunInSeparateProcess]
     public function testRecentExcludesSamplesOlderThanRetentionWindow(): void
     {
-        \RunnerDeck\Host\History::record(10.0, 1000);
+        \RunnerDeck\Telemetry\History::record(10.0, 1000);
 
         $db = new PDO('sqlite:' . $this->dbFile);
         $db->prepare('UPDATE samples SET ts = ?')->execute([time() - 7200]);
 
-        $this->assertSame([], \RunnerDeck\Host\History::recent());
+        $this->assertSame([], \RunnerDeck\Telemetry\History::recent());
     }
 
     #[RunInSeparateProcess]
@@ -91,27 +91,27 @@ final class HistoryTest extends TestCase
     {
         putenv('RUNNERDECK_HISTORY_FILE=/dev/null/runnerdeck-unwritable/history.sqlite');
 
-        \RunnerDeck\Host\History::record(1.0, 1);
+        \RunnerDeck\Telemetry\History::record(1.0, 1);
 
-        $this->assertSame([], \RunnerDeck\Host\History::recent());
+        $this->assertSame([], \RunnerDeck\Telemetry\History::recent());
     }
 
     public function testPolylineSvgPlaceholderWhenUnavailable(): void
     {
-        $svg = \RunnerDeck\Host\History::polylineSvg([1.0, 2.0], 0.0, 100.0, true);
+        $svg = \RunnerDeck\Telemetry\History::polylineSvg([1.0, 2.0], 0.0, 100.0, true);
         $this->assertStringContainsString('unavailable', $svg);
         $this->assertStringNotContainsString('polyline', $svg);
     }
 
     public function testPolylineSvgNeedsTwoSamples(): void
     {
-        $svg = \RunnerDeck\Host\History::polylineSvg([12.0], 0.0, 100.0, false);
+        $svg = \RunnerDeck\Telemetry\History::polylineSvg([12.0], 0.0, 100.0, false);
         $this->assertStringContainsString('collecting data', $svg);
     }
 
     public function testPolylineSvgPointsScaleToViewBox(): void
     {
-        $svg = \RunnerDeck\Host\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false, '%', 0);
+        $svg = \RunnerDeck\Telemetry\History::polylineSvg([0.0, 100.0], 0.0, 100.0, false, '%', 0);
         $this->assertStringContainsString('42.0,92.0', $svg);
         $this->assertStringContainsString('390.0,10.0', $svg);
         $this->assertStringContainsString('<polyline', $svg);
@@ -124,7 +124,7 @@ final class HistoryTest extends TestCase
 
     public function testBarSvgRendersCounts(): void
     {
-        $svg = \RunnerDeck\Host\History::barSvg([
+        $svg = \RunnerDeck\Telemetry\History::barSvg([
             ['label' => '2026-10-25', 'count' => 0],
             ['label' => '2026-10-26', 'count' => 3],
         ]);
@@ -134,13 +134,13 @@ final class HistoryTest extends TestCase
 
     public function testSummaryFormatsNowAndRange(): void
     {
-        $sum = \RunnerDeck\Host\History::summary([8.0, 12.5, 10.0], '%', 1);
+        $sum = \RunnerDeck\Telemetry\History::summary([8.0, 12.5, 10.0], '%', 1);
         $this->assertSame('10.0%', $sum['now']);
         $this->assertSame('8.0%–12.5% this hour', $sum['span']);
     }
 
     public function testSummaryEmpty(): void
     {
-        $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\Host\History::summary([], '%', 1));
+        $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\Telemetry\History::summary([], '%', 1));
     }
 }

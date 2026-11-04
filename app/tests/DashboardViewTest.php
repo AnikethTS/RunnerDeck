@@ -10,7 +10,7 @@ final class DashboardViewTest extends TestCase
 {
     public function testHealthBannerHiddenWhenGithubIsOk(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
         $this->assertTrue($banner['hidden']);
@@ -19,7 +19,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenMaintenance(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'maintenance' => true,
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -29,7 +29,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenHostPressure(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'pressure' => [
                 'ok' => false,
                 'reasons' => ['disk 100 MB free (need 1 GiB)'],
@@ -42,7 +42,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenAgentBehind(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'agent_behind_count' => 2,
             'agent_latest' => '2.322.0',
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
@@ -54,7 +54,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenRebootReady(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'reboot_ready' => true,
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -64,7 +64,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenWatchStale(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'watch_warning' => 'watch-auto-restart.php has not ticked — auto-restart is idle.',
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -74,7 +74,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenGhBackoff(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'gh_backoff' => 'GitHub API is rate-limited — pausing polls for about 1 min.',
             'health' => ['logged_in' => true, 'org_access_ok' => false, 'message' => 'HTTP 429'],
         ]);
@@ -84,7 +84,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenGhQuotaLow(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'gh_quota' => 'GitHub API quota is low (50/5000 remaining).',
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -94,7 +94,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenWebhookGaveUp(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'webhook_gave_up' => 'Crash webhook gave up after max retries (runner_crash). See Outbox.',
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -104,7 +104,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenClockSkew(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'clock_skew' => "This host's clock is about 12 min behind GitHub.",
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
         ]);
@@ -114,7 +114,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenAuthStale(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'auth_stale' => 'GitHub authentication is expired or missing.',
             'health' => ['logged_in' => false, 'org_access_ok' => false, 'message' => 'HTTP 401'],
         ]);
@@ -124,7 +124,7 @@ final class DashboardViewTest extends TestCase
 
     public function testHealthBannerWhenNotLoggedIn(): void
     {
-        $banner = \RunnerDeck\Ui\DashboardView::healthBanner([
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
             'health' => ['logged_in' => false, 'org_access_ok' => false, 'message' => 'no gh'],
         ]);
         $this->assertFalse($banner['hidden']);
@@ -133,7 +133,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlEscapesNamesAndLogs(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => '<script>x</script>',
             'configured' => true,
@@ -162,7 +162,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlShowsOlderAgentPackage(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -177,7 +177,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlShowsGithubOsChip(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -199,17 +199,17 @@ final class DashboardViewTest extends TestCase
 
     public function testOrphansHtmlListsRemoveButton(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::orphansHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::orphansHtml([
             ['name' => 'gone-box', 'id' => 9, 'status' => 'offline', 'busy' => false],
         ]);
         $this->assertStringContainsString('gone-box', $html);
         $this->assertStringContainsString('remove-orphan', $html);
-        $this->assertSame('', \RunnerDeck\Ui\DashboardView::orphansHtml([]));
+        $this->assertSame('', \RunnerDeck\Presentation\DashboardView::orphansHtml([]));
     }
 
     public function testRowHtmlShowsEphemeralFlag(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -227,7 +227,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlShowsPausedAutoRestart(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -243,7 +243,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlCrashHistoryIsAButton(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -260,7 +260,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlShowsDiskDrainAndClearWork(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -281,7 +281,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlShowsForceIdleWhenStuckBusy(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -298,7 +298,7 @@ final class DashboardViewTest extends TestCase
 
     public function testRowHtmlOmitsAgentVersionWhenMissing(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::rowHtml([
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
             'id' => 'runner-1',
             'agent_name' => 'acme-1',
             'configured' => true,
@@ -312,7 +312,7 @@ final class DashboardViewTest extends TestCase
 
     public function testStatsCardsIssueWhenGithubUnreachable(): void
     {
-        $cards = \RunnerDeck\Ui\DashboardView::statsCards([
+        $cards = \RunnerDeck\Presentation\DashboardView::statsCards([
             'stats' => ['running' => 0, 'total' => 2, 'avg_cpu_percent' => null, 'total_rss_kb' => null],
             'health' => ['logged_in' => false, 'org_access_ok' => false, 'message' => 'denied'],
             'system' => [
@@ -332,7 +332,7 @@ final class DashboardViewTest extends TestCase
 
     public function testStatsCardsShowPoolDisk(): void
     {
-        $cards = \RunnerDeck\Ui\DashboardView::statsCards([
+        $cards = \RunnerDeck\Presentation\DashboardView::statsCards([
             'stats' => [
                 'running' => 1,
                 'total' => 2,
@@ -356,7 +356,7 @@ final class DashboardViewTest extends TestCase
 
     public function testStatsCardsShowGithubQuotaWhenConnected(): void
     {
-        $cards = \RunnerDeck\Ui\DashboardView::statsCards([
+        $cards = \RunnerDeck\Presentation\DashboardView::statsCards([
             'stats' => ['running' => 0, 'total' => 1, 'avg_cpu_percent' => null, 'total_rss_kb' => null],
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
             'gh_remaining' => 4200,
@@ -374,7 +374,7 @@ final class DashboardViewTest extends TestCase
 
     public function testErrorsPanelEscapesAndListsNewestFirst(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::errorsPanel([
+        $html = \RunnerDeck\Presentation\DashboardView::errorsPanel([
             [
                 'time' => '2026-09-22T18:00:00+00:00',
                 'action' => 'process.start',
@@ -406,7 +406,7 @@ final class DashboardViewTest extends TestCase
 
     public function testPollViewIncludesPhpRowMarkup(): void
     {
-        $view = \RunnerDeck\Ui\DashboardView::pollView([
+        $view = \RunnerDeck\Presentation\DashboardView::pollView([
             'generated_at' => 1789160000,
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
             'runners' => [[
@@ -431,14 +431,14 @@ final class DashboardViewTest extends TestCase
 
     public function testErrorsPanelEmptyState(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::errorsPanel([]);
+        $html = \RunnerDeck\Presentation\DashboardView::errorsPanel([]);
         $this->assertStringContainsString('Nothing logged yet.', $html);
         $this->assertStringNotContainsString(' open', $html);
     }
 
     public function testErrorsPanelInfoOnlyDoesNotAutoOpen(): void
     {
-        $html = \RunnerDeck\Ui\DashboardView::errorsPanel([
+        $html = \RunnerDeck\Presentation\DashboardView::errorsPanel([
             [
                 'time' => '2026-09-22T18:00:00+00:00',
                 'action' => 'process.start',

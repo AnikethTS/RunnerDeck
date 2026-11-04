@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../app/src/bootstrap.php';
 
-use RunnerDeck\Core\Platform;
+use RunnerDeck\System\Platform;
 use RunnerDeck\Pool\RunnerPool;
 use RunnerDeck\Pool\WindowsProcess;
 

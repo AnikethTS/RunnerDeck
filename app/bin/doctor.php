@@ -5,13 +5,13 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\HostingWarnings;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Security\HostingWarnings;
+use RunnerDeck\Configuration\Settings;
 use RunnerDeck\GitHub\GithubApp;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\Host\HostPressure;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\System\Shell;
 use RunnerDeck\Host\SlotDisk;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
@@ -43,10 +43,10 @@ function fail(string $label, string $detail, bool $color): int
 
 function commandExists(string $bin): bool
 {
-    return \RunnerDeck\Core\Platform::commandExists($bin);
+    return \RunnerDeck\System\Platform::commandExists($bin);
 }
 
-\RunnerDeck\Core\Banner::show();
+\RunnerDeck\Presentation\Banner::show();
 echo "RunnerDeck doctor\n";
 $failures = 0;
 $warnings = 0;
@@ -79,7 +79,7 @@ if (version_compare(PHP_VERSION, '8.1.0', '<')) {
         );
     }
 }
-foreach (\RunnerDeck\Core\Platform::isWindows() ? [] : ['posix', 'pcntl'] as $ext) {
+foreach (\RunnerDeck\System\Platform::isWindows() ? [] : ['posix', 'pcntl'] as $ext) {
     if (extension_loaded($ext)) {
         ok("ext-{$ext}", '', $color);
     } else {
@@ -93,7 +93,7 @@ if (extension_loaded('pdo_sqlite')) {
 }
 
 echo "\nExternal tools\n";
-if (\RunnerDeck\Core\Platform::isWindows()) {
+if (\RunnerDeck\System\Platform::isWindows()) {
     foreach (['powershell.exe', 'taskkill'] as $tool) {
         if (commandExists($tool)) {
             ok($tool, '', $color);

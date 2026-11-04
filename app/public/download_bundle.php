@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\Csrf;
-use RunnerDeck\Host\HostBundle;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Security\Csrf;
+use RunnerDeck\Backup\HostBundle;
 
 Auth::rejectPlainIfProtected();
 

@@ -32,7 +32,7 @@ if [ -n "${RUNNERDECK_SMOKE_TOTP_SECRET:-}" ]; then
   fi
   code="$(php -r '
     require $argv[1] . "/app/src/bootstrap.php";
-    echo \RunnerDeck\Core\Totp::code($argv[2]);
+    echo \RunnerDeck\Security\Totp::code($argv[2]);
   ' -- "$root" "$RUNNERDECK_SMOKE_TOTP_SECRET")"
   login="$(curl -fsS -c "$jar" -b "$jar" -X POST "${base}/api.php?action=login" \
     -H "X-CSRF-Token: ${token}" --data-urlencode "code=${code}")"

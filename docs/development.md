@@ -175,14 +175,21 @@ runnerdeck/
                     (shared --page-gutter / --page-max; 900 / 720 / 520 breakpoints), logo.png
   src/
     bootstrap.php   autoload (`RunnerDeck\` → `app/src/`) + env bootstrap
-    Core/           Config, Settings, Auth, TOTP, CSRF, session, layout, log, shell
+    Configuration/  Config (env), Settings (settings.json), SettingsPortable (export/import)
+    Security/       Auth, TOTP, CSRF, session, client gate, security headers, hosting warnings
+    System/         Platform (OS differences), Shell (every external command)
+    Logging/        AppLog (redacting application log)
+    Presentation/   dashboard snapshot and first-paint HTML, page layout, terminal banner
     GitHub/         gh client, GitHub App, queue cache, agent version, orphans, backoff/clock/quota
-    Host/           pressure, host mode, metrics, cgroups, history, host bundle
-    Pool/           runner dirs, start/stop, drain, rolling restart, crash state, log retention
-    Alert/          crash webhook, disk alert, outbox retry, syslog, queue/long-job alerts
-    Ui/             dashboard snapshot and first-paint HTML
+    Host/           host mode, resource pressure, system stats, per-slot cgroup and disk limits
+    Telemetry/      CPU/RAM/disk history, Prometheus metrics, watcher heartbeat
+    Backup/         host disaster-recovery bundle and its daily snapshot
+    Pool/           runner dirs, start/stop, provisioning, process control, log retention
+    Lifecycle/      auto-restart, drain, idle state, rolling restart/upgrade, crash state and history
+    Alerting/       crash webhook, disk alert, outbox retry, syslog, queue/long-job alerts
     Http/           API router (`RunnerDeck\Http\Api`)
-    Http/Action/    one class per `api.php?action=` (`RunnerDeck\Http\Action\`)
+    Http/Action/    one class per `api.php?action=`, grouped as Runners/, Authentication/,
+                    Administration/ and Monitoring/ (`RunnerDeck\Http\Action\<Group>\`)
   app/tests/        PHPUnit unit tests for the pure-logic pieces above
   tests/e2e/        Playwright UI tests with a mocked API
   tests/e2e-live/   Playwright tests against real GitHub (see below)

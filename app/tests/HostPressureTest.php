@@ -15,7 +15,7 @@ final class HostPressureTest extends TestCase
     {
         \RunnerDeck\Host\HostPressure::fakeDisk(null);
         \RunnerDeck\Host\HostPressure::fakeRam(null);
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB');
         putenv('RUNNERDECK_POOL_DIR');
@@ -106,7 +106,7 @@ final class HostPressureTest extends TestCase
         \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [100 * 1024 * 1024, 20 * 1024 * 1024 * 1024]);
         \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
         $posts = 0;
-        \RunnerDeck\Core\Shell::fake(function () use (&$posts): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$posts): array {
             $posts++;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });

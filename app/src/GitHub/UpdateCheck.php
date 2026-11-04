@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\System\Shell;
 
 final class UpdateCheck
 {

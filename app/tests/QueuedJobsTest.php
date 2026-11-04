@@ -13,7 +13,7 @@ final class QueuedJobsTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_REPO');
         putenv('RUNNERDECK_SCOPE');
@@ -166,7 +166,7 @@ final class QueuedJobsTest extends TestCase
         $this->isolate();
         putenv('RUNNERDECK_SCOPE=org');
         putenv('RUNNERDECK_ORG=acme');
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
             }
@@ -246,7 +246,7 @@ final class QueuedJobsTest extends TestCase
     {
         $this->isolate();
         $calls = 0;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calls): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$calls): array {
             $calls++;
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
@@ -269,7 +269,7 @@ final class QueuedJobsTest extends TestCase
         putenv('RUNNERDECK_SCOPE=repo');
         putenv('RUNNERDECK_REPO=acme/app');
         $apiCalls = 0;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$apiCalls): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$apiCalls): array {
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
             }
@@ -328,7 +328,7 @@ final class QueuedJobsTest extends TestCase
         $this->isolate();
         putenv('RUNNERDECK_SCOPE=org');
         putenv('RUNNERDECK_ORG=acme');
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (in_array('auth', $cmd, true)) {
                 return ['code' => 0, 'stdout' => 'ok', 'stderr' => ''];
             }
@@ -402,7 +402,7 @@ final class QueuedJobsTest extends TestCase
         putenv('RUNNERDECK_LABEL=acme-pool');
 
         $jobCalls = 0;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$jobCalls): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$jobCalls): array {
             $line = implode(' ', $cmd);
             if (str_contains($line, 'auth status')) {
                 return ['code' => 0, 'stdout' => 'Logged in', 'stderr' => ''];

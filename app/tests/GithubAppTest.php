@@ -25,7 +25,7 @@ final class GithubAppTest extends TestCase
     protected function tearDown(): void
     {
         \RunnerDeck\GitHub\GithubApp::fakeToken(null);
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_GITHUB_APP_KEY_FILE');
         putenv('RUNNERDECK_GITHUB_APP_ID');
@@ -52,7 +52,7 @@ final class GithubAppTest extends TestCase
         );
         \RunnerDeck\GitHub\GithubApp::fakeToken(fn () => 'ghs_test_token');
         $authStatus = 0;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$authStatus): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$authStatus): array {
             if (in_array('auth', $cmd, true) && in_array('status', $cmd, true)) {
                 $authStatus++;
             }

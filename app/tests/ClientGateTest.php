@@ -14,7 +14,7 @@ final class ClientGateTest extends TestCase
         putenv('RUNNERDECK_IP_ALLOWLIST');
         putenv('RUNNERDECK_REQUIRE_MTLS');
         putenv('RUNNERDECK_TRUST_PROXY');
-        \RunnerDeck\Core\ClientGate::$denyHandler = null;
+        \RunnerDeck\Security\ClientGate::$denyHandler = null;
         $_SERVER = [];
     }
 
@@ -23,8 +23,8 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = '127.0.0.1:8090';
         $_SERVER['REMOTE_ADDR'] = '172.17.0.1';
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::skipExtraGate());
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::skipExtraGate());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -32,7 +32,7 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'localhost:8090';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -40,7 +40,7 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -48,7 +48,7 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '100.64.1.20';
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -56,7 +56,7 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = 'fd12:3456::1';
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -64,8 +64,8 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::extraGateOk());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::extraGateOk());
     }
 
     #[RunInSeparateProcess]
@@ -73,7 +73,7 @@ final class ClientGateTest extends TestCase
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '172.17.0.1';
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -82,8 +82,8 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.0/24');
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::allowlistMatch());
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::allowlistMatch());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -92,8 +92,8 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '198.51.100.4';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.0/24');
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::allowlistMatch());
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::allowlistMatch());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -104,8 +104,8 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '203.0.113.9';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
         putenv('RUNNERDECK_TRUST_PROXY');
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::allowlistMatch());
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::allowlistMatch());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -116,8 +116,8 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '203.0.113.9, 198.51.100.4';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
         putenv('RUNNERDECK_TRUST_PROXY=1');
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::allowlistMatch());
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::allowlistMatch());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -126,11 +126,11 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         putenv('RUNNERDECK_REQUIRE_MTLS=1');
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
 
         $_SERVER['SSL_CLIENT_VERIFY'] = 'SUCCESS';
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::mtlsVerified());
-        $this->assertFalse(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::mtlsVerified());
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -139,7 +139,7 @@ final class ClientGateTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $_SERVER['SSL_CLIENT_VERIFY'] = 'SUCCESS';
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -149,7 +149,7 @@ final class ClientGateTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $_SERVER['HTTPS'] = 'on';
         putenv('RUNNERDECK_TRUST_PROXY=1');
-        $this->assertTrue(\RunnerDeck\Core\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
@@ -169,10 +169,10 @@ final class ClientGateTest extends TestCase
     #[RunInSeparateProcess]
     public function testParseIpAllowlistRejectsGarbage(): void
     {
-        $this->assertSame([], \RunnerDeck\Core\Config::parseIpAllowlist(''));
-        $this->assertSame(['203.0.113.9', '192.168.0.0/16'], \RunnerDeck\Core\Config::parseIpAllowlist(
+        $this->assertSame([], \RunnerDeck\Configuration\Config::parseIpAllowlist(''));
+        $this->assertSame(['203.0.113.9', '192.168.0.0/16'], \RunnerDeck\Configuration\Config::parseIpAllowlist(
             "203.0.113.9\n192.168.0.0/16"
         ));
-        $this->assertNull(\RunnerDeck\Core\Config::parseIpAllowlist('not-an-ip'));
+        $this->assertNull(\RunnerDeck\Configuration\Config::parseIpAllowlist('not-an-ip'));
     }
 }

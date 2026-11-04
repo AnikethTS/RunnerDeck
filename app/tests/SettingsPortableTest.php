@@ -27,14 +27,14 @@ final class SettingsPortableTest extends TestCase
     #[RunInSeparateProcess]
     public function testExportOmitsTotpAndWebhook(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'acme',
             'RUNNERDECK_AUTH_TOTP_SECRET' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://example.com/hook',
             'RUNNERDECK_LABEL' => 'self-hosted-runnerdeck',
         ]);
-        $out = \RunnerDeck\Core\SettingsPortable::export();
+        $out = \RunnerDeck\Configuration\SettingsPortable::export();
         $this->assertSame('acme', $out['RUNNERDECK_ORG']);
         $this->assertArrayNotHasKey('RUNNERDECK_AUTH_TOTP_SECRET', $out);
         $this->assertArrayNotHasKey('RUNNERDECK_CRASH_WEBHOOK_URL', $out);
@@ -43,19 +43,19 @@ final class SettingsPortableTest extends TestCase
     #[RunInSeparateProcess]
     public function testImportKeepsTotpAndExistingWebhook(): void
     {
-        \RunnerDeck\Core\Settings::save([
+        \RunnerDeck\Configuration\Settings::save([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'acme',
             'RUNNERDECK_AUTH_TOTP_SECRET' => 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ',
             'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://example.com/hook',
         ]);
-        $result = \RunnerDeck\Core\SettingsPortable::import([
+        $result = \RunnerDeck\Configuration\SettingsPortable::import([
             'RUNNERDECK_SCOPE' => 'org',
             'RUNNERDECK_ORG' => 'other',
             'RUNNERDECK_AUTH_TOTP_SECRET' => 'should-not-apply',
         ]);
         $this->assertTrue($result['ok']);
-        $loaded = \RunnerDeck\Core\Settings::load();
+        $loaded = \RunnerDeck\Configuration\Settings::load();
         $this->assertSame('other', $loaded['RUNNERDECK_ORG']);
         $this->assertSame('GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', $loaded['RUNNERDECK_AUTH_TOTP_SECRET']);
         $this->assertSame('https://example.com/hook', $loaded['RUNNERDECK_CRASH_WEBHOOK_URL']);

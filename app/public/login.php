@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\ClientGate;
-use RunnerDeck\Core\Csrf;
-use RunnerDeck\Core\HostingWarnings;
-use RunnerDeck\Core\Layout;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Security\ClientGate;
+use RunnerDeck\Security\Csrf;
+use RunnerDeck\Security\HostingWarnings;
+use RunnerDeck\Presentation\Layout;
 
 ClientGate::enforce('html');
 

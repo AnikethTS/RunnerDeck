@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
-use RunnerDeck\Core\AppLog;
-use RunnerDeck\Core\Config;
+use RunnerDeck\Logging\AppLog;
+use RunnerDeck\Configuration\Config;
 
 /**
  * Optional cgroup v2 CPU/memory caps applied after a runner starts.

@@ -30,7 +30,7 @@ final class AutoRestartTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         \RunnerDeck\Host\HostPressure::fakeDisk(null);
@@ -42,14 +42,14 @@ final class AutoRestartTest extends TestCase
         putenv('RUNNERDECK_AUTO_CLEAR_WORK');
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT');
         putenv('RUNNERDECK_HISTORY_FILE');
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(null);
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(null);
         exec('rm -rf ' . escapeshellarg(dirname($this->dir)));
     }
 
     #[RunInSeparateProcess]
     public function testTickIsNoopWhenAutoRestartIsOff(): void
     {
-        $this->assertSame([], \RunnerDeck\Pool\AutoRestart::tick());
+        $this->assertSame([], \RunnerDeck\Lifecycle\AutoRestart::tick());
         $this->assertFileExists(dirname($this->dir) . '/storage/watch_heartbeat.json');
     }
 
@@ -57,7 +57,7 @@ final class AutoRestartTest extends TestCase
     public function testStartFlaggedStartsOnlyMarkedRunners(): void
     {
         $spawned = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
             $spawned[] = $cmd;
             return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
         });
@@ -71,7 +71,7 @@ final class AutoRestartTest extends TestCase
             pid: null,
             logTail: [],
         );
-        $started = \RunnerDeck\Pool\AutoRestart::startFlagged([
+        $started = \RunnerDeck\Lifecycle\AutoRestart::startFlagged([
             array_merge($info->toArray(), ['should_auto_restart' => true]),
         ]);
 
@@ -85,7 +85,7 @@ final class AutoRestartTest extends TestCase
     public function testStartFlaggedSkipsPausedRunners(): void
     {
         $spawned = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
             $spawned[] = $cmd;
             return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
         });
@@ -99,7 +99,7 @@ final class AutoRestartTest extends TestCase
             pid: null,
             logTail: [],
         );
-        $started = \RunnerDeck\Pool\AutoRestart::startFlagged([
+        $started = \RunnerDeck\Lifecycle\AutoRestart::startFlagged([
             array_merge($info->toArray(), [
                 'should_auto_restart' => true,
                 'auto_restart_paused' => true,
@@ -124,7 +124,7 @@ final class AutoRestartTest extends TestCase
             }
             return [true, (int) file_get_contents($pidFile)];
         });
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'bash') {
                 return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
             }
@@ -143,7 +143,7 @@ final class AutoRestartTest extends TestCase
                 logTail: [],
             ))->toArray();
         }
-        $out = \RunnerDeck\Pool\AutoRestart::scaleToQueue($rows, 5);
+        $out = \RunnerDeck\Lifecycle\AutoRestart::scaleToQueue($rows, 5);
         $ok = array_values(array_filter($out, fn ($row) => !empty($row['ok'])));
         $this->assertCount(1, $ok);
         putenv('RUNNERDECK_POOL_CAP');
@@ -158,7 +158,7 @@ final class AutoRestartTest extends TestCase
         file_put_contents($storage . '/idle_state.json', json_encode(['runner-1' => 1]));
         file_put_contents($this->dir . '/.runner', json_encode(['agentName' => 'acme-1']));
         file_put_contents($this->dir . '/runner.pid', '99');
-        \RunnerDeck\Pool\IdleState::fakeNow(fn () => 120);
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(fn () => 120);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(function (string $pidFile): array {
             if (!is_file($pidFile)) {
                 return [false, null];
@@ -168,7 +168,7 @@ final class AutoRestartTest extends TestCase
         \RunnerDeck\Pool\ProcessControl::fakeKill(fn () => true);
         \RunnerDeck\Pool\ProcessControl::fakeAlive(fn () => false);
         \RunnerDeck\Pool\ProcessControl::fakeTermWait(0);
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners') && str_contains($joined, '--paginate')) {
                 return [
@@ -197,11 +197,11 @@ final class AutoRestartTest extends TestCase
             pid: 99,
             logTail: [],
         ))->toArray();
-        $out = \RunnerDeck\Pool\AutoRestart::idleStop([$row]);
+        $out = \RunnerDeck\Lifecycle\AutoRestart::idleStop([$row]);
         $this->assertNotSame([], $out);
         $this->assertTrue($out[0]['ok']);
         $this->assertDirectoryDoesNotExist($this->dir . '/_work');
-        \RunnerDeck\Pool\IdleState::fakeNow(null);
+        \RunnerDeck\Lifecycle\IdleState::fakeNow(null);
         \RunnerDeck\Pool\ProcessControl::fakeKill(null);
         \RunnerDeck\Pool\ProcessControl::fakeAlive(null);
         \RunnerDeck\Pool\ProcessControl::fakeTermWait(null);
@@ -215,8 +215,8 @@ final class AutoRestartTest extends TestCase
         putenv('RUNNERDECK_BUNDLE_SNAPSHOT=1');
         putenv('RUNNERDECK_HISTORY_FILE=' . dirname($this->dir) . '/storage/db/history.sqlite');
         \RunnerDeck\Host\HostMode::restore(true, false);
-        \RunnerDeck\Host\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
-        $this->assertSame([], \RunnerDeck\Pool\AutoRestart::tick());
+        \RunnerDeck\Backup\HostBundleSnapshot::fakeNow(fn () => 1_700_000_000);
+        $this->assertSame([], \RunnerDeck\Lifecycle\AutoRestart::tick());
         $day = gmdate('Y-m-d', 1_700_000_000);
         $this->assertFileExists(dirname($this->dir) . '/storage/bundles/host-' . $day . '.json');
         \RunnerDeck\Host\HostMode::restore(false, false);

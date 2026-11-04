@@ -22,7 +22,7 @@ final class DiskAlertTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         putenv('RUNNERDECK_DISK_WEBHOOK_THRESHOLD');
@@ -43,14 +43,14 @@ final class DiskAlertTest extends TestCase
     public function testFiresOnceWhenSlotCrossesThreshold(): void
     {
         $bodies = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$bodies): array {
             $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $over = \RunnerDeck\Alert\DiskAlert::KIB_PER_GIB;
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over + 10)], $over + 10);
+        $over = \RunnerDeck\Alerting\DiskAlert::KIB_PER_GIB;
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner($over + 10)], $over + 10);
 
         $this->assertCount(2, $bodies);
         $slot = json_decode((string) $bodies[0], true);
@@ -63,20 +63,20 @@ final class DiskAlertTest extends TestCase
     public function testDoesNotFireAgainUntilUsageDropsBelowThreshold(): void
     {
         $n = 0;
-        \RunnerDeck\Core\Shell::fake(function () use (&$n): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$n): array {
             $n++;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
 
-        $over = \RunnerDeck\Alert\DiskAlert::KIB_PER_GIB;
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
+        $over = \RunnerDeck\Alerting\DiskAlert::KIB_PER_GIB;
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(2, $n);
 
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(2, $n);
 
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner(1)], 1);
-        \RunnerDeck\Alert\DiskAlert::check([$this->runner($over)], $over);
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner(1)], 1);
+        \RunnerDeck\Alerting\DiskAlert::check([$this->runner($over)], $over);
         $this->assertSame(4, $n);
     }
 }

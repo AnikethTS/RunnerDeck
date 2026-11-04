@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Configuration\Settings;
 
 /**
  * Last GitHub X-RateLimit-* from gh api --include. Missing headers fail open.

@@ -20,7 +20,7 @@ final class HostModeTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
         exec('rm -rf ' . escapeshellarg($this->dir));
@@ -55,7 +55,7 @@ final class HostModeTest extends TestCase
     {
         putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
         $bodies = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$bodies): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$bodies): array {
             if (($cmd[0] ?? '') === 'curl') {
                 $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
             }

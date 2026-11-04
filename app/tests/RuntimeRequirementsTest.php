@@ -35,6 +35,6 @@ final class RuntimeRequirementsTest extends TestCase
     public function testPdoSqliteIsLoadedSoHistoryCanRecord(): void
     {
         $this->assertTrue(extension_loaded('pdo_sqlite'));
-        $this->assertTrue(\RunnerDeck\Host\History::isAvailable());
+        $this->assertTrue(\RunnerDeck\Telemetry\History::isAvailable());
     }
 }

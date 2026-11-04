@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\AppLog;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Logging\AppLog;
+use RunnerDeck\Configuration\Settings;
 
 /**
  * Pause gh api polls after HTTP 429 / secondary rate limit. Unknown or

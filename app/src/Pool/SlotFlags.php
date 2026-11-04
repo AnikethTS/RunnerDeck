@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Pool;
 
-use RunnerDeck\Core\Config;
+use RunnerDeck\Configuration\Config;
 
 final class SlotFlags
 {

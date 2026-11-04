@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Alert\LongJobAlert;
-use RunnerDeck\Alert\QueueAlert;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Alerting\LongJobAlert;
+use RunnerDeck\Alerting\QueueAlert;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Configuration\Settings;
 use RunnerDeck\Pool\RunnerPool;
 
 final class QueuedJobs

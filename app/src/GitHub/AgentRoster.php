@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Configuration\Settings;
 
 final class AgentRoster
 {

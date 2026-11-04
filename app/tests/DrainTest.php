@@ -17,9 +17,9 @@ final class DrainTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
-        \RunnerDeck\Pool\Drain::fakeSleep(null);
-        \RunnerDeck\Pool\Drain::fakeNow(null);
+        \RunnerDeck\System\Shell::fake(null);
+        \RunnerDeck\Lifecycle\Drain::fakeSleep(null);
+        \RunnerDeck\Lifecycle\Drain::fakeNow(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_SETTINGS_FILE');
@@ -29,7 +29,7 @@ final class DrainTest extends TestCase
     public function testWaitUntilIdleReturnsWhenGithubIsIdle(): void
     {
         $calls = 0;
-        \RunnerDeck\Core\Shell::fake(function () use (&$calls): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$calls): array {
             $calls++;
             return [
                 'code' => 0,
@@ -45,10 +45,10 @@ final class DrainTest extends TestCase
                 'stderr' => '',
             ];
         });
-        \RunnerDeck\Pool\Drain::fakeSleep(static function (): void {
+        \RunnerDeck\Lifecycle\Drain::fakeSleep(static function (): void {
         });
 
-        $result = \RunnerDeck\Pool\Drain::waitUntilIdle('acme-1', 10);
+        $result = \RunnerDeck\Lifecycle\Drain::waitUntilIdle('acme-1', 10);
 
         $this->assertTrue($result['ok']);
         $this->assertSame(2, $calls);
@@ -57,7 +57,7 @@ final class DrainTest extends TestCase
     #[RunInSeparateProcess]
     public function testWaitUntilIdleTimesOutWhileBusy(): void
     {
-        \RunnerDeck\Core\Shell::fake(fn () => [
+        \RunnerDeck\System\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [[
@@ -71,14 +71,14 @@ final class DrainTest extends TestCase
             'stderr' => '',
         ]);
         $now = 0;
-        \RunnerDeck\Pool\Drain::fakeNow(static function () use (&$now): int {
+        \RunnerDeck\Lifecycle\Drain::fakeNow(static function () use (&$now): int {
             return $now;
         });
-        \RunnerDeck\Pool\Drain::fakeSleep(static function (int $seconds) use (&$now): void {
+        \RunnerDeck\Lifecycle\Drain::fakeSleep(static function (int $seconds) use (&$now): void {
             $now += $seconds;
         });
 
-        $result = \RunnerDeck\Pool\Drain::waitUntilIdle('acme-1', 3, 2);
+        $result = \RunnerDeck\Lifecycle\Drain::waitUntilIdle('acme-1', 3, 2);
 
         $this->assertFalse($result['ok']);
         $this->assertTrue($result['timed_out'] ?? false);
@@ -92,7 +92,7 @@ final class DrainTest extends TestCase
         mkdir($dir, 0700, true);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $dir . '/settings.json');
 
-        \RunnerDeck\Pool\Drain::audit(['runner-1'], false);
+        \RunnerDeck\Lifecycle\Drain::audit(['runner-1'], false);
 
         $raw = (string) file_get_contents($dir . '/runnerdeck.log');
         $this->assertStringContainsString('process.drain', $raw);

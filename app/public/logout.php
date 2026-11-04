@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\Csrf;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Security\Csrf;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     header('Location: login.php');

@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-use RunnerDeck\Core\Auth;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Totp;
+use RunnerDeck\Security\Auth;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Security\Totp;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
 
@@ -16,7 +16,7 @@ function paint(string $code, string $text, bool $color): string
     return $color ? "\033[{$code}m{$text}\033[0m" : $text;
 }
 
-\RunnerDeck\Core\Banner::show();
+\RunnerDeck\Presentation\Banner::show();
 echo "RunnerDeck login setup\n\n";
 
 if (Config::authEnabled()) {

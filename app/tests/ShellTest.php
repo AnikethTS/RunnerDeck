@@ -10,7 +10,7 @@ final class ShellTest extends TestCase
 {
     public function testCapturesStdoutAndExitCode(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec([PHP_BINARY, '-r', 'echo "hello"; exit(0);'], 5);
+        $result = \RunnerDeck\System\Shell::exec([PHP_BINARY, '-r', 'echo "hello"; exit(0);'], 5);
 
         $this->assertSame(0, $result['code']);
         $this->assertSame('hello', $result['stdout']);
@@ -18,14 +18,14 @@ final class ShellTest extends TestCase
 
     public function testCapturesNonZeroExitCode(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec([PHP_BINARY, '-r', 'exit(3);'], 5);
+        $result = \RunnerDeck\System\Shell::exec([PHP_BINARY, '-r', 'exit(3);'], 5);
 
         $this->assertSame(3, $result['code']);
     }
 
     public function testKillsProcessOnTimeout(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec([PHP_BINARY, '-r', 'sleep(5);'], 1);
+        $result = \RunnerDeck\System\Shell::exec([PHP_BINARY, '-r', 'sleep(5);'], 1);
 
         $this->assertNotSame(0, $result['code']);
         $this->assertStringContainsString('timed out', $result['stderr']);
@@ -33,7 +33,7 @@ final class ShellTest extends TestCase
 
     public function testMissingBinaryFailsOpenWithoutPhpWarning(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec(['/no/such/runnerdeck-helper', '--help'], 3);
+        $result = \RunnerDeck\System\Shell::exec(['/no/such/runnerdeck-helper', '--help'], 3);
 
         $this->assertNotSame(0, $result['code']);
         if ($result['code'] === -1) {
@@ -43,7 +43,7 @@ final class ShellTest extends TestCase
 
     public function testFailedStartReportsTheReasonPhpGave(): void
     {
-        $result = \RunnerDeck\Core\Shell::exec(['/nonexistent-runnerdeck/bin'], 5);
+        $result = \RunnerDeck\System\Shell::exec(['/nonexistent-runnerdeck/bin'], 5);
 
         $this->assertNotSame(0, $result['code']);
         if ($result['code'] === -1) {

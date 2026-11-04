@@ -46,7 +46,7 @@ final class ProcessControlTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
         \RunnerDeck\Pool\ProcessControl::fakeKill(null);
@@ -94,7 +94,7 @@ final class ProcessControlTest extends TestCase
     {
         \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 4242]);
         $spawned = false;
-        \RunnerDeck\Core\Shell::fake(function () use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$spawned): array {
             $spawned = true;
             return ['code' => 0, 'stdout' => '1', 'stderr' => ''];
         });
@@ -124,7 +124,7 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartWritesPidfileFromSpawnStdout(): void
     {
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $this->assertSame('bash', $cmd[0]);
             $this->assertStringContainsString('nohup ./run.sh', $cmd[2]);
             return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
@@ -148,7 +148,7 @@ final class ProcessControlTest extends TestCase
         \RunnerDeck\Host\SlotCgroup::fakeRoot($cg);
         putenv('RUNNERDECK_SLOT_CPU_PERCENT=50');
         putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=256');
-        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 0, 'stdout' => "5555\n", 'stderr' => '']);
+        \RunnerDeck\System\Shell::fake(fn () => ['code' => 0, 'stdout' => "5555\n", 'stderr' => '']);
 
         $result = \RunnerDeck\Pool\ProcessControl::startIndividual($this->runner());
 
@@ -162,7 +162,7 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartFailsWhenSpawnReturnsNoPid(): void
     {
-        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'nohup: failed']);
+        \RunnerDeck\System\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'nohup: failed']);
 
         $result = \RunnerDeck\Pool\ProcessControl::startIndividual($this->runner());
 
@@ -175,7 +175,7 @@ final class ProcessControlTest extends TestCase
     #[RunInSeparateProcess]
     public function testStartUnconfiguredFailsClosedWhenProvisionFails(): void
     {
-        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 22, 'stdout' => '', 'stderr' => '404']);
+        \RunnerDeck\System\Shell::fake(fn () => ['code' => 22, 'stdout' => '', 'stderr' => '404']);
 
         $result = \RunnerDeck\Pool\ProcessControl::startIndividual($this->runner(configured: false));
 
@@ -232,7 +232,7 @@ final class ProcessControlTest extends TestCase
     public function testDeleteUnconfiguredRemovesDirectory(): void
     {
         file_put_contents($this->dir . '/runner.log', 'log');
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'rm') {
                 $this->assertSame($this->dir . '.deleting', $cmd[2]);
                 exec('rm -rf ' . escapeshellarg($cmd[2]));
@@ -255,7 +255,7 @@ final class ProcessControlTest extends TestCase
         file_put_contents($this->dir . '/.runner', '{"agentName":"acme-1"}');
         file_put_contents($this->dir . '/.credentials', 'secret');
         $deletedGhId = null;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners') && !str_contains($joined, 'DELETE')) {
                 return [
@@ -291,7 +291,7 @@ final class ProcessControlTest extends TestCase
     {
         mkdir($this->dir . '/externals', 0755, true);
         file_put_contents($this->dir . '/externals/x', 'partial');
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'rm') {
                 return [
                     'code' => -1,
@@ -420,7 +420,7 @@ final class ProcessControlTest extends TestCase
             return str_contains($pidFile, 'runner-base') ? [true, 88] : [false, null];
         });
         $spawned = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
             if (($cmd[0] ?? '') === 'bash') {
                 $spawned = true;
             }
@@ -442,7 +442,7 @@ final class ProcessControlTest extends TestCase
         putenv('RUNNERDECK_MIN_FREE_DISK_GIB=1');
         putenv('RUNNERDECK_MIN_FREE_RAM_MIB=0');
         $spawned = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
             if (($cmd[0] ?? '') === 'bash') {
                 $spawned = true;
             }
@@ -489,7 +489,7 @@ final class ProcessControlTest extends TestCase
         file_put_contents($this->dir . '/.credentials', 'secret');
         file_put_contents($this->dir . '/runner.log', 'keep');
         $deletedGhId = null;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$deletedGhId): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners') && !str_contains($joined, 'DELETE')) {
                 return [
@@ -523,7 +523,7 @@ final class ProcessControlTest extends TestCase
     public function testStartClearsRebootReady(): void
     {
         \RunnerDeck\Host\HostMode::setRebootReady(true);
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $this->assertSame('bash', $cmd[0]);
             return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
         });

@@ -25,7 +25,7 @@ final class ProvisionerTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_LABEL');
@@ -181,7 +181,7 @@ final class ProvisionerTest extends TestCase
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
         $called = false;
-        \RunnerDeck\Core\Shell::fake(function () use (&$called): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$called): array {
             $called = true;
             return ['code' => 1, 'stdout' => '', 'stderr' => 'should not run'];
         });
@@ -197,7 +197,7 @@ final class ProvisionerTest extends TestCase
     public function testEnsureInstalledAbortsOnChecksumMismatch(): void
     {
         $payload = 'corrupt-archive';
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use ($payload): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use ($payload): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -229,7 +229,7 @@ final class ProvisionerTest extends TestCase
     {
         $payload = 'good-archive';
         $sha = hash('sha256', $payload);
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use ($payload, $sha): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use ($payload, $sha): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -273,16 +273,16 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testInstallOsDependenciesSkipsOnWindows(): void
     {
-        \RunnerDeck\Core\Platform::fakeWindows(true);
+        \RunnerDeck\System\Platform::fakeWindows(true);
         mkdir($this->dir . '/bin', 0755, true);
         file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\n");
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             self::fail('nothing should run on Windows: ' . implode(' ', $cmd));
         });
 
         $result = \RunnerDeck\Pool\Provisioner::installOsDependencies($this->dir);
 
-        \RunnerDeck\Core\Platform::fakeWindows(null);
+        \RunnerDeck\System\Platform::fakeWindows(null);
         $this->assertTrue($result['ok']);
     }
 
@@ -292,7 +292,7 @@ final class ProvisionerTest extends TestCase
         mkdir($this->dir . '/bin', 0755, true);
         file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\ntrue\n");
         $ran = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$ran): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$ran): array {
             if (($cmd[0] ?? '') === 'chmod') {
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
@@ -319,7 +319,7 @@ final class ProvisionerTest extends TestCase
     {
         mkdir($this->dir . '/bin', 0755, true);
         file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\n");
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'chmod') {
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
@@ -356,7 +356,7 @@ final class ProvisionerTest extends TestCase
     public function testEnsureConfiguredFailsWhenConfigShFails(): void
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
@@ -379,7 +379,7 @@ final class ProvisionerTest extends TestCase
     {
         file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
         $configCmd = [];
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$configCmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$configCmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'registration-token')) {
                 return ['code' => 0, 'stdout' => "ghs_test\n", 'stderr' => ''];
@@ -406,7 +406,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureInstalledReportsDownloadFailure(): void
     {
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return ['code' => 0, 'stdout' => json_encode($this->downloadsForAnyHost()), 'stderr' => ''];
@@ -429,7 +429,7 @@ final class ProvisionerTest extends TestCase
     {
         putenv('RUNNERDECK_AGENT_SHA=' . str_repeat('a', 64));
         $calledCurl = false;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$calledCurl): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$calledCurl): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -457,7 +457,7 @@ final class ProvisionerTest extends TestCase
         $payload = 'good-archive';
         $pin = hash('sha256', $payload);
         putenv('RUNNERDECK_AGENT_SHA=' . $pin);
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use ($payload): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use ($payload): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [
@@ -492,7 +492,7 @@ final class ProvisionerTest extends TestCase
     public function testEnsureInstalledAbortsWhenOmittedChecksumFileMissesPin(): void
     {
         putenv('RUNNERDECK_AGENT_SHA=' . str_repeat('c', 64));
-        \RunnerDeck\Core\Shell::fake(function (array $cmd): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, '/actions/runners/downloads')) {
                 return [

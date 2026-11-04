@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
-use RunnerDeck\Alert\CrashWebhook;
-use RunnerDeck\Alert\DiskAlert;
-use RunnerDeck\Core\Config;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Alerting\CrashWebhook;
+use RunnerDeck\Alerting\DiskAlert;
+use RunnerDeck\Configuration\Config;
+use RunnerDeck\Configuration\Settings;
 
 /**
  * Refuse new starts when this machine is out of disk or RAM.
@@ -146,7 +146,7 @@ final class HostPressure
         if (self::$ramFake !== null) {
             return (self::$ramFake)();
         }
-        if (\RunnerDeck\Core\Platform::isWindows()) {
+        if (\RunnerDeck\System\Platform::isWindows()) {
             return \RunnerDeck\Pool\WindowsProcess::memoryKb()[1] ?? null;
         }
         $meminfo = @file_get_contents('/proc/meminfo');

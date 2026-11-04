@@ -23,7 +23,7 @@ final class GithubClientTest extends TestCase
 
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         \RunnerDeck\GitHub\GithubApp::fakeToken(null);
         \RunnerDeck\GitHub\GithubBackoff::fakeNow(null);
         \RunnerDeck\GitHub\GithubClock::fakeNow(null);
@@ -86,7 +86,7 @@ final class GithubClientTest extends TestCase
     public function testListRunnersPassesPaginateAndPerPage(): void
     {
         $seen = null;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$seen): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$seen): array {
             $seen = $cmd;
             return [
                 'code' => 0,
@@ -140,7 +140,7 @@ final class GithubClientTest extends TestCase
     public function testGetJsonDecodesGhApiStdout(): void
     {
         $seen = null;
-        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$seen): array {
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$seen): array {
             $seen = $cmd;
             return ['code' => 0, 'stdout' => '{"ok":true}', 'stderr' => ''];
         });
@@ -183,7 +183,7 @@ final class GithubClientTest extends TestCase
         \RunnerDeck\GitHub\GithubBackoff::fakeNow(fn () => 1_700_000_000);
         \RunnerDeck\GitHub\GithubBackoff::noteFailure('HTTP 429: rate limit exceeded');
         $called = false;
-        \RunnerDeck\Core\Shell::fake(function () use (&$called): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$called): array {
             $called = true;
             return ['code' => 0, 'stdout' => '', 'stderr' => ''];
         });
@@ -200,7 +200,7 @@ final class GithubClientTest extends TestCase
     public function testListRunnersTripsBackoffOn429(): void
     {
         \RunnerDeck\GitHub\GithubBackoff::fakeNow(fn () => 1_700_000_000);
-        \RunnerDeck\Core\Shell::fake(function (): array {
+        \RunnerDeck\System\Shell::fake(function (): array {
             return ['code' => 1, 'stdout' => '', 'stderr' => 'HTTP 429: API rate limit exceeded'];
         });
         try {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\GitHub;
 
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Configuration\Settings;
 
 /**
  * Compare this host’s clock to GitHub’s Date header. Missing/unparseable

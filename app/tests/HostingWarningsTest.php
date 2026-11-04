@@ -11,7 +11,7 @@ final class HostingWarningsTest extends TestCase
 {
     protected function tearDown(): void
     {
-        \RunnerDeck\Core\HostingWarnings::fakeSapi(null);
+        \RunnerDeck\Security\HostingWarnings::fakeSapi(null);
         putenv('RUNNERDECK_TRUST_PROXY');
         putenv('RUNNERDECK_IP_ALLOWLIST');
         putenv('RUNNERDECK_REQUIRE_MTLS');
@@ -26,9 +26,9 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = '127.0.0.1:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertFalse(\RunnerDeck\Core\HostingWarnings::isHostedRequest());
-        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
-        $this->assertSame('', \RunnerDeck\Core\HostingWarnings::html());
+        $this->assertFalse(\RunnerDeck\Security\HostingWarnings::isHostedRequest());
+        $this->assertSame([], \RunnerDeck\Security\HostingWarnings::messages());
+        $this->assertSame('', \RunnerDeck\Security\HostingWarnings::html());
     }
 
     #[RunInSeparateProcess]
@@ -39,7 +39,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'localhost:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
+        $this->assertSame([], \RunnerDeck\Security\HostingWarnings::messages());
     }
 
     #[RunInSeparateProcess]
@@ -50,7 +50,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Security\HostingWarnings::messages();
         $this->assertNotSame([], $msgs);
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('not HTTPS', $joined);
@@ -58,7 +58,7 @@ final class HostingWarningsTest extends TestCase
         $this->assertStringContainsString('docs/hosting.md', $joined);
         $this->assertSame(
             'Not applied (proxy is loopback)',
-            \RunnerDeck\Core\ClientGate::extraGateFact()
+            \RunnerDeck\Security\ClientGate::extraGateFact()
         );
     }
 
@@ -70,12 +70,12 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
 
-        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
+        $joined = implode("\n", array_column(\RunnerDeck\Security\HostingWarnings::messages(), 'text'));
         $this->assertStringNotContainsString('loopback proxy', $joined);
         $this->assertStringNotContainsString('TOTP is the only gate', $joined);
         $this->assertSame(
             'Skipped (loopback or tailnet)',
-            \RunnerDeck\Core\ClientGate::extraGateFact()
+            \RunnerDeck\Security\ClientGate::extraGateFact()
         );
     }
 
@@ -86,7 +86,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
 
-        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Security\HostingWarnings::messages();
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('TOTP is the only gate', $joined);
         $this->assertStringNotContainsString('not HTTPS', $joined);
@@ -100,7 +100,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         putenv('RUNNERDECK_IP_ALLOWLIST=203.0.113.9');
 
-        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
+        $joined = implode("\n", array_column(\RunnerDeck\Security\HostingWarnings::messages(), 'text'));
         $this->assertStringNotContainsString('TOTP is the only gate', $joined);
     }
 
@@ -109,12 +109,12 @@ final class HostingWarningsTest extends TestCase
     {
         $_SERVER['HTTPS'] = 'on';
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
-        \RunnerDeck\Core\HostingWarnings::fakeSapi('cli-server');
+        \RunnerDeck\Security\HostingWarnings::fakeSapi('cli-server');
 
-        $msgs = \RunnerDeck\Core\HostingWarnings::messages();
+        $msgs = \RunnerDeck\Security\HostingWarnings::messages();
         $joined = implode("\n", array_column($msgs, 'text'));
         $this->assertStringContainsString('php -S', $joined);
-        $html = \RunnerDeck\Core\HostingWarnings::html();
+        $html = \RunnerDeck\Security\HostingWarnings::html();
         $this->assertStringContainsString('banner-info', $html);
         $this->assertStringContainsString('id="hosting-warnings"', $html);
     }
@@ -128,7 +128,7 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
         putenv('RUNNERDECK_TRUST_PROXY=1');
 
-        $joined = implode("\n", array_column(\RunnerDeck\Core\HostingWarnings::messages(), 'text'));
+        $joined = implode("\n", array_column(\RunnerDeck\Security\HostingWarnings::messages(), 'text'));
         $this->assertStringContainsString('TRUST_PROXY', $joined);
         $this->assertStringNotContainsString('not HTTPS', $joined);
     }
@@ -141,11 +141,11 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['SERVER_ADDR'] = '127.0.0.1';
         $_SERVER['HTTP_HOST'] = '127.0.0.1:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
-        \RunnerDeck\Core\HostingWarnings::fakeSapi('cli-server');
+        \RunnerDeck\Security\HostingWarnings::fakeSapi('cli-server');
         putenv('RUNNERDECK_AUTH_TOTP_SECRET');
         putenv('RUNNERDECK_TRUST_PROXY');
 
-        $facts = \RunnerDeck\Core\HostingWarnings::facts();
+        $facts = \RunnerDeck\Security\HostingWarnings::facts();
         $byLabel = [];
         foreach ($facts as $row) {
             $byLabel[$row['label']] = $row['value'];
@@ -157,7 +157,7 @@ final class HostingWarningsTest extends TestCase
         $this->assertSame('Off', $byLabel['TOTP']);
         $this->assertSame('Off', $byLabel['TRUST_PROXY']);
 
-        $html = \RunnerDeck\Core\HostingWarnings::settingsCardHtml();
+        $html = \RunnerDeck\Security\HostingWarnings::settingsCardHtml();
         $this->assertStringContainsString('id="this-host"', $html);
         $this->assertStringContainsString('This host', $html);
         $this->assertStringContainsString('127.0.0.1:8090', $html);
@@ -170,9 +170,9 @@ final class HostingWarningsTest extends TestCase
     {
         $_SERVER['HTTPS'] = 'on';
         $_SERVER['HTTP_HOST'] = 'ex.com<script>';
-        \RunnerDeck\Core\HostingWarnings::fakeSapi('fpm-fcgi');
+        \RunnerDeck\Security\HostingWarnings::fakeSapi('fpm-fcgi');
 
-        $html = \RunnerDeck\Core\HostingWarnings::settingsCardHtml();
+        $html = \RunnerDeck\Security\HostingWarnings::settingsCardHtml();
         $this->assertStringContainsString('ex.com&lt;script&gt;', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringContainsString('php-fpm', $html);
@@ -187,17 +187,17 @@ final class HostingWarningsTest extends TestCase
         $_SERVER['HTTP_HOST'] = '[::1]:8090';
         unset($_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['REQUEST_SCHEME']);
 
-        $this->assertFalse(\RunnerDeck\Core\HostingWarnings::isHostedRequest());
-        $this->assertSame([], \RunnerDeck\Core\HostingWarnings::messages());
+        $this->assertFalse(\RunnerDeck\Security\HostingWarnings::isHostedRequest());
+        $this->assertSame([], \RunnerDeck\Security\HostingWarnings::messages());
     }
 
     #[RunInSeparateProcess]
     public function testRequestHostStripsPortAndIpv6Brackets(): void
     {
         $_SERVER['HTTP_HOST'] = 'Example.COM:443';
-        $this->assertSame('example.com', \RunnerDeck\Core\HostingWarnings::requestHost());
+        $this->assertSame('example.com', \RunnerDeck\Security\HostingWarnings::requestHost());
 
         $_SERVER['HTTP_HOST'] = '[::1]:8090';
-        $this->assertSame('::1', \RunnerDeck\Core\HostingWarnings::requestHost());
+        $this->assertSame('::1', \RunnerDeck\Security\HostingWarnings::requestHost());
     }
 }

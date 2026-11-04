@@ -26,7 +26,7 @@ php "$DIR/bin/banner.php" || true
 if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
     if ! php -r '
         require $argv[1] . "/src/bootstrap.php";
-        exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);
+        exit(\RunnerDeck\Configuration\Config::authEnabled() ? 0 : 1);
     ' -- "$DIR"; then
         echo "Non-loopback bind requires TOTP login. Run: php app/bin/setup-totp.php" >&2
         exit 1

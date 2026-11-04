@@ -5,4 +5,4 @@ declare(strict_types=1);
 
 require __DIR__ . '/../src/bootstrap.php';
 
-\RunnerDeck\Core\Banner::show();
+\RunnerDeck\Presentation\Banner::show();

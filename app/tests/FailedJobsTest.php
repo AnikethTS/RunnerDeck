@@ -59,7 +59,7 @@ final class FailedJobsTest extends TestCase
             ],
         ]));
         $spawned = false;
-        \RunnerDeck\Core\Shell::fake(function () use (&$spawned): array {
+        \RunnerDeck\System\Shell::fake(function () use (&$spawned): array {
             $spawned = true;
             return ['code' => 1, 'stdout' => '', 'stderr' => ''];
         });
@@ -73,7 +73,7 @@ final class FailedJobsTest extends TestCase
         $this->assertSame('lint', $rows[0]['last_job_name']);
         $this->assertFalse($rows[1]['last_job_failed']);
         $this->assertFalse($spawned);
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_SETTINGS_FILE');
         exec('rm -rf ' . escapeshellarg($dir));
     }

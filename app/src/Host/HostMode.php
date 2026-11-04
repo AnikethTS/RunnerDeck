@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
-use RunnerDeck\Alert\CrashWebhook;
-use RunnerDeck\Core\Settings;
+use RunnerDeck\Alerting\CrashWebhook;
+use RunnerDeck\Configuration\Settings;
 
 final class HostMode
 {

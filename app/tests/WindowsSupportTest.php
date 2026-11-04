@@ -6,8 +6,8 @@ namespace Tests;
 
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
-use RunnerDeck\Core\Platform;
-use RunnerDeck\Core\Shell;
+use RunnerDeck\System\Platform;
+use RunnerDeck\System\Shell;
 use RunnerDeck\Pool\ProcessControl;
 use RunnerDeck\Pool\Provisioner;
 use RunnerDeck\Pool\RunnerInfo;

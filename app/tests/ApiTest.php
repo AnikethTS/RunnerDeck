@@ -15,7 +15,7 @@ final class ApiTest extends TestCase
     {
         $_POST = [];
         $_GET = [];
-        \RunnerDeck\Core\Shell::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
         putenv('RUNNERDECK_SETTINGS_FILE');
@@ -65,7 +65,7 @@ final class ApiTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         $this->isolateSettingsFile();
-        \RunnerDeck\Core\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'gh down']);
+        \RunnerDeck\System\Shell::fake(fn () => ['code' => 1, 'stdout' => '', 'stderr' => 'gh down']);
 
         $blocked = \RunnerDeck\Http\Api::checkNotBusy('acme-1', false);
 
@@ -80,7 +80,7 @@ final class ApiTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         $this->isolateSettingsFile();
-        \RunnerDeck\Core\Shell::fake(fn () => [
+        \RunnerDeck\System\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
@@ -107,7 +107,7 @@ final class ApiTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         $this->isolateSettingsFile();
-        \RunnerDeck\Core\Shell::fake(fn () => [
+        \RunnerDeck\System\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
@@ -126,7 +126,7 @@ final class ApiTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
         $this->isolateSettingsFile();
-        \RunnerDeck\Core\Shell::fake(fn () => [
+        \RunnerDeck\System\Shell::fake(fn () => [
             'code' => 0,
             'stdout' => json_encode([
                 'runners' => [
