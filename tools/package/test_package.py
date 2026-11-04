@@ -92,12 +92,12 @@ class DebianPackage(unittest.TestCase):
 
 class HomebrewFormula(unittest.TestCase):
     def test_fills_every_placeholder(self):
-        text = macos.render_formula("1.2.3", "https://example.test/runnerdeck-v1.2.3.zip", "a" * 64)
+        text = macos.render_formula("https://example.test/runnerdeck-v1.2.3.zip", "a" * 64)
         leftovers = set(re.findall(r"@[A-Z_]+@", text)) - {"@APP_ROOT@"}
         self.assertEqual(set(), leftovers)
         self.assertIn('url "https://example.test/runnerdeck-v1.2.3.zip"', text)
         self.assertIn('sha256 "' + "a" * 64 + '"', text)
-        self.assertIn('version "1.2.3"', text)
+        self.assertNotIn("version ", text)
         self.assertRegex(text, r"class Runnerdeck < Formula")
 
     def test_inreplaces_the_launcher_root_at_install_time(self):
