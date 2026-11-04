@@ -112,9 +112,6 @@ jobs:
           go-version-file: packaging/windows/launcher/go.mod
           cache: false
 
-      - name: Install Inno Setup
-        run: choco install innosetup --version 6.6.1 --no-progress -y
-
       - name: Build the Windows zip, the single exe and the installer
         run: python scripts/package/build_windows.py --single-exe --installer
 
