@@ -11,8 +11,8 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AnikethTS/RunnerDeck/badge)](https://scorecard.dev/viewer/?uri=github.com/AnikethTS/RunnerDeck)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](composer.json)
-[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](public/assets/js)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](app/composer.json)
+[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](app/public/assets/js)
 [![SQLite](https://img.shields.io/badge/SQLite-optional-003B57?logo=sqlite&logoColor=white)](docs/how-it-works.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](docs/docker.md)
 
@@ -53,12 +53,12 @@ git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
 ```
 
 Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
-That's the whole setup. Machine not ready yet? Run `php bin/doctor.php` to
+That's the whole setup. Machine not ready yet? Run `php app/bin/doctor.php` to
 check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
 all native).
 
-**On Windows without installing PHP:** download `RunnerDeck-Setup-<version>.exe`
+**On Windows without installing PHP:** download `RunnerDeck-<version>-windows-x64-setup.exe`
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 and run it. It is a normal installer wizard: it installs for your account only (no
 administrator rights), installs what RunnerDeck needs during setup (Microsoft's Visual C++
@@ -66,10 +66,15 @@ runtime, the Edge WebView2 runtime that draws the window, and the GitHub CLI, on
 adds a Start menu folder with an Uninstall entry, can add a desktop shortcut and start
 RunnerDeck when you sign in, and uninstalls from **Settings → Apps**, the Start menu or the tray menu. RunnerDeck then
 opens in its own window (no browser tab) and keeps running as a small icon in the system tray
-(Open dashboard, Show server log, Uninstall, Quit); closing the window hides it to the tray. PHP is bundled. If a step was skipped, it asks again the first time it starts. Prefer no installer? `runnerdeck-<version>-windows-x64.exe` is a single file
+(Open dashboard, Show server log, Uninstall, Quit); closing the window hides it to the tray. PHP is bundled. If a step was skipped, it asks again the first time it starts. Prefer no installer? `RunnerDeck-<version>-windows-x64.exe` is a single file
 that runs in a console window, and a `.zip` with the same files side by side is also
 attached. The downloads are not code-signed yet, so SmartScreen may ask you to choose
 **More info → Run anyway**. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
+
+**On Debian or Ubuntu:** download `RunnerDeck-<version>-linux-all.deb` from the
+[latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest) and run
+`sudo apt install ./RunnerDeck-<version>-linux-all.deb`. Then start it with `runnerdeck --open`.
+Your settings and runners are stored in `~/.local/share/runnerdeck`.
 
 ## Screenshots
 

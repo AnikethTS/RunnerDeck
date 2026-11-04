@@ -5,7 +5,7 @@
   pidfiles can go stale or get lost) a live scan of `/proc` matching on the
   actual `Runner.Listener` executable path. Each slot's **agent version** is
   read locally from `.runner` (`agentVersion`) or, if that field is missing,
-  `bin/Runner.Listener.deps.json` — no extra GitHub call. A runner is never silently
+  `app/bin/Runner.Listener.deps.json` — no extra GitHub call. A runner is never silently
   "invisible" just because its pidfile disappeared.
 - **GitHub-reported state** comes from `gh api --paginate …/actions/runners`
   (`per_page=100`) so orgs with more than 30 runners are not truncated.
@@ -20,7 +20,7 @@
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
   runner" page uses), verifies its checksum, extracts it, runs
-  `bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine,
+  `app/bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine,
   where the Docker image installs those libs via apk), requests a fresh
   org registration token, and runs `config.sh` (`config.cmd` on Windows,
   where the package is a zip extracted with `tar`) — the same flow you'd do
@@ -35,7 +35,7 @@
   `RUNNERDECK_DRAIN_TIMEOUT`, default 10 minutes) and then stops. The
   dashboard polls status while waiting; `POST drain_stop` /
   `drain_stop_all` / `bulk_drain_stop` wait on the server; `php
-  bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
+  app/bin/drain-stop.php` is the reboot-friendly CLI (optional runner ids,
   `--timeout=`, `--force`). Timeout is also a Settings field. While the
   dashboard waits, the row button shows remaining seconds and busy/idle
   from that same poll (`Busy · 12s`). **Rolling restart** does that
@@ -54,11 +54,11 @@
   **Host pressure** also refuses
   new starts when the pool filesystem or free RAM (Linux MemAvailable, Windows FreePhysicalMemory) is below
   the Settings minimum (default 1 GiB disk, 256 MiB RAM). Running jobs
-  keep going. `public/health.php` stays an unauthenticated liveness
+  keep going. `app/public/health.php` stays an unauthenticated liveness
   probe (`ok: true`) and adds `ready` plus `pressure` (and
   `reboot_ready`) so a monitor can see the box should not take more
   work. The pressure webhook is not sent from that probe.
-  `public/metrics.php` is a Prometheus scrape of local counters only.
+  `app/public/metrics.php` is a Prometheus scrape of local counters only.
 - **Stop**, **Restart**, **Drain**, **Roll restart**, **Upgrade agents**,
   **Clear work**, and removing a GitHub-only runner ask before they run.
   The same dialog covers Stop all, Drain all, and the matching bulk
@@ -118,7 +118,7 @@
   Crash tracking lives server-side, so the decision is consistent across
   every browser tab and survives a page reload. `action=status` (a GET)
   only ever decides and reports; it never spawns a process itself. A
-  sibling loop (`bin/watch-auto-restart.php`, started from `run.sh`)
+  sibling loop (`app/bin/watch-auto-restart.php`, started from `run.sh`)
   calls the same start path when auto-restart is on, so a crash is
   restarted with no dashboard tab open. That loop writes a heartbeat;
   if watch-backed features are on and it has not ticked, the dashboard
@@ -140,7 +140,7 @@
   polls flags the row; **Force idle** removes the GitHub registration
   and local `.runner` files so the next Start re-registers.
 - Every crash is recorded, not just flagged ones — a small SQLite table
-  (`src/Pool/CrashHistory.php`, the same database as CPU/RAM history) keeps a
+  (`app/src/Lifecycle/CrashHistory.php`, the same database as CPU/RAM history) keeps a
   7-day count per runner. It's independent of `crash_flagged`: a runner
   that's crashed 5 times but keeps getting auto-restarted still shows
   that count in the table, even though it's not currently flagged — the

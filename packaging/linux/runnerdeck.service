@@ -1,0 +1,12 @@
+[Unit]
+Description=RunnerDeck (self-hosted GitHub Actions runner pool UI)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/runnerdeck
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

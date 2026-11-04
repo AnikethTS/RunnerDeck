@@ -1,13 +1,13 @@
 # API reference
 
-RunnerDeck's UI is just a client of its own API — `public/api.php`, plus
-standalone endpoints (`public/log_stream.php`, `public/download_log.php`,
-`public/download_applog.php`, `public/download_settings.php`,
-`public/download_bundle.php`)
-for streaming and downloading logs, `public/health.php` for an unauthenticated
+RunnerDeck's UI is just a client of its own API — `app/public/api.php`, plus
+standalone endpoints (`app/public/log_stream.php`, `app/public/download_log.php`,
+`app/public/download_applog.php`, `app/public/download_settings.php`,
+`app/public/download_bundle.php`)
+for streaming and downloading logs, `app/public/health.php` for an unauthenticated
 uptime probe (`ok` is always true if PHP ran; `ready` is false in
 maintenance, when host pressure refuses starts, or when
-`reboot_ready` is set), and `public/metrics.php` for Prometheus text
+`reboot_ready` is set), and `app/public/metrics.php` for Prometheus text
 (local only: no GitHub, no webhook). Everything here is `127.0.0.1`-only by
 default (see [Safety notes](docs/security-and-safety.md#safety-notes)). Off
 loopback, TOTP is required in code — not only as a warning. On loopback with
@@ -27,7 +27,7 @@ fields as forward-compatible noise, not an error.
 
 By default, GET actions need nothing — no session, no token. POST actions
 require a CSRF token, since the only thing standing between this app and a
-forged request from another browser tab is that token (see `src/Core/Csrf.php`).
+forged request from another browser tab is that token (see `app/src/Security/Csrf.php`).
 The UI gets one for free (embedded in `index.php` as `window.__CSRF__` on
 every page load); a script that isn't rendering that page can fetch one
 directly:
@@ -53,7 +53,7 @@ The token is session-bound and doesn't expire on its own, but a fresh
 
 Every action except `action=csrf_token` and `action=login` returns `401`
 until the session is logged in. Off loopback with TOTP not configured,
-actions return `403` instead — set up login with `php bin/setup-totp.php`.
+actions return `403` instead — set up login with `php app/bin/setup-totp.php`.
 Get a CSRF token, then `POST action=login`:
 
 ```bash
@@ -71,7 +71,7 @@ curl -sS -b cookies.txt 'http://127.0.0.1:8090/api.php?action=status'
 ```
 
 Five wrong codes in a row locks login out for 5 minutes, same as the UI
-(`src/Core/Auth.php`). There's no separate API token or key to mint — a script
+(`app/src/Security/Auth.php`). There's no separate API token or key to mint — a script
 authenticates exactly the way a browser does.
 
 ## Response shape
@@ -187,14 +187,14 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=status&lines=5'
 `runners[].github` is `null` if GitHub has no record under that runner's
 registered name yet (still provisioning, or access issue — see `health`).
 `agent_version` is the local GitHub Actions runner agent version (`null`
-if `.runner` and `bin/Runner.Listener.deps.json` do not have one).
+if `.runner` and `app/bin/Runner.Listener.deps.json` do not have one).
 
 `last_job_failed` is true when the queued-jobs cache's latest completed
 job for that `agent_name` concluded `failure` or `timed_out`. It does
 not trigger another GitHub call from `action=status`.
 
 `crash_flagged`/`just_flagged`/`should_auto_restart`/`auto_restart_paused`/`mismatch_flagged` are
-server-tracked bookkeeping (`src/Pool/CrashState.php`) — reading/updating a small
+server-tracked bookkeeping (`app/src/Lifecycle/CrashState.php`) — reading/updating a small
 state file on every poll, the same category of side effect as
 `History::record()` already writing a stats sample from within this same GET
 action. `just_flagged` is `true` for exactly one poll, the one where a
@@ -206,7 +206,7 @@ polls where GitHub `online` and the local process disagree.
 threshold (the crash webhook URL is notified once, `event: mismatch`).
 
 `crash_count_7d` is how many times this runner has crashed in the last 7
-days (`src/Pool/CrashHistory.php`, a small SQLite table in the same database
+days (`app/src/Lifecycle/CrashHistory.php`, a small SQLite table in the same database
 as CPU/RAM history) — independent of `crash_flagged`, so it stays
 non-zero even after the runner's recovered and the flag has cleared.
 `crash_at_7d` is the newest timestamps for those events (unix seconds,
@@ -423,7 +423,7 @@ auth as the rest of the UI: loopback without TOTP is open; otherwise
 The full log (`runner.log.1` then `runner.log` when both exist), or a
 slice of it. `from`/`to` are optional Unix epoch seconds; omit both for
 the complete file. See the log viewer's "Download from / to" fields for
-the UI equivalent, and `public/download_log.php` for exactly how
+the UI equivalent, and `app/public/download_log.php` for exactly how
 partial-timestamp lines are handled. Same auth as `log_stream.php`.
 
 ```bash

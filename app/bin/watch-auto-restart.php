@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
+
+use RunnerDeck\Lifecycle\AutoRestart;
+use RunnerDeck\Configuration\Config;
+
+$argv = $_SERVER['argv'] ?? [];
+$once = in_array('--once', $argv, true);
+$interval = 5;
+
+do {
+    if (Config::isConfigured()) {
+        AutoRestart::tick();
+    }
+    if ($once) {
+        break;
+    }
+    sleep($interval);
+} while (true);

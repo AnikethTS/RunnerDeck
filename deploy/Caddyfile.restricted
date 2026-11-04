@@ -7,7 +7,7 @@
 #   caddy run --config deploy/Caddyfile.restricted
 
 runnerdeck.example.com {
-	root * /home/YOU/Github-Actions-SelfHost/public
+	root * /home/YOU/Github-Actions-SelfHost/app/public
 
 	# --- IP allowlist (uncomment and replace) ---
 	# @blocked not remote_ip 203.0.113.10 2001:db8::/32

@@ -6,7 +6,6 @@ runners
 storage
 data
 docs
-e2e
 tests
 .env
 *.log

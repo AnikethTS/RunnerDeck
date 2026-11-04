@@ -23,7 +23,7 @@ server {
     # ssl_client_certificate /etc/nginx/runnerdeck-clients.pem;
     # ssl_verify_client on;
 
-    root /home/YOU/Github-Actions-SelfHost/public;
+    root /home/YOU/Github-Actions-SelfHost/app/public;
     index index.php;
 
     location = /health.php {

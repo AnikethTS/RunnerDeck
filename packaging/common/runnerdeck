@@ -1,0 +1,66 @@
+#!/bin/sh
+# RunnerDeck launcher for packaged installs (Debian package, Homebrew).
+set -eu
+
+APP_ROOT="${RUNNERDECK_APP_ROOT:-@APP_ROOT@}"
+PORT="${RUNNERDECK_PORT:-8090}"
+OPEN=0
+
+usage() {
+    echo "Usage: runnerdeck [--open] [PORT]"
+    echo "       runnerdeck --version"
+    echo "Starts the RunnerDeck dashboard on http://127.0.0.1:PORT (default 8090)."
+    echo "  --open   open the dashboard in your browser once it is up"
+    echo "Data lives in \$RUNNERDECK_DATA_DIR (default: your user data directory)."
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --version | -v)
+            echo "RunnerDeck $(cat "$APP_ROOT/VERSION")"
+            exit 0
+            ;;
+        --help | -h)
+            usage
+            exit 0
+            ;;
+        --open) OPEN=1 ;;
+        [0-9]*) PORT="$arg" ;;
+        *)
+            echo "runnerdeck: unknown option $arg" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    default_data="$HOME/Library/Application Support/RunnerDeck"
+else
+    default_data="${XDG_DATA_HOME:-$HOME/.local/share}/runnerdeck"
+fi
+DATA="${RUNNERDECK_DATA_DIR:-$default_data}"
+mkdir -p "$DATA/db" "$DATA/runners"
+export RUNNERDECK_SETTINGS_FILE="${RUNNERDECK_SETTINGS_FILE:-$DATA/settings.json}"
+export RUNNERDECK_HISTORY_FILE="${RUNNERDECK_HISTORY_FILE:-$DATA/db/history.sqlite}"
+export RUNNERDECK_POOL_DIR="${RUNNERDECK_POOL_DIR:-$DATA/runners}"
+
+if [ "$OPEN" = 1 ]; then
+    (
+        tries=0
+        while [ "$tries" -lt 60 ]; do
+            if curl -fsS "http://127.0.0.1:$PORT/health.php" >/dev/null 2>&1; then
+                if command -v xdg-open >/dev/null 2>&1; then
+                    xdg-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 || true
+                elif command -v open >/dev/null 2>&1; then
+                    open "http://127.0.0.1:$PORT" || true
+                fi
+                exit 0
+            fi
+            tries=$((tries + 1))
+            sleep 0.5
+        done
+    ) &
+fi
+
+exec "$APP_ROOT/run.sh" "$PORT"

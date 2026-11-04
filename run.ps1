@@ -6,7 +6,8 @@ param(
     [switch]$Wsl
 )
 
-$repoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoDir = Join-Path $rootDir 'app'
 
 if ($Wsl) {
     $wslCmd = Get-Command wsl -ErrorAction SilentlyContinue
@@ -14,7 +15,7 @@ if ($Wsl) {
         Write-Error "WSL2 is required for -Wsl. Install it with: wsl --install"
         exit 1
     }
-    $wslPath = (wsl wslpath -a $repoDir.Replace('\', '/')).Trim()
+    $wslPath = (wsl wslpath -a $rootDir.Replace('\', '/')).Trim()
     if ([string]::IsNullOrWhiteSpace($wslPath)) {
         Write-Error "Could not resolve this repo's path inside WSL."
         exit 1
@@ -33,9 +34,9 @@ php "$repoDir\bin\banner.php"
 $bindHost = if ($env:RUNNERDECK_BIND_HOST) { $env:RUNNERDECK_BIND_HOST } else { '127.0.0.1' }
 
 if ($bindHost -ne '127.0.0.1' -and $bindHost -ne '::1') {
-    php -r 'require $argv[1] . "/src/bootstrap.php"; exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);' -- $repoDir
+    php -r 'require $argv[1] . "/src/bootstrap.php"; exit(\RunnerDeck\Configuration\Config::authEnabled() ? 0 : 1);' -- $repoDir
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Non-loopback bind requires TOTP login. Run: php bin/setup-totp.php"
+        Write-Error "Non-loopback bind requires TOTP login. Run: php app/bin/setup-totp.php"
         exit 1
     }
 }

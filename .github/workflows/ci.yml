@@ -85,22 +85,28 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Validate composer.json
+        working-directory: app
         run: composer validate --strict
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: composer audit (known CVEs in dependencies)
+        working-directory: app
         run: composer audit
 
       - name: PHP syntax check
+        working-directory: app
         run: |
           find src public tests bin -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: phpcs (PSR-12)
+        working-directory: app
         run: composer run cs
 
       - name: phpstan
+        working-directory: app
         run: composer run stan
 
   lint-js:
@@ -121,7 +127,7 @@ jobs:
         run: npm ci
 
       - name: npm audit (known CVEs in dependencies)
-        run: node scripts/npm-audit.mjs
+        run: node tools/ci/npm-audit.mjs
 
       - name: eslint
         run: npm run lint:js
@@ -169,7 +175,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           shopt -s nullglob
-          shellcheck -x -S warning run.sh bin/*.sh scripts/ci/*.sh
+          shellcheck -x -S warning run.sh app/bin/*.sh tools/ci/*.sh
 
   gitleaks:
     name: Security · Secret scan
@@ -238,9 +244,11 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite
+        working-directory: app
         run: composer run test
 
   coverage:
@@ -271,19 +279,21 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite with coverage
+        working-directory: app
         run: vendor/bin/phpunit --coverage-clover coverage.xml
 
       - name: Enforce minimum line coverage
-        run: php scripts/ci/coverage-gate.php coverage.xml 75
+        run: php tools/ci/coverage-gate.php app/coverage.xml 75
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: coverage
-          path: coverage.xml
+          path: app/coverage.xml
           retention-days: 7
 
   random-order:
@@ -314,9 +324,11 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite in random order
+        working-directory: app
         run: |
           for seed in 1 2 3; do
             vendor/bin/phpunit --order-by=random --random-order-seed="$seed"
@@ -346,9 +358,11 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-posix --ignore-platform-req=ext-pcntl
 
       - name: Windows unit tests
+        working-directory: app
         run: vendor/bin/phpunit tests/WindowsSupportTest.php
 
       - name: Real process control smoke (PowerShell, CIM, taskkill)
@@ -356,7 +370,7 @@ jobs:
         run: |
           $scratch = Join-Path $env:RUNNER_TEMP "runnerdeck-smoke"
           New-Item -ItemType Directory -Path $scratch | Out-Null
-          php scripts/ci/windows-smoke.php $scratch
+          php tools/ci/windows-smoke.php $scratch
 
   e2e-real-runner:
     name: E2E · Real runner · ${{ matrix.platform }}
@@ -399,12 +413,12 @@ jobs:
       - name: Register a real runner, run a job on it, and clean up
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: ./scripts/ci/e2e-real-runner.sh
+        run: ./tools/ci/e2e-real-runner.sh
 
       - name: Remove leftover runners and runs
         if: always() && steps.gate.outputs.enabled == 'true'
         shell: bash
-        run: ./scripts/ci/e2e-real-runner.sh cleanup
+        run: ./tools/ci/e2e-real-runner.sh cleanup
 
   e2e-live:
     name: E2E · Live dashboard · ${{ matrix.platform }}
@@ -458,7 +472,7 @@ jobs:
           fi
 
       - name: Drive every dashboard button against real runners
-        run: npx playwright test -c e2e-live/playwright.config.js
+        run: npx playwright test -c tests/e2e-live/playwright.config.js
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -472,7 +486,7 @@ jobs:
       - name: Remove leftover runners and runs
         if: always()
         shell: bash
-        run: ./scripts/ci/e2e-real-runner.sh cleanup
+        run: ./tools/ci/e2e-real-runner.sh cleanup
 
   e2e-live-extended:
     name: E2E · Live dashboard · ${{ matrix.platform }}
@@ -537,7 +551,7 @@ jobs:
 
       - name: Drive every dashboard button against real runners
         if: needs.plan.outputs.live_extended == 'true'
-        run: npx playwright test -c e2e-live/playwright.config.js
+        run: npx playwright test -c tests/e2e-live/playwright.config.js
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure() && needs.plan.outputs.live_extended == 'true'
@@ -551,7 +565,7 @@ jobs:
       - name: Remove leftover runners and runs
         if: always() && needs.plan.outputs.live_extended == 'true'
         shell: bash
-        run: ./scripts/ci/e2e-real-runner.sh cleanup
+        run: ./tools/ci/e2e-real-runner.sh cleanup
 
   e2e-live-fedora:
     name: E2E · Live dashboard · Fedora 44
@@ -606,7 +620,7 @@ jobs:
                 php-cli php-process php-xml php-mbstring php-pdo php-curl procps-ng gh tar curl git findutils which \
                 libicu krb5-libs openssl-libs zlib lttng-ust
               php -v
-              exec php -d max_execution_time=0 -S 127.0.0.1:8092 -t public
+              exec php -d max_execution_time=0 -S 127.0.0.1:8092 -t app/public
             '
           for _ in $(seq 1 90); do
             if curl -fsS http://127.0.0.1:8092/health.php >/dev/null 2>&1; then
@@ -618,7 +632,7 @@ jobs:
           exit 1
 
       - name: Drive every dashboard button against real runners
-        run: npx playwright test -c e2e-live/playwright.config.js
+        run: npx playwright test -c tests/e2e-live/playwright.config.js
 
       - name: Container log
         if: always()
@@ -635,7 +649,7 @@ jobs:
 
       - name: Remove leftover runners and runs
         if: always()
-        run: ./scripts/ci/e2e-real-runner.sh cleanup
+        run: ./tools/ci/e2e-real-runner.sh cleanup
 
       - name: Stop the container
         if: always()
@@ -652,37 +666,68 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: packaging/windows/launcher/go.mod
+          go-version-file: desktop/go.mod
           cache: false
 
       - name: Vet and test the launcher
-        working-directory: packaging/windows/launcher
+        working-directory: desktop
         run: |
           go vet ./...
           go test ./...
 
       - name: Build the Windows zip, the single exe and the installer
-        run: python scripts/package/build_windows.py --single-exe --installer
+        run: python tools/package/build.py --target windows
 
       - name: Run the zip build and check it shuts down cleanly
-        run: python scripts/package/smoke_windows.py dist
+        run: python tools/package/smoke_windows.py dist
 
       - name: Run the single exe on its own and check it shuts down cleanly
-        run: python scripts/package/smoke_windows.py dist --single
+        run: python tools/package/smoke_windows.py dist --single
 
       - name: Install, run and uninstall the Setup wizard silently
-        run: python scripts/package/smoke_installer.py dist
+        run: python tools/package/smoke_installer.py dist
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: runnerdeck-windows-x64
           path: |
-            dist/RunnerDeck-Setup-*.exe
-            dist/RunnerDeck-Setup-*.exe.sha256
-            dist/runnerdeck-*-windows-x64.zip
-            dist/runnerdeck-*-windows-x64.zip.sha256
-            dist/runnerdeck-*-windows-x64.exe
-            dist/runnerdeck-*-windows-x64.exe.sha256
+            dist/RunnerDeck-*-windows-x64-setup.exe
+            dist/RunnerDeck-*-windows-x64.exe
+            dist/RunnerDeck-*-windows-x64.zip
+            dist/SHA256SUMS-windows-x64
+          retention-days: 7
+
+  package-linux:
+    name: Package · Linux deb
+    needs: plan
+    if: needs.plan.outputs.package == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test the packaging tool
+        run: python3 tools/package/test_package.py
+
+      - name: Build the Debian package and the Homebrew formula
+        run: |
+          git archive --format=zip --prefix="runnerdeck-ci/" -o "${RUNNER_TEMP}/source.zip" HEAD
+          python3 tools/package/build.py --target linux-deb --target brew-formula \
+            --source-zip "${RUNNER_TEMP}/source.zip" --tag "v$(cat VERSION)"
+
+      - name: Check the formula is valid Ruby
+        run: ruby -c dist/runnerdeck.rb
+
+      - name: Install, run and remove the package
+        run: python3 tools/package/smoke_linux.py dist
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runnerdeck-linux-all
+          path: |
+            dist/RunnerDeck-*-linux-all.deb
+            dist/SHA256SUMS-linux-all
+            dist/runnerdeck.rb
           retention-days: 7
 
   smoke-test:
@@ -714,10 +759,10 @@ jobs:
           RUNNERDECK_ORG: smoke-test-org
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          php -S 127.0.0.1:8090 -t public &
+          php -S 127.0.0.1:8090 -t app/public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          bash scripts/ci/ci-smoke-status.sh
+          bash tools/ci/ci-smoke-status.sh
 
   e2e-test:
     name: E2E · Browser UI (mocked API)
@@ -778,7 +823,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Composer and run PHPUnit
-        run: bash scripts/ci/ci-apt-phpunit.sh
+        run: bash tools/ci/ci-apt-phpunit.sh
 
   dnf-php-test:
     name: Unit · ${{ matrix.name }} · dnf PHP
@@ -817,7 +862,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Composer and run PHPUnit
-        run: bash scripts/ci/ci-apt-phpunit.sh
+        run: bash tools/ci/ci-apt-phpunit.sh
 
   alpine-smoke-test:
     name: Smoke · Alpine (musl)
@@ -839,17 +884,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install gh CLI (the base image has none; RunnerDeck shells out to it)
-        run: sh scripts/ci/install-gh.sh
+        run: sh tools/ci/install-gh.sh
 
       - name: Boot the dashboard and hit the status endpoint
         env:
           RUNNERDECK_ORG: smoke-test-org
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          php -S 127.0.0.1:8090 -t public &
+          php -S 127.0.0.1:8090 -t app/public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          bash scripts/ci/ci-smoke-status.sh
+          bash tools/ci/ci-smoke-status.sh
 
   docker-smoke-test:
     name: Smoke · Docker image
@@ -897,12 +942,12 @@ jobs:
             runnerdeck:ci
           trap 'docker rm -f runnerdeck-ci >/dev/null 2>&1 || true' EXIT
           RUNNERDECK_SMOKE_TOTP_SECRET=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ \
-            bash scripts/ci/ci-smoke-status.sh
+            bash tools/ci/ci-smoke-status.sh
           docker logs runnerdeck-ci
 
   gate:
     name: CI · Merge gate
-    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows]
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

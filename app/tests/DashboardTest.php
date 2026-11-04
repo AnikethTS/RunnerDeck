@@ -1,0 +1,228 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests;
+
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\TestCase;
+
+final class DashboardTest extends TestCase
+{
+    private string $root;
+    private string $poolDir;
+    private string $runnerDir;
+
+    protected function setUp(): void
+    {
+        $this->root = sys_get_temp_dir() . '/runnerdeck-dash-test-' . uniqid();
+        $this->poolDir = $this->root . '/pool';
+        $this->runnerDir = $this->poolDir . '/runner-1';
+        mkdir($this->runnerDir, 0755, true);
+        file_put_contents($this->runnerDir . '/.runner', json_encode([
+            'agentName' => 'acme-1',
+            'agentVersion' => '2.321.0',
+        ]));
+
+        putenv('RUNNERDECK_POOL_DIR=' . $this->poolDir);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->root . '/storage/settings.json');
+        putenv('RUNNERDECK_HISTORY_FILE=' . $this->root . '/storage/db/history.sqlite');
+        putenv('RUNNERDECK_ORG=acme');
+        putenv('RUNNERDECK_SCOPE=org');
+        \RunnerDeck\GitHub\AgentTarget::fake(fn () => null);
+    }
+
+    protected function tearDown(): void
+    {
+        \RunnerDeck\GitHub\AgentTarget::fake(null);
+        \RunnerDeck\System\Shell::fake(null);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners(null);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(null);
+        putenv('RUNNERDECK_POOL_DIR');
+        putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('RUNNERDECK_HISTORY_FILE');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_AUTO_RESTART');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD');
+        exec('rm -rf ' . escapeshellarg($this->root));
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotNeverSpawnsAProcessEvenWhenAutoRestartShouldFire(): void
+    {
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+
+        $spawned = false;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawned): array {
+            if (($cmd[0] ?? '') === 'bash') {
+                $spawned = true;
+                return ['code' => 0, 'stdout' => "4242\n", 'stderr' => ''];
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+        });
+
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        $this->assertTrue(
+            $result['runners'][0]['should_auto_restart'],
+            'sanity: this poll should have flagged the crash, or the test proves nothing'
+        );
+        $this->assertFalse(
+            $spawned,
+            'action=status (GET) must never spawn a process — it has no CSRF check by design'
+        );
+        $this->assertIsArray($result['errors']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotSkipsAuthStatusWhenListRunnersSucceeds(): void
+    {
+        $authCalled = false;
+        $listCalled = false;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$authCalled, &$listCalled): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, 'auth status')) {
+                $authCalled = true;
+                return ['code' => 0, 'stdout' => 'logged in', 'stderr' => ''];
+            }
+            if (str_contains($joined, '/actions/runners') && str_contains($joined, '--paginate')) {
+                $listCalled = true;
+                return [
+                    'code' => 0,
+                    'stdout' => json_encode([
+                        'id' => 1,
+                        'name' => 'acme-1',
+                        'status' => 'online',
+                        'busy' => false,
+                        'labels' => [],
+                        'os' => 'Linux',
+                    ]),
+                    'stderr' => '',
+                ];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        $this->assertTrue($listCalled);
+        $this->assertFalse($authCalled);
+        $this->assertTrue($result['health']['logged_in']);
+        $this->assertTrue($result['health']['org_access_ok']);
+        $this->assertSame('online', $result['runners'][0]['github']['status']);
+        $this->assertIsArray($result['orphans']);
+        $this->assertSame('Linux', $result['runners'][0]['github']['os']);
+        $this->assertSame('2.321.0', $result['runners'][0]['agent_version']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotUsesAuthStatusOnlyAfterListRunnersFails(): void
+    {
+        $authCalled = false;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$authCalled): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, 'auth status')) {
+                $authCalled = true;
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+            }
+            if (str_contains($joined, '/actions/runners')) {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'HTTP 401'];
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+
+        $result = \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        $this->assertTrue($authCalled);
+        $this->assertFalse($result['health']['logged_in']);
+        $this->assertFalse($result['health']['org_access_ok']);
+        $this->assertSame('not logged in', $result['health']['message']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotFiresCrashWebhookOnRealCrash(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+
+        $webhookBody = null;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$webhookBody): array {
+            if (($cmd[0] ?? '') === 'curl') {
+                $webhookBody = $cmd[array_search('-d', $cmd, true) + 1];
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+        });
+
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        $this->assertNotNull($webhookBody, 'expected a webhook POST for the crash-loop');
+        $decoded = json_decode((string) $webhookBody, true);
+        $this->assertSame('runner-1', $decoded['runner']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testSnapshotFiresThresholdWebhookOnCrossingN(): void
+    {
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL=https://example.com/hook');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD=1');
+        putenv('RUNNERDECK_AUTO_RESTART=1');
+
+        $bodies = [];
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$bodies): array {
+            if (($cmd[0] ?? '') === 'curl') {
+                $bodies[] = $cmd[array_search('-d', $cmd, true) + 1];
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in'];
+        });
+
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [true, 999]);
+        \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+        \RunnerDeck\Presentation\Dashboard::snapshot();
+
+        $this->assertCount(1, $bodies);
+        $decoded = json_decode((string) $bodies[0], true);
+        $this->assertSame('crash_threshold', $decoded['event']);
+        $this->assertSame(1, $decoded['crash_count_7d']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testLocalSnapshotNeverCallsGithub(): void
+    {
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        $gh = false;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$gh): array {
+            if (str_ends_with((string) ($cmd[0] ?? ''), 'gh') || ($cmd[0] ?? '') === 'curl') {
+                $gh = true;
+            }
+            return ['code' => 1, 'stdout' => '', 'stderr' => ''];
+        });
+
+        $local = \RunnerDeck\Presentation\Dashboard::localSnapshot();
+
+        $this->assertFalse($gh);
+        $this->assertCount(1, $local['runners']);
+        $this->assertSame('runner-1', $local['runners'][0]['id']);
+        $this->assertNull($local['runners'][0]['github']);
+        $this->assertTrue($local['health']['logged_in']);
+    }
+}

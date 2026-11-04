@@ -5,7 +5,7 @@ Linux, macOS and Windows (note a container runs Linux runners, not Windows ones)
 PHP directly:
 
 ```bash
-docker compose run --rm -it runnerdeck php bin/setup-totp.php
+docker compose run --rm -it runnerdeck php app/bin/setup-totp.php
 docker compose up --build
 ```
 
@@ -39,7 +39,7 @@ inside the container — same one-operator limits as a local install.
 - The image runs as root and sets `RUNNER_ALLOW_RUNASROOT=1` because
   GitHub's `config.sh` otherwise refuses UID 0. It also `apk add`s the
   shared libraries the .NET runner binary needs (`icu-libs`, `krb5-libs`,
-  …) — GitHub's `bin/installdependencies.sh` is apt/yum-only and is
+  …) — GitHub's `app/bin/installdependencies.sh` is apt/yum-only and is
   skipped on Alpine.
 - Edit the `environment:` block in `docker-compose.yml` for your org/repo
   scope — same variables as [Configuration](configuration.md).

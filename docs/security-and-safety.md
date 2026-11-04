@@ -10,7 +10,7 @@ supported, but it's opt-in and has two parts, both required together:
 
 1. **Require a login.** Off loopback this is enforced: `./run.sh` will
    not bind `0.0.0.0` without TOTP, and PHP refuses the dashboard/API
-   (except `/health.php` and `/metrics.php`) until you run `php bin/setup-totp.php` on the
+   (except `/health.php` and `/metrics.php`) until you run `php app/bin/setup-totp.php` on the
    machine. On loopback you can still open **Settings → Login → Set up
    login** in the dashboard. Both paths generate a TOTP secret for an
    authenticator app (Google Authenticator, Authy, 1Password, etc.) via
@@ -35,7 +35,7 @@ supported, but it's opt-in and has two parts, both required together:
    the point of requiring a login at all. PHP 403s a public client unless
    an IP allowlist or verified mTLS is actually on (Settings → Access, or
    env). A same-machine proxy to `php -S` still serves a public hostname,
-   because PHP only sees `127.0.0.1`; the banner and `php bin/doctor.php`
+   because PHP only sees `127.0.0.1`; the banner and `php app/bin/doctor.php`
    warn when no allowlist or mTLS is set. php-fpm applies the gate.
    Proxy examples remain defense in depth. Skip public 443 when you can
    ([Beyond TOTP](hosting.md#beyond-totp-on-443)). The UI repeats
@@ -51,7 +51,7 @@ set `RUNNERDECK_TRUST_PROXY=1` (see [Hosting](hosting.md)). HTTPS
 responses also send `Strict-Transport-Security`.
 
 Login is still single-user — one TOTP secret, recovery codes if the
-phone is gone, SSH/`php bin/setup-totp.php` to replace it. A stolen
+phone is gone, SSH/`php app/bin/setup-totp.php` to replace it. A stolen
 session cookie (XSS in another app on this origin, unlocked laptop)
 can still start and stop runners until idle timeout, user-agent
 mismatch, logout, or **Sign out other sessions**. JWT-style API keys
@@ -80,7 +80,7 @@ RunnerDeck is a PHP web SAPI (`php -S` or php-fpm). Those CVEs sit in
 PHP itself, not in this app. Update the host packages to **8.5.12**,
 **8.4.27**, **8.3.36**, or **8.2.35**, then restart `run.sh` / php-fpm.
 PHP 8.1 and older have no official upstream fix. The Docker image is
-pinned to 8.5.12. `php bin/doctor.php` warns when the running binary is
+pinned to 8.5.12. `php app/bin/doctor.php` warns when the running binary is
 still below those floors.
 
 ## Safety notes
@@ -97,7 +97,7 @@ whatever scope your login token has (real admin access to your org's
 runners in org scope, or to that one repo's runners in repo scope), and it
 can start and stop real processes on the machine it runs on. Don't put this behind a reverse proxy or expose the port on any network
 interface beyond loopback — **unless** you've enabled login
-(`php bin/setup-totp.php`) **and** that reverse proxy terminates TLS.
+(`php app/bin/setup-totp.php`) **and** that reverse proxy terminates TLS.
 `RUNNERDECK_BIND_HOST=0.0.0.0` without TOTP now exits. Publishing
 Docker as `-p 8090:8090` (all interfaces) still needs TOTP inside the
 container because the image binds `0.0.0.0`. Skipping TLS while login

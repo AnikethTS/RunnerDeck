@@ -7,9 +7,9 @@ const PORT = 8091;
 const tmpRoot = mkdtempSync(path.join(tmpdir(), 'runnerdeck-e2e-'));
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   // README / docs shots live next to the files GitHub and the landing page use.
-  snapshotPathTemplate: '{testDir}/../.github/screenshots/{arg}{ext}',
+  snapshotPathTemplate: '{testDir}/../../.github/screenshots/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
       maxDiffPixelRatio: 0.03,
@@ -26,7 +26,7 @@ export default defineConfig({
   timeout: 20_000,
   maxFailures: process.env.CI ? 5 : 0,
   reporter: process.env.CI
-    ? [['./e2e/progress-reporter.js'], ['list']]
+    ? [['./tests/e2e/progress-reporter.js'], ['list']]
     : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
@@ -35,7 +35,7 @@ export default defineConfig({
     navigationTimeout: 10_000,
   },
   webServer: {
-    command: `php -S 127.0.0.1:${PORT} -t public`,
+    command: `php -S 127.0.0.1:${PORT} -t app/public`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     env: {

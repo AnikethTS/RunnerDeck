@@ -11,14 +11,14 @@ now — the project's policy on AI-assisted contributions.
    [Getting started](docs/getting-started.md#first-time-setup) — you'll need
    `gh` authenticated and either an org or your own GitHub account to point
    it at; you don't need real runners running to work on most of the codebase).
-3. Install dev tooling: `composer install` and `npm install`. `composer.lock`
+3. Install dev tooling: `composer install` (run it inside `app/`) and `npm install`. `app/composer.lock`
    and `package-lock.json` are committed, so this installs the exact versions
    CI uses — if you add/update a dev dependency, commit the updated lock file
    alongside it. This pulls in PHPUnit, phpstan, and phpcs, and wires up the
    pre-commit hook (`.githooks/pre-commit`) that runs all three before every
    commit. Nothing about *running* RunnerDeck
    itself needs Composer — this step is purely for contributors.
-4. Confirm your setup: `composer run test && composer run stan && composer run cs`.
+4. Confirm your setup: `cd app && composer run test && composer run stan && composer run cs`.
    All three should pass on a clean checkout.
 
 ## Making a change
@@ -26,15 +26,15 @@ now — the project's policy on AI-assisted contributions.
 - Create a branch off `main`: `git checkout -b your-change-name`.
 - Keep PRs focused. One logical change per PR is much easier to review than
   a bundle of unrelated fixes — see [Scope](#scope) below.
-- Add or update tests under `tests/` for anything you change in `src/`.
+- Add or update tests under `app/tests/` for anything you change in `app/src/`.
   `ProcessControl`, `Provisioner`, `ProcessDecision`, `AppLog`, `Api`, `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
   all have existing test files to follow the pattern of.
-- If a test in `e2e/dashboard.spec.js` exists because of a specific issue,
+- If a test in `tests/e2e/dashboard.spec.js` exists because of a specific issue,
   link it with a `// https://github.com/AnikethTS/RunnerDeck/issues/N`
   comment directly above the `test(...)` call — see the existing tests
   there for the pattern. Helps a future reader understand why that
   particular case is being checked.
-- Run `composer run test`, `composer run stan`, and `composer run cs`
+- From `app/`, run `composer run test`, `composer run stan`, and `composer run cs`
   locally (or just commit — the pre-commit hook runs them for you) before
   opening a PR. CI runs the same checks plus a boot smoke test on Linux and
   macOS, so failures there will block merge either way.

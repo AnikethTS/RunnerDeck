@@ -19,8 +19,8 @@ Fixes #<!-- issue number, if there is one -->
 
 ## Checklist
 
-- [ ] Added/updated tests under `tests/` for anything changed in `src/`
-- [ ] `composer run test && composer run stan && composer run cs` pass locally
+- [ ] Added/updated tests under `app/tests/` for anything changed in `app/src/`
+- [ ] `composer run test && composer run stan && composer run cs` pass locally (run from `app/`)
 - [ ] Added a bullet under `## [Unreleased]` in `CHANGELOG.md`
 - [ ] Stayed in scope — no unrelated refactors, new dependencies, or config options
       beyond what the issue calls for (see [Scope](../CONTRIBUTING.md#scope))
