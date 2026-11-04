@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- A Windows installer wizard, `RunnerDeck-Setup-<version>.exe`, built with Inno Setup. It installs for your account without administrator rights, adds a Start menu entry, optional desktop shortcut and start-with-Windows, and uninstalls from Settings. The installed RunnerDeck is a windowless tray app (Open dashboard, Show server log, Quit) that asks via message boxes before installing the Visual C++ runtime or the GitHub CLI. CI installs, starts and uninstalls it silently, and the release attaches it as the main Windows download.
+
 - The Windows `runnerdeck.exe` is now a guided setup. It prints the welcome banner, checks PHP and offers to install Microsoft's Visual C++ runtime when Windows lacks it (checking the installer's Microsoft signature first), checks the GitHub CLI and offers to install it and sign you in, and explains failures instead of printing an empty log. The window stays open on errors, the unpack message only shows on the first start, and `--yes` accepts every prompt.
 
 - A single-file `runnerdeck.exe` for Windows that carries PHP and the app and unpacks them on first start, built next to the zip. The build script also resolves a relative `--out` path correctly.

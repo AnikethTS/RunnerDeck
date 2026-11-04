@@ -25,6 +25,9 @@ func run(args []string) int {
 	opts, err := parseOptions(args, os.Getenv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "runnerdeck:", err)
+		if defaultMode == "tray" {
+			showErrorBox(err.Error())
+		}
 		return 2
 	}
 	exe, err := os.Executable()
@@ -36,6 +39,10 @@ func run(args []string) int {
 	if opts.showVersion {
 		fmt.Println("RunnerDeck", appVersion(l))
 		return 0
+	}
+
+	if trayRequested(opts) {
+		return runTray(opts, l)
 	}
 
 	c := newConsole(opts.assumeYes)
@@ -72,7 +79,7 @@ func run(args []string) int {
 	return 0
 }
 
-func start(c *console, opts options, l layout) (int, *processGroup, *exec.Cmd, *exec.Cmd, chan error, string) {
+func start(c ui, opts options, l layout) (int, *processGroup, *exec.Cmd, *exec.Cmd, chan error, string) {
 	none := func(code int) (int, *processGroup, *exec.Cmd, *exec.Cmd, chan error, string) {
 		return code, nil, nil, nil, nil, ""
 	}

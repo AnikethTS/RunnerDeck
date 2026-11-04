@@ -105,7 +105,7 @@ func verifyMicrosoftSignature(path string) error {
 	return runPowerShell(script)
 }
 
-func installVCRedist(c *console) error {
+func installVCRedist(c ui) error {
 	dest := filepath.Join(os.TempDir(), "runnerdeck-vc_redist.x64.exe")
 	defer os.Remove(dest)
 	c.info("Downloading the installer from Microsoft...")
@@ -134,7 +134,7 @@ func installVCRedist(c *console) error {
 	return fmt.Errorf("the installer did not finish (it may have been cancelled): %w", err)
 }
 
-func ensurePHPRuntime(c *console, l layout, env []string) bool {
+func ensurePHPRuntime(c ui, l layout, env []string) bool {
 	check := checkPHP(l, env)
 	if check.ok {
 		c.ok(firstLine(check.output))
@@ -229,15 +229,7 @@ func prependPath(env []string, dir string) []string {
 	return out
 }
 
-func runAttached(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func ensureGitHubCLI(c *console, env []string) []string {
+func ensureGitHubCLI(c ui, env []string) []string {
 	path := findGH()
 	state := ghStatus(path, env)
 	if state == ghReady {
@@ -255,7 +247,7 @@ func ensureGitHubCLI(c *console, env []string) []string {
 			c.info("You can install it later: winget install GitHub.cli")
 			return env
 		}
-		if err := runAttached(winget, "install", "--id", "GitHub.cli", "-e",
+		if err := c.runVisible(winget, "install", "--id", "GitHub.cli", "-e",
 			"--accept-package-agreements", "--accept-source-agreements"); err != nil {
 			c.fail("winget could not install it: " + err.Error())
 			c.info("Install it from https://cli.github.com and start RunnerDeck again.")
@@ -278,7 +270,7 @@ func ensureGitHubCLI(c *console, env []string) []string {
 		c.info("You can sign in later with: gh auth login")
 		return env
 	}
-	if err := runAttached(path, "auth", "login", "--hostname", "github.com", "--web", "--git-protocol", "https"); err != nil {
+	if err := c.runVisible(path, "auth", "login", "--hostname", "github.com", "--web", "--git-protocol", "https"); err != nil {
 		c.fail("Sign-in did not finish: " + err.Error())
 		c.info("You can try again later with: gh auth login")
 		return env

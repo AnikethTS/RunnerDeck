@@ -58,16 +58,18 @@ check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
 all native).
 
-**On Windows without installing PHP:** download `runnerdeck-<version>-windows-x64.exe`
+**On Windows without installing PHP:** download `RunnerDeck-Setup-<version>.exe`
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
-and double-click it. It is a single file that carries PHP, starts the dashboard,
-and opens your browser (the first start unpacks it, which takes a few seconds). It
-walks you through the setup in the console: it checks that PHP can run and offers to
-install Microsoft's Visual C++ runtime if Windows lacks it, then checks the GitHub CLI
-and offers to install it with winget and sign you in. A `.zip` with the same files side
-by side is also attached. The download is not
-code-signed yet, so SmartScreen may ask you to choose **More info → Run anyway**.
-Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
+and run it. It is a normal installer wizard: it installs for your account only (no
+administrator rights), adds a Start menu entry, can add a desktop shortcut and start
+RunnerDeck when you sign in, and uninstalls from **Settings → Apps**. RunnerDeck then
+runs as a small icon in the system tray (Open dashboard, Show server log, Quit) and opens
+your browser; PHP is bundled. On the first start it asks before installing Microsoft's
+Visual C++ runtime if Windows lacks it, and before installing and signing in to the
+GitHub CLI. Prefer no installer? `runnerdeck-<version>-windows-x64.exe` is a single file
+that runs in a console window, and a `.zip` with the same files side by side is also
+attached. The downloads are not code-signed yet, so SmartScreen may ask you to choose
+**More info → Run anyway**. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
 
 ## Screenshots
 

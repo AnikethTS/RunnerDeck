@@ -83,13 +83,15 @@ def copy_app(app_dir: Path) -> None:
 LAUNCHER = ROOT / "packaging" / "windows" / "launcher"
 
 
-def build_launcher(go: str, target: Path, embed_version: str | None = None) -> None:
+def build_launcher(go: str, target: Path, embed_version: str | None = None, tray: bool = False) -> None:
     env = dict(os.environ, GOOS="windows", GOARCH="amd64", CGO_ENABLED="0")
     ldflags = "-s -w"
     command = [go, "build", "-trimpath"]
     if embed_version:
         ldflags += f" -X main.embeddedVersion={embed_version}"
         command += ["-tags", "payload"]
+    if tray:
+        ldflags += " -H=windowsgui -X main.defaultMode=tray"
     command += ["-ldflags", ldflags, "-o", str(target.resolve()), "."]
     subprocess.run(command, cwd=LAUNCHER, env=env, check=True)
 
@@ -102,6 +104,12 @@ def make_payload(stage: Path, payload_path: Path) -> None:
                     archive.write(path, path.relative_to(stage))
 
 
+def write_checksum(path: Path) -> str:
+    digest = sha256_of(path)
+    (path.parent / f"{path.name}.sha256").write_text(f"{digest}  {path.name}\n")
+    return digest
+
+
 def build_single_exe(go: str, stage: Path, version: str, out: Path) -> Path:
     payload = LAUNCHER / "payload.zip"
     target = out / f"runnerdeck-{version}-windows-x64.exe"
@@ -110,8 +118,45 @@ def build_single_exe(go: str, stage: Path, version: str, out: Path) -> Path:
         build_launcher(go, target, embed_version=version)
     finally:
         payload.unlink(missing_ok=True)
-    digest = sha256_of(target)
-    (out / f"{target.name}.sha256").write_text(f"{digest}  {target.name}\n")
+    write_checksum(target)
+    return target
+
+
+def find_iscc() -> str:
+    found = shutil.which("ISCC") or shutil.which("ISCC.exe")
+    if found:
+        return found
+    for root in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles"), os.environ.get("LOCALAPPDATA")):
+        if not root:
+            continue
+        for candidate in (Path(root) / "Inno Setup 6" / "ISCC.exe", Path(root) / "Programs" / "Inno Setup 6" / "ISCC.exe"):
+            if candidate.exists():
+                return str(candidate)
+    sys.exit("Inno Setup (ISCC.exe) was not found. Install it with: choco install innosetup")
+
+
+def build_installer(go: str, stage: Path, version: str, out: Path) -> Path:
+    payload = LAUNCHER / "payload.zip"
+    tray_exe = out / "tray" / "RunnerDeck.exe"
+    tray_exe.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        make_payload(stage, payload)
+        build_launcher(go, tray_exe, embed_version=version, tray=True)
+    finally:
+        payload.unlink(missing_ok=True)
+    subprocess.run(
+        [
+            find_iscc(),
+            "/Qp",
+            f"/DAppVersion={version}",
+            f"/DSourceExe={tray_exe}",
+            f"/DOutputDir={out}",
+            str(ROOT / "packaging" / "windows" / "installer" / "runnerdeck.iss"),
+        ],
+        check=True,
+    )
+    target = out / f"RunnerDeck-Setup-{version}.exe"
+    write_checksum(target)
     return target
 
 
@@ -146,6 +191,7 @@ def main() -> None:
     parser.add_argument("--out", default=str(ROOT / "dist"))
     parser.add_argument("--go", default=os.environ.get("GO", "go"))
     parser.add_argument("--single-exe", action="store_true", help="also build one self-contained runnerdeck.exe")
+    parser.add_argument("--installer", action="store_true", help="also build the RunnerDeck-Setup installer (needs Inno Setup)")
     args = parser.parse_args()
 
     version = (ROOT / "VERSION").read_text().strip()
@@ -178,6 +224,10 @@ def main() -> None:
         exe = build_single_exe(args.go, stage, version, out)
         print(f"Built {exe} ({exe.stat().st_size / 1_048_576:.1f} MB)")
         print(f"sha256 {sha256_of(exe)}")
+    if args.installer:
+        installer = build_installer(args.go, stage, version, out)
+        print(f"Built {installer} ({installer.stat().st_size / 1_048_576:.1f} MB)")
+        print(f"sha256 {sha256_of(installer)}")
     print(f"PHP {release['version']}")
 
 
