@@ -93,7 +93,7 @@ jobs:
           ignore-unfixed: true
 
   windows-package:
-    name: Build and publish the Windows installer, exe and zip
+    name: Build and publish the Windows installer
     needs: release
     runs-on: windows-latest
     timeout-minutes: 30
@@ -109,14 +109,8 @@ jobs:
           go-version-file: desktop/go.mod
           cache: false
 
-      - name: Build the Windows zip, the single exe and the installer
-        run: python tools/package/build.py --target windows
-
-      - name: Run the zip build and check it shuts down cleanly
-        run: python tools/package/smoke_windows.py dist
-
-      - name: Run the single exe on its own and check it shuts down cleanly
-        run: python tools/package/smoke_windows.py dist --single
+      - name: Build the Windows installer
+        run: python tools/package/build.py --target windows-setup
 
       - name: Install, run and uninstall the Setup wizard silently
         run: python tools/package/smoke_installer.py dist
@@ -125,12 +119,9 @@ jobs:
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: |
-            dist/RunnerDeck-*-windows-x64-setup.exe
-            dist/RunnerDeck-*-windows-x64.exe
-            dist/RunnerDeck-*-windows-x64.zip
+          subject-path: dist/RunnerDeck-*-windows-x64-setup.exe
 
-      - name: Attach the installer, the exe, the zip, their checksums and the attestation to the release
+      - name: Attach the installer, its checksum and the attestation to the release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -139,8 +130,6 @@ jobs:
           cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
           gh release upload "${GITHUB_REF_NAME}" \
             dist/RunnerDeck-*-windows-x64-setup.exe \
-            dist/RunnerDeck-*-windows-x64.exe \
-            dist/RunnerDeck-*-windows-x64.zip \
             dist/SHA256SUMS-windows-x64 \
             "${bundle}" --clobber
 
