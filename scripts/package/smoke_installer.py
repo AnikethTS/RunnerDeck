@@ -57,7 +57,7 @@ def main() -> None:
     log = work / "setup.log"
 
     done = subprocess.run(
-        [str(setup), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", f"/DIR={install_dir}", f"/LOG={log}"],
+        [str(setup), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=", f"/DIR={install_dir}", f"/LOG={log}"],
         timeout=300,
     )
     if done.returncode != 0:
@@ -70,9 +70,11 @@ def main() -> None:
     for path in (exe, uninstaller, install_dir / "RunnerDeck.ico"):
         if not path.exists():
             fail(f"{path.name} was not installed")
-    shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/RunnerDeck.lnk"
-    if not shortcut.exists():
-        fail("the Start menu shortcut was not created")
+    group = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/RunnerDeck"
+    shortcut = group / "RunnerDeck.lnk"
+    for name in ("RunnerDeck.lnk", "Uninstall RunnerDeck.lnk"):
+        if not (group / name).exists():
+            fail(f"the Start menu entry {name} was not created")
     print("ok  files and the Start menu shortcut are in place")
 
     shown = subprocess.run([str(exe), "--version"], capture_output=True, text=True, timeout=30)
@@ -124,6 +126,8 @@ def main() -> None:
         fail("RunnerDeck.exe is still installed after uninstalling")
     if shortcut.exists():
         fail("the Start menu shortcut survived uninstalling")
+    if group.exists():
+        fail("the Start menu folder survived uninstalling")
     print("ok  uninstalling removes the app and its shortcut")
     print("Windows installer smoke test passed")
 

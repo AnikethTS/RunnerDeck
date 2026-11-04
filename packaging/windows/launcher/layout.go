@@ -17,6 +17,7 @@ type options struct {
 	tray        bool
 	console     bool
 	noPrompts   bool
+	background  bool
 }
 
 type layout struct {
@@ -38,6 +39,8 @@ func parseOptions(args []string, getenv func(string) string) (options, error) {
 			opts.noBrowser = true
 		case arg == "--tray":
 			opts.tray = true
+		case arg == "--background":
+			opts.background = true
 		case arg == "--no-prompts":
 			opts.noPrompts = true
 		case arg == "--console":
@@ -63,7 +66,7 @@ func parseOptions(args []string, getenv func(string) string) (options, error) {
 			}
 			opts.port = port
 		default:
-			return opts, fmt.Errorf("unknown option %q (try --port N, --no-browser, --yes, --tray, --console, --no-prompts, --version)", arg)
+			return opts, fmt.Errorf("unknown option %q (try --port N, --no-browser, --yes, --tray, --console, --no-prompts, --background, --version)", arg)
 		}
 	}
 	return opts, nil

@@ -68,3 +68,10 @@ func TestTrayIsOptInUnlessBuiltAsTheTrayApp(t *testing.T) {
 		t.Fatal("the tray build starts the tray unless --console is given")
 	}
 }
+
+func TestSplashEscapesItsText(t *testing.T) {
+	got := splashHTML("<b>x</b>")
+	if strings.Contains(got, "<b>x</b>") || !strings.Contains(got, "&lt;b&gt;x&lt;/b&gt;") {
+		t.Fatalf("splash did not escape its text: %s", got)
+	}
+}

@@ -8,6 +8,10 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- The installed Windows app now opens RunnerDeck in its own window, drawn with Microsoft Edge WebView2, instead of a browser tab. Closing the window hides it to the tray; the tray menu's Open dashboard brings it back. If WebView2 is missing the app falls back to your browser, and the installer can install WebView2. Starting with Windows now launches into the tray (`--background`).
+
+- The Windows installer now sets up the tools RunnerDeck needs while you install: it offers the Microsoft Visual C++ runtime (downloaded, checked for Microsoft's signature, installed with a Windows permission prompt) and the GitHub CLI (via winget), only when they are missing, and offers a GitHub sign-in on the last page. There is now an Uninstall RunnerDeck entry in the Start menu folder and in the tray menu.
+
 - A Windows installer wizard, `RunnerDeck-Setup-<version>.exe`, built with Inno Setup. It installs for your account without administrator rights, adds a Start menu entry, optional desktop shortcut and start-with-Windows, and uninstalls from Settings. The installed RunnerDeck is a windowless tray app (Open dashboard, Show server log, Quit) that asks via message boxes before installing the Visual C++ runtime or the GitHub CLI. CI installs, starts and uninstalls it silently, and the release attaches it as the main Windows download.
 
 - The Windows `runnerdeck.exe` is now a guided setup. It prints the welcome banner, checks PHP and offers to install Microsoft's Visual C++ runtime when Windows lacks it (checking the installer's Microsoft signature first), checks the GitHub CLI and offers to install it and sign you in, and explains failures instead of printing an empty log. The window stays open on errors, the unpack message only shows on the first start, and `--yes` accepts every prompt.

@@ -29,10 +29,20 @@ func askYesNoBox(text string) bool {
 	return messageBox(text, windows.MB_YESNO|windows.MB_ICONQUESTION) == idYes
 }
 
+var instanceMutex windows.Handle
+
 func acquireSingleInstance() bool {
 	name, _ := windows.UTF16PtrFromString("RunnerDeckTray")
-	_, err := windows.CreateMutex(nil, false, name)
+	handle, err := windows.CreateMutex(nil, false, name)
+	instanceMutex = handle
 	return err != windows.ERROR_ALREADY_EXISTS
+}
+
+func releaseSingleInstance() {
+	if instanceMutex != 0 {
+		windows.CloseHandle(instanceMutex)
+		instanceMutex = 0
+	}
 }
 
 func runInNewConsole(name string, args ...string) error {

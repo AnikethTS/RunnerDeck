@@ -13,6 +13,8 @@ func askYesNoBox(text string) bool { return false }
 
 func acquireSingleInstance() bool { return true }
 
+func releaseSingleInstance() {}
+
 func runInNewConsole(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = os.Stdin
