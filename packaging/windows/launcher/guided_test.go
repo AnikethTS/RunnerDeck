@@ -44,6 +44,13 @@ func TestConfirmReadsTheAnswer(t *testing.T) {
 	}
 }
 
+func TestConfirmTreatsEndOfInputAsNo(t *testing.T) {
+	c, _ := testConsole("", true, false)
+	if c.confirm("Sign in now?", true) {
+		t.Fatal("end of input must never count as agreement")
+	}
+}
+
 func TestConfirmNeverBlocksWhenNotInteractive(t *testing.T) {
 	c, out := testConsole("y\n", false, false)
 	if c.confirm("Install it now?", true) {

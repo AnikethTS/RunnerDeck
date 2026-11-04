@@ -16,9 +16,7 @@ type console struct {
 }
 
 func newConsole(assumeYes bool) *console {
-	info, err := os.Stdin.Stat()
-	interactive := err == nil && info.Mode()&os.ModeCharDevice != 0
-	return &console{in: bufio.NewReader(os.Stdin), out: os.Stdout, interactive: interactive, assumeYes: assumeYes}
+	return &console{in: bufio.NewReader(os.Stdin), out: os.Stdout, interactive: isTerminal(os.Stdin), assumeYes: assumeYes}
 }
 
 func (c *console) step(n, total int, title string) {
@@ -45,7 +43,7 @@ func (c *console) confirm(question string, defaultYes bool) bool {
 	fmt.Fprintf(c.out, "      %s %s ", question, hint)
 	text, err := c.in.ReadString('\n')
 	if err != nil && text == "" {
-		return defaultYes
+		return false
 	}
 	return parseYesNo(text, defaultYes)
 }
