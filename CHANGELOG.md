@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- A Windows download: a zip with `runnerdeck.exe`, a bundled PHP and the app. Double-click to start the dashboard; no PHP install needed. It is not code-signed. The release workflow builds and attaches it, and a new `ci:package` label runs its build and smoke test in CI.
+
 - A welcome message with the version, credits and links when you start RunnerDeck with `run.sh` or `run.ps1`, or run `bin/doctor.php` or `bin/setup-totp.php`. Set `RUNNERDECK_NO_BANNER=1` to hide it.
 
 - CI job names follow one `Group · Platform · detail` pattern.

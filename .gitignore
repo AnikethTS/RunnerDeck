@@ -23,4 +23,6 @@
 /playwright-report/
 /test-results/
 /playwright-live-report/
+/dist/
 /test-results-live/
+__pycache__/
