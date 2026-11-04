@@ -87,6 +87,7 @@ def main() -> None:
     launcher = subprocess.Popen(
         [str(exe), "--no-browser", "--port", str(PORT)],
         env=env,
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -125,6 +126,10 @@ def main() -> None:
     if "Welcome to RunnerDeck" not in output:
         fail(f"the welcome banner was not printed. Output was:\n{output[:800]}")
     print("ok  the welcome banner is printed")
+    for expected in ("[1/4] Preparing RunnerDeck", "[2/4] Checking PHP", "[4/4] Starting the dashboard"):
+        if expected not in output:
+            fail(f"the guided steps are missing {expected!r}. Output was:\n{output[:1200]}")
+    print("ok  the guided setup steps are printed")
 
     if not wait_for(lambda: get("/health.php")[0] is None, 20):
         subprocess.run(["taskkill", "/F", "/IM", "php.exe"], capture_output=True)

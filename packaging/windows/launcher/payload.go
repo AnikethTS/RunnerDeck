@@ -63,6 +63,12 @@ func writeZipFile(file *zip.File, target string) error {
 	return out.Close()
 }
 
+func needsUnpack(l layout, payload []byte) bool {
+	marker := filepath.Join(l.dataDir, "runtime", payloadID(payload), runtimeMarker)
+	_, err := os.Stat(marker)
+	return err != nil
+}
+
 func ensureRuntime(l layout, payload []byte) (layout, error) {
 	runtimeRoot := filepath.Join(l.dataDir, "runtime")
 	root := filepath.Join(runtimeRoot, payloadID(payload))

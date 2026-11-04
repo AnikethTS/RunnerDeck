@@ -15,6 +15,8 @@ import (
 
 var embeddedVersion string
 
+const totalSteps = 4
+
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
@@ -35,89 +37,26 @@ func run(args []string) int {
 		fmt.Println("RunnerDeck", appVersion(l))
 		return 0
 	}
-	if len(payloadZip) > 0 {
-		fmt.Println("Preparing RunnerDeck (the first start takes a few seconds)...")
-		unpacked, err := ensureRuntime(l, payloadZip)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "runnerdeck:", err)
-			return 1
-		}
-		l = unpacked
-	}
-	if _, err := os.Stat(l.php); err != nil {
-		fmt.Fprintf(os.Stderr, "runnerdeck: bundled PHP not found at %s\nKeep runnerdeck.exe next to the php and app folders.\n", l.php)
-		return 1
-	}
-	for _, dir := range []string{l.dataDir, filepath.Join(l.dataDir, "db"), filepath.Join(l.dataDir, "runners")} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			fmt.Fprintf(os.Stderr, "runnerdeck: cannot create %s: %v\n", dir, err)
-			return 1
-		}
-	}
-	env := withDefaults(os.Environ(), l.defaults())
 
-	runPHP(l, env, os.Stdout, filepath.Join(l.app, "bin", "banner.php"))
+	c := newConsole(opts.assumeYes)
+	fmt.Print(bannerText(appVersion(l)))
+	fmt.Println("  Welcome! Setting RunnerDeck up on this computer. A few quick checks first.")
 
-	if _, err := exec.LookPath("gh"); err != nil {
-		fmt.Println("Warning: the GitHub CLI (gh) was not found on PATH.")
-		fmt.Println("Install it with: winget install GitHub.cli   then run: gh auth login")
-		fmt.Println()
-	}
-
-	if !isLoopback(opts.host) && !authEnabled(l, env) {
-		fmt.Fprintln(os.Stderr, "runnerdeck: a non-loopback bind requires TOTP login. Run: php\\php.exe app\\bin\\setup-totp.php")
-		return 1
-	}
-
-	group, err := newProcessGroup()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "runnerdeck: warning: children may outlive this window:", err)
+	code, group, watcher, server, exited, logPath := start(c, opts, l)
+	if code != 0 {
+		c.pauseBeforeClosing()
+		return code
 	}
 	defer group.close()
 
-	logPath := filepath.Join(l.dataDir, "server.log")
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "runnerdeck: cannot open %s: %v\n", logPath, err)
-		return 1
-	}
-	defer logFile.Close()
-
-	watcher := phpCommand(l, env, logFile, filepath.Join(l.app, "bin", "watch-auto-restart.php"))
-	server := phpCommand(l, env, logFile,
-		"-d", "max_execution_time=0",
-		"-S", fmt.Sprintf("%s:%d", opts.host, opts.port),
-		"-t", filepath.Join(l.app, "public"))
-	for _, cmd := range []*exec.Cmd{watcher, server} {
-		hideWindow(cmd)
-		if err := cmd.Start(); err != nil {
-			fmt.Fprintf(os.Stderr, "runnerdeck: cannot start %s: %v\n", filepath.Base(cmd.Args[len(cmd.Args)-1]), err)
-			stop(watcher, server)
-			return 1
-		}
-		group.add(cmd)
-	}
-
-	exited := make(chan error, 1)
-	go func() { exited <- server.Wait() }()
-
 	base := fmt.Sprintf("http://%s:%d", opts.host, opts.port)
-	if !waitHealthy(base+"/health.php", 40*time.Second, exited) {
-		fmt.Fprintf(os.Stderr, "runnerdeck: the server did not start. Last lines of %s:\n", logPath)
-		if data, err := os.ReadFile(logPath); err == nil {
-			fmt.Fprintln(os.Stderr, tailLines(string(data), 15))
-		}
-		stop(watcher, server)
-		return 1
-	}
-
 	suffix := ""
 	if isLoopback(opts.host) {
 		suffix = " (localhost only)"
 	}
-	fmt.Printf("RunnerDeck is running on %s%s\n", base, suffix)
-	fmt.Printf("Server log: %s\n", logPath)
-	fmt.Println("Press Ctrl+C or close this window to stop.")
+	c.ok(fmt.Sprintf("RunnerDeck is running on %s%s", base, suffix))
+	fmt.Printf("\n  Server log: %s\n", logPath)
+	fmt.Println("  Press Ctrl+C or close this window to stop RunnerDeck.")
 	if !opts.noBrowser {
 		openBrowser(base)
 	}
@@ -127,10 +66,104 @@ func run(args []string) int {
 	select {
 	case <-signals:
 	case <-exited:
-		fmt.Fprintln(os.Stderr, "runnerdeck: the server stopped unexpectedly.")
+		fmt.Fprintln(os.Stderr, "runnerdeck: the server stopped unexpectedly. See the server log above.")
 	}
 	stop(watcher, server)
 	return 0
+}
+
+func start(c *console, opts options, l layout) (int, *processGroup, *exec.Cmd, *exec.Cmd, chan error, string) {
+	none := func(code int) (int, *processGroup, *exec.Cmd, *exec.Cmd, chan error, string) {
+		return code, nil, nil, nil, nil, ""
+	}
+
+	c.step(1, totalSteps, "Preparing RunnerDeck")
+	if len(payloadZip) > 0 {
+		if needsUnpack(l, payloadZip) {
+			c.info("Unpacking the bundled PHP and dashboard (about 90 MB, first start only)...")
+		}
+		unpacked, err := ensureRuntime(l, payloadZip)
+		if err != nil {
+			c.fail(err.Error())
+			return none(1)
+		}
+		l = unpacked
+	}
+	if _, err := os.Stat(l.php); err != nil {
+		c.fail(fmt.Sprintf("The bundled PHP was not found at %s", l.php))
+		c.info("Keep runnerdeck.exe next to the php and app folders.")
+		return none(1)
+	}
+	for _, dir := range []string{l.dataDir, filepath.Join(l.dataDir, "db"), filepath.Join(l.dataDir, "runners")} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			c.fail(fmt.Sprintf("Cannot create %s: %v", dir, err))
+			return none(1)
+		}
+	}
+	c.ok("Your settings and runners are kept in " + l.dataDir)
+	env := withDefaults(os.Environ(), l.defaults())
+
+	c.step(2, totalSteps, "Checking PHP")
+	if !ensurePHPRuntime(c, l, env) {
+		return none(1)
+	}
+
+	c.step(3, totalSteps, "Checking the GitHub CLI")
+	env = ensureGitHubCLI(c, env)
+
+	c.step(4, totalSteps, "Starting the dashboard")
+	if !isLoopback(opts.host) && !authEnabled(l, env) {
+		c.fail("Listening beyond this computer requires a TOTP login. Run: php\\php.exe app\\bin\\setup-totp.php")
+		return none(1)
+	}
+	group, err := newProcessGroup()
+	if err != nil {
+		c.warn("PHP may keep running if you close this window: " + err.Error())
+	}
+
+	logPath := filepath.Join(l.dataDir, "server.log")
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		c.fail(fmt.Sprintf("Cannot open %s: %v", logPath, err))
+		return none(1)
+	}
+
+	watcher := phpCommand(l, env, logFile, filepath.Join(l.app, "bin", "watch-auto-restart.php"))
+	server := phpCommand(l, env, logFile,
+		"-d", "max_execution_time=0",
+		"-S", fmt.Sprintf("%s:%d", opts.host, opts.port),
+		"-t", filepath.Join(l.app, "public"))
+	for _, cmd := range []*exec.Cmd{watcher, server} {
+		hideWindow(cmd)
+		if err := cmd.Start(); err != nil {
+			c.fail(fmt.Sprintf("Cannot start %s: %v", filepath.Base(cmd.Args[len(cmd.Args)-1]), err))
+			stop(watcher, server)
+			return none(1)
+		}
+		group.add(cmd)
+	}
+
+	exited := make(chan error, 1)
+	go func() { exited <- server.Wait() }()
+
+	healthy, exitErr, died := waitHealthy(fmt.Sprintf("http://%s:%d/health.php", opts.host, opts.port), 40*time.Second, exited)
+	if !healthy {
+		if died {
+			c.fail(fmt.Sprintf("The server stopped right away (%v).", exitErr))
+		} else {
+			c.fail("The server did not answer within 40 seconds.")
+		}
+		if data, readErr := os.ReadFile(logPath); readErr == nil && strings.TrimSpace(string(data)) != "" {
+			c.info("Last lines of " + logPath + ":")
+			c.info(tailLines(string(data), 15))
+		} else {
+			c.info("The server log is empty: " + logPath)
+		}
+		c.info(fmt.Sprintf("Is port %d already in use? Try: runnerdeck.exe --port 9000", opts.port))
+		stop(watcher, server)
+		return none(1)
+	}
+	return 0, group, watcher, server, exited, logPath
 }
 
 func appVersion(l layout) string {
@@ -153,12 +186,6 @@ func phpCommand(l layout, env []string, out *os.File, args ...string) *exec.Cmd 
 	return cmd
 }
 
-func runPHP(l layout, env []string, out *os.File, args ...string) {
-	cmd := phpCommand(l, env, out, args...)
-	hideWindow(cmd)
-	_ = cmd.Run()
-}
-
 func authEnabled(l layout, env []string) bool {
 	check := `require $argv[1] . "/src/bootstrap.php"; exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);`
 	cmd := exec.Command(l.php, "-r", check, "--", l.app)
@@ -167,24 +194,24 @@ func authEnabled(l layout, env []string) bool {
 	return cmd.Run() == nil
 }
 
-func waitHealthy(url string, timeout time.Duration, exited <-chan error) bool {
+func waitHealthy(url string, timeout time.Duration, exited <-chan error) (healthy bool, exitErr error, died bool) {
 	client := &http.Client{Timeout: 2 * time.Second}
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		select {
-		case <-exited:
-			return false
+		case err := <-exited:
+			return false, err, true
 		default:
 		}
 		if resp, err := client.Get(url); err == nil {
 			resp.Body.Close()
 			if resp.StatusCode == http.StatusOK {
-				return true
+				return true, nil, false
 			}
 		}
 		time.Sleep(300 * time.Millisecond)
 	}
-	return false
+	return false, nil, false
 }
 
 func stop(cmds ...*exec.Cmd) {
