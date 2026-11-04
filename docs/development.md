@@ -168,7 +168,7 @@ runnerdeck/
   bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
   scripts/ci/                 CI-only scripts (distro PHPUnit, smoke status, pinned gh install)
-  run.ps1           Windows entry point (native; -Wsl forwards into WSL2)
+  run.ps1           Windows entry point (native; -Wsl runs Linux runners in WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml
 ```

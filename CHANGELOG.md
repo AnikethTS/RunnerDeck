@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- A welcome message with the version, credits and links when you start RunnerDeck with `run.sh` or `run.ps1`, or run `bin/doctor.php` or `bin/setup-totp.php`. Set `RUNNERDECK_NO_BANNER=1` to hide it.
+
 - CI job names follow one `Group · Platform · detail` pattern.
 - CI runs a fast set on pull requests by default and more with `ci:*` labels (`ci:unit`, `ci:live`, `ci:full`, …), like other projects that gate CI by label. A `CI · Merge gate` job requires `ci:full` before merge.
 
@@ -24,8 +26,9 @@ follows [SemVer](https://semver.org/).
 - Native Windows support. `run.ps1` now runs the dashboard on Windows and
   manages Windows runners (`config.cmd`/`run.cmd`, zip package), so
   `runs-on: windows` jobs work. Process control uses PowerShell/CIM and
-  `taskkill`; stop is always forced. `run.ps1 -Wsl` keeps the old
-  WSL2-for-Linux-runners path. A CI job on `windows-latest` and `windows-2022` runs the Windows tests and a real process-control smoke.
+  `taskkill`; stop asks the runner to exit first and force-kills it only if
+  needed. WSL2 is no longer needed on Windows; `run.ps1 -Wsl` is only for
+  managing Linux runners from a Windows PC. A CI job on `windows-latest` and `windows-2022` runs the Windows tests and a real process-control smoke.
 
 ### Changed
 
