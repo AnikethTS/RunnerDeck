@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../../src/bootstrap.php';
+require __DIR__ . '/../../app/src/bootstrap.php';
 
 use RunnerDeck\Core\Platform;
 use RunnerDeck\Pool\RunnerPool;

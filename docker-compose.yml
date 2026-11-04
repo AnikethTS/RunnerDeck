@@ -3,8 +3,8 @@ services:
     build: .
     # image: ghcr.io/anikethts/runnerdeck:latest  # comment out build: to use a release image
     # Host publish stays loopback. The process still listens on 0.0.0.0
-    # inside the container, which requires TOTP (`php bin/setup-totp.php`
-    # via `docker compose run --rm -it runnerdeck php bin/setup-totp.php`).
+    # inside the container, which requires TOTP (`php app/bin/setup-totp.php`
+    # via `docker compose run --rm -it runnerdeck php app/bin/setup-totp.php`).
     ports:
       - "127.0.0.1:8090:8090"
     volumes:

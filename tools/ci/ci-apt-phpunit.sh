@@ -4,7 +4,7 @@ set -euo pipefail
 export COMPOSER_ALLOW_SUPERUSER=1
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$root"
+cd "$root/app"
 
 php -v
 php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'

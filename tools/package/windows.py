@@ -7,7 +7,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from common import COMMON, DESKTOP, ENTRY, ROOT, Context, artifact_name, copy_app, fetch, sha256_of
+from common import COMMON, DESKTOP, ENTRY, ROOT, ROOT_FILES, Context, artifact_name, copy_app, fetch, sha256_of
 
 PLATFORM = "windows-x64"
 RELEASES_URL = "https://windows.php.net/downloads/releases/releases.json"
@@ -67,7 +67,7 @@ def stage(ctx: Context) -> dict:
     for name in PRUNE:
         (root / "php" / name).unlink(missing_ok=True)
     write_php_ini(root / "php")
-    copy_app(root / "app")
+    copy_app(root)
     ctx.cache["windows"] = {"root": root, "php_version": release["version"]}
     return ctx.cache["windows"]
 
@@ -94,6 +94,8 @@ def with_payload(ctx: Context, build) -> None:
                 for path in sorted((root / top).rglob("*")):
                     if path.is_file():
                         archive.write(path, path.relative_to(root))
+            for name in ROOT_FILES:
+                archive.write(root / name, name)
         build()
     finally:
         payload.unlink(missing_ok=True)

@@ -177,7 +177,7 @@ func appVersion(l layout) string {
 	if embeddedVersion != "" {
 		return embeddedVersion
 	}
-	data, err := os.ReadFile(filepath.Join(l.app, "VERSION"))
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(l.app), "VERSION"))
 	if err != nil {
 		return "unknown"
 	}

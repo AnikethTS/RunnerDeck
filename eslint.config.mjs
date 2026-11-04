@@ -3,7 +3,7 @@ import js from '@eslint/js';
 export default [
   js.configs.recommended,
   {
-    files: ['public/assets/app.js', 'public/assets/js/**/*.js'],
+    files: ['app/public/assets/app.js', 'app/public/assets/js/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

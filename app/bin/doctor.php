@@ -193,7 +193,7 @@ if (Config::authEnabled()) {
 } elseif ($bind === '127.0.0.1' || $bind === '::1') {
     ok('TOTP', 'off (loopback only)', $color);
 } else {
-    $failures += fail('TOTP', 'non-loopback bind requires php bin/setup-totp.php', $color);
+    $failures += fail('TOTP', 'non-loopback bind requires php app/bin/setup-totp.php', $color);
 }
 if (Config::trustProxy()) {
     $warnings += warn(

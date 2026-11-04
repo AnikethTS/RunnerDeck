@@ -33,7 +33,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: process.env.E2E_EXTERNAL_SERVER ? undefined : {
-    command: `php -d max_execution_time=0 -S 127.0.0.1:${PORT} -t public`,
+    command: `php -d max_execution_time=0 -S 127.0.0.1:${PORT} -t app/public`,
     cwd: '../..',
     url: `http://127.0.0.1:${PORT}/health.php`,
     reuseExistingServer: false,

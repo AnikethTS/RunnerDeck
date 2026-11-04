@@ -31,7 +31,7 @@ if [ -n "${RUNNERDECK_SMOKE_TOTP_SECRET:-}" ]; then
     exit 1
   fi
   code="$(php -r '
-    require $argv[1] . "/src/bootstrap.php";
+    require $argv[1] . "/app/src/bootstrap.php";
     echo \RunnerDeck\Core\Totp::code($argv[2]);
   ' -- "$root" "$RUNNERDECK_SMOKE_TOTP_SECRET")"
   login="$(curl -fsS -c "$jar" -b "$jar" -X POST "${base}/api.php?action=login" \

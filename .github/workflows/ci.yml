@@ -85,22 +85,28 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Validate composer.json
+        working-directory: app
         run: composer validate --strict
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: composer audit (known CVEs in dependencies)
+        working-directory: app
         run: composer audit
 
       - name: PHP syntax check
+        working-directory: app
         run: |
           find src public tests bin -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: phpcs (PSR-12)
+        working-directory: app
         run: composer run cs
 
       - name: phpstan
+        working-directory: app
         run: composer run stan
 
   lint-js:
@@ -169,7 +175,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           shopt -s nullglob
-          shellcheck -x -S warning run.sh bin/*.sh tools/ci/*.sh
+          shellcheck -x -S warning run.sh app/bin/*.sh tools/ci/*.sh
 
   gitleaks:
     name: Security · Secret scan
@@ -238,9 +244,11 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite
+        working-directory: app
         run: composer run test
 
   coverage:
@@ -271,19 +279,21 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite with coverage
+        working-directory: app
         run: vendor/bin/phpunit --coverage-clover coverage.xml
 
       - name: Enforce minimum line coverage
-        run: php tools/ci/coverage-gate.php coverage.xml 75
+        run: php tools/ci/coverage-gate.php app/coverage.xml 75
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: coverage
-          path: coverage.xml
+          path: app/coverage.xml
           retention-days: 7
 
   random-order:
@@ -314,9 +324,11 @@ jobs:
             ${{ runner.os }}-composer-
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite in random order
+        working-directory: app
         run: |
           for seed in 1 2 3; do
             vendor/bin/phpunit --order-by=random --random-order-seed="$seed"
@@ -346,9 +358,11 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        working-directory: app
         run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-posix --ignore-platform-req=ext-pcntl
 
       - name: Windows unit tests
+        working-directory: app
         run: vendor/bin/phpunit tests/WindowsSupportTest.php
 
       - name: Real process control smoke (PowerShell, CIM, taskkill)
@@ -606,7 +620,7 @@ jobs:
                 php-cli php-process php-xml php-mbstring php-pdo php-curl procps-ng gh tar curl git findutils which \
                 libicu krb5-libs openssl-libs zlib lttng-ust
               php -v
-              exec php -d max_execution_time=0 -S 127.0.0.1:8092 -t public
+              exec php -d max_execution_time=0 -S 127.0.0.1:8092 -t app/public
             '
           for _ in $(seq 1 90); do
             if curl -fsS http://127.0.0.1:8092/health.php >/dev/null 2>&1; then
@@ -712,7 +726,7 @@ jobs:
           RUNNERDECK_ORG: smoke-test-org
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          php -S 127.0.0.1:8090 -t public &
+          php -S 127.0.0.1:8090 -t app/public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           bash tools/ci/ci-smoke-status.sh
@@ -844,7 +858,7 @@ jobs:
           RUNNERDECK_ORG: smoke-test-org
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          php -S 127.0.0.1:8090 -t public &
+          php -S 127.0.0.1:8090 -t app/public &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           bash tools/ci/ci-smoke-status.sh

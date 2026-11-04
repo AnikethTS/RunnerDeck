@@ -6,7 +6,7 @@
 #   git config core.hooksPath .githooks
 set -euo pipefail
 
-if [ ! -f vendor/autoload.php ]; then
+if [ ! -f app/vendor/autoload.php ]; then
     echo "pre-commit: dev tooling not installed (run 'composer install') — skipping checks" >&2
     exit 0
 fi
@@ -20,10 +20,10 @@ if [ -n "$staged_php" ]; then
 fi
 
 echo "pre-commit: phpcs (PSR-12)"
-composer run cs
+(cd app && composer run cs)
 
 echo "pre-commit: phpstan"
-composer run stan
+(cd app && composer run stan)
 
 echo "pre-commit: phpunit"
-composer run test
+(cd app && composer run test)

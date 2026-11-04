@@ -53,7 +53,7 @@ final class GithubClient
 
     /**
      * A standalone login + org/repo-access health check for one-shot callers
-     * (bin/doctor.php). Dashboard::snapshot() does NOT use this — on the
+     * (app/bin/doctor.php). Dashboard::snapshot() does NOT use this — on the
      * happy path it only calls listRunners(), and falls back to checkLogin()
      * when that fails so the health banner can tell "not logged in" apart
      * from "logged in but cannot read runners."

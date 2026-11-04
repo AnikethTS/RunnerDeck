@@ -109,7 +109,7 @@ export RUNNERDECK_HISTORY_FILE="${scratch}/storage/db/history.sqlite"
 export RUNNER_ALLOW_RUNASROOT=1
 
 cd "$root"
-php -d max_execution_time=0 -S "127.0.0.1:${port}" -t public >"${scratch}/server.log" 2>&1 &
+php -d max_execution_time=0 -S "127.0.0.1:${port}" -t app/public >"${scratch}/server.log" 2>&1 &
 server_pid=$!
 
 ready=0

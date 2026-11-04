@@ -89,7 +89,7 @@ final class ConfigTest extends TestCase
     #[RunInSeparateProcess]
     public function testPoolDirDefaultsNextToRepoCheckout(): void
     {
-        $expected = dirname(__DIR__, 2) . '/runners';
+        $expected = dirname(__DIR__, 3) . '/runners';
         $this->assertSame($expected, \RunnerDeck\Core\Config::poolDir());
     }
 
@@ -285,7 +285,7 @@ final class ConfigTest extends TestCase
     #[RunInSeparateProcess]
     public function testVersionReadsFromVersionFile(): void
     {
-        $expected = trim((string) file_get_contents(dirname(__DIR__) . '/VERSION'));
+        $expected = trim((string) file_get_contents(dirname(__DIR__, 2) . '/VERSION'));
         $this->assertSame($expected, \RunnerDeck\Core\Config::version());
     }
 

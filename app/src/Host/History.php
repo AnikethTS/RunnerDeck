@@ -21,7 +21,7 @@ final class History
 
     public static function path(): string
     {
-        return getenv('RUNNERDECK_HISTORY_FILE') ?: dirname(__DIR__, 2) . '/storage/db/history.sqlite';
+        return getenv('RUNNERDECK_HISTORY_FILE') ?: dirname(__DIR__, 3) . '/storage/db/history.sqlite';
     }
 
     private static function db(): \PDO

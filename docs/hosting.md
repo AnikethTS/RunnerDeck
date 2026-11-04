@@ -7,7 +7,7 @@
 > php-fpm, and `RUNNERDECK_TRUST_PROXY` from a non-loopback client.
 > Loopback HTTP (`127.0.0.1` / `localhost`) stays quiet. Settings also
 > has a **This host** card with those facts even on localhost.
-> `php bin/doctor.php` warns on a non-loopback bind, and on a loopback
+> `php app/bin/doctor.php` warns on a non-loopback bind, and on a loopback
 > bind that has neither an allowlist nor mTLS.
 
 RunnerDeck is still a **single-user operator UI** for runners on **this
@@ -18,7 +18,7 @@ substitute for `gh` + runner binaries on that same host.
 
 ## Required together
 
-1. **TOTP login** — Settings → Login, or `php bin/setup-totp.php`.
+1. **TOTP login** — Settings → Login, or `php app/bin/setup-totp.php`.
 2. **TLS on the public hostname** — the proxy holds the certificate.
    RunnerDeck itself stays plain HTTP.
 3. **Do not publish PHP on the internet.** Keep php-fpm on
@@ -38,7 +38,7 @@ anyone who can hit the port can start and stop runners.
 `php -S` is PHP’s development server. `run.sh` starts it with four
 workers (`PHP_CLI_SERVER_WORKERS`, overridable). A live log is a
 Server-Sent Events stream that holds one of those workers for about
-30 minutes (`public/log_stream.php`). There is no php-fpm process
+30 minutes (`app/public/log_stream.php`). There is no php-fpm process
 isolation. That is fine for **one operator on this machine**. It is
 not a load-balanced service.
 
@@ -54,7 +54,7 @@ php-fpm does not start it.
 
 ```
 Internet --443/TLS--> Caddy or nginx  -->  127.0.0.1:9000  php-fpm
-                                         php bin/watch-auto-restart.php
+                                         php app/bin/watch-auto-restart.php
 ```
 
 1. Install `php-fpm` (Fedora: `dnf install php-fpm`; Debian/Ubuntu:
@@ -114,7 +114,7 @@ see a public client. Loopback Host, Tailscale `100.64.0.0/10`, and IPv6
 `fd00::/8` skip it so you can recover over SSH at
 `http://127.0.0.1:8090/`. A same-machine reverse proxy to `php -S`
 (`127.0.0.1:8090`) also skips it: PHP sees `REMOTE_ADDR=127.0.0.1` and
-still serves the page. The dashboard banner and `php bin/doctor.php`
+still serves the page. The dashboard banner and `php app/bin/doctor.php`
 say so when no allowlist or mTLS is set. php-fpm still enforces the
 gate, because `REMOTE_ADDR` is the real client. LAN Wi-Fi is not
 skipped — add `192.168.0.0/16` (or your prefix) to the allowlist.

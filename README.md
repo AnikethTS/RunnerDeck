@@ -11,8 +11,8 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AnikethTS/RunnerDeck/badge)](https://scorecard.dev/viewer/?uri=github.com/AnikethTS/RunnerDeck)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](composer.json)
-[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](public/assets/js)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php&logoColor=white)](app/composer.json)
+[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](app/public/assets/js)
 [![SQLite](https://img.shields.io/badge/SQLite-optional-003B57?logo=sqlite&logoColor=white)](docs/how-it-works.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](docs/docker.md)
 
@@ -53,7 +53,7 @@ git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
 ```
 
 Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
-That's the whole setup. Machine not ready yet? Run `php bin/doctor.php` to
+That's the whole setup. Machine not ready yet? Run `php app/bin/doctor.php` to
 check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
 all native).

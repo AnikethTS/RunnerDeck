@@ -16,7 +16,7 @@ server {
     # ssl_certificate     /etc/letsencrypt/live/runnerdeck.example.com/fullchain.pem;
     # ssl_certificate_key /etc/letsencrypt/live/runnerdeck.example.com/privkey.pem;
 
-    root /home/YOU/Github-Actions-SelfHost/public;
+    root /home/YOU/Github-Actions-SelfHost/app/public;
     index index.php;
 
     location = /health.php {

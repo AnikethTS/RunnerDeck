@@ -11,7 +11,7 @@ ENTRY = DESKTOP / "cmd" / "runnerdeck"
 COMMON = ROOT / "packaging" / "common"
 
 APP_DIRS = ["public", "src", "bin"]
-APP_FILES = ["VERSION", "LICENSE"]
+ROOT_FILES = ["VERSION", "LICENSE"]
 
 
 def read_version() -> str:
@@ -46,13 +46,15 @@ def fetch(url: str, allowed_prefix: str) -> bytes:
         return response.read()
 
 
-def copy_app(app_dir: Path) -> None:
+def copy_app(install_root: Path) -> Path:
+    app_dir = install_root / "app"
     app_dir.mkdir(parents=True)
     ignore = shutil.ignore_patterns("*.log", "__pycache__", ".gitkeep")
     for name in APP_DIRS:
-        shutil.copytree(ROOT / name, app_dir / name, ignore=ignore)
-    for name in APP_FILES:
-        shutil.copy2(ROOT / name, app_dir / name)
+        shutil.copytree(ROOT / "app" / name, app_dir / name, ignore=ignore)
+    for name in ROOT_FILES:
+        shutil.copy2(ROOT / name, install_root / name)
+    return app_dir
 
 
 @dataclass

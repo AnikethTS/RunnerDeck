@@ -5,7 +5,7 @@ title = "RunnerDeck"
 [allowlist]
 description = "Test fixtures and UI placeholders, not live credentials"
 paths = [
-    '''tests/GithubAppTest\.php''',
-    '''tests/AppLogTest\.php''',
-    '''public/settings\.php''',
+    '''app/tests/GithubAppTest\.php''',
+    '''app/tests/AppLogTest\.php''',
+    '''app/public/settings\.php''',
 ]

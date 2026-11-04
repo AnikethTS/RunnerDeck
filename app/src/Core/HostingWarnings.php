@@ -67,7 +67,7 @@ final class HostingWarnings
     }
 
     /**
-     * Same sentence for the banner and `php bin/doctor.php`. A loopback
+     * Same sentence for the banner and `php app/bin/doctor.php`. A loopback
      * reverse proxy still serves the page; this only says the extra gate
      * is not applied.
      */

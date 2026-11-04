@@ -18,7 +18,7 @@ final class Config
 
         Settings::applyToEnv();
 
-        $envFile = dirname(__DIR__, 2) . '/.env';
+        $envFile = dirname(__DIR__, 3) . '/.env';
         if (!is_file($envFile)) {
             return;
         }
@@ -499,7 +499,7 @@ final class Config
         if ($version !== null) {
             return $version;
         }
-        $raw = @file_get_contents(dirname(__DIR__, 2) . '/VERSION');
+        $raw = @file_get_contents(dirname(__DIR__, 3) . '/VERSION');
         return $version = $raw !== false ? trim($raw) : '0.0.0';
     }
 
@@ -509,7 +509,7 @@ final class Config
         if ($override) {
             return rtrim($override, '/');
         }
-        return dirname(__DIR__, 3) . '/runners';
+        return dirname(__DIR__, 4) . '/runners';
     }
 
     public static function ghBinary(): string

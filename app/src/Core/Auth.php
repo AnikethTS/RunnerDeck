@@ -109,7 +109,7 @@ final class Auth
         header('Content-Type: application/json');
         echo json_encode([
             'ok' => false,
-            'message' => 'TOTP login is required off loopback. Run php bin/setup-totp.php on the server.',
+            'message' => 'TOTP login is required off loopback. Run php app/bin/setup-totp.php on the server.',
         ]);
         exit;
     }
@@ -128,7 +128,7 @@ final class Auth
         }
         http_response_code(403);
         header('Content-Type: text/plain');
-        echo 'TOTP login is required off loopback. Run php bin/setup-totp.php on the server.';
+        echo 'TOTP login is required off loopback. Run php app/bin/setup-totp.php on the server.';
         exit;
     }
 
@@ -144,7 +144,7 @@ final class Auth
         echo '<p class="muted">This request is not from loopback, and TOTP login is not configured. ';
         echo 'Anyone who can reach this port would have full control of the runners. ';
         echo 'Set up login from a shell on this machine, then reload:</p>';
-        echo '<p><code>php bin/setup-totp.php</code></p>';
+        echo '<p><code>php app/bin/setup-totp.php</code></p>';
         echo '</div></main>';
         Layout::htmlClose(['assets/js/theme.js']);
         exit;

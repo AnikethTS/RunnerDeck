@@ -33,7 +33,7 @@ final class Settings
 
     private static function path(): string
     {
-        return getenv('RUNNERDECK_SETTINGS_FILE') ?: dirname(__DIR__, 2) . '/storage/settings.json';
+        return getenv('RUNNERDECK_SETTINGS_FILE') ?: dirname(__DIR__, 3) . '/storage/settings.json';
     }
 
     /** The directory settings.json lives in — reused by Auth.php for its lockout file, same storage location. */

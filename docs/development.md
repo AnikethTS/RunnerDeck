@@ -5,6 +5,7 @@ checkout, no build step, no `composer install`. Composer is only used for
 **dev tooling** (tests, static analysis, lint):
 
 ```bash
+cd app
 composer install          # pulls in phpunit, phpstan, phpcs (dev-only)
 composer run test          # PHPUnit
 composer run stan          # phpstan (level 8)
@@ -13,7 +14,7 @@ composer run cs-fix        # phpcbf, auto-fixes what it can
 composer audit             # known CVEs in dependencies
 ```
 
-`composer install` also points git at `.githooks/` (a plain shell
+The PHP app, its Composer files and its unit tests live in `app/`, so run Composer commands from there. `composer install` also points git at `.githooks/` (a plain shell
 pre-commit hook, no Node/Husky involved), so every commit runs `phpcs`,
 `phpstan`, and the test suite before it's allowed through. If you already
 had `vendor/` installed before this hook existed, wire it up once with
@@ -26,8 +27,8 @@ any more than it needs `vendor/`:
 
 ```bash
 npm install       # pulls in eslint, stylelint, Playwright (dev-only)
-npm run lint:js   # eslint on public/assets/app.js and public/assets/js/
-npm run lint:css  # stylelint on public/assets/style.css
+npm run lint:js   # eslint on app/public/assets/app.js and app/public/assets/js/
+npm run lint:css  # stylelint on app/public/assets/style.css
 npm run audit     # npm audit (see tools/ci/npm-audit.mjs)
 npm run e2e       # Playwright — see tests/e2e/dashboard.spec.js
 ```
@@ -101,7 +102,7 @@ Pushes to `main`, the nightly run and manual runs always run everything. The `CI
 
 CI also enforces a minimum line coverage (`tools/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
 
-The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `tools/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
+The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`app/tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `tools/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-15`, and Intel `macos-15-intel` (PHP 8.1),
@@ -149,9 +150,11 @@ PR expectations and the project's policy on AI-assisted contributions.
 
 ```
 runnerdeck/
-  public/
+  app/               the PHP application and everything that tests it
+    composer.json, phpunit.xml, phpcs.xml, phpstan.neon
+    public/
     index.php       server-rendered dashboard page
-    api.php         JSON API front controller (`action=` handlers in src/Http/Action/)
+    api.php         JSON API front controller (`action=` handlers in app/src/Http/Action/)
     log_stream.php  Server-Sent Events log tailing
     login.php       optional TOTP login screen (see Security & safety)
     logout.php      POST + CSRF; ends a TOTP session and redirects to login
@@ -171,7 +174,7 @@ runnerdeck/
     assets/         app.js (live dashboard), js/theme.js (theme and help tips), style.css
                     (shared --page-gutter / --page-max; 900 / 720 / 520 breakpoints), logo.png
   src/
-    bootstrap.php   autoload (`RunnerDeck\` → `src/`) + env bootstrap
+    bootstrap.php   autoload (`RunnerDeck\` → `app/src/`) + env bootstrap
     Core/           Config, Settings, Auth, TOTP, CSRF, session, layout, log, shell
     GitHub/         gh client, GitHub App, queue cache, agent version, orphans, backoff/clock/quota
     Host/           pressure, host mode, metrics, cgroups, history, host bundle
@@ -180,7 +183,7 @@ runnerdeck/
     Ui/             dashboard snapshot and first-paint HTML
     Http/           API router (`RunnerDeck\Http\Api`)
     Http/Action/    one class per `api.php?action=` (`RunnerDeck\Http\Action\`)
-  tests/            PHPUnit unit tests for the pure-logic pieces above
+  app/tests/        PHPUnit unit tests for the pure-logic pieces above
   tests/e2e/        Playwright UI tests with a mocked API
   tests/e2e-live/   Playwright tests against real GitHub (see below)
   desktop/          Go desktop shell: tray, window, supervisor (see Packaging)
@@ -190,8 +193,8 @@ runnerdeck/
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
   run.sh            local php -S entry (also starts watch-auto-restart)
-  bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
-  bin/drain-stop.php          wait-for-idle then SIGTERM (host reboot)
+  app/bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
+  app/bin/drain-stop.php      wait-for-idle then SIGTERM (host reboot)
   run.ps1           Windows entry point (native; -Wsl runs Linux runners in WSL2)
   Dockerfile        alternative container entry point (see Docker doc)
   docker-compose.yml

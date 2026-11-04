@@ -35,7 +35,7 @@ export default defineConfig({
     navigationTimeout: 10_000,
   },
   webServer: {
-    command: `php -S 127.0.0.1:${PORT} -t public`,
+    command: `php -S 127.0.0.1:${PORT} -t app/public`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     env: {

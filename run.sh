@@ -8,7 +8,8 @@ set -euo pipefail
 
 PORT="${1:-8090}"
 HOST="${RUNNERDECK_BIND_HOST:-127.0.0.1}"
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="$ROOT/app"
 
 if ! command -v php >/dev/null 2>&1; then
     if command -v flatpak-spawn >/dev/null 2>&1; then
@@ -27,7 +28,7 @@ if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
         require $argv[1] . "/src/bootstrap.php";
         exit(\RunnerDeck\Core\Config::authEnabled() ? 0 : 1);
     ' -- "$DIR"; then
-        echo "Non-loopback bind requires TOTP login. Run: php bin/setup-totp.php" >&2
+        echo "Non-loopback bind requires TOTP login. Run: php app/bin/setup-totp.php" >&2
         exit 1
     fi
 fi
@@ -50,7 +51,7 @@ else
 fi
 php -r '
     $dir = $argv[1];
-    $file = getenv("RUNNERDECK_HISTORY_FILE") ?: "$dir/storage/db/history.sqlite";
+    $file = getenv("RUNNERDECK_HISTORY_FILE") ?: "$dir/../storage/db/history.sqlite";
     $parent = dirname($file);
     $writable = is_dir($parent) ? is_writable($parent) : is_writable(dirname($parent));
     $ext = extension_loaded("pdo_sqlite") ? "pdo_sqlite available" : "pdo_sqlite MISSING, history chart disabled";
