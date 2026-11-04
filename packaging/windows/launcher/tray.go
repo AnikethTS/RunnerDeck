@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
@@ -62,6 +63,10 @@ func runTray(opts options, l layout) int {
 				ask:       askYesNoBox,
 				runWindow: runInNewConsole,
 			}
+			if opts.noPrompts {
+				d.showError = func(text string) { fmt.Fprintln(os.Stderr, text) }
+				d.ask = func(string) bool { return false }
+			}
 			code, g, w, s, exited, _ := start(d, opts, l)
 			if code != 0 {
 				d.flushError()
@@ -76,7 +81,9 @@ func runTray(opts options, l layout) int {
 			}
 			select {
 			case <-exited:
-				showErrorBox("The RunnerDeck server stopped unexpectedly. Open the server log from the tray menu for details.")
+				if !opts.noPrompts {
+					showErrorBox("The RunnerDeck server stopped unexpectedly. Open the server log from the tray menu for details.")
+				}
 				exitCode = 1
 				systray.Quit()
 			case <-quit:
