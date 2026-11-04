@@ -1,7 +1,7 @@
 # Docker
 
-An alternative to the [native or WSL2 paths](getting-started.md#platform-support) on
-Windows (note a container runs Linux runners, not Windows ones), or just a self-contained way to run RunnerDeck without installing
+An alternative to the [native install](getting-started.md#platform-support) on
+Linux, macOS and Windows (note a container runs Linux runners, not Windows ones), or just a self-contained way to run RunnerDeck without installing
 PHP directly:
 
 ```bash

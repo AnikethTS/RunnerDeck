@@ -362,13 +362,13 @@
         </tr>
         <tr>
           <td>Windows</td>
-          <td class="support">Native, or via WSL2</td>
-          <td><code>run.ps1</code> runs natively and manages Windows runners (<code>config.cmd</code>/<code>run.cmd</code>), so <code>runs-on: windows</code> jobs work. Needs PHP 8.1+ on <code>PATH</code> and <code>gh</code>; processes are controlled with PowerShell and <code>taskkill</code>, so <code>posix</code>/<code>pcntl</code> are not needed. Stop is always forced, the built-in server is single-threaded, and CI runs the Windows tests plus a real PowerShell/<code>taskkill</code> smoke on <code>windows-latest</code> and <code>windows-2022</code> (not the full suite). <code>run.ps1 -Wsl</code> manages Linux runners inside WSL2 instead.</td>
+          <td class="support">Native</td>
+          <td><code>run.ps1</code> runs natively and manages Windows runners (<code>config.cmd</code>/<code>run.cmd</code>), so <code>runs-on: windows</code> jobs work. Needs PHP 8.1+ on <code>PATH</code> and <code>gh</code>; processes are controlled with PowerShell and <code>taskkill</code>, so <code>posix</code>/<code>pcntl</code> are not needed. Stop asks the runner to exit first and only force-kills it if needed, the built-in server is single-threaded, and CI runs the Windows tests plus a real PowerShell/<code>taskkill</code> smoke on <code>windows-latest</code> and <code>windows-2022</code> (not the full suite). WSL2 is optional: only <code>run.ps1 -Wsl</code> needs it, to manage Linux runners from a Windows PC.</td>
         </tr>
         <tr>
           <td>Docker</td>
           <td class="support">docker compose up</td>
-          <td>Alternative to installing PHP, or WSL2 on Windows, at all — <code>docker compose up --build</code>. CI builds the image and boots it on every push.</td>
+          <td>Alternative to installing PHP at all — <code>docker compose up --build</code>. CI builds the image and boots it on every push.</td>
         </tr>
       </tbody>
     </table>

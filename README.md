@@ -39,9 +39,11 @@ little vanilla JS.
 | <img src="https://cdn.simpleicons.org/apple/999999" alt="" width="20" /> | **macOS** | macOS runners (Intel and Apple silicon) |
 | | **Windows** | Windows runners (x64, arm64) via `.\run.ps1` |
 
-Windows is native too, no WSL2 needed, so `runs-on: windows` jobs work. It has
-a few limits (forced stop, a single-worker built-in server); see
-[Platform support](docs/getting-started.md#platform-support).
+Windows is native too, no WSL2 needed, so `runs-on: windows` jobs work. The
+built-in server handles one request at a time there, so a slow request can
+briefly hold up the next click; see
+[Platform support](docs/getting-started.md#platform-support). WSL2 is only
+needed to manage Linux runners from a Windows PC (`.\run.ps1 -Wsl`).
 
 ## Quick start
 
@@ -53,8 +55,8 @@ git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
 Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
 That's the whole setup. Machine not ready yet? Run `php bin/doctor.php` to
 check — or see [Getting started](docs/getting-started.md) for the full
-walkthrough, prerequisites, and platform notes (Linux/macOS native,
-Windows native or via WSL2).
+walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
+all native).
 
 ## Screenshots
 
