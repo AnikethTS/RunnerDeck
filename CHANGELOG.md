@@ -6,32 +6,15 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Changed
-
-- The repository is reorganised. The Go desktop shell moved from `packaging/windows/launcher` to `desktop/`, the build scripts from `scripts/` to `tools/` (`tools/package/build.py --target ...` is now the single build entry point), and the browser tests to `tests/e2e` and `tests/e2e-live`. Windows downloads are renamed to `RunnerDeck-<version>-windows-x64-setup.exe`, `RunnerDeck-<version>-windows-x64.exe` and `RunnerDeck-<version>-windows-x64.zip`, with one `SHA256SUMS-windows-x64` file in place of per-file checksums.
-- The PHP app moved into `app/` (`app/src`, `app/public`, `app/bin`, `app/tests`, `app/composer.json`); `run.sh` and `run.ps1` stay at the root as the entry points, and your `.env`, `storage/` and the default runner folder keep their old locations. Commands that referred to `bin/` are now `php app/bin/doctor.php` and `php app/bin/setup-totp.php`. Inside `app/src`, folders are named by responsibility: `Configuration`, `Security`, `System`, `Logging`, `Presentation`, `Telemetry`, `Backup`, `Lifecycle` and `Alerting` replace `Core`, `Ui`, `Alert` and parts of `Host` and `Pool`, and the HTTP actions are grouped under `Http/Action/{Runners,Authentication,Administration,Monitoring}`. Class names are unchanged; only namespaces moved.
+## [1.12.0] - 2026-11-05
 
 ### Added
+
+- A Windows installer, `RunnerDeck-<version>-windows-x64-setup.exe`, built with Inno Setup and attached to every release as the Windows download. It installs for your account without administrator rights, offers the tools RunnerDeck needs (Microsoft's Visual C++ runtime, the Edge WebView2 runtime and the GitHub CLI, only when missing, each downloaded and checked for Microsoft's signature or installed with winget) and a GitHub sign-in, and adds a Start menu folder with an Uninstall entry, an optional desktop shortcut and an optional start-with-Windows entry. It uninstalls from Settings, the Start menu or the tray menu and asks before deleting your data.
+- The installed Windows app opens RunnerDeck in its own window, drawn with Microsoft Edge WebView2, instead of a browser tab, and lives in the system tray (Open dashboard, Show server log, Uninstall, Quit). Closing the window hides it to the tray. Without WebView2 it falls back to your browser. Starting with Windows launches into the tray (`--background`).
+- A console build for people who want no installer: a guided `RunnerDeck.exe` (welcome banner, PHP check, Visual C++ and GitHub CLI prompts, `--yes` to accept them) in a single-file form and a zip. CI builds both as downloadable artifacts of the `Package · Windows zip` job (label `ci:package`); releases do not attach them.
 
 - A Debian/Ubuntu package, `RunnerDeck-<version>-linux-all.deb`, with a `runnerdeck` command, a desktop entry and a systemd user unit, and a Homebrew formula (`runnerdeck.rb`) generated for each release. Both come from the new `tools/package/build.py` targets `linux-deb` and `brew-formula` and are attached to releases. A new `Package · Linux deb` CI job (label `ci:package`) builds, installs, runs and removes the package.
-
-### Fixed
-
-- The release workflow no longer runs the Windows installer smoke test in the source-zip job, where it would have failed.
-
-### Added
-
-- The installed Windows app now opens RunnerDeck in its own window, drawn with Microsoft Edge WebView2, instead of a browser tab. Closing the window hides it to the tray; the tray menu's Open dashboard brings it back. If WebView2 is missing the app falls back to your browser, and the installer can install WebView2. Starting with Windows now launches into the tray (`--background`).
-
-- The Windows installer now sets up the tools RunnerDeck needs while you install: it offers the Microsoft Visual C++ runtime (downloaded, checked for Microsoft's signature, installed with a Windows permission prompt) and the GitHub CLI (via winget), only when they are missing, and offers a GitHub sign-in on the last page. There is now an Uninstall RunnerDeck entry in the Start menu folder and in the tray menu.
-
-- A Windows installer wizard, `RunnerDeck-Setup-<version>.exe`, built with Inno Setup. It installs for your account without administrator rights, adds a Start menu entry, optional desktop shortcut and start-with-Windows, and uninstalls from Settings. The installed RunnerDeck is a windowless tray app (Open dashboard, Show server log, Quit) that asks via message boxes before installing the Visual C++ runtime or the GitHub CLI. CI installs, starts and uninstalls it silently, and the release attaches it as the main Windows download.
-
-- The Windows `runnerdeck.exe` is now a guided setup. It prints the welcome banner, checks PHP and offers to install Microsoft's Visual C++ runtime when Windows lacks it (checking the installer's Microsoft signature first), checks the GitHub CLI and offers to install it and sign you in, and explains failures instead of printing an empty log. The window stays open on errors, the unpack message only shows on the first start, and `--yes` accepts every prompt.
-
-- A single-file `runnerdeck.exe` for Windows that carries PHP and the app and unpacks them on first start, built next to the zip. The build script also resolves a relative `--out` path correctly.
-
-- A Windows download: a zip with `runnerdeck.exe`, a bundled PHP and the app. Double-click to start the dashboard; no PHP install needed. It is not code-signed. The release workflow builds and attaches it, and a new `ci:package` label runs its build and smoke test in CI.
 
 - A welcome message with the version, credits and links when you start RunnerDeck with `run.sh` or `run.ps1`, or run `bin/doctor.php` or `bin/setup-totp.php`. Set `RUNNERDECK_NO_BANNER=1` to hide it.
 
@@ -57,6 +40,9 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- The repository is reorganised. The Go desktop shell moved from `packaging/windows/launcher` to `desktop/`, the build scripts from `scripts/` to `tools/` (`tools/package/build.py --target ...` is now the single build entry point), and the browser tests to `tests/e2e` and `tests/e2e-live`. Release files follow `RunnerDeck-<version>-<os>-<arch>[-setup].<ext>` with one `SHA256SUMS-<platform>` file per platform.
+- The PHP app moved into `app/` (`app/src`, `app/public`, `app/bin`, `app/tests`, `app/composer.json`); `run.sh` and `run.ps1` stay at the root as the entry points, and your `.env`, `storage/` and the default runner folder keep their old locations. Commands that referred to `bin/` are now `php app/bin/doctor.php` and `php app/bin/setup-totp.php`. Inside `app/src`, folders are named by responsibility: `Configuration`, `Security`, `System`, `Logging`, `Presentation`, `Telemetry`, `Backup`, `Lifecycle` and `Alerting` replace `Core`, `Ui`, `Alert` and parts of `Host` and `Pool`, and the HTTP actions are grouped under `Http/Action/{Runners,Authentication,Administration,Monitoring}`. Class names are unchanged; only namespaces moved.
+
 - The queued-jobs scan fetches each completed run's jobs once and keeps them, so a refresh makes about 3 GitHub calls instead of up to 27. This cuts API quota use on busy repos.
 
 - Dashboard and hosting alerts stay pinned under the top bar while the
@@ -73,6 +59,10 @@ follows [SemVer](https://semver.org/).
   measures every slot's disk in a single `du` about every 30 seconds. A
   status or queue poll that is still in flight is not started again.
   Busy/idle can lag about 8 seconds, and disk size about 30.
+
+### Fixed
+
+- The release workflow no longer runs the Windows installer smoke test in the source-zip job, where it would have failed.
 
 ## [1.11.1] - 2026-10-31
 
