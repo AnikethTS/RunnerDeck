@@ -30,6 +30,7 @@ jobs:
       e2e: ${{ steps.plan.outputs.e2e }}
       live: ${{ steps.plan.outputs.live }}
       live_extended: ${{ steps.plan.outputs.live_extended }}
+      package: ${{ steps.plan.outputs.package }}
     steps:
       - id: plan
         env:
@@ -51,6 +52,7 @@ jobs:
             echo "smoke=$(pick smoke)"
             echo "e2e=$(pick e2e)"
             echo "live=$(pick live)"
+            echo "package=$(pick package)"
             if [ "$everything" = true ] || has ci:live-extended; then echo "live_extended=true"; else echo "live_extended=false"; fi
           } >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
@@ -639,6 +641,40 @@ jobs:
         if: always()
         run: docker rm -f rd-fedora || true
 
+  package-windows:
+    name: Package · Windows zip
+    needs: plan
+    if: needs.plan.outputs.package == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: packaging/windows/launcher/go.mod
+          cache: false
+
+      - name: Vet and test the launcher
+        working-directory: packaging/windows/launcher
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Build the Windows zip
+        run: python scripts/package/build_windows.py
+
+      - name: Run the packaged app and check it shuts down cleanly
+        run: python scripts/package/smoke_windows.py dist
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runnerdeck-windows-x64
+          path: |
+            dist/runnerdeck-*-windows-x64.zip
+            dist/runnerdeck-*-windows-x64.zip.sha256
+          retention-days: 7
+
   smoke-test:
     name: Smoke · ${{ matrix.platform }}
     needs: plan
@@ -856,7 +892,7 @@ jobs:
 
   gate:
     name: CI · Merge gate
-    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended]
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

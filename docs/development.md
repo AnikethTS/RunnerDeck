@@ -63,6 +63,10 @@ The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and 
 
 The `e2e-live` job runs `e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
 
+### Windows package
+
+`scripts/package/build_windows.py` builds `runnerdeck-<version>-windows-x64.zip`: the official PHP for Windows (checksum verified against windows.php.net, branch in `packaging/windows/php-branch.txt`), the app, and `runnerdeck.exe`, a small Go launcher in `packaging/windows/launcher`. The launcher keeps all state under `%LOCALAPPDATA%\RunnerDeck` through the `RUNNERDECK_*` variables, and ties the PHP processes to a Windows Job Object so they stop when its window closes. `scripts/package/smoke_windows.py` runs the packaged app and checks that PHP stops with the launcher. Build it locally with Go installed: `python3 scripts/package/build_windows.py`. The release workflow attaches the zip, its checksum and its attestation to each release.
+
 ### Choosing which CI runs
 
 Pull requests get the fast set by default: lint, the secret scan, and the unit suite with the coverage gate. Add labels to run more, as in other projects that use this pattern:
@@ -76,6 +80,7 @@ Pull requests get the fast set by default: lint, the secret scan, and the unit s
 | `ci:e2e` | Browser UI tests with a mocked API |
 | `ci:live` | Live dashboard and real-runner tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
 | `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
+| `ci:package` | Builds the Windows zip and smoke-tests the packaged app |
 | `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |
 
 Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label queues another CI run after the current one finishes, and does not cancel it. (ChangeRadar's annotations check attaches to the first run on a commit, and GitHub ignores checks from a cancelled run.) Fork pull requests never run the live jobs, because they do not receive the secrets.

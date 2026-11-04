@@ -7,6 +7,7 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Core\Config;
 use RunnerDeck\Core\HostingWarnings;
+use RunnerDeck\Core\Settings;
 use RunnerDeck\GitHub\GithubApp;
 use RunnerDeck\GitHub\GithubClient;
 use RunnerDeck\Host\HostPressure;
@@ -228,7 +229,7 @@ if (is_dir($poolDir) && is_writable($poolDir)) {
     $failures += fail('pool directory', "{$poolDir} is not writable", $color);
 }
 
-$storageDir = dirname(__DIR__) . '/storage';
+$storageDir = Settings::storageDir();
 if ((is_dir($storageDir) && is_writable($storageDir)) || (!is_dir($storageDir) && is_writable(dirname($storageDir)))) {
     ok('storage directory', $storageDir, $color);
 } else {
