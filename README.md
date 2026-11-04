@@ -58,10 +58,11 @@ check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
 all native).
 
-**On Windows without installing PHP:** download `runnerdeck-<version>-windows-x64.zip`
-from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest),
-unzip it, and double-click `runnerdeck.exe`. It bundles PHP, starts the dashboard,
-and opens your browser. You still need the GitHub CLI
+**On Windows without installing PHP:** download `runnerdeck-<version>-windows-x64.exe`
+from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
+and double-click it. It is a single file that carries PHP, starts the dashboard,
+and opens your browser (the first start unpacks it, which takes a few seconds). A
+`.zip` with the same files side by side is also attached. You still need the GitHub CLI
 (`winget install GitHub.cli`, then `gh auth login`). The download is not
 code-signed yet, so SmartScreen may ask you to choose **More info → Run anyway**.
 Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.

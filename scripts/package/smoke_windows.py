@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -40,25 +41,39 @@ def fail(message: str) -> None:
     sys.exit(1)
 
 
-def find_zip(target: str) -> Path:
+def find_artifact(target: str, pattern: str) -> Path:
     path = Path(target)
     if path.is_dir():
-        zips = sorted(path.glob("runnerdeck-*-windows-x64.zip"))
-        if not zips:
-            fail(f"no runnerdeck-*-windows-x64.zip in {path}")
-        return zips[-1]
+        found = sorted(path.glob(pattern))
+        if not found:
+            fail(f"no {pattern} in {path}")
+        return found[-1]
     return path
 
 
-def main() -> None:
-    archive = find_zip(sys.argv[1] if len(sys.argv) > 1 else "dist")
-    version = (ROOT / "VERSION").read_text().strip()
-    work = Path(tempfile.mkdtemp(prefix="runnerdeck-smoke-"))
+def locate_exe(target: str, single: bool, work: Path) -> Path:
+    if single:
+        source = find_artifact(target, "runnerdeck-*-windows-x64.exe")
+        alone = work / "alone"
+        alone.mkdir()
+        shutil.copy2(source, alone / "runnerdeck.exe")
+        return alone / "runnerdeck.exe"
+    archive = find_artifact(target, "runnerdeck-*-windows-x64.zip")
     with zipfile.ZipFile(archive) as zf:
         zf.extractall(work / "pkg")
     exe = next((work / "pkg").glob("*/runnerdeck.exe"), None)
     if exe is None:
         fail("runnerdeck.exe is missing from the zip")
+    return exe
+
+
+def main() -> None:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    single = "--single" in sys.argv[1:]
+    target = args[0] if args else "dist"
+    version = (ROOT / "VERSION").read_text().strip()
+    work = Path(tempfile.mkdtemp(prefix="runnerdeck-smoke-"))
+    exe = locate_exe(target, single, work)
 
     shown = subprocess.run([str(exe), "--version"], capture_output=True, text=True, timeout=30)
     if shown.stdout.strip() != f"RunnerDeck {version}":
@@ -100,6 +115,8 @@ def main() -> None:
         for name in ("server.log", "runners", "db"):
             if not (data_dir / name).exists():
                 fail(f"{name} was not created under the data directory")
+        if single and not list((data_dir / "runtime").glob("*/php/php.exe")):
+            fail("the single exe did not unpack its runtime under the data directory")
         print("ok  settings, runners and logs live under the data directory")
     finally:
         launcher.kill()

@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var embeddedVersion string
+
 func main() {
 	os.Exit(run(os.Args[1:]))
 }
@@ -32,6 +34,15 @@ func run(args []string) int {
 	if opts.showVersion {
 		fmt.Println("RunnerDeck", appVersion(l))
 		return 0
+	}
+	if len(payloadZip) > 0 {
+		fmt.Println("Preparing RunnerDeck (the first start takes a few seconds)...")
+		unpacked, err := ensureRuntime(l, payloadZip)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "runnerdeck:", err)
+			return 1
+		}
+		l = unpacked
 	}
 	if _, err := os.Stat(l.php); err != nil {
 		fmt.Fprintf(os.Stderr, "runnerdeck: bundled PHP not found at %s\nKeep runnerdeck.exe next to the php and app folders.\n", l.php)
@@ -123,6 +134,9 @@ func run(args []string) int {
 }
 
 func appVersion(l layout) string {
+	if embeddedVersion != "" {
+		return embeddedVersion
+	}
 	data, err := os.ReadFile(filepath.Join(l.app, "VERSION"))
 	if err != nil {
 		return "unknown"
