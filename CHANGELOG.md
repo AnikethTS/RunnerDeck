@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Docker image upgrades `libexpat` at build time. The 1.12.0 release build reused a cached layer with `libexpat` 2.9.0 (three HIGH CVEs, fixed in 2.10.0) and its image scan failed.
+
 ## [1.12.0] - 2026-11-05
 
 ### Added
