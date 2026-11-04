@@ -389,4 +389,54 @@ final class QueuedJobsTest extends TestCase
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
     }
+
+    #[RunInSeparateProcess]
+    public function testCompletedRunsAreFetchedOnceAndThenServedFromTheCache(): void
+    {
+        $this->tmpDir = sys_get_temp_dir() . '/runnerdeck-queue-cache-' . uniqid();
+        mkdir($this->tmpDir, 0755, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->tmpDir . '/settings.json');
+        putenv('RUNNERDECK_SCOPE=repo');
+        putenv('RUNNERDECK_REPO=acme/app');
+        putenv('RUNNERDECK_ORG');
+        putenv('RUNNERDECK_LABEL=acme-pool');
+
+        $jobCalls = 0;
+        \RunnerDeck\Core\Shell::fake(function (array $cmd) use (&$jobCalls): array {
+            $line = implode(' ', $cmd);
+            if (str_contains($line, 'auth status')) {
+                return ['code' => 0, 'stdout' => 'Logged in', 'stderr' => ''];
+            }
+            if (str_contains($line, '/runs/7/jobs')) {
+                $jobCalls++;
+                $body = json_encode(['jobs' => [[
+                    'id' => 70,
+                    'name' => 'build',
+                    'status' => 'completed',
+                    'conclusion' => 'success',
+                    'runner_name' => 'acme-1',
+                    'started_at' => '2026-01-01T00:00:00Z',
+                    'completed_at' => '2026-01-01T00:01:00Z',
+                    'html_url' => 'https://example.test/job/70',
+                ]]]);
+                return ['code' => 0, 'stdout' => $body, 'stderr' => ''];
+            }
+            if (str_contains($line, 'status=completed')) {
+                $body = json_encode(['workflow_runs' => [
+                    ['id' => 7, 'status' => 'completed', 'updated_at' => '2026-01-01T00:01:00Z'],
+                ]]);
+                return ['code' => 0, 'stdout' => $body, 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"workflow_runs":[]}', 'stderr' => ''];
+        });
+
+        $first = \RunnerDeck\GitHub\QueuedJobs::snapshot();
+        @unlink($this->tmpDir . '/queue_cache.json');
+        $second = \RunnerDeck\GitHub\QueuedJobs::snapshot();
+
+        $this->assertSame(1, $jobCalls);
+        $this->assertCount(1, $first['recent']);
+        $this->assertSame($first['recent'], $second['recent']);
+        $this->assertSame('acme-1', $second['recent'][0]['runner_name']);
+    }
 }

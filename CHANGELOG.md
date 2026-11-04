@@ -29,6 +29,8 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- The queued-jobs scan fetches each completed run's jobs once and keeps them, so a refresh makes about 3 GitHub calls instead of up to 27. This cuts API quota use on busy repos.
+
 - Dashboard and hosting alerts stay pinned under the top bar while the
   page scrolls, including the older-runner notice.
 - CI prints `[1/N]` as each Playwright and PHPUnit test starts. The

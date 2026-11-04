@@ -290,7 +290,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=check_updates'
 Jobs waiting on this host's shared runner label (`RUNNERDECK_LABEL`).
 Kept off the 5s `action=status` poll: GitHub has no org-wide queued-jobs
 API, so this walks a few workflow runs (repo scope, or up to five
-recently pushed org repos) and caches the result on disk for ~25s.
+recently pushed org repos) and caches the result on disk for ~25s. Completed runs' jobs are fetched once and kept, so a refresh costs about three GitHub calls plus one per queued or in-progress run.
 Does not start runners — `hint` / `hint_action` (`start`, `add`, or
 empty) is advice only. `live` is in-progress jobs keyed by GitHub
 `runner_name` for the busy-row overlay. `recent` is completed jobs
