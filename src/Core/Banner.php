@@ -34,7 +34,7 @@ final class Banner
             3 => $paint('1', 'Welcome to RunnerDeck') . ' ' . $paint('33', 'v' . Config::version()),
             4 => 'One dashboard for every self-hosted',
             5 => 'GitHub Actions runner.',
-            7 => $paint('90', 'Built by') . ' Aniketh and contributors',
+            7 => $paint('90', 'Built by') . ' Aniketh TS and contributors',
             8 => $paint('90', 'License') . '  MIT',
             10 => $paint('90', 'Docs and issues'),
             11 => $paint('4', self::REPO_URL),

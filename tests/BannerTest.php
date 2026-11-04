@@ -20,7 +20,7 @@ final class BannerTest extends TestCase
         $text = Banner::render(false);
 
         $this->assertStringContainsString('Welcome to RunnerDeck v' . Config::version(), $text);
-        $this->assertStringContainsString('Built by Aniketh and contributors', $text);
+        $this->assertStringContainsString('Built by Aniketh TS and contributors', $text);
         $this->assertStringContainsString('https://github.com/AnikethTS/RunnerDeck', $text);
         $this->assertStringNotContainsString("\033", $text);
     }
