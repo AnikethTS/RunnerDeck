@@ -24,5 +24,6 @@
 /test-results/
 /playwright-live-report/
 /dist/
+/packaging/windows/launcher/payload.zip
 /test-results-live/
 __pycache__/

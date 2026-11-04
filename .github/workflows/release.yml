@@ -109,23 +109,30 @@ jobs:
           go-version-file: packaging/windows/launcher/go.mod
           cache: false
 
-      - name: Build the Windows zip
-        run: python scripts/package/build_windows.py
+      - name: Build the Windows zip and the single exe
+        run: python scripts/package/build_windows.py --single-exe
 
-      - name: Run the packaged app and check it shuts down cleanly
+      - name: Run the zip build and check it shuts down cleanly
         run: python scripts/package/smoke_windows.py dist
+
+      - name: Run the single exe on its own and check it shuts down cleanly
+        run: python scripts/package/smoke_windows.py dist --single
 
       - name: Attest build provenance
         id: attest
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/runnerdeck-*-windows-x64.zip
+          subject-path: |
+            dist/runnerdeck-*-windows-x64.zip
+            dist/runnerdeck-*-windows-x64.exe
 
-      - name: Attach the zip, checksum and attestation to the release
+      - name: Attach the zip, the exe, their checksums and the attestation to the release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           zip_path="$(ls dist/runnerdeck-*-windows-x64.zip)"
-          cp "${{ steps.attest.outputs.bundle-path }}" "${zip_path}.sigstore.json"
-          gh release upload "${GITHUB_REF_NAME}" "${zip_path}" "${zip_path}.sha256" "${zip_path}.sigstore.json" --clobber
+          exe_path="$(ls dist/runnerdeck-*-windows-x64.exe)"
+          bundle="dist/runnerdeck-windows-x64.sigstore.json"
+          cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
+          gh release upload "${GITHUB_REF_NAME}" "${zip_path}" "${zip_path}.sha256" "${exe_path}" "${exe_path}.sha256" "${bundle}" --clobber

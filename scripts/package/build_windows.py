@@ -80,10 +80,39 @@ def copy_app(app_dir: Path) -> None:
         shutil.copy2(ROOT / name, app_dir / name)
 
 
-def build_launcher(go: str, target: Path) -> None:
+LAUNCHER = ROOT / "packaging" / "windows" / "launcher"
+
+
+def build_launcher(go: str, target: Path, embed_version: str | None = None) -> None:
     env = dict(os.environ, GOOS="windows", GOARCH="amd64", CGO_ENABLED="0")
-    command = [go, "build", "-trimpath", "-ldflags", "-s -w", "-o", str(target), "."]
-    subprocess.run(command, cwd=ROOT / "packaging" / "windows" / "launcher", env=env, check=True)
+    ldflags = "-s -w"
+    command = [go, "build", "-trimpath"]
+    if embed_version:
+        ldflags += f" -X main.embeddedVersion={embed_version}"
+        command += ["-tags", "payload"]
+    command += ["-ldflags", ldflags, "-o", str(target.resolve()), "."]
+    subprocess.run(command, cwd=LAUNCHER, env=env, check=True)
+
+
+def make_payload(stage: Path, payload_path: Path) -> None:
+    with zipfile.ZipFile(payload_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for top in ("php", "app"):
+            for path in sorted((stage / top).rglob("*")):
+                if path.is_file():
+                    archive.write(path, path.relative_to(stage))
+
+
+def build_single_exe(go: str, stage: Path, version: str, out: Path) -> Path:
+    payload = LAUNCHER / "payload.zip"
+    target = out / f"runnerdeck-{version}-windows-x64.exe"
+    try:
+        make_payload(stage, payload)
+        build_launcher(go, target, embed_version=version)
+    finally:
+        payload.unlink(missing_ok=True)
+    digest = sha256_of(target)
+    (out / f"{target.name}.sha256").write_text(f"{digest}  {target.name}\n")
+    return target
 
 
 def readme(version: str, php_version: str) -> str:
@@ -116,11 +145,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build the RunnerDeck Windows zip")
     parser.add_argument("--out", default=str(ROOT / "dist"))
     parser.add_argument("--go", default=os.environ.get("GO", "go"))
+    parser.add_argument("--single-exe", action="store_true", help="also build one self-contained runnerdeck.exe")
     args = parser.parse_args()
 
     version = (ROOT / "VERSION").read_text().strip()
     branch = (ROOT / "packaging" / "windows" / "php-branch.txt").read_text().strip()
-    out = Path(args.out)
+    out = Path(args.out).resolve()
     release = php_release(branch)
     php_zip = download_php(release, out / "cache")
 
@@ -144,6 +174,10 @@ def main() -> None:
     (out / f"{zip_path.name}.sha256").write_text(f"{digest}  {zip_path.name}\n")
     print(f"Built {zip_path} ({zip_path.stat().st_size / 1_048_576:.1f} MB)")
     print(f"sha256 {digest}")
+    if args.single_exe:
+        exe = build_single_exe(args.go, stage, version, out)
+        print(f"Built {exe} ({exe.stat().st_size / 1_048_576:.1f} MB)")
+        print(f"sha256 {sha256_of(exe)}")
     print(f"PHP {release['version']}")
 
 
