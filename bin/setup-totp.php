@@ -16,6 +16,7 @@ function paint(string $code, string $text, bool $color): string
     return $color ? "\033[{$code}m{$text}\033[0m" : $text;
 }
 
+\RunnerDeck\Core\Banner::show();
 echo "RunnerDeck login setup\n\n";
 
 if (Config::authEnabled()) {

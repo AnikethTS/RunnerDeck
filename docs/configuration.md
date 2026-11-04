@@ -26,6 +26,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_LONG_JOB_MINUTES` | no | off | Whole number 1–1440. Fire the crash webhook once when an in-progress job assigned to a runner on this host has run this long. Settings → Automation |
 | `RUNNERDECK_MIN_FREE_DISK_GIB` | no | `1` | Refuse Start / add / scale-to-queue when the pool filesystem has less than this many GiB free. `0` = off. Unknown disk fails open. Settings → Automation |
 | `RUNNERDECK_MIN_FREE_RAM_MIB` | no | `256` | Refuse starts when Linux `MemAvailable` is below this many MiB. `0` = off. Windows reads it via CIM. Unreadable RAM (macOS) fails open. Settings → Automation |
+| `RUNNERDECK_NO_BANNER` | no | off | `1` to hide the welcome message that `run.sh`, `run.ps1`, `bin/doctor.php` and `bin/setup-totp.php` print on start |
 | `RUNNERDECK_SYSLOG` | no | off | `1` to send crash/alert events as RFC5424 to the local syslog socket. Settings → Notifications |
 | `RUNNERDECK_SYSLOG_SOCKET` | no | `/dev/log` | Absolute unix datagram path. Env only |
 | `RUNNERDECK_SLOT_CPU_PERCENT` | no | off | Whole number 1–100. cgroup v2 `cpu.max` as that percent of one CPU when a slot starts. Settings → Automation |

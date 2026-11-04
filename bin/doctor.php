@@ -45,6 +45,7 @@ function commandExists(string $bin): bool
     return \RunnerDeck\Core\Platform::commandExists($bin);
 }
 
+\RunnerDeck\Core\Banner::show();
 echo "RunnerDeck doctor\n";
 $failures = 0;
 $warnings = 0;

@@ -28,6 +28,8 @@ if (-not (Get-Command php -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+php "$repoDir\bin\banner.php"
+
 $bindHost = if ($env:RUNNERDECK_BIND_HOST) { $env:RUNNERDECK_BIND_HOST } else { '127.0.0.1' }
 
 if ($bindHost -ne '127.0.0.1' -and $bindHost -ne '::1') {

@@ -20,6 +20,8 @@ fi
 
 export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
 
+php "$DIR/bin/banner.php" || true
+
 if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
     if ! php -r '
         require $argv[1] . "/src/bootstrap.php";
