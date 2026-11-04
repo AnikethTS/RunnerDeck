@@ -84,7 +84,7 @@ def main() -> None:
     for name in ("RUNNERDECK_ORG", "RUNNERDECK_REPO", "RUNNERDECK_SCOPE"):
         env.pop(name, None)
     app = subprocess.Popen(
-        [str(exe), "--no-browser", "--port", str(PORT)],
+        [str(exe), "--no-browser", "--no-prompts", "--port", str(PORT)],
         env=env,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
@@ -98,7 +98,7 @@ def main() -> None:
         print("ok  the windowless tray app starts the dashboard")
 
         second = subprocess.run(
-            [str(exe), "--no-browser", "--port", str(PORT)],
+            [str(exe), "--no-browser", "--no-prompts", "--port", str(PORT)],
             env=env,
             stdin=subprocess.DEVNULL,
             capture_output=True,
