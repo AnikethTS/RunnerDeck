@@ -41,6 +41,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "vcredist"; Description: "Install the Microsoft Visual C++ runtime (PHP needs it)"; GroupDescription: "Required tools:"; Check: NeedVCRedist
+Name: "webview2"; Description: "Install the Microsoft Edge WebView2 runtime (draws the RunnerDeck window)"; GroupDescription: "Required tools:"; Check: NeedWebView2
 Name: "ghcli"; Description: "Install the GitHub CLI (RunnerDeck uses it to talk to GitHub)"; GroupDescription: "Required tools:"; Check: NeedGhCli
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; Flags: unchecked
 Name: "startup"; Description: "Start RunnerDeck when I sign in to Windows"; Flags: unchecked
@@ -58,7 +59,7 @@ Name: "{group}\Uninstall RunnerDeck"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\RunnerDeck"; Filename: "{app}\RunnerDeck.exe"; IconFilename: "{app}\RunnerDeck.ico"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RunnerDeck"; ValueData: """{app}\RunnerDeck.exe"" --no-browser"; Flags: uninsdeletevalue; Tasks: startup
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RunnerDeck"; ValueData: """{app}\RunnerDeck.exe"" --background"; Flags: uninsdeletevalue; Tasks: startup
 
 [Run]
 Filename: "{code:GhPath}"; Parameters: "auth login --hostname github.com --web --git-protocol https"; Description: "Sign in to GitHub (opens your browser)"; Flags: postinstall skipifsilent; Check: GhNeedsLogin
@@ -130,27 +131,43 @@ begin
   WizardForm.ProgressGauge.Style := npbstMarquee;
 end;
 
-procedure InstallVCRedist();
+function WebView2Installed(): Boolean;
+var
+  Version: String;
+begin
+  Result := False;
+  if RegQueryStringValue(HKLM64, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version)
+     or RegQueryStringValue(HKLM64, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version)
+     or RegQueryStringValue(HKCU, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', Version) then
+    Result := (Version <> '') and (Version <> '0.0.0.0');
+end;
+
+function NeedWebView2(): Boolean;
+begin
+  Result := not WebView2Installed();
+end;
+
+procedure InstallMicrosoftPackage(Name, Url, FileName, Params: String);
 var
   Dest, Verify: String;
   Code: Integer;
 begin
-  ShowBusy('Downloading the Microsoft Visual C++ runtime...');
+  ShowBusy('Downloading ' + Name + '...');
   try
-    DownloadTemporaryFile('https://aka.ms/vs/17/release/vc_redist.x64.exe', 'vc_redist.x64.exe', '', nil);
-    Dest := ExpandConstant('{tmp}\vc_redist.x64.exe');
-    Verify := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$s = Get-AuthenticodeSignature -LiteralPath '''
-      + Dest + '''; if ($s.Status -ne ''Valid'' -or $s.SignerCertificate.Subject -notmatch ''O=Microsoft Corporation'') { exit 1 }"';
+    DownloadTemporaryFile(Url, FileName, '', nil);
+    Dest := ExpandConstant('{tmp}\' + FileName);
+    Verify := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$s = Get-AuthenticodeSignature -LiteralPath ''' + Dest
+      + '''; if ($s.Status -ne ''Valid'' -or $s.SignerCertificate.Subject -notmatch ''O=Microsoft Corporation'') { exit 1 }"';
     if not (Exec('powershell.exe', Verify, '', SW_HIDE, ewWaitUntilTerminated, Code) and (Code = 0)) then
       RaiseException('the download is not signed by Microsoft Corporation');
-    ShowBusy('Installing the Microsoft Visual C++ runtime. Windows will ask for permission...');
-    if not ShellExec('runas', Dest, '/install /quiet /norestart', '', SW_SHOW, ewWaitUntilTerminated, Code) then
+    ShowBusy('Installing ' + Name + '. Windows will ask for permission...');
+    if not ShellExec('runas', Dest, Params, '', SW_SHOW, ewWaitUntilTerminated, Code) then
       RaiseException('the installer was cancelled');
     if (Code <> 0) and (Code <> 1638) and (Code <> 3010) then
       RaiseException('the installer exited with code ' + IntToStr(Code));
   except
-    SuppressibleMsgBox('The Visual C++ runtime could not be installed (' + GetExceptionMessage + ').' + #13#10
-      + 'RunnerDeck will offer to install it again the first time it starts.', mbInformation, MB_OK, IDOK);
+    SuppressibleMsgBox(Name + ' could not be installed (' + GetExceptionMessage + ').' + #13#10
+      + 'RunnerDeck may not start until it is installed. You can install it later from Microsoft.', mbInformation, MB_OK, IDOK);
   end;
   WizardForm.ProgressGauge.Style := npbstNormal;
 end;
@@ -172,7 +189,11 @@ begin
   if CurStep <> ssPostInstall then
     Exit;
   if WizardIsTaskSelected('vcredist') then
-    InstallVCRedist();
+    InstallMicrosoftPackage('the Microsoft Visual C++ runtime', 'https://aka.ms/vs/17/release/vc_redist.x64.exe',
+      'vc_redist.x64.exe', '/install /quiet /norestart');
+  if WizardIsTaskSelected('webview2') then
+    InstallMicrosoftPackage('the Microsoft Edge WebView2 runtime', 'https://go.microsoft.com/fwlink/p/?LinkId=2124703',
+      'MicrosoftEdgeWebview2Setup.exe', '/silent /install');
   if WizardIsTaskSelected('ghcli') then
     InstallGhCli();
 end;

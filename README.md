@@ -62,11 +62,11 @@ all native).
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 and run it. It is a normal installer wizard: it installs for your account only (no
 administrator rights), installs what RunnerDeck needs during setup (Microsoft's Visual C++
-runtime and the GitHub CLI, only when missing, plus an optional GitHub sign-in on the last page),
+runtime, the Edge WebView2 runtime that draws the window, and the GitHub CLI, only when missing, plus an optional GitHub sign-in on the last page),
 adds a Start menu folder with an Uninstall entry, can add a desktop shortcut and start
 RunnerDeck when you sign in, and uninstalls from **Settings → Apps**, the Start menu or the tray menu. RunnerDeck then
-runs as a small icon in the system tray (Open dashboard, Show server log, Quit) and opens
-your browser; PHP is bundled. If a step was skipped, it asks again the first time it starts. Prefer no installer? `runnerdeck-<version>-windows-x64.exe` is a single file
+opens in its own window (no browser tab) and keeps running as a small icon in the system tray
+(Open dashboard, Show server log, Uninstall, Quit); closing the window hides it to the tray. PHP is bundled. If a step was skipped, it asks again the first time it starts. Prefer no installer? `runnerdeck-<version>-windows-x64.exe` is a single file
 that runs in a console window, and a `.zip` with the same files side by side is also
 attached. The downloads are not code-signed yet, so SmartScreen may ask you to choose
 **More info → Run anyway**. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
