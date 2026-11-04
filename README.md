@@ -61,9 +61,11 @@ all native).
 **On Windows without installing PHP:** download `runnerdeck-<version>-windows-x64.exe`
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 and double-click it. It is a single file that carries PHP, starts the dashboard,
-and opens your browser (the first start unpacks it, which takes a few seconds). A
-`.zip` with the same files side by side is also attached. You still need the GitHub CLI
-(`winget install GitHub.cli`, then `gh auth login`). The download is not
+and opens your browser (the first start unpacks it, which takes a few seconds). It
+walks you through the setup in the console: it checks that PHP can run and offers to
+install Microsoft's Visual C++ runtime if Windows lacks it, then checks the GitHub CLI
+and offers to install it with winget and sign you in. A `.zip` with the same files side
+by side is also attached. The download is not
 code-signed yet, so SmartScreen may ask you to choose **More info → Run anyway**.
 Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
 
