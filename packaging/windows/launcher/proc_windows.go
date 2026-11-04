@@ -27,7 +27,9 @@ func newProcessGroup() (*processGroup, error) {
 	_, err = windows.SetInformationJobObject(
 		job,
 		windows.JobObjectExtendedLimitInformation,
+		// nosemgrep: go.lang.security.audit.unsafe.use-of-unsafe-block
 		uintptr(unsafe.Pointer(&info)),
+		// nosemgrep: go.lang.security.audit.unsafe.use-of-unsafe-block
 		uint32(unsafe.Sizeof(info)),
 	)
 	if err != nil {

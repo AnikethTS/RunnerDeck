@@ -21,7 +21,10 @@ APP_FILES = ["VERSION", "LICENSE"]
 
 
 def fetch(url: str) -> bytes:
+    if not url.startswith(DOWNLOAD_BASE):
+        sys.exit(f"refusing to fetch {url}: only {DOWNLOAD_BASE} is allowed")
     request = urllib.request.Request(url, headers={"User-Agent": "runnerdeck-package-build"})
+    # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
     with urllib.request.urlopen(request, timeout=120) as response:
         return response.read()
 
@@ -39,6 +42,8 @@ def php_release(branch: str) -> dict:
     entry = releases.get(branch, {}).get("nts-vs17-x64", {}).get("zip")
     if not entry:
         sys.exit(f"windows.php.net has no nts-vs17-x64 build for PHP {branch}")
+    if not re.fullmatch(r"php-[0-9A-Za-z.\-]+-nts-Win32-vs17-x64\.zip", entry["path"]):
+        sys.exit(f"unexpected PHP archive name {entry['path']!r}")
     return {"version": releases[branch]["version"], "path": entry["path"], "sha256": entry["sha256"]}
 
 

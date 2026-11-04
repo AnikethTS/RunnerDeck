@@ -16,7 +16,10 @@ BASE = f"http://127.0.0.1:{PORT}"
 
 
 def get(path: str, timeout: float = 3.0):
+    if not path.startswith("/"):
+        raise ValueError(f"expected an absolute path, got {path!r}")
     try:
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(BASE + path, timeout=timeout) as response:
             return response.status, response.read().decode("utf-8", "replace")
     except (urllib.error.URLError, OSError):
