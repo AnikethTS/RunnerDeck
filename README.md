@@ -66,8 +66,14 @@ runtime, the Edge WebView2 runtime that draws the window, and the GitHub CLI, on
 adds a Start menu folder with an Uninstall entry, can add a desktop shortcut and start
 RunnerDeck when you sign in, and uninstalls from **Settings → Apps**, the Start menu or the tray menu. RunnerDeck then
 opens in its own window (no browser tab) and keeps running as a small icon in the system tray
-(Open dashboard, Show server log, Uninstall, Quit); closing the window hides it to the tray. PHP is bundled. If a step was skipped, it asks again the first time it starts. The installer is not
-code-signed yet, so SmartScreen may ask you to choose **More info → Run anyway**. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
+(Open dashboard, Show server log, Uninstall, Quit); closing the window hides it to the tray. PHP is bundled. If a step was skipped, it asks again the first time it starts. Your settings and runners are stored in `%LOCALAPPDATA%\RunnerDeck`.
+
+> [!NOTE]
+> **Windows may warn "Windows protected your PC".** The installer is not code-signed yet, so
+> SmartScreen shows an "unknown publisher" screen the first time you run it. That is expected.
+> Click **More info**, then **Run anyway**. You can compare the file's SHA-256 with
+> `SHA256SUMS-windows-x64` on the release page first, or check where it came from with
+> `gh attestation verify <file> --repo AnikethTS/RunnerDeck`.
 
 **On Debian or Ubuntu:** download `RunnerDeck-<version>-linux-all.deb` from the
 [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest) and run
