@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A Homebrew tap, `AnikethTS/homebrew-runnerdeck` (`brew tap anikethts/runnerdeck`, `brew trust anikethts/runnerdeck`, then `brew install anikethts/runnerdeck/runnerdeck`), and a release job that updates it when a `HOMEBREW_TAP_TOKEN` secret is configured.
+
 ## [1.12.1] - 2026-11-05
 
 ### Fixed
