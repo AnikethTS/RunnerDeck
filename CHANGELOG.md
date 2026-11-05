@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The README now explains the SmartScreen "Windows protected your PC" screen the unsigned installer triggers (More info, then Run anyway) and how to verify the download.
+
 ### Added
 
 - A Homebrew tap, `AnikethTS/homebrew-runnerdeck` (`brew tap anikethts/runnerdeck`, `brew trust anikethts/runnerdeck`, then `brew install anikethts/runnerdeck/runnerdeck`), and a release job that updates it when a `HOMEBREW_TAP_TOKEN` secret is configured.
