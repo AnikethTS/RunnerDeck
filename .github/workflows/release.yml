@@ -181,3 +181,40 @@ jobs:
             dist/SHA256SUMS-linux-all \
             dist/runnerdeck.rb \
             "${bundle}" --clobber
+
+  homebrew-tap:
+    name: Update the Homebrew tap
+    needs: linux-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+    steps:
+      - name: Skip when no tap token is configured
+        if: env.TAP_TOKEN == ''
+        run: echo "::notice::HOMEBREW_TAP_TOKEN is not set, so the Homebrew tap was not updated. Copy runnerdeck.rb from the release into the tap by hand."
+
+      - name: Download the formula from the release
+        if: env.TAP_TOKEN != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --pattern runnerdeck.rb --dir "${RUNNER_TEMP}"
+
+      - name: Publish the formula to the tap
+        if: env.TAP_TOKEN != ''
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/AnikethTS/homebrew-runnerdeck.git" "${RUNNER_TEMP}/tap"
+          cd "${RUNNER_TEMP}/tap"
+          mkdir -p Formula
+          cp "${RUNNER_TEMP}/runnerdeck.rb" Formula/runnerdeck.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/runnerdeck.rb
+          if git diff --cached --quiet; then
+            echo "The tap already has this formula."
+            exit 0
+          fi
+          git commit -m "runnerdeck ${GITHUB_REF_NAME}"
+          git push origin HEAD:main
