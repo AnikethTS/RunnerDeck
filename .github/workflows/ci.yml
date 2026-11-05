@@ -175,7 +175,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           shopt -s nullglob
-          shellcheck -x -S warning run.sh app/bin/*.sh tools/ci/*.sh
+          shellcheck -x -S warning run.sh bin/*.sh app/bin/*.sh tools/ci/*.sh
 
   gitleaks:
     name: Security · Secret scan

@@ -203,6 +203,7 @@ runnerdeck/
   tools/ci/         CI-only scripts (distro PHPUnit, smoke status, pinned gh install)
   .githooks/        pre-commit hook (cs/stan/test), wired up by `composer install`
   deploy/           php-fpm, Caddy/nginx, IP allowlist/mTLS; systemd/launchd
+  bin/install-service.sh  print or install a systemd unit / launchd agent for run.sh
   run.sh            local php -S entry (also starts watch-auto-restart)
   app/bin/watch-auto-restart.php  loop for crash restart, ephemeral, scale-to-queue, idle-stop, alerts, daily bundle snapshot, log retention
   app/bin/drain-stop.php      wait-for-idle then SIGTERM (host reboot)
