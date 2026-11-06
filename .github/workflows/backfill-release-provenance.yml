@@ -24,10 +24,13 @@ jobs:
       - name: Download each release's zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAGS: ${{ inputs.tags }}
+          REPO: ${{ github.repository }}
         run: |
           mkdir -p artifacts
-          for tag in ${{ inputs.tags }}; do
-            gh release download "$tag" --repo "${{ github.repository }}" --pattern '*.zip' --dir artifacts --clobber
+          read -r -a tag_list <<< "$TAGS"
+          for tag in "${tag_list[@]}"; do
+            gh release download "$tag" --repo "$REPO" --pattern '*.zip' --dir artifacts --clobber
           done
 
       - name: Attest build provenance for all downloaded zips
@@ -39,9 +42,13 @@ jobs:
       - name: Attach the attestation bundle to each release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAGS: ${{ inputs.tags }}
+          REPO: ${{ github.repository }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
-          for tag in ${{ inputs.tags }}; do
+          read -r -a tag_list <<< "$TAGS"
+          for tag in "${tag_list[@]}"; do
             bundle="runnerdeck-${tag}.zip.sigstore.json"
-            cp "${{ steps.attest.outputs.bundle-path }}" "$bundle"
-            gh release upload "$tag" "$bundle" --repo "${{ github.repository }}" --clobber
+            cp "$ATTESTATION_BUNDLE" "$bundle"
+            gh release upload "$tag" "$bundle" --repo "$REPO" --clobber
           done

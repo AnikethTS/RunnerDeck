@@ -17,6 +17,7 @@ follows [SemVer](https://semver.org/).
 - The desktop module requires Go 1.26.10, so govulncheck no longer fails on standard-library fixes from earlier 1.26 releases.
 - Runner jobs can unpack actions on a host where `tar` returns ENOSYS. When `bsdtar` works, RunnerDeck puts a `tar` wrapper first on the runner PATH and in each slot's `.path`, including after rename, restart, and re-add. `doctor.php` and the dashboard say the shim is in use. Hosts where `tar` works are unchanged.
 - The Socket project report on a push to `main` scans that branch and no longer comments on pull request 0.
+- Workflow checkouts no longer keep a git credential in the workspace. Release and provenance scripts take tags and attestation paths from the environment. Dependabot waits 7 days before opening an update. The Fedora and UBI unit images are pinned by digest, and the Socket CLI install is hash-pinned.
 
 ## [1.13.0] - 2026-11-06
 
