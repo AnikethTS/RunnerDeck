@@ -6,6 +6,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Configuration\Config;
+use RunnerDeck\Pool\Provisioner;
 use RunnerDeck\Security\HostingWarnings;
 use RunnerDeck\Configuration\Settings;
 use RunnerDeck\GitHub\GithubApp;
@@ -227,6 +228,21 @@ if (is_dir($poolDir) && is_writable($poolDir)) {
     ok('pool directory', "{$poolDir} (will be created on first start)", $color);
 } else {
     $failures += fail('pool directory', "{$poolDir} is not writable", $color);
+}
+
+$probeRoot = null;
+if (is_dir($poolDir) && is_writable($poolDir)) {
+    $probeRoot = $poolDir;
+} elseif (!is_dir($poolDir) && is_writable(dirname($poolDir))) {
+    $probeRoot = dirname($poolDir);
+}
+if ($probeRoot !== null) {
+    $probe = Provisioner::probeExtract($probeRoot);
+    if ($probe['ok']) {
+        ok('package extract', $probe['message'], $color);
+    } else {
+        $failures += fail('package extract', $probe['message'], $color);
+    }
 }
 
 $storageDir = Settings::storageDir();

@@ -60,6 +60,35 @@ final class ProvisionerTest extends TestCase
         return $out;
     }
 
+    private function downloadsJson(?string $sha): string
+    {
+        $encoded = json_encode($this->downloadsForAnyHost($sha));
+        return is_string($encoded) ? $encoded : '[]';
+    }
+
+    /** @param list<string> $cmd */
+    private function plantPackage(array $cmd): void
+    {
+        $flag = in_array('-C', $cmd, true) ? '-C' : '-d';
+        $at = array_search($flag, $cmd, true);
+        $dest = is_int($at) ? (string) $cmd[$at + 1] : $this->dir;
+        if (!is_dir($dest . '/bin')) {
+            mkdir($dest . '/bin', 0755, true);
+        }
+        file_put_contents($dest . '/config.sh', '#!/bin/sh');
+        file_put_contents($dest . '/run.sh', '#!/bin/sh');
+        file_put_contents($dest . '/bin/Runner.Listener', 'listener');
+    }
+
+    private function markInstalled(): void
+    {
+        if (!is_dir($this->dir . '/bin')) {
+            mkdir($this->dir . '/bin', 0755, true);
+        }
+        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        file_put_contents($this->dir . '/bin/Runner.Listener', 'listener');
+    }
+
     public function testChecksumMatchesWhenExpectedIsEmpty(): void
     {
         $path = $this->dir . '/pkg.bin';
@@ -179,7 +208,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureInstalledSkipsWhenBinariesPresent(): void
     {
-        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        $this->markInstalled();
         $called = false;
         \RunnerDeck\System\Shell::fake(function () use (&$called): array {
             $called = true;
@@ -244,8 +273,7 @@ final class ProvisionerTest extends TestCase
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
             if (($cmd[0] ?? '') === 'tar') {
-                file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
-                file_put_contents($this->dir . '/run.sh', '#!/bin/sh');
+                $this->plantPackage($cmd);
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
             if (($cmd[0] ?? '') === 'chmod') {
@@ -343,7 +371,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureConfiguredSkipsWhenAlreadyRegistered(): void
     {
-        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        $this->markInstalled();
         file_put_contents($this->dir . '/.runner', '{}');
 
         $result = \RunnerDeck\Pool\Provisioner::ensureConfigured($this->dir, 'acme-1');
@@ -355,7 +383,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureConfiguredFailsWhenConfigShFails(): void
     {
-        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        $this->markInstalled();
         \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             $joined = implode(' ', $cmd);
             if (str_contains($joined, 'registration-token')) {
@@ -377,7 +405,7 @@ final class ProvisionerTest extends TestCase
     #[RunInSeparateProcess]
     public function testEnsureConfiguredRunsConfigShWithTokenAndLabels(): void
     {
-        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        $this->markInstalled();
         $configCmd = [];
         \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$configCmd): array {
             $joined = implode(' ', $cmd);
@@ -472,8 +500,7 @@ final class ProvisionerTest extends TestCase
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
             if (($cmd[0] ?? '') === 'tar') {
-                file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
-                file_put_contents($this->dir . '/run.sh', '#!/bin/sh');
+                $this->plantPackage($cmd);
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
             }
             if (($cmd[0] ?? '') === 'chmod') {
@@ -522,5 +549,195 @@ final class ProvisionerTest extends TestCase
             'filename' => 'actions-runner-linux-x64-2.321.0.tar.gz',
         ]));
         $this->assertNull(\RunnerDeck\Pool\Provisioner::versionFromDownload(['filename' => 'unknown.bin']));
+    }
+
+    public function testExtractFailureMessageKeepsTheFirstErrorAndNamesEnosys(): void
+    {
+        $stderr = "tar: ./externals/node20: Cannot mkdir: Function not implemented\n"
+            . "tar: ./bin/System.dll: Cannot open: Function not implemented\n"
+            . "tar: Exiting with failure status due to previous errors\n";
+        $message = \RunnerDeck\Pool\Provisioner::extractFailureMessage($stderr);
+
+        $this->assertStringContainsString('externals/node20', $message);
+        $this->assertStringContainsString('3 errors', $message);
+        $this->assertStringContainsString('ENOSYS', $message);
+        $this->assertStringNotContainsString('System.dll', $message);
+    }
+
+    #[RunInSeparateProcess]
+    public function testScriptsWithoutTheListenerAreNotInstalled(): void
+    {
+        file_put_contents($this->dir . '/config.sh', '#!/bin/sh');
+        $curled = false;
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$curled): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return ['code' => 0, 'stdout' => $this->downloadsJson(hash('sha256', 'pkg')), 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $curled = true;
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, 'pkg');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar') {
+                $this->plantPackage($cmd);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertTrue($curled);
+        $this->assertTrue($result['ok']);
+        $this->assertFileExists($this->dir . '/bin/Runner.Listener');
+        $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract');
+    }
+
+    #[RunInSeparateProcess]
+    public function testFailedExtractRemovesThePartialTreeAndSummarizes(): void
+    {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return ['code' => 0, 'stdout' => $this->downloadsJson(hash('sha256', 'pkg')), 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, 'pkg');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar') {
+                $this->plantPackage($cmd);
+                @unlink($cmd[array_search('-C', $cmd, true) + 1] . '/bin/Runner.Listener');
+                return [
+                    'code' => 1,
+                    'stdout' => '',
+                    'stderr' => "tar: ./externals/node20: Cannot mkdir: Function not implemented\n"
+                        . "tar: ./bin/System.dll: Cannot open: Function not implemented\n",
+                ];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('2 errors', $result['message']);
+        $this->assertStringContainsString('ENOSYS', $result['message']);
+        $this->assertFileDoesNotExist($this->dir . '/config.sh');
+        $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract');
+        $this->assertFileDoesNotExist($this->dir . '/actions-runner-linux-x64.tar.gz');
+    }
+
+    #[RunInSeparateProcess]
+    public function testBsdtarExtractsWhenGnuTarFails(): void
+    {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return ['code' => 0, 'stdout' => $this->downloadsJson(hash('sha256', 'pkg')), 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, 'pkg');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar') {
+                $stderr = 'tar: ./bin/System.dll: Cannot open: Function not implemented';
+                return ['code' => 1, 'stdout' => '', 'stderr' => $stderr];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 0, 'stdout' => "/usr/bin/bsdtar\n", 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'bsdtar') {
+                $this->plantPackage($cmd);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertFileExists($this->dir . '/bin/Runner.Listener');
+    }
+
+    #[RunInSeparateProcess]
+    public function testPharExtractsWhenTarAndBsdtarFail(): void
+    {
+        $archive = $this->dir . '/real.tar';
+        $built = new \PharData($archive);
+        $built->addFromString('config.sh', "#!/bin/sh\n");
+        $built->addFromString('run.sh', "#!/bin/sh\n");
+        $built->addFromString('bin/Runner.Listener', 'listener');
+        $gz = $built->compress(\Phar::GZ);
+        $bytes = (string) file_get_contents($gz->getPath());
+        unset($gz, $built);
+        @unlink($archive);
+        @unlink($archive . '.gz');
+
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use ($bytes): array {
+            $joined = implode(' ', $cmd);
+            if (str_contains($joined, '/actions/runners/downloads')) {
+                return ['code' => 0, 'stdout' => $this->downloadsJson(hash('sha256', $bytes)), 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'curl') {
+                $out = $cmd[array_search('-o', $cmd, true) + 1];
+                file_put_contents($out, $bytes);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar' || ($cmd[0] ?? '') === 'bsdtar') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: Cannot open: Function not implemented'];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 0, 'stdout' => "/usr/bin/bsdtar\n", 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'chmod') {
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . $joined);
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::ensureInstalled($this->dir);
+
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertFileExists($this->dir . '/bin/Runner.Listener');
+        $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract');
+    }
+
+    #[RunInSeparateProcess]
+    public function testProbeExtractReportsEnosysAndRemovesTheProbe(): void
+    {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            if (($cmd[0] ?? '') === 'tar' && in_array('-cf', $cmd, true)) {
+                $out = $cmd[array_search('-cf', $cmd, true) + 1];
+                file_put_contents($out, 'not-a-tar');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'tar') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: s/f: Cannot open: Function not implemented'];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\Pool\Provisioner::probeExtract($this->dir);
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('ENOSYS', $result['message']);
+        $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract-probe');
     }
 }

@@ -15,7 +15,7 @@ final class Provisioner
 {
     public static function ensureInstalled(string $dir, bool $replace = false): array
     {
-        if (!$replace && is_file("$dir/" . Platform::runnerScript('config'))) {
+        if (!$replace && self::binariesPresent($dir)) {
             return ['ok' => true, 'message' => 'runner binaries already present'];
         }
 
@@ -64,18 +64,23 @@ final class Provisioner
             );
         }
 
-        // tar.exe on Windows 10+ reads zips; unzip is absent.
-        $extract = match (true) {
-            Platform::isWindows() => Shell::exec(['tar', '-xf', $archivePath, '-C', $dir], 120),
-            self::isZipArchive($download['filename']) => Shell::exec(['unzip', '-q', $archivePath, '-d', $dir], 120),
-            default => Shell::exec(['tar', 'xzf', $archivePath, '-C', $dir], 120),
-        };
+        $stage = $dir . '/.runnerdeck-extract';
+        $commands = self::extractCommands($archivePath, $download['filename']);
+        $extracted = self::extractWithFallback($archivePath, $stage, $commands);
         @unlink($archivePath);
 
-        if ($extract['code'] !== 0) {
-            $message = 'failed to extract runner package: ' . trim($extract['stderr']);
-            return self::fail('provision.extract', $message, stderr: $extract['stderr']);
+        if (!$extracted['ok'] || !self::binariesPresent($stage)) {
+            $stderr = $extracted['ok']
+                ? 'extracted package has no ' . self::listenerRelative()
+                : $extracted['stderr'];
+            self::removeTree($stage);
+            return self::fail('provision.extract', self::extractFailureMessage($stderr), stderr: $stderr);
         }
+        if (!self::adoptExtract($stage, $dir)) {
+            self::removeTree($stage);
+            return self::fail('provision.extract', 'failed to move the extracted runner package into place');
+        }
+        self::removeTree($stage);
 
         if (!Platform::isWindows()) {
             Shell::exec(['chmod', '+x', "$dir/config.sh", "$dir/run.sh"], 5);
@@ -236,6 +241,182 @@ final class Provisioner
     {
         $owner = Config::scope() === 'repo' ? Config::repo() : Config::org();
         return 'https://github.com/' . $owner;
+    }
+
+    public static function binariesPresent(string $dir): bool
+    {
+        return is_file($dir . '/' . Platform::runnerScript('config'))
+            && is_file($dir . '/' . self::listenerRelative());
+    }
+
+    /** @return array{ok: bool, message: string} */
+    public static function probeExtract(string $dir): array
+    {
+        $probe = $dir . '/.runnerdeck-extract-probe';
+        self::removeTree($probe);
+        if (!@mkdir($probe, 0700, true) && !is_dir($probe)) {
+            return ['ok' => false, 'message' => "cannot create {$probe}"];
+        }
+        file_put_contents($probe . '/payload.txt', 'ok');
+        $archive = $probe . '/probe.tar';
+        $create = Shell::exec(['tar', '-cf', $archive, '-C', $probe, 'payload.txt'], 20);
+        if ($create['code'] !== 0 || !is_file($archive)) {
+            $stderr = trim($create['stderr']) !== '' ? $create['stderr'] : 'could not create a probe archive';
+            self::removeTree($probe);
+            return ['ok' => false, 'message' => self::extractFailureMessage($stderr)];
+        }
+
+        $out = $probe . '/out';
+        $extracted = self::extractWithFallback($archive, $out, [
+            ['tar', '-xf', $archive, '-C', $out],
+            ['bsdtar', '-xf', $archive, '-C', $out],
+        ]);
+        $ok = $extracted['ok'] && is_file($out . '/payload.txt');
+        self::removeTree($probe);
+        if ($ok) {
+            return ['ok' => true, 'message' => 'can extract an archive into the pool directory'];
+        }
+        return ['ok' => false, 'message' => self::extractFailureMessage($extracted['stderr'])];
+    }
+
+    public static function extractFailureMessage(string $stderr): string
+    {
+        $lines = [];
+        foreach (preg_split('/\R/', $stderr) ?: [] as $line) {
+            $line = trim($line);
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+        $first = $lines[0] ?? 'extractor exited non-zero';
+        if (strlen($first) > 180) {
+            $first = substr($first, 0, 180) . '…';
+        }
+        $summary = count($lines) > 1 ? $first . ' (' . count($lines) . ' errors)' : $first;
+        $hint = '';
+        if (preg_match('/Function not implemented|ENOSYS/i', $stderr) === 1) {
+            $hint = ' The host kernel or filesystem rejected a call the extractor needs (ENOSYS).'
+                . ' A current kernel, or Docker, can extract the runner package.';
+        }
+        return 'failed to extract runner package: ' . $summary . '.' . $hint;
+    }
+
+    private static function listenerRelative(): string
+    {
+        return 'bin/' . (Platform::isWindows() ? 'Runner.Listener.exe' : 'Runner.Listener');
+    }
+
+    /**
+     * @return list<list<string>>
+     */
+    private static function extractCommands(string $archive, string $filename): array
+    {
+        if (Platform::isWindows() || self::isZipArchive($filename)) {
+            return [
+                Platform::isWindows()
+                    ? ['tar', '-xf', $archive, '-C', dirname($archive) . '/.runnerdeck-extract']
+                    : ['unzip', '-q', $archive, '-d', dirname($archive) . '/.runnerdeck-extract'],
+                ['bsdtar', '-xf', $archive, '-C', dirname($archive) . '/.runnerdeck-extract'],
+            ];
+        }
+        $dest = dirname($archive) . '/.runnerdeck-extract';
+        return [
+            ['tar', 'xzf', $archive, '-C', $dest],
+            ['bsdtar', '-xzf', $archive, '-C', $dest],
+        ];
+    }
+
+    /**
+     * @param list<list<string>> $commands
+     * @return array{ok: bool, stderr: string}
+     */
+    private static function extractWithFallback(string $archive, string $dest, array $commands): array
+    {
+        $stderr = '';
+        foreach ($commands as $i => $cmd) {
+            if ($i > 0 && !self::commandOnPath((string) $cmd[0])) {
+                continue;
+            }
+            self::removeTree($dest);
+            if (!@mkdir($dest, 0700, true) && !is_dir($dest)) {
+                return ['ok' => false, 'stderr' => "cannot create {$dest}"];
+            }
+            $result = Shell::exec($cmd, 120);
+            if ($result['code'] === 0) {
+                return ['ok' => true, 'stderr' => ''];
+            }
+            $stderr = $result['stderr'];
+        }
+        self::removeTree($dest);
+        if ((!@mkdir($dest, 0700, true) && !is_dir($dest)) || !self::pharExtract($archive, $dest)) {
+            self::removeTree($dest);
+            return ['ok' => false, 'stderr' => $stderr];
+        }
+        return ['ok' => true, 'stderr' => ''];
+    }
+
+    private static function commandOnPath(string $bin): bool
+    {
+        $check = Platform::isWindows() ? 'where' : 'which';
+        return Shell::exec([$check, $bin], 5)['code'] === 0;
+    }
+
+    private static function pharExtract(string $archive, string $dest): bool
+    {
+        if (!class_exists(\PharData::class)) {
+            return false;
+        }
+        try {
+            $phar = new \PharData($archive);
+            $phar->extractTo($dest, null, true);
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private static function adoptExtract(string $stage, string $dir): bool
+    {
+        $items = scandir($stage);
+        if (!is_array($items)) {
+            return false;
+        }
+        foreach ($items as $name) {
+            if ($name === '.' || $name === '..') {
+                continue;
+            }
+            $to = $dir . '/' . $name;
+            if (is_link($to) || is_file($to)) {
+                @unlink($to);
+            } elseif (is_dir($to)) {
+                self::removeTree($to);
+            }
+            if (!@rename($stage . '/' . $name, $to)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function removeTree(string $path): void
+    {
+        if (is_link($path) || is_file($path)) {
+            @unlink($path);
+            return;
+        }
+        if (!is_dir($path)) {
+            return;
+        }
+        $items = scandir($path);
+        if (is_array($items)) {
+            foreach ($items as $name) {
+                if ($name === '.' || $name === '..') {
+                    continue;
+                }
+                self::removeTree($path . '/' . $name);
+            }
+        }
+        @rmdir($path);
     }
 
     public static function checksumMatches(string $path, ?string $expectedSha): bool
