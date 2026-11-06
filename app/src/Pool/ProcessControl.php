@@ -106,8 +106,9 @@ final class ProcessControl
         if (Platform::isWindows()) {
             $result = WindowsProcess::spawnRunner($r->dir);
         } else {
+            $shimDir = TarShim::prepare($r->dir);
             $result = Shell::exec(
-                ['bash', '-c', self::CLOSE_FDS_PREFIX . 'nohup ./run.sh > runner.log 2>&1 & echo $!'],
+                ['bash', '-c', self::launchLine($shimDir)],
                 10,
                 $r->dir
             );
@@ -125,6 +126,15 @@ final class ProcessControl
         HostMode::setRebootReady(false);
         AppLog::info('process.start', "{$r->id} started (pid {$newPid})", ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} started (pid {$newPid})"];
+    }
+
+    private static function launchLine(?string $shimDir): string
+    {
+        $launch = 'nohup ./run.sh > runner.log 2>&1 & echo $!';
+        if ($shimDir !== null) {
+            $launch = 'export PATH=' . escapeshellarg($shimDir) . ':"$PATH"; ' . $launch;
+        }
+        return self::CLOSE_FDS_PREFIX . $launch;
     }
 
     private static function awaitListener(string $dir): ?int

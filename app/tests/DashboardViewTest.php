@@ -17,6 +17,16 @@ final class DashboardViewTest extends TestCase
         $this->assertSame('', $banner['text']);
     }
 
+    public function testHealthBannerNamesTheBsdtarShim(): void
+    {
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'tar_shim' => 'Using bsdtar shim: system tar fails with ENOSYS',
+        ]);
+        $this->assertFalse($banner['hidden']);
+        $this->assertStringContainsString('bsdtar shim', $banner['text']);
+    }
+
     public function testHealthBannerWhenMaintenance(): void
     {
         $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([

@@ -249,34 +249,11 @@ final class Provisioner
             && is_file($dir . '/' . self::listenerRelative());
     }
 
-    /** @return array{ok: bool, message: string} */
+    /** @return array{ok: bool, message: string, shim: bool} */
     public static function probeExtract(string $dir): array
     {
-        $probe = $dir . '/.runnerdeck-extract-probe';
-        self::removeTree($probe);
-        if (!@mkdir($probe, 0700, true) && !is_dir($probe)) {
-            return ['ok' => false, 'message' => "cannot create {$probe}"];
-        }
-        file_put_contents($probe . '/payload.txt', 'ok');
-        $archive = $probe . '/probe.tar';
-        $create = Shell::exec(['tar', '-cf', $archive, '-C', $probe, 'payload.txt'], 20);
-        if ($create['code'] !== 0 || !is_file($archive)) {
-            $stderr = trim($create['stderr']) !== '' ? $create['stderr'] : 'could not create a probe archive';
-            self::removeTree($probe);
-            return ['ok' => false, 'message' => self::extractFailureMessage($stderr)];
-        }
-
-        $out = $probe . '/out';
-        $extracted = self::extractWithFallback($archive, $out, [
-            ['tar', '-xf', $archive, '-C', $out],
-            ['bsdtar', '-xf', $archive, '-C', $out],
-        ]);
-        $ok = $extracted['ok'] && is_file($out . '/payload.txt');
-        self::removeTree($probe);
-        if ($ok) {
-            return ['ok' => true, 'message' => 'can extract an archive into the pool directory'];
-        }
-        return ['ok' => false, 'message' => self::extractFailureMessage($extracted['stderr'])];
+        $result = TarShim::probe($dir);
+        return ['ok' => $result['ok'], 'message' => $result['message'], 'shim' => $result['shim']];
     }
 
     public static function extractFailureMessage(string $stderr): string

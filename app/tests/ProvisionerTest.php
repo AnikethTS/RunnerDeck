@@ -738,6 +738,77 @@ final class ProvisionerTest extends TestCase
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('ENOSYS', $result['message']);
+        $this->assertStringContainsString('bsdtar is not available', $result['message']);
+        $this->assertFalse($result['shim']);
         $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract-probe');
+    }
+
+    #[RunInSeparateProcess]
+    public function testProbeInstallsABsdtarShimWhenGnuTarReturnsEnosys(): void
+    {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            $bin = (string) ($cmd[0] ?? '');
+            if ($bin === 'tar' && in_array('-cf', $cmd, true)) {
+                $out = $cmd[array_search('-cf', $cmd, true) + 1];
+                file_put_contents($out, 'not-a-tar');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($bin === 'tar') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: s/f: Cannot open: Function not implemented'];
+            }
+            if ($bin === 'which') {
+                return ['code' => 0, 'stdout' => "/usr/bin/bsdtar\n", 'stderr' => ''];
+            }
+            if (str_ends_with($bin, 'bsdtar')) {
+                $dest = $cmd[array_search('-C', $cmd, true) + 1];
+                file_put_contents($dest . '/payload.txt', 'ok');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+        file_put_contents($this->dir . '/.path', "/usr/bin:/bin\n");
+
+        $result = \RunnerDeck\Pool\Provisioner::probeExtract($this->dir);
+        $again = \RunnerDeck\Pool\TarShim::prepare($this->dir);
+
+        $shim = $this->dir . '/storage/shims';
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertTrue($result['shim']);
+        $this->assertSame(\RunnerDeck\Pool\TarShim::SHIM_MESSAGE, $result['message']);
+        $this->assertSame($shim, $again);
+        $script = (string) file_get_contents($shim . '/tar');
+        $this->assertStringContainsString("exec '/usr/bin/bsdtar'", $script);
+        $this->assertTrue(is_executable($shim . '/tar'));
+        $path = trim((string) file_get_contents($this->dir . '/.path'));
+        $this->assertSame($shim . ':/usr/bin:/bin', $path);
+        $this->assertDirectoryDoesNotExist($this->dir . '/.runnerdeck-extract-probe');
+    }
+
+    #[RunInSeparateProcess]
+    public function testPrepareLeavesPathAloneWhenTarWorks(): void
+    {
+        $shim = $this->dir . '/storage/shims';
+        mkdir($shim, 0700, true);
+        file_put_contents($shim . '/tar', "#!/bin/sh\n");
+        file_put_contents($this->dir . '/.path', $shim . ":/usr/bin:/bin\n");
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            $bin = (string) ($cmd[0] ?? '');
+            if ($bin === 'tar' && in_array('-cf', $cmd, true)) {
+                $out = $cmd[array_search('-cf', $cmd, true) + 1];
+                file_put_contents($out, 'archive');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($bin === 'tar' && in_array('-xf', $cmd, true)) {
+                $dest = $cmd[array_search('-C', $cmd, true) + 1];
+                file_put_contents($dest . '/payload.txt', 'ok');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $this->assertNull(\RunnerDeck\Pool\TarShim::prepare($this->dir));
+
+        $this->assertFileDoesNotExist($shim . '/tar');
+        $this->assertSame("/usr/bin:/bin", trim((string) file_get_contents($this->dir . '/.path')));
     }
 }

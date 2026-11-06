@@ -74,6 +74,10 @@ final class DashboardView
             return ['hidden' => false, 'text' => $gaveUp];
         }
         if ($loggedIn && $orgOk) {
+            $tar = (string) ($snapshot['tar_shim'] ?? '');
+            if ($tar !== '') {
+                return ['hidden' => false, 'text' => $tar];
+            }
             $behind = (int) ($snapshot['agent_behind_count'] ?? 0);
             $latest = (string) ($snapshot['agent_latest'] ?? '');
             if ($behind > 0 && $latest !== '') {

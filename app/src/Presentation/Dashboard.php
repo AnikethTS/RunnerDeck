@@ -25,6 +25,7 @@ use RunnerDeck\Host\SystemStats;
 use RunnerDeck\Telemetry\WatchHeartbeat;
 use RunnerDeck\Lifecycle\CrashState;
 use RunnerDeck\Pool\RunnerPool;
+use RunnerDeck\Pool\TarShim;
 
 final class Dashboard
 {
@@ -60,6 +61,7 @@ final class Dashboard
             'reboot_ready' => HostMode::isRebootReady(),
             'watch_warning' => WatchHeartbeat::warning($hasEphemeral),
             'pressure' => $pressure,
+            'tar_shim' => TarShim::notice(),
             'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
             'runners' => $runners,
             'stats' => $stats,
@@ -157,6 +159,7 @@ final class Dashboard
             'clock_skew' => GithubClock::warning(),
             'webhook_gave_up' => WebhookOutbox::warning(),
             'webhook_outbox' => WebhookOutbox::pendingCount(),
+            'tar_shim' => TarShim::notice(),
             'runners' => $runners,
             'stats' => $stats,
             'system' => SystemStats::snapshot(),

@@ -238,10 +238,12 @@ if (is_dir($poolDir) && is_writable($poolDir)) {
 }
 if ($probeRoot !== null) {
     $probe = Provisioner::probeExtract($probeRoot);
-    if ($probe['ok']) {
-        ok('package extract', $probe['message'], $color);
-    } else {
+    if (!$probe['ok']) {
         $failures += fail('package extract', $probe['message'], $color);
+    } elseif ($probe['shim']) {
+        $warnings += warn('package extract', $probe['message'], $color);
+    } else {
+        ok('package extract', $probe['message'], $color);
     }
 }
 

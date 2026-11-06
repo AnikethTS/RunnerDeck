@@ -24,7 +24,13 @@
   where the Docker image installs those libs via apk), requests a fresh
   org registration token, and runs `config.sh` (`config.cmd` on Windows,
   where the package is a zip extracted with `tar`) — the same flow you'd do
-  by hand, done for you. No manual pre-setup step. On Windows, runner names
+  by hand, done for you. No manual pre-setup step. If `tar` fails with
+  ENOSYS and `bsdtar` can extract, RunnerDeck writes `storage/shims/tar`
+  (a wrapper that runs `bsdtar`) and puts that directory first on the
+  runner's PATH, including the `.path` file `run.sh` reads, so action
+  unpacking uses the working extractor. Rename, restart, and re-add write
+  it again. Hosts where `tar` works are left unchanged. `doctor.php` and
+  the dashboard report the shim, and report when `bsdtar` is missing too. On Windows, runner names
   and labels are limited to letters, digits, `.`, `_`, `-` because
   `config.cmd` goes through `cmd.exe`.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
