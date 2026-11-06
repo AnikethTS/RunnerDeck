@@ -140,6 +140,13 @@ Security checks beyond linting: `.github/workflows/semgrep.yml` and
 every push/PR;
 `.github/workflows/dependency-review.yml` blocks a PR that introduces a
 known-vulnerable or newly license-incompatible dependency;
+`.github/workflows/socket.yml` runs a Socket project report, a supply-chain
+scan of the manifests, on pull requests and on `main` once a free
+`SOCKET_SECURITY_API_KEY` repository secret is set;
+`.github/workflows/zizmor.yml` audits the workflows for unpinned actions,
+broad tokens, and script injection, and uploads the results to code scanning;
+`.github/workflows/govulncheck.yml` scans the `desktop/` Go module for known
+vulnerabilities;
 `.github/workflows/scorecard.yml` runs an OpenSSF Scorecard pass. `main` is
 protected with a **repository ruleset** (not classic branch protection) so
 Scorecard can read the rules with the default `GITHUB_TOKEN`. GitHub

@@ -6,6 +6,11 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- CI runs a Socket project report on pull requests and on `main` (`.github/workflows/socket.yml`). The job waits for a free Socket API token in the `SOCKET_SECURITY_API_KEY` repository secret.
+- CI audits GitHub Actions workflows with zizmor (`.github/workflows/zizmor.yml`) and scans the `desktop/` Go module with govulncheck (`.github/workflows/govulncheck.yml`). Neither needs an API token.
+
 ## [1.13.0] - 2026-11-06
 
 ### Added
