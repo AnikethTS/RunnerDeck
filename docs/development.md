@@ -104,7 +104,7 @@ Pull requests get the fast set by default: lint, the secret scan, and the unit s
 
 Pushes to `main`, the nightly run and manual runs always run everything. The `CI · Merge gate` job passes only when every job that ran passed, and on a pull request only when `ci:full` is set. Adding or removing a label queues another CI run after the current one finishes, and does not cancel it. (ChangeRadar's annotations check attaches to the first run on a commit, and GitHub ignores checks from a cancelled run.) Fork pull requests never run the live jobs, because they do not receive the secrets.
 
-CI also enforces a minimum line coverage (`tools/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change.
+CI also enforces a minimum line coverage (`tools/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change. The same Clover report is uploaded to Codecov. A public repository can do that without a token; set `CODECOV_TOKEN` if Codecov asks for one, and install the Codecov GitHub App for the pull-request comment.
 
 The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`app/tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `tools/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
 
@@ -140,6 +140,13 @@ Security checks beyond linting: `.github/workflows/semgrep.yml` and
 every push/PR;
 `.github/workflows/dependency-review.yml` blocks a PR that introduces a
 known-vulnerable or newly license-incompatible dependency;
+`.github/workflows/socket.yml` runs a Socket project report, a supply-chain
+scan of the manifests, on pull requests and on `main` once a free
+`SOCKET_SECURITY_API_KEY` repository secret is set;
+`.github/workflows/zizmor.yml` audits the workflows for unpinned actions,
+broad tokens, and script injection, and uploads the results to code scanning;
+`.github/workflows/govulncheck.yml` scans the `desktop/` Go module for known
+vulnerabilities;
 `.github/workflows/scorecard.yml` runs an OpenSSF Scorecard pass. `main` is
 protected with a **repository ruleset** (not classic branch protection) so
 Scorecard can read the rules with the default `GITHUB_TOKEN`. GitHub
