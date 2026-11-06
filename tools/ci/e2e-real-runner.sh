@@ -126,8 +126,8 @@ if [ "$ready" -ne 1 ]; then
   exit 1
 fi
 
-token="$(curl -fsS -c "$jar" -b "$jar" "${base}/api.php?action=csrf_token" |
-  php -r 'echo json_decode(stream_get_contents(STDIN), true)["token"] ?? "";')"
+csrf_body="$(curl -fsS -c "$jar" -b "$jar" "${base}/api.php?action=csrf_token")"
+token="$(CSRF_BODY="$csrf_body" php -r 'echo json_decode(getenv("CSRF_BODY"), true)["token"] ?? "";')"
 if [ -z "$token" ]; then
   echo "no CSRF token" >&2
   exit 1

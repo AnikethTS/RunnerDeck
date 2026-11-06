@@ -21,6 +21,8 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Build release archive
         run: |
@@ -47,7 +49,9 @@ jobs:
           subject-path: "runnerdeck-${{ github.ref_name }}.zip"
 
       - name: Attach the attestation bundle as a release asset
-        run: cp "${{ steps.attest.outputs.bundle-path }}" "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json"
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: cp "$ATTESTATION_BUNDLE" "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json"
 
       - name: Publish GitHub release
         env:
@@ -103,6 +107,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -125,9 +131,10 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
           bundle="dist/RunnerDeck-windows-x64.sigstore.json"
-          cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
+          cp "$ATTESTATION_BUNDLE" "${bundle}"
           gh release upload "${GITHUB_REF_NAME}" \
             dist/RunnerDeck-*-windows-x64-setup.exe \
             dist/SHA256SUMS-windows-x64 \
@@ -144,6 +151,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Fetch the release source archive
         env:
@@ -173,9 +182,10 @@ jobs:
       - name: Attach the package, the formula and their checksums to the release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
         run: |
           bundle="dist/RunnerDeck-linux-all.sigstore.json"
-          cp "${{ steps.attest.outputs.bundle-path }}" "${bundle}"
+          cp "$ATTESTATION_BUNDLE" "${bundle}"
           gh release upload "${GITHUB_REF_NAME}" \
             dist/RunnerDeck-*-linux-all.deb \
             dist/SHA256SUMS-linux-all \
