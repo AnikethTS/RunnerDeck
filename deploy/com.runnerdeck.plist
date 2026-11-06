@@ -1,10 +1,11 @@
 <!-- Optional: process supervision for ./run.sh (php -S, macOS launchd
      user agent). Not required. TLS hostname: php-fpm, see docs/hosting.md.
 
-     Install:
+     Prefer bin/install-service.sh, which fills in this checkout's path.
+     Install by hand:
        cp deploy/com.runnerdeck.plist ~/Library/LaunchAgents/
        # edit the two /absolute/path/to placeholders below
-       launchctl load ~/Library/LaunchAgents/com.runnerdeck.plist
+       launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.runnerdeck.plist
 -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

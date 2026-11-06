@@ -79,6 +79,11 @@ a setup script too.
    .\run.ps1 -Wsl        # Linux runners inside WSL2
    ```
 
+   To bring the dashboard back after a reboot, `bin/install-service.sh`
+   prints a systemd unit (Linux, starts at boot) or a launchd agent
+   (macOS, starts at login). Add `--install` to write it and start it.
+   On Windows, the installer can start RunnerDeck when you sign in.
+
 2. **Open `http://127.0.0.1:8090/`.** If nothing's configured yet, you'll
    land on a setup screen: pick org scope (needs a GitHub org you admin) or
    repo scope (needs a repo you own), fill in the org or `owner/repo`, and

@@ -53,6 +53,8 @@ git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
 ```
 
 Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
+`bin/install-service.sh` keeps that process running after a reboot on Linux,
+or after you log in on macOS.
 That's the whole setup. Machine not ready yet? Run `php app/bin/doctor.php` to
 check — or see [Getting started](docs/getting-started.md) for the full
 walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,

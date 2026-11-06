@@ -3,10 +3,12 @@
 # php-fpm + watch instead: deploy/runnerdeck-php-fpm.service and
 # deploy/runnerdeck-watch.service (docs/hosting.md).
 #
+# Prefer bin/install-service.sh, which fills in this checkout's path.
+# The unit below is a user-service example; edit WorkingDirectory first.
+#
 # Install:
 #   mkdir -p ~/.config/systemd/user
 #   cp deploy/runnerdeck.service ~/.config/systemd/user/
-#   # edit WorkingDirectory below to your checkout path
 #   systemctl --user daemon-reload
 #   systemctl --user enable --now runnerdeck
 #   loginctl enable-linger "$USER"   # keep it running after logout

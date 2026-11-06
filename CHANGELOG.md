@@ -12,6 +12,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- `bin/install-service.sh` prints a systemd unit (Linux, starts at boot as the current user) or a launchd agent (macOS, starts at login) for this checkout. `--install` writes it and starts it; without that flag it only prints the steps.
+
 - A Homebrew tap, `AnikethTS/homebrew-runnerdeck` (`brew tap anikethts/runnerdeck`, `brew trust anikethts/runnerdeck`, then `brew install anikethts/runnerdeck/runnerdeck`), and a release job that updates it when a `HOMEBREW_TAP_TOKEN` secret is configured.
 
 ## [1.12.1] - 2026-11-05
