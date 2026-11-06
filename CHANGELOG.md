@@ -6,19 +6,21 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-### Fixed
-
-- A failed runner-package extract no longer leaves a slot that looks installed. Start checks for `bin/Runner.Listener` (`.exe` on Windows), extracts into a side directory and moves it into place only when that file is there, and deletes the side directory when extract fails. If `tar` exits with "Function not implemented" (ENOSYS), the error names that and tries `bsdtar`, then PHP's PharData. `doctor.php` extracts a one-file archive into the pool directory so this shows up before the first start.
-
-### Changed
-
-- The README now explains the SmartScreen "Windows protected your PC" screen the unsigned installer triggers (More info, then Run anyway) and how to verify the download.
+## [1.13.0] - 2026-11-06
 
 ### Added
 
 - `bin/install-service.sh` prints a systemd unit (Linux, starts at boot as the current user) or a launchd agent (macOS, starts at login) for this checkout. `--install` writes it and starts it; without that flag it only prints the steps.
 
 - A Homebrew tap, `AnikethTS/homebrew-runnerdeck` (`brew tap anikethts/runnerdeck`, `brew trust anikethts/runnerdeck`, then `brew install anikethts/runnerdeck/runnerdeck`), and a release job that updates it when a `HOMEBREW_TAP_TOKEN` secret is configured.
+
+### Changed
+
+- The README now explains the SmartScreen "Windows protected your PC" screen the unsigned installer triggers (More info, then Run anyway) and how to verify the download.
+
+### Fixed
+
+- A failed runner-package extract no longer leaves a slot that looks installed. Start checks for `bin/Runner.Listener` (`.exe` on Windows), extracts into a side directory and moves it into place only when that file is there, and deletes the side directory when extract fails. If `tar` exits with "Function not implemented" (ENOSYS), the error names that and tries `bsdtar`, then PHP's PharData. `doctor.php` extracts a one-file archive into the pool directory so this shows up before the first start.
 
 ## [1.12.1] - 2026-11-05
 
