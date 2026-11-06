@@ -37,15 +37,15 @@ final class TarShimTest extends TestCase
     #[RunInSeparateProcess]
     public function testProbeSkipsTheCacheWhenStorageCannotBeCreated(): void
     {
-        $locked = $this->dir . '/locked';
-        mkdir($locked, 0555);
-        putenv('RUNNERDECK_SETTINGS_FILE=' . $locked . '/storage/settings.json');
+        $blocker = $this->dir . '/not-a-directory';
+        file_put_contents($blocker, '');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $blocker . '/settings.json');
         $this->fakeTarWorks();
 
         $result = TarShim::probe($this->dir . '/pool');
 
         $this->assertTrue($result['ok'], $result['message']);
-        $this->assertFileDoesNotExist($locked . '/storage/tar-shim.json');
+        $this->assertFileDoesNotExist($blocker . '/tar-shim.json');
     }
 
     #[RunInSeparateProcess]
@@ -135,9 +135,10 @@ final class TarShimTest extends TestCase
     #[RunInSeparateProcess]
     public function testProbeReportsWhenThePoolDirectoryIsNotWritable(): void
     {
-        chmod($this->dir . '/pool', 0555);
+        $slot = $this->dir . '/not-a-directory';
+        file_put_contents($slot, '');
 
-        $result = TarShim::probe($this->dir . '/pool');
+        $result = TarShim::probe($slot);
 
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('cannot create', $result['message']);
@@ -270,6 +271,9 @@ final class TarShimTest extends TestCase
     #[RunInSeparateProcess]
     public function testProbeReportsWhenTheExtractDirectoryCannotBeCreated(): void
     {
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $this->markTestSkipped('root ignores directory mode bits');
+        }
         Shell::fake(function (array $cmd): array {
             $bin = (string) ($cmd[0] ?? '');
             if ($bin === 'tar' && in_array('-cf', $cmd, true)) {
