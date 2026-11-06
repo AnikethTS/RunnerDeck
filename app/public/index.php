@@ -104,7 +104,7 @@ if ($rowsHtml === '') {
 
 Layout::htmlOpen('RunnerDeck', manifest: true);
 ?>
-  <div id="toast-container"></div>
+  <div id="toast-container" aria-live="polite"></div>
 <?php
 Layout::topbarStart();
 if (!$needsSetup) {
@@ -293,6 +293,7 @@ Layout::topbarEnd(!$needsSetup);
         <button id="btn-refresh" class="btn help-hover"<?= $tip['refresh'] ?>>Refresh</button>
         <button id="btn-export" type="button" class="btn help-hover"<?= $tip['export'] ?>>Export JSON</button>
         <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
+        <span id="action-status" class="muted action-status" hidden></span>
         <input type="search" id="runner-filter" class="filter-input"
                placeholder="Filter by name, label, or version…" />
         <select id="runner-state-filter" class="filter-input filter-select" aria-label="Filter by state">

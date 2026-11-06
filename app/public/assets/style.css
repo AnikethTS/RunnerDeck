@@ -327,7 +327,7 @@ body {
   flex-direction: column;
   gap: 8px;
   z-index: 1000;
-  max-width: min(320px, calc(100vw - 24px));
+  max-width: min(28rem, calc(100vw - 24px));
 }
 .toast {
   background: var(--surface-1);
@@ -336,9 +336,13 @@ body {
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
+  line-height: 1.4;
+  white-space: pre-line;
   box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
-  max-width: 320px;
+  max-width: min(28rem, calc(100vw - 32px));
 }
+.toast-good { border-color: var(--status-good); }
+.action-status { margin-left: 4px; }
 
 main {
   padding: 16px var(--page-gutter) 32px;
@@ -709,6 +713,64 @@ main {
 .crash-history-list li { margin: 4px 0; }
 .runner-table tbody tr:last-child td { border-bottom: none; }
 .runner-table tbody tr:hover { background: var(--page-plane); }
+.runner-table tbody tr.row-working,
+.runner-table tbody tr.row-working:hover {
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface-1));
+}
+.runner-table tbody tr.row-done,
+.runner-table tbody tr.row-done:hover {
+  background: color-mix(in srgb, var(--status-good) 12%, var(--surface-1));
+}
+.runner-table tbody tr.row-error,
+.runner-table tbody tr.row-error:hover {
+  background: color-mix(in srgb, var(--status-critical) 12%, var(--surface-1));
+}
+.runner-table tbody tr.row-working td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.runner-table tbody tr.row-done td:first-child { box-shadow: inset 3px 0 0 var(--status-good); }
+.runner-table tbody tr.row-error td:first-child { box-shadow: inset 3px 0 0 var(--status-critical); }
+.runner-table tbody tr.row-working .row-actions button { pointer-events: none; }
+.row-activity {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.35;
+  animation: row-note-in 0.35s ease;
+}
+.row-activity-mark {
+  flex: none;
+  margin-top: 5px;
+}
+.row-working .row-activity-mark {
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--brand), transparent);
+  background-size: 200% 100%;
+  animation: row-sweep 1s linear infinite;
+}
+.row-done .row-activity-mark,
+.row-error .row-activity-mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.row-done .row-activity-mark { background: var(--status-good); }
+.row-error .row-activity-mark { background: var(--status-critical); }
+.row-activity-text { min-width: 0; }
+@keyframes row-note-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes row-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-activity,
+  .row-working .row-activity-mark { animation: none; }
+}
 
 .runner-name { font-weight: 600; font-variant-numeric: tabular-nums; }
 .agent-name { color: var(--text-muted); font-size: 12px; display: block; }

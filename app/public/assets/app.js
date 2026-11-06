@@ -82,6 +82,7 @@ function initDashboard() {
       lastRowsKey = rowsKey;
       paintRows(rowsEl, snapshot, visible);
       updateSortIndicators();
+      applyRowActivity();
     }
     applyDrainWaitUi();
     applyLiveJobs();
@@ -104,12 +105,123 @@ function initDashboard() {
       : `updated ${new Date(snapshot.generated_at * 1000).toLocaleTimeString()}`;
   }
 
-  async function withLoading(btn, label, fn) {
+  function setActionStatus(text) {
+    const el = document.getElementById('action-status');
+    if (!el) return;
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
+  const rowActivity = new Map();
+
+  function setRowActivity(id, phase, text) {
+    const prev = rowActivity.get(id);
+    if (prev && prev.timer) clearTimeout(prev.timer);
+    const timer = phase === 'working'
+      ? null
+      : window.setTimeout(() => {
+        rowActivity.delete(id);
+        applyRowActivity();
+      }, 7000);
+    rowActivity.set(id, { phase, text, timer });
+    applyRowActivity();
+  }
+
+  function setRowsActivity(ids, phase, text) {
+    ids.forEach((id) => {
+      const prev = rowActivity.get(id);
+      if (prev && prev.timer) clearTimeout(prev.timer);
+      const timer = phase === 'working'
+        ? null
+        : window.setTimeout(() => {
+          rowActivity.delete(id);
+          applyRowActivity();
+        }, 7000);
+      rowActivity.set(id, { phase, text, timer });
+    });
+    applyRowActivity();
+  }
+
+  function clearRowActivity(id) {
+    const prev = rowActivity.get(id);
+    if (prev && prev.timer) clearTimeout(prev.timer);
+    rowActivity.delete(id);
+    applyRowActivity();
+  }
+
+  function applyRowActivity() {
+    rowsEl.querySelectorAll('tr[data-runner]').forEach((tr) => {
+      tr.classList.remove('row-working', 'row-done', 'row-error');
+      tr.removeAttribute('aria-busy');
+      tr.querySelector('.row-activity')?.remove();
+      const state = rowActivity.get(tr.dataset.runner);
+      if (!state) return;
+      tr.classList.add(state.phase === 'working' ? 'row-working' : state.phase === 'error' ? 'row-error' : 'row-done');
+      if (state.phase === 'working') tr.setAttribute('aria-busy', 'true');
+      const cell = tr.children[1];
+      if (!cell) return;
+      const note = document.createElement('div');
+      note.className = 'row-activity';
+      note.setAttribute('role', 'status');
+      const mark = document.createElement('span');
+      mark.className = 'row-activity-mark';
+      mark.setAttribute('aria-hidden', 'true');
+      const text = document.createElement('span');
+      text.className = 'row-activity-text';
+      text.textContent = state.text;
+      note.append(mark, text);
+      cell.append(note);
+    });
+  }
+
+  function poolIds() {
+    return lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
+  }
+
+  function reportResult(data, ids) {
+    const failed = !data || !data.ok;
+    const message = (data && data.message) || (failed ? 'The request failed' : 'Done');
+    if (ids && ids.length) {
+      setRowsActivity(ids, failed ? 'error' : 'done', message);
+      return;
+    }
+    if (failed) showToast(message);
+    else if (data && data.message) showToast(data.message, 'good');
+  }
+
+  async function withLoading(btn, label, fn, opts) {
+    const local = Boolean(opts && opts.local);
     setLoading(btn, label);
+    if (btn) btn.setAttribute('aria-busy', 'true');
+    if (!local) setActionStatus(label);
     try {
       await fn();
+    } catch (err) {
+      if (local) throw err;
+      showToast(err instanceof Error ? err.message : 'The request failed');
     } finally {
       clearLoading(btn);
+      if (btn) btn.removeAttribute('aria-busy');
+      if (!local) setActionStatus('');
+    }
+  }
+
+  async function runRow(tr, btn, label, fn) {
+    const id = tr.dataset.runner;
+    setRowActivity(id, 'working', label);
+    try {
+      await withLoading(btn, label, fn, { local: true });
+    } catch (err) {
+      setRowActivity(id, 'error', err instanceof Error ? err.message : 'The request failed');
+    }
+  }
+
+  async function runPool(btn, label, ids, fn) {
+    setRowsActivity(ids, 'working', label);
+    try {
+      await withLoading(btn, label, fn, { local: true });
+    } catch (err) {
+      setRowsActivity(ids, 'error', err instanceof Error ? err.message : 'The request failed');
     }
   }
 
@@ -427,27 +539,28 @@ function initDashboard() {
           'Still busy after waiting for the job to finish. Stop anyway and interrupt it?',
           'Stop anyway',
         );
-        if (!proceed) return;
-        await runWithBusyGuard(action, { ...params, force: '1' });
-        return;
+        if (!proceed) {
+          ids.forEach((id) => clearRowActivity(id));
+          return false;
+        }
+        return runWithBusyGuard(action, { ...params, force: '1' }, ids);
       }
-      await runWithBusyGuard(action, params);
+      return runWithBusyGuard(action, params, ids);
     } finally {
       endDrainWait(ids);
     }
   }
 
-  async function runWithBusyGuard(action, params) {
+  async function runWithBusyGuard(action, params, ids) {
     let { status, data } = await post(action, params);
     if (status === 409) {
       const proceed = await confirmModal(data.message, 'Continue');
-      if (!proceed) return;
+      if (!proceed) return false;
       ({ data } = await post(action, { ...params, force: '1' }));
     }
-    if (!data.ok) {
-      showToast(data.message || `${action} failed`);
-    }
+    reportResult(data, ids);
     await fetchStatus();
+    return true;
   }
 
   rowsEl.addEventListener('click', async (e) => {
@@ -491,9 +604,9 @@ function initDashboard() {
       return;
     }
     if (action === 'start') {
-      await withLoading(btn, 'Starting…', async () => {
+      await runRow(tr, btn, 'Starting…', async () => {
         const { data } = await post('start', { runner });
-        if (!data.ok) showToast(data.message);
+        reportResult(data, [runner]);
         await fetchStatus();
       });
       return;
@@ -508,7 +621,10 @@ function initDashboard() {
         stopping ? 'Stop' : 'Restart',
       );
       if (!sure) return;
-      await withLoading(btn, stopping ? 'Stopping…' : 'Restarting…', () => runWithBusyGuard(action, { runner }));
+      await runRow(tr, btn, stopping ? 'Stopping…' : 'Restarting…', async () => {
+        const kept = await runWithBusyGuard(action, { runner }, [runner]);
+        if (kept === false) clearRowActivity(runner);
+      });
       return;
     }
     if (action === 'drain') {
@@ -518,15 +634,15 @@ function initDashboard() {
         'Drain',
       );
       if (!sure) return;
-      await drainThenStop('stop', { runner }, [runner]);
+      await runRow(tr, btn, 'Draining…', () => drainThenStop('stop', { runner }, [runner]));
       return;
     }
     if (action === 'pause-auto-restart') {
       const row = lastSnapshot ? lastSnapshot.runners.find((r) => r.id === runner) : null;
       const paused = row && row.auto_restart_paused ? '0' : '1';
-      await withLoading(btn, paused === '1' ? 'Pausing…' : 'Resuming…', async () => {
+      await runRow(tr, btn, paused === '1' ? 'Pausing…' : 'Resuming…', async () => {
         const { data } = await post('pause_auto_restart', { runner, paused });
-        if (!data.ok) showToast(data.message);
+        reportResult(data, [runner]);
         await fetchStatus();
       });
       return;
@@ -538,9 +654,10 @@ function initDashboard() {
         'Roll restart',
       );
       if (!sure) return;
-      await withLoading(btn, 'Rolling…', () =>
-        runWithBusyGuard('rolling_restart', rollingParams({ runner })),
-      );
+      await runRow(tr, btn, 'Rolling…', async () => {
+        const kept = await runWithBusyGuard('rolling_restart', rollingParams({ runner }), [runner]);
+        if (kept === false) clearRowActivity(runner);
+      });
       return;
     }
     if (action === 'clear-work') {
@@ -550,9 +667,9 @@ function initDashboard() {
         'Clear',
       );
       if (!sure) return;
-      await withLoading(btn, 'Clearing…', async () => {
+      await runRow(tr, btn, 'Clearing…', async () => {
         const { data } = await post('clear_work', { runner });
-        if (!data.ok) showToast(data.message);
+        reportResult(data, [runner]);
         await fetchStatus();
       });
       return;
@@ -564,9 +681,9 @@ function initDashboard() {
         'Clear',
       );
       if (!sure) return;
-      await withLoading(btn, 'Clearing…', async () => {
+      await runRow(tr, btn, 'Clearing…', async () => {
         const { data } = await post('force_idle', { runner });
-        if (!data.ok) showToast(data.message);
+        reportResult(data, [runner]);
         await fetchStatus();
       });
       return;
@@ -579,7 +696,10 @@ function initDashboard() {
         'Delete',
       );
       if (!sure) return;
-      await withLoading(btn, 'Deleting…', () => runWithBusyGuard('delete_runner', { runner }));
+      await runRow(tr, btn, 'Deleting…', async () => {
+        const kept = await runWithBusyGuard('delete_runner', { runner }, [runner]);
+        if (kept === false) clearRowActivity(runner);
+      });
     }
   });
 
@@ -639,7 +759,7 @@ function initDashboard() {
       if (!sure) return;
       await withLoading(e.currentTarget, 'Clearing…', async () => {
         const { data } = await post('clear_applog');
-        if (!data.ok) showToast(data.message);
+        reportResult(data);
         await fetchStatus();
       });
     });
@@ -647,9 +767,10 @@ function initDashboard() {
 
   document.getElementById('btn-start-all').addEventListener('click', (e) => {
     const count = document.getElementById('pool-size').value || 10;
-    withLoading(e.currentTarget, 'Starting All…', async () => {
+    const ids = poolIds();
+    runPool(e.currentTarget, 'Starting…', ids, async () => {
       const { data } = await post('start_all', { count });
-      if (!data.ok) showToast(data.message);
+      reportResult(data, ids);
       await fetchStatus();
     });
   });
@@ -660,7 +781,11 @@ function initDashboard() {
       'Stop all',
     );
     if (!sure) return;
-    withLoading(e.currentTarget, 'Stopping All…', () => runWithBusyGuard('stop_all', {}));
+    const ids = poolIds();
+    runPool(e.currentTarget, 'Stopping…', ids, async () => {
+      const kept = await runWithBusyGuard('stop_all', {}, ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+    });
   });
 
   document.getElementById('btn-drain-all').addEventListener('click', async (e) => {
@@ -669,21 +794,22 @@ function initDashboard() {
       'Drain',
     );
     if (!sure) return;
-    const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
-    withLoading(e.currentTarget, 'Draining…', () => drainThenStop('stop_all', {}, ids));
+    const ids = poolIds();
+    runPool(e.currentTarget, 'Draining…', ids, () => drainThenStop('stop_all', {}, ids));
   });
 
   document.getElementById('btn-rolling-restart-all').addEventListener('click', async (e) => {
-    const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
+    const ids = poolIds();
     if (!ids.length) return;
     const sure = await confirmModal(
       'Drain and restart every slot, one at a time?',
       'Roll restart',
     );
     if (!sure) return;
-    withLoading(e.currentTarget, 'Rolling…', () =>
-      runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
-    );
+    runPool(e.currentTarget, 'Rolling…', ids, async () => {
+      const kept = await runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') }), ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+    });
   });
 
   document.getElementById('btn-rolling-upgrade').addEventListener('click', async (e) => {
@@ -692,9 +818,11 @@ function initDashboard() {
       'Upgrade',
     );
     if (!sure) return;
-    withLoading(e.currentTarget, 'Upgrading…', () =>
-      runWithBusyGuard('rolling_upgrade', rollingParams({})),
-    );
+    const ids = poolIds();
+    runPool(e.currentTarget, 'Upgrading…', ids, async () => {
+      const kept = await runWithBusyGuard('rolling_upgrade', rollingParams({}), ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+    });
   });
 
   document.getElementById('btn-maintenance').addEventListener('click', async (e) => {
@@ -704,8 +832,10 @@ function initDashboard() {
       : 'Leave maintenance? Runners stay stopped until you start them.';
     const sure = await confirmModal(msg, on ? 'Drain' : 'Resume');
     if (!sure) return;
-    withLoading(e.currentTarget, on ? 'Draining…' : 'Resuming…', async () => {
-      await runWithBusyGuard('maintenance', rollingParams({ enabled: on ? '1' : '0' }));
+    const ids = poolIds();
+    runPool(e.currentTarget, on ? 'Draining…' : 'Resuming…', ids, async () => {
+      const kept = await runWithBusyGuard('maintenance', rollingParams({ enabled: on ? '1' : '0' }), ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
     });
   });
 
@@ -717,8 +847,8 @@ function initDashboard() {
         'Drain',
       );
       if (!sure) return;
-      const ids = lastSnapshot ? lastSnapshot.runners.map((r) => r.id) : [];
-      withLoading(e.currentTarget, 'Draining…', () =>
+      const ids = poolIds();
+      runPool(e.currentTarget, 'Draining…', ids, () =>
         drainThenStop('safe_reboot', rollingParams({}), ids),
       );
     });
@@ -745,9 +875,10 @@ function initDashboard() {
   });
 
   document.getElementById('btn-bulk-start').addEventListener('click', (e) => {
-    withLoading(e.currentTarget, 'Starting…', async () => {
-      const { data } = await post('bulk_start', { runners: [...selectedRunners].join(',') });
-      if (!data.ok) showToast(data.message);
+    const ids = [...selectedRunners];
+    runPool(e.currentTarget, 'Starting…', ids, async () => {
+      const { data } = await post('bulk_start', { runners: ids.join(',') });
+      reportResult(data, ids);
       await fetchStatus();
     });
   });
@@ -759,7 +890,11 @@ function initDashboard() {
       'Stop',
     );
     if (!sure) return;
-    withLoading(e.currentTarget, 'Stopping…', () => runWithBusyGuard('bulk_stop', { runners: [...selectedRunners].join(',') }));
+    const ids = [...selectedRunners];
+    runPool(e.currentTarget, 'Stopping…', ids, async () => {
+      const kept = await runWithBusyGuard('bulk_stop', { runners: ids.join(',') }, ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+    });
   });
 
   document.getElementById('btn-bulk-drain').addEventListener('click', async (e) => {
@@ -769,9 +904,10 @@ function initDashboard() {
       'Drain',
     );
     if (!sure) return;
-    withLoading(
+    runPool(
       e.currentTarget,
       'Draining…',
+      ids,
       () => drainThenStop('bulk_stop', { runners: ids.join(',') }, ids),
     );
   });
@@ -783,9 +919,10 @@ function initDashboard() {
       'Roll restart',
     );
     if (!sure) return;
-    withLoading(e.currentTarget, 'Rolling…', () =>
-      runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') })),
-    );
+    runPool(e.currentTarget, 'Rolling…', ids, async () => {
+      const kept = await runWithBusyGuard('bulk_rolling_restart', rollingParams({ runners: ids.join(',') }), ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+    });
   });
 
   document.getElementById('btn-bulk-delete').addEventListener('click', async (e) => {
@@ -796,9 +933,11 @@ function initDashboard() {
       'Delete',
     );
     if (!sure) return;
-    await withLoading(e.currentTarget, 'Deleting…', async () => {
-      await runWithBusyGuard('bulk_delete', { runners: [...selectedRunners].join(',') });
-      selectedRunners.clear();
+    const ids = [...selectedRunners];
+    await runPool(e.currentTarget, 'Deleting…', ids, async () => {
+      const kept = await runWithBusyGuard('bulk_delete', { runners: ids.join(',') }, ids);
+      if (kept === false) ids.forEach((id) => clearRowActivity(id));
+      else selectedRunners.clear();
     });
   });
 
@@ -807,7 +946,7 @@ function initDashboard() {
     const btn = e.target.querySelector('button[type="submit"]');
     withLoading(btn, 'Applying…', async () => {
       const { data } = await post('resize', { count: document.getElementById('pool-size').value });
-      if (!data.ok) showToast(data.message);
+      reportResult(data);
       await fetchStatus();
     });
   });
@@ -912,7 +1051,7 @@ function initDashboard() {
     appLogDownload.addEventListener('click', (e) => e.stopPropagation());
   }
 
-  initModals(fetchStatus);
+  initModals(fetchStatus, { note: setRowActivity, clear: clearRowActivity });
 
   document.getElementById('crash-history-close').addEventListener('click', () => {
     document.getElementById('crash-history-modal').hidden = true;

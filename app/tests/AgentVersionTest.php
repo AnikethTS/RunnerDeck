@@ -31,7 +31,7 @@ final class AgentVersionTest extends TestCase
         $this->assertSame('2.321.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
-    public function testPrefersRunnerJsonOverListenerDeps(): void
+    public function testPrefersListenerDepsOverStaleRunnerJson(): void
     {
         file_put_contents($this->dir . '/.runner', json_encode(['agentVersion' => '2.300.0']));
         file_put_contents(
@@ -39,7 +39,7 @@ final class AgentVersionTest extends TestCase
             json_encode(['targets' => ['.NETCoreApp,Version=v8.0' => ['Runner.Listener/2.321.0' => []]]])
         );
 
-        $this->assertSame('2.300.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
+        $this->assertSame('2.321.0', \RunnerDeck\GitHub\AgentVersion::read($this->dir));
     }
 
     public function testFallsBackToListenerDepsJson(): void

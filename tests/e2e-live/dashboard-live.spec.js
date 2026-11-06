@@ -287,7 +287,7 @@ test('Maintenance refuses starts until resumed', async () => {
   await expect(page.locator('#health-banner')).toContainText('maintenance');
 
   await row('runner-1').locator('[data-action="start"]').click();
-  await expect(toast().first()).toBeVisible();
+  await expect(row('runner-1').locator('.row-activity')).toBeVisible();
   await expectStopped('runner-1');
 
   await page.locator('#btn-maintenance').click();
