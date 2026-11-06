@@ -181,9 +181,6 @@ final class TarShim
                 @unlink($archive);
             }
         }
-        if (!class_exists(\PharData::class)) {
-            return false;
-        }
         try {
             $phar = new \PharData($archive);
             $phar->addFile($payload, 'payload.txt');
@@ -294,10 +291,7 @@ final class TarShim
         if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
             return;
         }
-        $encoded = json_encode(['banner' => $banner, 'at' => time()]);
-        if ($encoded === false) {
-            return;
-        }
+        $encoded = json_encode(['banner' => $banner, 'at' => time()]) ?: '{}';
         file_put_contents($dir . '/tar-shim.json', $encoded);
     }
 
