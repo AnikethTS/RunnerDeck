@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- A failed runner-package extract no longer leaves a slot that looks installed. Start checks for `bin/Runner.Listener` (`.exe` on Windows), extracts into a side directory and moves it into place only when that file is there, and deletes the side directory when extract fails. If `tar` exits with "Function not implemented" (ENOSYS), the error names that and tries `bsdtar`, then PHP's PharData. `doctor.php` extracts a one-file archive into the pool directory so this shows up before the first start.
+
 ### Changed
 
 - The README now explains the SmartScreen "Windows protected your PC" screen the unsigned installer triggers (More info, then Run anyway) and how to verify the download.

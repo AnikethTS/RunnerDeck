@@ -238,6 +238,8 @@ final class WindowsSupportTest extends TestCase
     public function testConfigureRefusesUnsafeNameOnWindows(): void
     {
         file_put_contents($this->dir . '/runner-1/config.cmd', '@echo off');
+        mkdir($this->dir . '/runner-1/bin');
+        file_put_contents($this->dir . '/runner-1/bin/Runner.Listener.exe', 'listener');
         Shell::fake(function (array $cmd): array {
             $this->fail('config.cmd must not run for an unsafe name: ' . implode(' ', $cmd));
         });
