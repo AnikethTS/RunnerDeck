@@ -10,6 +10,7 @@ follows [SemVer](https://semver.org/).
 
 - CI runs a Socket project report on pull requests and on `main` (`.github/workflows/socket.yml`). The job waits for a free Socket API token in the `SOCKET_SECURITY_API_KEY` repository secret.
 - CI audits GitHub Actions workflows with zizmor (`.github/workflows/zizmor.yml`) and scans the `desktop/` Go module with govulncheck (`.github/workflows/govulncheck.yml`). Neither needs an API token.
+- The coverage job uploads its Clover report to Codecov. The 75% gate still decides pass or fail. Install the Codecov GitHub App for the pull-request comment; a public repository can upload without a token.
 
 ### Fixed
 

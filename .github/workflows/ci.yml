@@ -289,6 +289,13 @@ jobs:
       - name: Enforce minimum line coverage
         run: php tools/ci/coverage-gate.php app/coverage.xml 75
 
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: app/coverage.xml
+          disable_search: true
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
