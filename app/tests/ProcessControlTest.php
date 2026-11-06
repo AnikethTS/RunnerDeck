@@ -125,8 +125,11 @@ final class ProcessControlTest extends TestCase
     public function testStartWritesPidfileFromSpawnStdout(): void
     {
         \RunnerDeck\System\Shell::fake(function (array $cmd): array {
-            $this->assertSame('bash', $cmd[0]);
+            if (($cmd[0] ?? '') !== 'bash') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: skipped'];
+            }
             $this->assertStringContainsString('nohup ./run.sh', $cmd[2]);
+            $this->assertStringNotContainsString('/shims', $cmd[2]);
             return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
         });
 
@@ -524,7 +527,9 @@ final class ProcessControlTest extends TestCase
     {
         \RunnerDeck\Host\HostMode::setRebootReady(true);
         \RunnerDeck\System\Shell::fake(function (array $cmd): array {
-            $this->assertSame('bash', $cmd[0]);
+            if (($cmd[0] ?? '') !== 'bash') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: skipped'];
+            }
             return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
         });
 
@@ -532,5 +537,46 @@ final class ProcessControlTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertFalse(\RunnerDeck\Host\HostMode::isRebootReady());
+    }
+
+    #[RunInSeparateProcess]
+    public function testStartPutsTheBsdtarShimFirstOnTheRunnerPath(): void
+    {
+        file_put_contents($this->dir . '/.path', "/usr/bin:/bin\n");
+        $spawn = '';
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$spawn): array {
+            $bin = (string) ($cmd[0] ?? '');
+            if ($bin === 'tar' && in_array('-cf', $cmd, true)) {
+                $out = $cmd[array_search('-cf', $cmd, true) + 1];
+                file_put_contents($out, 'archive');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($bin === 'tar') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'tar: a: Cannot open: Function not implemented'];
+            }
+            if ($bin === 'which') {
+                return ['code' => 0, 'stdout' => "/usr/bin/bsdtar\n", 'stderr' => ''];
+            }
+            if (str_ends_with($bin, 'bsdtar')) {
+                $dest = $cmd[array_search('-C', $cmd, true) + 1];
+                file_put_contents($dest . '/payload.txt', 'ok');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if ($bin === 'bash') {
+                $spawn = (string) ($cmd[2] ?? '');
+                return ['code' => 0, 'stdout' => "5555\n", 'stderr' => ''];
+            }
+            self::fail('unexpected command: ' . implode(' ', $cmd));
+        });
+
+        $result = \RunnerDeck\Pool\ProcessControl::startIndividual($this->runner());
+
+        $shim = $this->storageDir . '/shims';
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertStringContainsString('export PATH=' . escapeshellarg($shim) . ':"$PATH"', $spawn);
+        $this->assertStringContainsString('nohup ./run.sh', $spawn);
+        $path = trim((string) file_get_contents($this->dir . '/.path'));
+        $this->assertSame($shim . ':/usr/bin:/bin', $path);
+        $this->assertStringContainsString("exec '/usr/bin/bsdtar'", (string) file_get_contents($shim . '/tar'));
     }
 }
