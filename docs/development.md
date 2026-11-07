@@ -56,9 +56,9 @@ CI (`.github/workflows/ci.yml`) also runs **Shellcheck** on `run.sh`,
 `.gitleaks.toml`). Playwright
 compares dashboard, Settings, Add Runner, and live-log screenshots to
 `.github/screenshots/` (and those files must match `docs/screenshots/`).
-`.github/workflows/release.yml` scans the published
-`ghcr.io/anikethts/runnerdeck` image with Trivy (CRITICAL/HIGH, unfixed
-ignored) after push.
+`Smoke · Docker image` and `.github/workflows/release.yml` scan the
+image with Trivy (CRITICAL/HIGH, unfixed ignored). The release workflow
+pushes `ghcr.io/anikethts/runnerdeck` only after that scan passes.
 
 The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and Windows hosted runners, dispatches `tools/ci/e2e-probe-workflow.yml` onto it, and waits for the job to pass. It needs a dedicated, throwaway test repository containing a copy of `tools/ci/e2e-probe-workflow.yml` at `.github/workflows/runnerdeck-e2e.yml` (copied once by hand, so the token never needs the Workflows permission), a repository variable `E2E_REPO` (`owner/repo`), and a secret `E2E_RUNNER_TOKEN`: a fine-grained token limited to that one repo with Administration, Actions and Contents read/write. Keep that repo private and empty of anything else, since a runner executes its workflows. Without the secret or variable the job fails. Pull requests from forks skip it, because they never receive the secret. Fork pull requests never get the secret.
 

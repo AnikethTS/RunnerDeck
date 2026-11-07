@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The dashboard poll keeps the table scroll position, the selected rows, and keyboard focus when a row's markup has not changed.
+- A runner page action refreshes that page in place. Delete still returns to the list.
+- Pull requests scan the Docker image with the same Trivy rules as a release. A release pushes the image only after that scan passes.
+
 ## [1.14.1] - 2026-11-07
 
 ### Fixed
