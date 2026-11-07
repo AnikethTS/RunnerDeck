@@ -73,28 +73,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish container image to GHCR
+      - name: Build the container image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          push: true
-          tags: |
-            ghcr.io/anikethts/runnerdeck:${{ github.ref_name }}
-            ghcr.io/anikethts/runnerdeck:latest
+          load: true
+          push: false
+          tags: runnerdeck:release
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Scan the published GHCR image
+      - name: Scan the image before publishing
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        env:
-          TRIVY_USERNAME: ${{ github.actor }}
-          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         with:
-          image-ref: ghcr.io/anikethts/runnerdeck:${{ github.ref_name }}
+          image-ref: runnerdeck:release
           format: table
           exit-code: "1"
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+
+      - name: Publish the image after the scan passes
+        run: |
+          docker tag runnerdeck:release "ghcr.io/anikethts/runnerdeck:${GITHUB_REF_NAME}"
+          docker tag runnerdeck:release ghcr.io/anikethts/runnerdeck:latest
+          docker push "ghcr.io/anikethts/runnerdeck:${GITHUB_REF_NAME}"
+          docker push ghcr.io/anikethts/runnerdeck:latest
 
   windows-package:
     name: Build and publish the Windows installer

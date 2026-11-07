@@ -181,9 +181,8 @@ test('Restart replaces the process', async () => {
   const before = await pidOf(BASE);
   expect(before).not.toBeNull();
   await clickRow(BASE, 'restart');
-  const reloaded = page.waitForEvent('load', { timeout: 180_000 });
   await confirmIfAsked();
-  await reloaded;
+  await expect(page.locator('#runner-note')).not.toHaveText('', { timeout: 180_000 });
   await page.goto('/');
   await expect.poll(() => pidOf(BASE), { timeout: 120_000, intervals: [2000] }).not.toBe(before);
   await expectRunning(BASE);

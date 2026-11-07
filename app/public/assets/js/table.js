@@ -65,7 +65,32 @@ export function updateSortIndicators() {
   }
 }
 
+function rowMarkup(tr) {
+  const clone = tr.cloneNode(true);
+  clone.classList.remove('row-working', 'row-done', 'row-error');
+  clone.removeAttribute('aria-busy');
+  clone.querySelectorAll('.row-activity').forEach((note) => note.remove());
+  const box = clone.querySelector('.row-select');
+  if (box) box.checked = false;
+  return clone.innerHTML;
+}
+
+function focusKey(rowsEl) {
+  const active = document.activeElement;
+  if (!active || !rowsEl.contains(active)) return null;
+  const tr = active.closest('tr[data-runner]');
+  if (!tr) return null;
+  return { id: tr.dataset.runner, action: active.dataset.action || '' };
+}
+
 export function paintRows(rowsEl, snapshot, visibleRunners) {
+  const scroller = rowsEl.closest('.runner-table-wrap');
+  const scrollTop = scroller ? scroller.scrollTop : 0;
+  const scrollLeft = scroller ? scroller.scrollLeft : 0;
+  const pageX = window.scrollX;
+  const pageY = window.scrollY;
+  const focused = focusKey(rowsEl);
+
   const html = snapshot.view && typeof snapshot.view.rows_html === 'string'
     ? snapshot.view.rows_html
     : '';
@@ -75,12 +100,23 @@ export function paintRows(rowsEl, snapshot, visibleRunners) {
   wrap.querySelectorAll('tr[data-runner]').forEach((tr) => {
     byId.set(tr.dataset.runner, tr);
   });
+  const existing = new Map();
+  rowsEl.querySelectorAll('tr[data-runner]').forEach((tr) => {
+    existing.set(tr.dataset.runner, tr);
+  });
   const nodes = visibleRunners.map((r) => {
-    const tr = byId.get(r.id);
-    if (!tr) return null;
-    const box = tr.querySelector('.row-select');
-    if (box) box.checked = selectedRunners.has(r.id);
-    return tr;
+    const fresh = byId.get(r.id);
+    if (!fresh) return null;
+    const prev = existing.get(r.id);
+    const checked = selectedRunners.has(r.id);
+    if (prev && rowMarkup(prev) === rowMarkup(fresh)) {
+      const box = prev.querySelector('.row-select');
+      if (box) box.checked = checked;
+      return prev;
+    }
+    const box = fresh.querySelector('.row-select');
+    if (box) box.checked = checked;
+    return fresh;
   }).filter(Boolean);
   if (!nodes.length) {
     const msg = (snapshot.runners && snapshot.runners.length)
@@ -90,6 +126,17 @@ export function paintRows(rowsEl, snapshot, visibleRunners) {
     return;
   }
   rowsEl.replaceChildren(...nodes);
+  if (scroller) {
+    scroller.scrollTop = scrollTop;
+    scroller.scrollLeft = scrollLeft;
+  }
+  window.scrollTo(pageX, pageY);
+  if (!focused) return;
+  const row = rowsEl.querySelector(`tr[data-runner="${focused.id}"]`);
+  const next = focused.action
+    ? row?.querySelector(`[data-action="${focused.action}"]`)
+    : row?.querySelector('.row-select');
+  if (next && typeof next.focus === 'function') next.focus({ preventScroll: true });
 }
 
 export function updateBulkActionsBar(visibleRunners) {

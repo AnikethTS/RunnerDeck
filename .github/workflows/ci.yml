@@ -947,7 +947,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.smoke == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: read
       actions: write
@@ -971,6 +971,15 @@ jobs:
           tags: runnerdeck:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Scan the image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: runnerdeck:ci
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
 
       - name: Assert image env and runner libraries
         run: |

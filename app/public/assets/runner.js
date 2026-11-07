@@ -6,7 +6,14 @@ import './js/theme.js';
 const page = document.getElementById('runner-page');
 if (page) {
   const runnerId = page.dataset.runner || '';
-  const agentName = page.dataset.agentName || runnerId;
+
+  function host() {
+    return document.getElementById('runner-page');
+  }
+
+  function agentName() {
+    return host()?.dataset.agentName || runnerId;
+  }
 
   function note(text) {
     const el = document.getElementById('runner-note');
@@ -37,6 +44,29 @@ if (page) {
     if (pre.textContent !== text) pre.textContent = text;
   }
 
+  async function refreshPage() {
+    const current = host();
+    const noteText = document.getElementById('runner-note')?.textContent || '';
+    const log = document.getElementById('runner-log');
+    const logScroll = log ? log.scrollTop : 0;
+    const res = await fetch(`runner.php?id=${encodeURIComponent(runnerId)}`, { cache: 'no-store' });
+    if (res.status === 401 || res.redirected) {
+      window.location.assign('index.php');
+      return;
+    }
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const next = doc.getElementById('runner-page');
+    if (!next || !current) {
+      window.location.assign('index.php');
+      return;
+    }
+    current.replaceWith(next);
+    const noteEl = document.getElementById('runner-note');
+    if (noteEl && noteText) noteEl.textContent = noteText;
+    const newLog = document.getElementById('runner-log');
+    if (newLog) newLog.scrollTop = logScroll;
+  }
+
   async function finish(data, gone) {
     if (!data.ok) {
       note(data.message || 'The request failed');
@@ -47,7 +77,7 @@ if (page) {
       window.location.assign('index.php');
       return true;
     }
-    window.setTimeout(() => window.location.reload(), 400);
+    await refreshPage();
     return true;
   }
 
@@ -86,7 +116,9 @@ if (page) {
     }
   }
 
-  page.addEventListener('click', async (event) => {
+  document.addEventListener('click', async (event) => {
+    const root = host();
+    if (!root || !root.contains(event.target)) return;
     const btn = event.target.closest('button[data-action]');
     if (!btn || btn.disabled) return;
     const action = btn.dataset.action;
@@ -99,11 +131,11 @@ if (page) {
       const modal = document.getElementById('crash-history-modal');
       const title = document.getElementById('crash-history-title');
       const list = document.getElementById('crash-history-list');
-      title.textContent = `${agentName} — crashes (7 days)`;
+      title.textContent = `${agentName()} — crashes (7 days)`;
       list.replaceChildren();
       let times = [];
       try {
-        times = JSON.parse(page.dataset.crashes || '[]');
+        times = JSON.parse(host().dataset.crashes || '[]');
       } catch {
         times = [];
       }
@@ -124,7 +156,7 @@ if (page) {
       return;
     }
     if (action === 'rename') {
-      openRenameModal(runnerId, agentName);
+      openRenameModal(runnerId, agentName());
       return;
     }
     if (action === 'start') {
@@ -143,8 +175,8 @@ if (page) {
       const stopping = action === 'stop';
       const sure = await confirmModal(
         stopping
-          ? `Stop ${agentName}? A job in progress is interrupted.`
-          : `Restart ${agentName}? A job in progress is interrupted.`,
+          ? `Stop ${agentName()}? A job in progress is interrupted.`
+          : `Restart ${agentName()}? A job in progress is interrupted.`,
         stopping ? 'Stop' : 'Restart',
       );
       if (!sure) return;
@@ -160,7 +192,7 @@ if (page) {
     }
     if (action === 'drain') {
       const sure = await confirmModal(
-        `Drain ${agentName}? It stops when GitHub reports it idle.`,
+        `Drain ${agentName()}? It stops when GitHub reports it idle.`,
         'Drain',
       );
       if (!sure) return;
@@ -172,7 +204,7 @@ if (page) {
       return;
     }
     if (action === 'pause-auto-restart') {
-      const paused = page.dataset.paused === '1' ? '0' : '1';
+      const paused = host().dataset.paused === '1' ? '0' : '1';
       setLoading(btn, paused === '1' ? 'Pausing…' : 'Resuming…');
       try {
         const { data } = await post('pause_auto_restart', { runner: runnerId, paused });
@@ -186,7 +218,7 @@ if (page) {
     }
     if (action === 'rolling-restart') {
       const sure = await confirmModal(
-        `Drain and restart ${agentName}? Other slots keep running.`,
+        `Drain and restart ${agentName()}? Other slots keep running.`,
         'Roll restart',
       );
       if (!sure) return;
@@ -205,7 +237,7 @@ if (page) {
     }
     if (action === 'clear-work') {
       const sure = await confirmModal(
-        `Clear _work on ${agentName}? Checked-out job files on this slot are deleted.`,
+        `Clear _work on ${agentName()}? Checked-out job files on this slot are deleted.`,
         'Clear',
       );
       if (!sure) return;
@@ -222,7 +254,7 @@ if (page) {
     }
     if (action === 'force-idle') {
       const sure = await confirmModal(
-        `Clear ${agentName} on GitHub? Local files stay. The next Start re-registers this slot.`,
+        `Clear ${agentName()} on GitHub? Local files stay. The next Start re-registers this slot.`,
         'Clear',
       );
       if (!sure) return;
@@ -239,7 +271,7 @@ if (page) {
     }
     if (action === 'delete') {
       const sure = await confirmModal(
-        `Permanently delete ${runnerId} (${agentName})? This deregisters it from GitHub and deletes its local files, `
+        `Permanently delete ${runnerId} (${agentName()})? This deregisters it from GitHub and deletes its local files, `
         + 'including logs. This cannot be undone.',
         'Delete',
       );
