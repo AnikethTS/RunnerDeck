@@ -16,6 +16,7 @@ follows [SemVer](https://semver.org/).
 
 - Upgrade agents tells you what it did. The older-package banner uses the listener version on disk, so it clears after the binaries are replaced. The request is allowed enough time to drain and download every configured slot.
 - Dashboard actions show the server's result on that runner's row. The row pulses while the request runs, then shows the outcome there. A request that dies shows the error on the same row.
+- The dashboard leads with a compact status strip and the runner list. Host charts sit behind Last hour. Each row keeps Start, Stop, and Drain in view. More opens that runner’s page, with its status, log, and the rest of its actions.
 - The desktop module requires Go 1.26.10, so govulncheck no longer fails on standard-library fixes from earlier 1.26 releases.
 - Runner jobs can unpack actions on a host where `tar` returns ENOSYS. When `bsdtar` works, RunnerDeck puts a `tar` wrapper first on the runner PATH and in each slot's `.path`, including after rename, restart, and re-add. `doctor.php` and the dashboard say the shim is in use. Hosts where `tar` works are unchanged.
 - The Socket project report on a push to `main` scans that branch and no longer comments on pull request 0.

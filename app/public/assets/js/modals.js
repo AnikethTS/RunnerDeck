@@ -158,9 +158,10 @@ export function initModals(fetchStatus, rowNotes) {
   const addRunnerModal = document.getElementById('add-runner-modal');
 
   function closeAddRunnerModal() {
-    addRunnerModal.hidden = true;
+    if (addRunnerModal) addRunnerModal.hidden = true;
   }
 
+  if (addRunnerModal && document.getElementById('btn-add-runner')) {
   document.getElementById('btn-add-runner').addEventListener('click', () => {
     document.getElementById('add-runner-name').value = '';
     const ephemeral = document.getElementById('add-runner-ephemeral');
@@ -206,6 +207,7 @@ export function initModals(fetchStatus, rowNotes) {
       clearLoading(submitBtn);
     }
   });
+  }
 
   const renameModal = document.getElementById('rename-modal');
 

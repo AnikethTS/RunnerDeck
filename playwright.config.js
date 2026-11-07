@@ -1,10 +1,20 @@
 import { defineConfig } from '@playwright/test';
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const PORT = 8091;
-const tmpRoot = mkdtempSync(path.join(tmpdir(), 'runnerdeck-e2e-'));
+// The test worker reloads this file and would otherwise mint a second temp
+// root. The server keeps the directory created by the main process.
+const pointer = path.join(tmpdir(), 'runnerdeck-e2e-active');
+const tmpRoot = process.env.TEST_WORKER_INDEX !== undefined && existsSync(pointer)
+  ? readFileSync(pointer, 'utf8').trim()
+  : mkdtempSync(path.join(tmpdir(), 'runnerdeck-e2e-'));
+if (process.env.TEST_WORKER_INDEX === undefined) {
+  writeFileSync(pointer, tmpRoot);
+}
+const poolDir = path.join(tmpRoot, 'runners');
+process.env.RUNNERDECK_POOL_DIR = poolDir;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -41,7 +51,7 @@ export default defineConfig({
     env: {
       RUNNERDECK_SETTINGS_FILE: path.join(tmpRoot, 'settings.json'),
       RUNNERDECK_HISTORY_FILE: path.join(tmpRoot, 'history.sqlite'),
-      RUNNERDECK_POOL_DIR: path.join(tmpRoot, 'runners'),
+      RUNNERDECK_POOL_DIR: poolDir,
     },
   },
 });
