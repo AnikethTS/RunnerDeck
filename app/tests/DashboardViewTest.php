@@ -336,6 +336,51 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('data-crashes="[1700000000]"', $html);
     }
 
+    public function testRunnerPageCoversPausedRunningAndEmptyLog(): void
+    {
+        $html = \RunnerDeck\Presentation\DashboardView::runnerPage([
+            'id' => 'runner-2',
+            'agent_name' => 'acme-2',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 4,
+            'log_tail' => 'not-a-list',
+            'github' => null,
+            'auto_restart_paused' => true,
+            'stuck_busy_flagged' => true,
+            'can_clear_work' => false,
+            'crash_at_7d' => ['soon', 12],
+        ]);
+
+        $this->assertStringContainsString('data-paused="1"', $html);
+        $this->assertStringContainsString('Resume AR', $html);
+        $this->assertStringContainsString('Allow auto-restart on this slot again.', $html);
+        $this->assertStringContainsString('(no log yet)', $html);
+        $this->assertStringContainsString('data-crashes="[12]"', $html);
+        $this->assertStringNotContainsString('agent-version', $html);
+        $this->assertMatchesRegularExpression('/data-action="start"[^>]*disabled/', $html);
+        $this->assertDoesNotMatchRegularExpression('/data-action="stop"[^>]*disabled/', $html);
+        $this->assertMatchesRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
+        $this->assertDoesNotMatchRegularExpression('/data-action="force-idle"[^>]*hidden/', $html);
+    }
+
+    public function testRowHtmlPrefersTheLastSubstantialLogLine(): void
+    {
+        $long = str_repeat('E', 60);
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => ['', '   ', 'short', $long],
+            'github' => null,
+        ]);
+
+        $this->assertStringContainsString($long, $html);
+        $this->assertStringNotContainsString('>short<', $html);
+    }
+
     public function testRowHtmlOmitsAgentVersionWhenMissing(): void
     {
         $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
