@@ -9,15 +9,19 @@ final class AgentVersion
     private const VERSION_IN_KEY = '/^Runner\.Listener\/(\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.]+)?)/';
     private const VERSION_IN_TEXT = '/Runner\.Listener\/(\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.]+)?)/';
 
-    /** Local bits only — never GitHub. `.runner` if present, else Listener deps. */
+    /**
+     * Local bits only — never GitHub. The listener package on disk wins,
+     * because `.runner` is written at configure time and stays stale after
+     * Upgrade agents replaces the binaries.
+     */
     public static function read(string $dir): ?string
     {
-        $fromRunner = self::fromJsonFile($dir . '/.runner', ['agentVersion', 'agent_version', 'version']);
-        if ($fromRunner !== null) {
-            return $fromRunner;
+        $fromPackage = self::fromListenerDeps($dir . '/bin/Runner.Listener.deps.json');
+        if ($fromPackage !== null) {
+            return $fromPackage;
         }
 
-        return self::fromListenerDeps($dir . '/bin/Runner.Listener.deps.json');
+        return self::fromJsonFile($dir . '/.runner', ['agentVersion', 'agent_version', 'version']);
     }
 
     /**

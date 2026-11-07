@@ -248,21 +248,11 @@ final class DashboardView
         $id = self::e((string) ($runner['id'] ?? ''));
         $name = self::e((string) ($runner['agent_name'] ?? ''));
         $log = $runner['log_tail'] ?? [];
-        $logPreview = is_array($log) ? implode("\n", array_map('strval', $log)) : '';
-        if ($logPreview === '') {
-            $logPreview = '(no log yet)';
-        }
+        $logPreview = self::lastLogLine(is_array($log) ? $log : []);
         $running = (bool) ($runner['local_running'] ?? false);
         $startDis = $running ? ' disabled' : '';
         $stopDis = $running ? '' : ' disabled';
         $drainDis = $running ? '' : ' disabled';
-        $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
-        $paused = !empty($runner['auto_restart_paused']);
-        $pauseLabel = $paused ? 'Resume AR' : 'Pause AR';
-        $pauseHelp = $paused
-            ? 'Allow auto-restart on this slot again.'
-            : 'Hold auto-restart for this slot only. Crashes still flag.';
-        $forceIdleHidden = !empty($runner['stuck_busy_flagged']) ? '' : ' hidden';
 
         return ''
             . '    <tr data-runner="' . $id . '" data-agent-name="' . $name . '">' . "\n"
@@ -296,32 +286,143 @@ final class DashboardView
             . $drainDis
             . Layout::hoverHelp('Wait until GitHub shows idle, then stop. Keeps the current job.')
             . '>Drain</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="restart"'
-            . Layout::hoverHelp('Stop then start this slot immediately.')
-            . '>Restart</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="rolling-restart"'
-            . Layout::hoverHelp('Wait for idle, then start again so this slot is not double-busy.')
-            . '>Roll restart</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="pause-auto-restart"'
-            . Layout::hoverHelp($pauseHelp) . '>'
-            . $pauseLabel . '</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="rename"'
-            . Layout::hoverHelp('Change the GitHub runner name for this slot.')
-            . '>Rename</button>' . "\n"
-            . '          <button class="btn btn-sm" data-action="clear-work"'
-            . $clearDis
-            . Layout::hoverHelp('Delete this slot’s _work directory. Refuses while running.')
-            . '>Clear work</button>' . "\n"
-            . '          <button class="btn btn-sm btn-critical" data-action="force-idle"'
-            . $forceIdleHidden
-            . Layout::hoverHelp('GitHub still says busy but the process is gone. Clear that stuck flag.')
-            . '>Force idle</button>' . "\n"
-            . '          <button class="btn btn-sm btn-critical" data-action="delete"'
-            . Layout::hoverHelp('Deregister on GitHub and remove this slot from the host.')
-            . '>Delete</button>' . "\n"
+            . '          <a class="btn btn-sm runner-more" href="runner.php?id=' . $id . '"'
+            . Layout::hoverHelp('Open this runner: status, log, and the rest of its actions.')
+            . '>More</a>' . "\n"
             . '        </div>' . "\n"
             . '      </td>' . "\n"
             . '    </tr>' . "\n";
+    }
+
+    /**
+     * Full page for one slot: status, log, and the actions that are not on the list row.
+     *
+     * @param array<string, mixed> $runner
+     */
+    public static function runnerPage(array $runner): string
+    {
+        $id = self::e((string) ($runner['id'] ?? ''));
+        $name = self::e((string) ($runner['agent_name'] ?? ''));
+        $version = $runner['agent_version'] ?? null;
+        $versionHtml = is_string($version) && $version !== ''
+            ? ' <span class="agent-version">v' . self::e($version) . '</span>'
+            : '';
+        $paused = !empty($runner['auto_restart_paused']) ? '1' : '0';
+        $crashes = [];
+        $rawTimes = $runner['crash_at_7d'] ?? [];
+        if (is_array($rawTimes)) {
+            foreach ($rawTimes as $ts) {
+                if (is_numeric($ts)) {
+                    $crashes[] = (int) $ts;
+                }
+            }
+        }
+        $crashJson = self::e((string) json_encode($crashes));
+
+        return ''
+            . '<main class="ops-main runner-page" id="runner-page" data-runner="' . $id . '"'
+            . ' data-agent-name="' . $name . '" data-paused="' . $paused . '"'
+            . ' data-crashes="' . $crashJson . '">' . "\n"
+            . '  <p class="runner-back"><a href="index.php">Runners</a></p>' . "\n"
+            . '  <header class="runner-head">' . "\n"
+            . '    <h2>' . $id . '</h2>' . "\n"
+            . '    <p class="muted">' . $name . $versionHtml . '</p>' . "\n"
+            . '    <p id="runner-note" class="runner-note" role="status"></p>' . "\n"
+            . "  </header>\n"
+            . '  <div class="runner-facts">' . "\n"
+            . '    <section class="runner-fact"><h3>GitHub</h3>' . self::githubCell($runner) . "</section>\n"
+            . '    <section class="runner-fact"><h3>This host</h3>' . self::localCell($runner) . "</section>\n"
+            . "  </div>\n"
+            . '  <div class="runner-actions">' . "\n"
+            . self::runnerActions($runner)
+            . "  </div>\n"
+            . '  <section class="runner-log-section">' . "\n"
+            . "    <h3>Log</h3>\n"
+            . '    <pre id="runner-log" class="runner-log">' . self::e(self::logText($runner)) . "</pre>\n"
+            . "  </section>\n"
+            . "</main>\n";
+    }
+
+    /** @param array<string, mixed> $runner */
+    private static function runnerActions(array $runner): string
+    {
+        $running = (bool) ($runner['local_running'] ?? false);
+        $startDis = $running ? ' disabled' : '';
+        $stopDis = $running ? '' : ' disabled';
+        $drainDis = $running ? '' : ' disabled';
+        $clearDis = !empty($runner['can_clear_work']) ? '' : ' disabled';
+        $paused = !empty($runner['auto_restart_paused']);
+        $pauseLabel = $paused ? 'Resume AR' : 'Pause AR';
+        $pauseHelp = $paused
+            ? 'Allow auto-restart on this slot again.'
+            : 'Hold auto-restart for this slot only. Crashes still flag.';
+        $forceIdleHidden = !empty($runner['stuck_busy_flagged']) ? '' : ' hidden';
+
+        return ''
+            . '    <button class="btn btn-sm btn-good" data-action="start"' . $startDis
+            . Layout::hoverHelp('Start this slot’s runner process.') . ">Start</button>\n"
+            . '    <button class="btn btn-sm btn-critical" data-action="stop"' . $stopDis
+            . Layout::hoverHelp('Stop this slot now. An in-progress job is interrupted.') . ">Stop</button>\n"
+            . '    <button class="btn btn-sm" data-action="drain"' . $drainDis
+            . Layout::hoverHelp('Wait until GitHub shows idle, then stop. Keeps the current job.')
+            . ">Drain</button>\n"
+            . '    <button class="btn btn-sm" data-action="restart"'
+            . Layout::hoverHelp('Stop then start this slot immediately.') . ">Restart</button>\n"
+            . '    <button class="btn btn-sm" data-action="rolling-restart"'
+            . Layout::hoverHelp('Wait for idle, then start again so this slot is not double-busy.')
+            . ">Roll restart</button>\n"
+            . '    <button class="btn btn-sm" data-action="pause-auto-restart"'
+            . Layout::hoverHelp($pauseHelp) . '>' . $pauseLabel . "</button>\n"
+            . '    <button class="btn btn-sm" data-action="rename"'
+            . Layout::hoverHelp('Change the GitHub runner name for this slot.') . ">Rename</button>\n"
+            . '    <button class="btn btn-sm" data-action="clear-work"' . $clearDis
+            . Layout::hoverHelp('Delete this slot’s _work directory. Refuses while running.')
+            . ">Clear work</button>\n"
+            . '    <button class="btn btn-sm btn-critical" data-action="force-idle"' . $forceIdleHidden
+            . Layout::hoverHelp('GitHub still says busy but the process is gone. Clear that stuck flag.')
+            . ">Force idle</button>\n"
+            . '    <button class="btn btn-sm btn-critical" data-action="delete"'
+            . Layout::hoverHelp('Deregister on GitHub and remove this slot from the host.')
+            . ">Delete</button>\n"
+            . '    <button class="btn btn-sm" data-action="view-log"'
+            . Layout::hoverHelp('Open a live tail of this slot’s runner.log.')
+            . ">View live log</button>\n";
+    }
+
+    /** @param array<string, mixed> $runner */
+    private static function logText(array $runner): string
+    {
+        $lines = $runner['log_tail'] ?? [];
+        if (!is_array($lines)) {
+            return '(no log yet)';
+        }
+        $text = [];
+        foreach ($lines as $line) {
+            $text[] = (string) $line;
+        }
+        $joined = trim(implode("\n", $text));
+        return $joined !== '' ? $joined : '(no log yet)';
+    }
+
+    /** @param array<int|string, mixed> $lines */
+    private static function lastLogLine(array $lines): string
+    {
+        $last = '';
+        $lastLong = '';
+        foreach ($lines as $line) {
+            $text = trim((string) $line);
+            if ($text === '') {
+                continue;
+            }
+            $last = $text;
+            if (strlen($text) > 48) {
+                $lastLong = $text;
+            }
+        }
+        if ($lastLong !== '') {
+            return $lastLong;
+        }
+        return $last !== '' ? $last : '(no log yet)';
     }
 
     /** @param array<string, mixed> $runner */

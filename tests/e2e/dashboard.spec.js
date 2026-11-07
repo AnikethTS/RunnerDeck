@@ -1,3 +1,5 @@
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { copyFile, readFile } from 'node:fs/promises';
 
@@ -109,7 +111,6 @@ function fixtureRowHtml(r) {
   const startDis = r.local_running ? ' disabled' : '';
   const stopDis = r.local_running ? '' : ' disabled';
   const drainDis = r.local_running ? '' : ' disabled';
-  const clearDis = r.can_clear_work ? '' : ' disabled';
   const log = escapeHtml((r.log_tail || []).join('\n') || '(no log yet)');
   return `<tr data-runner="${id}" data-agent-name="${name}">
     <td class="select-col"><input type="checkbox" class="row-select" data-runner="${id}" /></td>
@@ -121,13 +122,7 @@ function fixtureRowHtml(r) {
       <button class="btn btn-sm btn-good" data-action="start"${startDis}>Start</button>
       <button class="btn btn-sm btn-critical" data-action="stop"${stopDis}>Stop</button>
       <button class="btn btn-sm" data-action="drain"${drainDis}>Drain</button>
-      <button class="btn btn-sm" data-action="restart">Restart</button>
-      <button class="btn btn-sm" data-action="rolling-restart">Roll restart</button>
-      <button class="btn btn-sm" data-action="pause-auto-restart">${r.auto_restart_paused ? 'Resume AR' : 'Pause AR'}</button>
-      <button class="btn btn-sm" data-action="rename">Rename</button>
-      <button class="btn btn-sm" data-action="clear-work"${clearDis}>Clear work</button>
-      <button class="btn btn-sm btn-critical" data-action="force-idle"${r.stuck_busy_flagged ? '' : ' hidden'}>Force idle</button>
-      <button class="btn btn-sm btn-critical" data-action="delete">Delete</button>
+      <a class="btn btn-sm runner-more" href="runner.php?id=${id}">More</a>
     </div></td>
   </tr>`;
 }
@@ -149,6 +144,22 @@ function fixtureSnapshot(runners) {
     },
     view: { rows_html: runners.map(fixtureRowHtml).join('') },
   };
+}
+
+async function openPool(page) {
+  const menu = page.locator('details.pool-menu');
+  if (!(await menu.evaluate((el) => el.open))) {
+    await menu.locator('summary').click();
+  }
+}
+
+async function openRunner(page, id) {
+  const pool = process.env.RUNNERDECK_POOL_DIR;
+  if (pool) {
+    mkdirSync(path.join(pool, id, '_work'), { recursive: true });
+  }
+  await page.locator(`tr[data-runner="${id}"] a.runner-more`).click();
+  await expect(page).toHaveURL(new RegExp(`runner\\.php\\?id=${id}`));
 }
 
 async function mockStatus(page, runners, extra = {}) {
@@ -189,6 +200,7 @@ test('first-run setup configures the app and reaches the dashboard', async ({ pa
   await expect(page.locator('.stat-grid')).toBeVisible();
   await expect(page.locator('.org-tag')).toContainText('e2e-org');
   await expect(page.locator('header.topbar img.logo')).toBeVisible();
+  await page.locator('details.dash-fold > summary').click();
   await expect(page.locator('#chart-cpu-now')).toBeVisible();
   await expect(page.locator('#chart-cpu')).toBeVisible();
   await expect(page.locator('#hosting-warnings')).toHaveCount(0);
@@ -359,7 +371,7 @@ test('JSON export includes filtered-out runners and uses the latest snapshot', a
 
   async function exportRunners() {
     const pending = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Export JSON' }).click();
+    await page.getByRole('button', { name: 'Export' }).click();
     const download = await pending;
     expect(download.suggestedFilename()).toMatch(/^runnerdeck-runners-\d{4}-\d{2}-\d{2}T.*\.json$/);
     expect(await download.failure()).toBeNull();
@@ -379,7 +391,7 @@ test('JSON export supports an empty runner pool', async ({ page }) => {
   await page.goto('/');
   await page.locator('#btn-refresh').click();
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export JSON' }).click();
+  await page.getByRole('button', { name: 'Export' }).click();
   const download = await pending;
   expect(await download.failure()).toBeNull();
   expect(JSON.parse(await readFile(await download.path(), 'utf8'))).toEqual([]);
@@ -798,13 +810,14 @@ test('disk usage and drain/clear-work controls render', async ({ page }) => {
   await expect(page.locator('#stat-pool-disk')).toHaveText('2 MB');
   await expect(page.locator('#stat-pool-disk-sub')).toHaveText('across 1 slot');
   await expect(page.locator('tr[data-runner="fat"] button[data-action="drain"]')).toBeDisabled();
-  await expect(page.locator('tr[data-runner="fat"] button[data-action="clear-work"]')).toBeEnabled();
+  await expect(page.locator('tr[data-runner="fat"] a.runner-more')).toHaveAttribute('href', 'runner.php?id=fat');
+  await openPool(page);
   await expect(page.locator('#btn-drain-all')).toBeVisible();
   await expect(page.locator('#btn-rolling-restart-all')).toBeVisible();
   await expect(page.locator('#btn-rolling-upgrade')).toBeVisible();
   await expect(page.locator('#btn-maintenance')).toBeVisible();
   await expect(page.locator('#btn-safe-reboot')).toBeVisible();
-  await expect(page.locator('tr[data-runner="fat"] button[data-action="rolling-restart"]')).toBeVisible();
+  await expect(page.locator('tr[data-runner="fat"] a.runner-more')).toBeVisible();
 });
 
 test('destructive actions ask first and cancel does not post', async ({ page }) => {
@@ -836,21 +849,27 @@ test('destructive actions ask first and cancel does not post', async ({ page }) 
   };
 
   await ask(() => page.locator('#btn-stop-all').click(), 'Stop all');
-  await ask(() => page.locator('#btn-drain-all').click(), 'Drain');
-  await ask(() => page.locator('#btn-rolling-upgrade').click(), 'Upgrade');
+  await ask(async () => {
+    await openPool(page);
+    await page.locator('#btn-drain-all').click();
+  }, 'Drain');
+  await ask(async () => {
+    await openPool(page);
+    await page.locator('#btn-rolling-upgrade').click();
+  }, 'Upgrade');
   await ask(
     () => page.locator('tr[data-runner="runner-1"] button[data-action="stop"]').click(),
     'Stop',
   );
-  await ask(
-    () => page.locator('tr[data-runner="runner-1"] button[data-action="clear-work"]').click(),
-    'Clear',
-  );
-  await ask(
-    () => page.locator('tr[data-runner="runner-1"] button[data-action="delete"]').click(),
-    'Delete',
-  );
+  await ask(async () => {
+    await openRunner(page, 'runner-1');
+    await page.locator('#runner-page button[data-action="clear-work"]').click();
+  }, 'Clear');
+  await ask(async () => {
+    await page.locator('#runner-page button[data-action="delete"]').click();
+  }, 'Delete');
 
+  await page.goto('/');
   await page.locator('#btn-stop-all').click();
   await page.locator('#confirm-modal-ok').click();
   await expect.poll(() => posts.length).toBe(1);
@@ -877,13 +896,16 @@ test('rolling restart posts the selected slots', async ({ page }) => {
   });
   await page.goto('/');
   await page.locator('#btn-refresh').click();
-  await page.locator('tr[data-runner="runner-1"] button[data-action="rolling-restart"]').click();
+  await openRunner(page, 'runner-1');
+  await page.locator('#runner-page button[data-action="rolling-restart"]').click();
   await page.locator('#confirm-modal-ok').click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0].url).toContain('action=rolling_restart');
   expect(posts[0].body).toContain('runner=runner-1');
   expect(posts[0].body).toContain('timeout=');
 
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
   await page.locator('tr[data-runner="runner-1"] input.row-select').check();
   await page.locator('tr[data-runner="runner-2"] input.row-select').check();
   await page.locator('#btn-bulk-rolling-restart').click();
@@ -906,7 +928,8 @@ test('pause auto-restart posts the slot flag', async ({ page }) => {
   });
   await page.goto('/');
   await page.locator('#btn-refresh').click();
-  await page.locator('tr[data-runner="runner-1"] button[data-action="pause-auto-restart"]').click();
+  await openRunner(page, 'runner-1');
+  await page.locator('#runner-page button[data-action="pause-auto-restart"]').click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0]).toContain('runner=runner-1');
   expect(posts[0]).toContain('paused=1');
@@ -1030,7 +1053,7 @@ test('dashboard layout stays aligned and does not overflow at 1280px', async ({ 
   const statCols = await page.locator('.stat-grid').evaluate(
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
   );
-  expect(statCols).toBe(3);
+  expect(statCols).toBe(6);
   await assertNoHorizontalOverflow(page);
 });
 

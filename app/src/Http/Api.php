@@ -157,10 +157,28 @@ final class Api
         return Config::drainTimeoutSeconds();
     }
 
+    /** @var null|(callable(array<string, mixed>, int): never) */
+    private static $respondOverride = null;
+
+    /**
+     * Test seam. The handler must not return.
+     *
+     * @param null|(callable(array<string, mixed>, int): never) $handler
+     */
+    public static function fakeRespond(?callable $handler): void
+    {
+        self::$respondOverride = $handler;
+    }
+
     public static function respond(array $data, int $status = 200): never
     {
         http_response_code($status);
         echo json_encode($data, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        if (self::$respondOverride !== null) {
+            $handler = self::$respondOverride;
+            self::$respondOverride = null;
+            $handler($data, $status);
+        }
         exit;
     }
 
