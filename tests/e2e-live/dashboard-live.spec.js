@@ -181,7 +181,9 @@ test('Restart replaces the process', async () => {
   const before = await pidOf(BASE);
   expect(before).not.toBeNull();
   await clickRow(BASE, 'restart');
+  const reloaded = page.waitForEvent('load', { timeout: 180_000 });
   await confirmIfAsked();
+  await reloaded;
   await page.goto('/');
   await expect.poll(() => pidOf(BASE), { timeout: 120_000, intervals: [2000] }).not.toBe(before);
   await expectRunning(BASE);
@@ -379,7 +381,9 @@ test('bulk Delete removes slots locally and on GitHub', async () => {
 
 test('Delete removes the last slot and nothing is left behind', async () => {
   await clickRow(BASE, 'delete');
+  const left = page.waitForURL(/index\.php|\/$/, { timeout: 180_000 });
   await confirmIfAsked();
+  await left;
   await page.goto('/');
   await expect(row(BASE)).toHaveCount(0, { timeout: 120_000 });
   await expectGithubStatus(renamedBase, 'absent');

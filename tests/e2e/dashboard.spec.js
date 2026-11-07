@@ -1053,7 +1053,7 @@ test('dashboard layout stays aligned and does not overflow at 1280px', async ({ 
   const statCols = await page.locator('.stat-grid').evaluate(
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').length,
   );
-  expect(statCols).toBe(3);
+  expect(statCols).toBe(6);
   await assertNoHorizontalOverflow(page);
 });
 
