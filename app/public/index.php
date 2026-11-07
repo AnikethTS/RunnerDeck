@@ -104,7 +104,7 @@ if ($rowsHtml === '') {
 
 Layout::htmlOpen('RunnerDeck', manifest: true);
 ?>
-  <div id="toast-container"></div>
+  <div id="toast-container" aria-live="polite"></div>
 <?php
 Layout::topbarStart();
 if (!$needsSetup) {
@@ -225,6 +225,8 @@ Layout::topbarEnd(!$needsSetup);
         </div>
       </div>
 
+      <details class="dash-fold">
+        <summary>Last hour</summary>
       <div class="history-grid">
         <div class="history-card">
           <div class="history-head">
@@ -267,6 +269,7 @@ Layout::topbarEnd(!$needsSetup);
           </svg>
         </div>
       </div>
+      </details>
 
       <section id="queue-panel" class="queue-panel" hidden>
         <div class="history-head">
@@ -289,33 +292,43 @@ Layout::topbarEnd(!$needsSetup);
         <?= $orphanHtml ?>
       </section>
 
-      <div class="toolbar">
-        <button id="btn-refresh" class="btn help-hover"<?= $tip['refresh'] ?>>Refresh</button>
-        <button id="btn-export" type="button" class="btn help-hover"<?= $tip['export'] ?>>Export JSON</button>
-        <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
-        <input type="search" id="runner-filter" class="filter-input"
-               placeholder="Filter by name, label, or version…" />
-        <select id="runner-state-filter" class="filter-input filter-select" aria-label="Filter by state">
-          <option value="">All states</option>
-          <option value="idle">Idle</option>
-          <option value="busy">Busy</option>
-          <option value="crashed">Crashed</option>
-          <option value="mismatch">Mismatch</option>
-        </select>
-        <span class="spacer"></span>
-        <button id="btn-add-runner" class="btn help-hover"<?= $tip['add'] ?>>+ Add Runner</button>
-        <button id="btn-start-all" class="btn btn-good help-hover"<?= $tip['startAll'] ?>>Start All</button>
-        <button id="btn-stop-all" class="btn btn-critical help-hover"<?= $tip['stopAll'] ?>>Stop All</button>
-        <button id="btn-drain-all" class="btn help-hover"<?= $tip['drainAll'] ?>>Drain All</button>
-        <button id="btn-rolling-restart-all" class="btn help-hover"<?= $tip['rollAll'] ?>>Rolling Restart</button>
-        <button id="btn-rolling-upgrade" class="btn help-hover"<?= $tip['upgrade'] ?>>Upgrade agents</button>
-        <button id="btn-maintenance" class="btn help-hover"<?= $tip['maint'] ?>>Maintenance</button>
-        <button id="btn-safe-reboot" class="btn help-hover"<?= $tip['reboot'] ?>>Safe reboot</button>
-        <form id="pool-size-form" class="pool-form">
-          <label for="pool-size">Pool size <?= $tip['poolSize'] ?></label>
-          <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
-          <button type="submit" class="btn help-hover"<?= $tip['apply'] ?>>Apply</button>
-        </form>
+      <div class="toolbar dash-panel">
+        <div class="dash-find">
+          <input type="search" id="runner-filter" class="filter-input"
+                 placeholder="Filter by name, label, or version…" />
+          <select id="runner-state-filter" class="filter-input filter-select" aria-label="Filter by state">
+            <option value="">All states</option>
+            <option value="idle">Idle</option>
+            <option value="busy">Busy</option>
+            <option value="crashed">Crashed</option>
+            <option value="mismatch">Mismatch</option>
+          </select>
+          <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
+          <span id="action-status" class="muted action-status" hidden></span>
+        </div>
+        <div class="dash-actions">
+          <button id="btn-add-runner" class="btn btn-good help-hover"<?= $tip['add'] ?>>Add runner</button>
+          <button id="btn-start-all" class="btn help-hover"<?= $tip['startAll'] ?>>Start all</button>
+          <button id="btn-stop-all" class="btn btn-critical help-hover"<?= $tip['stopAll'] ?>>Stop all</button>
+          <button id="btn-refresh" class="btn btn-quiet help-hover"<?= $tip['refresh'] ?>>Refresh</button>
+          <button id="btn-export" type="button" class="btn btn-quiet help-hover"<?= $tip['export'] ?>>Export</button>
+          <details class="pool-menu">
+            <summary class="btn">Pool</summary>
+            <div class="pool-menu-panel">
+              <button id="btn-drain-all" class="btn btn-quiet help-hover"<?= $tip['drainAll'] ?>>Drain all</button>
+              <button id="btn-rolling-restart-all" class="btn btn-quiet help-hover"<?= $tip['rollAll'] ?>
+                >Roll restart</button>
+              <button id="btn-rolling-upgrade" class="btn btn-quiet help-hover"<?= $tip['upgrade'] ?>>Upgrade</button>
+              <button id="btn-maintenance" class="btn btn-quiet help-hover"<?= $tip['maint'] ?>>Maintenance</button>
+              <button id="btn-safe-reboot" class="btn btn-quiet help-hover"<?= $tip['reboot'] ?>>Safe reboot</button>
+              <form id="pool-size-form" class="pool-form">
+                <label for="pool-size">Pool size <?= $tip['poolSize'] ?></label>
+                <input type="number" id="pool-size" name="count" min="1" max="30" value="10" />
+                <button type="submit" class="btn btn-quiet help-hover"<?= $tip['apply'] ?>>Apply</button>
+              </form>
+            </div>
+          </details>
+        </div>
       </div>
 
       <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
@@ -336,7 +349,7 @@ Layout::topbarEnd(!$needsSetup);
             <th class="select-col"><input type="checkbox" id="select-all-runners" /></th>
             <th class="sortable" data-sort="id">Runner<span class="sort-caret"></span></th>
             <th class="sortable" data-sort="status">GitHub<span class="sort-caret"></span></th>
-            <th>Local process
+            <th>Local
               <div class="process-sort-controls">
                 <button type="button" class="sortable sort-button" data-sort="cpu" aria-label="Sort by CPU">
                   CPU<span class="sort-caret" aria-hidden="true"></span>
@@ -354,8 +367,8 @@ Layout::topbarEnd(!$needsSetup);
                 </button>
               </div>
             </th>
-            <th>Recent log</th>
-            <th></th>
+            <th>Latest line</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="runner-rows"><?= $rowsHtml ?></tbody>

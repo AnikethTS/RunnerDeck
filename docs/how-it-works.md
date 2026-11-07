@@ -4,8 +4,9 @@
   — its `.runner` config, its `runner.pid` file, and (as a fallback, since
   pidfiles can go stale or get lost) a live scan of `/proc` matching on the
   actual `Runner.Listener` executable path. Each slot's **agent version** is
-  read locally from `.runner` (`agentVersion`) or, if that field is missing,
-  `app/bin/Runner.Listener.deps.json` — no extra GitHub call. A runner is never silently
+  the listener package on disk (`bin/Runner.Listener.deps.json`). `.runner`
+  (`agentVersion`) is only the fallback, because configure writes it once
+  and Upgrade agents does not rewrite it — no extra GitHub call. A runner is never silently
   "invisible" just because its pidfile disappeared.
 - **GitHub-reported state** comes from `gh api --paginate …/actions/runners`
   (`per_page=100`) so orgs with more than 30 runners are not truncated.

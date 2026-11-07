@@ -163,10 +163,9 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('crashed unexpectedly', $html);
         $this->assertStringContainsString('local/GitHub status disagree', $html);
         $this->assertStringContainsString('data-action="start"', $html);
-        $this->assertStringContainsString('data-action="rolling-restart"', $html);
-        $this->assertStringContainsString('data-action="pause-auto-restart"', $html);
-        $this->assertStringContainsString('Pause AR', $html);
-        $this->assertStringContainsString('Hold auto-restart for this slot only', $html);
+        $this->assertStringContainsString('runner.php?id=runner-1', $html);
+        $this->assertStringContainsString('>More</a>', $html);
+        $this->assertStringNotContainsString('data-action="rolling-restart"', $html);
         $this->assertStringContainsString('Wait until GitHub shows idle', $html);
     }
 
@@ -248,7 +247,7 @@ final class DashboardViewTest extends TestCase
             'auto_restart_paused' => true,
         ]);
         $this->assertStringContainsString('auto-restart paused', $html);
-        $this->assertStringContainsString('Resume AR', $html);
+        $this->assertStringNotContainsString('Resume AR', $html);
     }
 
     public function testRowHtmlCrashHistoryIsAButton(): void
@@ -284,9 +283,8 @@ final class DashboardViewTest extends TestCase
 
         $this->assertStringContainsString('2.0 MB disk', $html);
         $this->assertStringContainsString('data-action="drain"', $html);
-        $this->assertStringContainsString('data-action="clear-work"', $html);
-        $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
-        $this->assertMatchesRegularExpression('/data-action="force-idle"\s+hidden/', $html);
+        $this->assertStringContainsString('runner.php?id=runner-1', $html);
+        $this->assertStringNotContainsString('data-action="clear-work"', $html);
     }
 
     public function testRowHtmlShowsForceIdleWhenStuckBusy(): void
@@ -302,8 +300,40 @@ final class DashboardViewTest extends TestCase
             'stuck_busy_flagged' => true,
         ]);
         $this->assertStringContainsString('GitHub busy, process gone', $html);
-        $this->assertStringContainsString('data-action="force-idle"', $html);
-        $this->assertDoesNotMatchRegularExpression('/data-action="force-idle"[^>]*hidden/', $html);
+        $this->assertStringNotContainsString('data-action="force-idle"', $html);
+    }
+
+    public function testRunnerPageShowsLogAndActions(): void
+    {
+        $html = \RunnerDeck\Presentation\DashboardView::runnerPage([
+            'id' => 'runner-1',
+            'agent_name' => '<script>x</script>',
+            'configured' => true,
+            'local_running' => false,
+            'pid' => null,
+            'log_tail' => ['<b>first</b>', 'Failed to create a session'],
+            'github' => null,
+            'agent_version' => '2.338.2',
+            'can_clear_work' => true,
+            'crash_count_7d' => 1,
+            'crash_at_7d' => [1700000000],
+            'auto_restart_paused' => false,
+        ]);
+
+        $this->assertStringContainsString('id="runner-page"', $html);
+        $this->assertStringContainsString('data-runner="runner-1"', $html);
+        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt;', $html);
+        $this->assertStringNotContainsString('<script>x</script>', $html);
+        $this->assertStringContainsString('Failed to create a session', $html);
+        $this->assertStringContainsString('&lt;b&gt;first&lt;/b&gt;', $html);
+        $this->assertStringContainsString('v2.338.2', $html);
+        $this->assertStringContainsString('data-action="rolling-restart"', $html);
+        $this->assertStringContainsString('Pause AR', $html);
+        $this->assertStringContainsString('Hold auto-restart for this slot only', $html);
+        $this->assertStringContainsString('data-action="clear-work"', $html);
+        $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
+        $this->assertMatchesRegularExpression('/data-action="force-idle"\s+hidden/', $html);
+        $this->assertStringContainsString('data-crashes="[1700000000]"', $html);
     }
 
     public function testRowHtmlOmitsAgentVersionWhenMissing(): void

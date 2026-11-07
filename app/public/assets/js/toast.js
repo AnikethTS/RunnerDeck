@@ -6,6 +6,7 @@ export function showToast(message, type = 'critical') {
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+  toast.setAttribute('role', type === 'critical' ? 'alert' : 'status');
   toast.textContent = message;
   container.appendChild(toast);
 

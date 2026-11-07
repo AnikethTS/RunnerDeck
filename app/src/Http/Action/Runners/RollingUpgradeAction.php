@@ -14,8 +14,14 @@ final class RollingUpgradeAction
     public static function handle(): never
     {
         $timeout = JsonApi::drainTimeout();
-        set_time_limit($timeout + 30);
         $runners = array_values(RunnerPool::discover(0));
+        $configured = 0;
+        foreach ($runners as $runner) {
+            if ($runner->configured) {
+                $configured++;
+            }
+        }
+        set_time_limit((($timeout + 180) * max(1, $configured)) + 60);
         $result = RollingUpgrade::run($runners, JsonApi::force(), $timeout);
         JsonApi::respond($result, RollingRestart::status($result));
     }

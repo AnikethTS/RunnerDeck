@@ -1,5 +1,6 @@
 import { post, redirectIfUnauthenticated } from './api.js';
 import { setLoading, clearLoading } from './utils.js';
+import { showToast } from './toast.js';
 
 let confirmOpen = false;
 let activeStream = null;
@@ -140,7 +141,7 @@ function closeRenameModal() {
   document.getElementById('rename-modal').hidden = true;
 }
 
-export function initModals(fetchStatus) {
+export function initModals(fetchStatus, rowNotes) {
   document.getElementById('log-search').addEventListener('input', () => {
     const body = document.getElementById('log-modal-body');
     const text = body.textContent;
@@ -157,9 +158,10 @@ export function initModals(fetchStatus) {
   const addRunnerModal = document.getElementById('add-runner-modal');
 
   function closeAddRunnerModal() {
-    addRunnerModal.hidden = true;
+    if (addRunnerModal) addRunnerModal.hidden = true;
   }
 
+  if (addRunnerModal && document.getElementById('btn-add-runner')) {
   document.getElementById('btn-add-runner').addEventListener('click', () => {
     document.getElementById('add-runner-name').value = '';
     const ephemeral = document.getElementById('add-runner-ephemeral');
@@ -196,11 +198,16 @@ export function initModals(fetchStatus) {
         return;
       }
       closeAddRunnerModal();
+      if (data.message) showToast(data.message, 'good');
       await fetchStatus();
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'The request failed';
+      errorEl.hidden = false;
     } finally {
       clearLoading(submitBtn);
     }
   });
+  }
 
   const renameModal = document.getElementById('rename-modal');
 
@@ -218,6 +225,7 @@ export function initModals(fetchStatus) {
     const submitBtn = e.target.querySelector('button[type="submit"]');
     errorEl.hidden = true;
     setLoading(submitBtn, 'Renaming…');
+    if (rowNotes) rowNotes.note(runner, 'working', 'Renaming…');
     try {
       let { status, data } = await post('rename', { runner, name });
       if (status === 409) {
@@ -225,6 +233,7 @@ export function initModals(fetchStatus) {
         const proceed = await confirmModal(data.message, 'Rename');
         if (!proceed) {
           renameModal.hidden = false;
+          if (rowNotes) rowNotes.clear(runner);
           return;
         }
         ({ data } = await post('rename', { runner, name, force: '1' }));
@@ -233,10 +242,18 @@ export function initModals(fetchStatus) {
         errorEl.textContent = data.message || 'rename failed';
         errorEl.hidden = false;
         renameModal.hidden = false;
+        if (rowNotes) rowNotes.note(runner, 'error', data.message || 'rename failed');
         return;
       }
       closeRenameModal();
+      if (rowNotes) rowNotes.note(runner, 'done', data.message || 'Renamed');
       await fetchStatus();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'The request failed';
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+      renameModal.hidden = false;
+      if (rowNotes) rowNotes.note(runner, 'error', message);
     } finally {
       clearLoading(submitBtn);
     }

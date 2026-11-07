@@ -15,6 +15,22 @@ const SLOW = process.platform === 'win32' ? 3 : 1;
 let page;
 
 const row = (id) => page.locator(`tr[data-runner="${id}"]`);
+
+async function clickRow(id, action) {
+  const onPage = page.locator(`#runner-page[data-runner="${id}"] [data-action="${action}"]`);
+  if (page.url().includes('runner.php') && (await onPage.count())) {
+    await onPage.click();
+    return;
+  }
+  const onDash = row(id).locator(`[data-action="${action}"]`);
+  if (await onDash.count()) {
+    await onDash.click();
+    return;
+  }
+  await row(id).locator('a.runner-more').click();
+  await page.waitForURL(new RegExp(`runner\\.php\\?id=${id}`));
+  await page.locator(`#runner-page [data-action="${action}"]`).click();
+}
 const localCell = (id) => row(id).locator('td').nth(3);
 const agentName = (id) => row(id).locator('.agent-name');
 const toast = () => page.locator('#toast-container .toast');
@@ -33,6 +49,13 @@ async function confirmIfAsked(ms = 3000) {
 
 async function refresh() {
   await page.locator('#btn-refresh').click();
+}
+
+async function openPool() {
+  const menu = page.locator('details.pool-menu');
+  if (!(await menu.evaluate((el) => el.open))) {
+    await menu.locator('summary').click();
+  }
 }
 
 async function expectRunning(id, timeout = 120_000) {
@@ -157,20 +180,24 @@ test('Start brings it back online', async () => {
 test('Restart replaces the process', async () => {
   const before = await pidOf(BASE);
   expect(before).not.toBeNull();
-  await row(BASE).locator('[data-action="restart"]').click();
+  await clickRow(BASE, 'restart');
   await confirmIfAsked();
+  await page.goto('/');
   await expect.poll(() => pidOf(BASE), { timeout: 120_000, intervals: [2000] }).not.toBe(before);
   await expectRunning(BASE);
   await expectGithubStatus(baseName, 'online');
 });
 
 test('Pause AR and Resume AR toggle', async () => {
-  const btn = row(BASE).locator('[data-action="pause-auto-restart"]');
+  await row(BASE).locator('a.runner-more').click();
+  await page.waitForURL(/runner\.php/);
+  const btn = page.locator('#runner-page [data-action="pause-auto-restart"]');
   await expect(btn).toHaveText('Pause AR');
   await btn.click();
   await expect(btn).toHaveText('Resume AR');
   await btn.click();
   await expect(btn).toHaveText('Pause AR');
+  await page.goto('/');
 });
 
 test('View live log shows runner output', async () => {
@@ -182,7 +209,7 @@ test('View live log shows runner output', async () => {
 });
 
 test('Rename re-registers under the new name', async () => {
-  await row(BASE).locator('[data-action="rename"]').click();
+  await clickRow(BASE, 'rename');
   await expect(page.locator('#rename-modal')).toBeVisible();
   await page.locator('#rename-name').fill(renamedBase);
   await page.locator('#rename-form button[type="submit"]').click();
@@ -206,11 +233,14 @@ test('Clear work empties _work on a stopped runner', async () => {
     await confirmIfAsked();
   }
   await expectStopped(BASE);
-  const clear = row(BASE).locator('[data-action="clear-work"]');
+  await row(BASE).locator('a.runner-more').click();
+  await page.waitForURL(/runner\.php/);
+  const clear = page.locator('#runner-page [data-action="clear-work"]');
   await expect(clear).toBeEnabled({ timeout: 60_000 });
   await clear.click();
   await confirmIfAsked();
   await expect(clear).toBeDisabled({ timeout: 60_000 });
+  await page.goto('/');
   await row(BASE).locator('[data-action="start"]').click();
   await expectRunning(BASE);
 });
@@ -227,6 +257,7 @@ test('Export JSON downloads the current snapshot', async () => {
 });
 
 test('Pool size Apply creates two more slots', async () => {
+  await openPool();
   await page.locator('#pool-size').fill('3');
   await page.locator('#pool-size-form button[type="submit"]').click();
   await expect(row('runner-1')).toBeVisible({ timeout: 300_000 });
@@ -270,6 +301,7 @@ test('Stop All and Start All act on the whole pool', async () => {
 
 test('Rolling Restart cycles every slot and leaves them running', async () => {
   const before = await Promise.all([BASE, 'runner-1', 'runner-2'].map(pidOf));
+  await openPool();
   await page.locator('#btn-rolling-restart-all').click();
   await confirmIfAsked();
   await expect.poll(async () => (await Promise.all([BASE, 'runner-1', 'runner-2'].map(pidOf))).join(','), {
@@ -280,6 +312,7 @@ test('Rolling Restart cycles every slot and leaves them running', async () => {
 });
 
 test('Maintenance refuses starts until resumed', async () => {
+  await openPool();
   await page.locator('#btn-maintenance').click();
   await confirmIfAsked();
   for (const id of [BASE, 'runner-1', 'runner-2']) await expectStopped(id, 180_000);
@@ -287,9 +320,10 @@ test('Maintenance refuses starts until resumed', async () => {
   await expect(page.locator('#health-banner')).toContainText('maintenance');
 
   await row('runner-1').locator('[data-action="start"]').click();
-  await expect(toast().first()).toBeVisible();
+  await expect(row('runner-1').locator('.row-activity')).toBeVisible();
   await expectStopped('runner-1');
 
+  await openPool();
   await page.locator('#btn-maintenance').click();
   await confirmIfAsked();
   await expect.poll(async () => {
@@ -302,6 +336,7 @@ test('Maintenance refuses starts until resumed', async () => {
 test('Drain All stops idle runners', async () => {
   await page.locator('#btn-start-all').click();
   for (const id of [BASE, 'runner-1', 'runner-2']) await expectRunning(id, 180_000);
+  await openPool();
   await page.locator('#btn-drain-all').click();
   await confirmIfAsked();
   for (const id of [BASE, 'runner-1', 'runner-2']) await expectStopped(id, 180_000);
@@ -343,8 +378,9 @@ test('bulk Delete removes slots locally and on GitHub', async () => {
 });
 
 test('Delete removes the last slot and nothing is left behind', async () => {
-  await row(BASE).locator('[data-action="delete"]').click();
+  await clickRow(BASE, 'delete');
   await confirmIfAsked();
+  await page.goto('/');
   await expect(row(BASE)).toHaveCount(0, { timeout: 120_000 });
   await expectGithubStatus(renamedBase, 'absent');
   expect(await ourRunners()).toHaveLength(0);
