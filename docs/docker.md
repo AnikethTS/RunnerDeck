@@ -19,7 +19,8 @@ Tagged releases also push `ghcr.io/anikethts/runnerdeck:<tag>` (and
 in `docker-compose.yml` and comment out `build:`.
 
 This builds from the included `Dockerfile` (PHP 8.5.12 on Alpine, with `gh`
-installed and checksum-verified) and starts the container per
+2.103.3 built from the checksummed source and `golang.org/x/net` v0.62.0)
+and starts the container per
 `docker-compose.yml`. The image runs `./run.sh` (`php -S`, four workers)
 inside the container — same one-operator limits as a local install.
 

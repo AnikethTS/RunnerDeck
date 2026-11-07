@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-11-07
+
+### Fixed
+
+- The Docker image rebuilds GitHub CLI 2.103.3 with `golang.org/x/net` v0.62.0. The 1.14.0 release scan stopped on CVE-2026-78661 (HIGH) in the official `gh` binary, which still vendors v0.60.0, and no newer `gh` release includes the fix. 1.14.1 contains everything in 1.14.0 and publishes the Windows installer and Debian package.
+
 ## [1.14.0] - 2026-11-07
 
 ### Added

@@ -1,3 +1,8 @@
+FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS gh
+RUN apk add --no-cache git curl ca-certificates
+COPY tools/ci/build-gh.sh /tmp/build-gh.sh
+RUN sh /tmp/build-gh.sh /out/gh
+
 FROM php:8.6.0RC4-cli-alpine@sha256:c9c90988b028655d7601a8d780ab5e068abd1c5f430cc0ee642755b94dd46583
 
 RUN apk add --no-cache bash curl tar sqlite-dev git \
@@ -7,8 +12,7 @@ RUN apk add --no-cache bash curl tar sqlite-dev git \
     && docker-php-ext-install pcntl posix pdo_sqlite \
     && apk del .build-deps
 
-COPY tools/ci/install-gh.sh /tmp/install-gh.sh
-RUN sh /tmp/install-gh.sh && rm /tmp/install-gh.sh
+COPY --from=gh /out/gh /usr/local/bin/gh
 
 WORKDIR /app
 COPY . .
