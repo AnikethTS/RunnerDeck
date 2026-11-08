@@ -86,7 +86,8 @@
   Linux/macOS, CIM on Windows). Optional Linux **cgroup v2** CPU/memory caps apply on
   start only; missing cgroup support (always, on Windows) fails open. A
   rolling pool-wide history chart backed by a small local SQLite
-  file (`storage/db/history.sqlite`). Dashboard charts show the last hour;
+  file (`storage/db/history.sqlite`). The dashboard keeps one sample every
+  30 seconds. Charts show the last hour from those points;
   **History** shows 24h CPU, runner RSS, and pool disk free (same samples,
   including disk from host pressure). The charts label the axis, the latest
   sample, and min–max. This is best-effort: if the `pdo_sqlite` PHP

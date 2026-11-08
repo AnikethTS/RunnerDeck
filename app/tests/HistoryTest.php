@@ -46,6 +46,30 @@ final class HistoryTest extends TestCase
     }
 
     #[RunInSeparateProcess]
+    public function testRecordKeepsOneSampleInsideTheWindow(): void
+    {
+        \RunnerDeck\Telemetry\History::record(1.0, 1000);
+        \RunnerDeck\Telemetry\History::record(9.0, 9000);
+
+        $samples = \RunnerDeck\Telemetry\History::recent();
+        $this->assertCount(1, $samples);
+        $this->assertSame(1.0, $samples[0]['avg_cpu']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testRecordAllowsASampleAfterTheWindow(): void
+    {
+        \RunnerDeck\Telemetry\History::record(1.0, 1000);
+        $db = new PDO('sqlite:' . $this->dbFile);
+        $db->prepare('UPDATE samples SET ts = ?')->execute([time() - \RunnerDeck\Telemetry\History::SAMPLE_SECONDS]);
+        \RunnerDeck\Telemetry\History::record(9.0, 9000);
+
+        $samples = \RunnerDeck\Telemetry\History::recent();
+        $this->assertCount(2, $samples);
+        $this->assertSame(9.0, $samples[1]['avg_cpu']);
+    }
+
+    #[RunInSeparateProcess]
     public function testRecordStoresDiskFreeKb(): void
     {
         \RunnerDeck\Telemetry\History::record(1.0, 1000, 2048);
