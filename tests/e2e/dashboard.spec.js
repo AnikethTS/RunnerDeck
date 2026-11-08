@@ -300,6 +300,22 @@ test('the state filter narrows idle, busy, crashed, and mismatch rows', async ({
   await expect(page.locator('tr[data-runner="crash-one"]')).toBeVisible();
 });
 
+test('the find box, status filter, and sort survive a reload', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'runner-2', agent_name: 'zzz-last' }),
+    fixtureRunner({ id: 'runner-1', agent_name: 'aaa-first' }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#runner-filter').fill('aaa');
+  await page.locator('#runner-state-filter').selectOption('idle');
+  await page.locator('th.sortable[data-sort="id"]').click();
+  await page.reload();
+  await expect(page.locator('#runner-filter')).toHaveValue('aaa');
+  await expect(page.locator('#runner-state-filter')).toHaveValue('idle');
+  await expect(page.locator('th.sortable[data-sort="id"]')).toHaveAttribute('aria-sort', 'ascending');
+});
+
 test('clicking a sortable column header reorders the table', async ({ page }) => {
   await mockStatus(page, [
     fixtureRunner({ id: 'runner-2', agent_name: 'zzz-last' }),
@@ -913,6 +929,39 @@ test('rolling restart posts the selected slots', async ({ page }) => {
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1].url).toContain('action=bulk_rolling_restart');
   expect(posts[1].body).toMatch(/runners=runner-1%2Crunner-2|runners=runner-2%2Crunner-1/);
+});
+
+test('runner page shows the live job and searches the log', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner({ id: 'runner-1', agent_name: 'e2e-1' })]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await openRunner(page, 'runner-1');
+  const name = await page.locator('#runner-page').getAttribute('data-agent-name');
+  await page.unroute('**/api.php*action=queue*');
+  await page.route('**/api.php*action=queue*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      live: [{
+        name: 'build',
+        workflow: 'CI',
+        repo: 'acme/app',
+        html_url: 'https://example.test/job/10',
+        runner_name: name || 'runner-1',
+        duration: '4m',
+      }],
+      jobs: [],
+      recent: [],
+    }),
+  }));
+  await page.reload();
+  await expect(page.locator('#runner-page .live-job a')).toHaveAttribute('href', 'https://example.test/job/10');
+  await expect(page.locator('#runner-page .live-job')).toContainText('build');
+  await page.locator('#runner-log-search').fill('this-will-not-match');
+  await expect(page.locator('#runner-log-search-status')).toHaveText('No matches');
+  await page.locator('#runner-log-search').fill('');
+  await expect(page.locator('#runner-log-search-status')).toHaveText('');
 });
 
 test('pause auto-restart posts the slot flag', async ({ page }) => {

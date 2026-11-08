@@ -337,7 +337,13 @@ final class DashboardView
             . self::runnerActions($runner)
             . "  </div>\n"
             . '  <section class="runner-log-section">' . "\n"
-            . "    <h3>Log</h3>\n"
+            . '    <div class="runner-log-head">' . "\n"
+            . "      <h3>Log</h3>\n"
+            . '      <input type="search" id="runner-log-search" class="filter-input"'
+            . ' aria-label="Search this log" placeholder="Search log…"'
+            . Layout::hoverHelp('Highlight matches in the log on this page.') . " />\n"
+            . '      <span id="runner-log-search-status" class="muted" role="status"></span>' . "\n"
+            . "    </div>\n"
             . '    <pre id="runner-log" class="runner-log">' . self::e(self::logText($runner)) . "</pre>\n"
             . "  </section>\n"
             . "</main>\n";
@@ -567,7 +573,13 @@ final class DashboardView
         }
         $name = trim((string) ($runner['last_job_name'] ?? ''));
         $text = $name !== '' ? 'last job failed: ' . $name : 'last job failed';
-        return self::flag(['last_job_failed' => true], 'last_job_failed', $text, 'critical');
+        $badge = self::badge($text, 'critical');
+        $url = (string) ($runner['last_job_url'] ?? '');
+        if (self::isHttpUrl($url)) {
+            $badge = '<a class="row-flag-link" href="' . self::e($url) . '"'
+                . ' target="_blank" rel="noopener noreferrer">' . $badge . '</a>';
+        }
+        return '<div class="row-flag">' . $badge . '</div>';
     }
 
     private static function crashHistoryBadge(array $runner): string
@@ -583,6 +595,15 @@ final class DashboardView
             . Layout::hoverHelp('Show when this slot crashed in the last 7 days.')
             . '>'
             . self::badge($text, 'warning') . '</button></div>';
+    }
+
+    private static function isHttpUrl(string $url): bool
+    {
+        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        return $scheme === 'https' || $scheme === 'http';
     }
 
     private static function badge(string $text, string $cls): string

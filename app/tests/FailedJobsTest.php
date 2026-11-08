@@ -45,6 +45,7 @@ final class FailedJobsTest extends TestCase
                         'id' => 8,
                         'name' => 'lint',
                         'runner_name' => 'acme-1',
+                        'html_url' => 'https://github.com/acme/actions/runs/1',
                         'conclusion' => 'failure',
                         'completed_at' => 200,
                     ],
@@ -71,6 +72,7 @@ final class FailedJobsTest extends TestCase
 
         $this->assertTrue($rows[0]['last_job_failed']);
         $this->assertSame('lint', $rows[0]['last_job_name']);
+        $this->assertSame('https://github.com/acme/actions/runs/1', $rows[0]['last_job_url']);
         $this->assertFalse($rows[1]['last_job_failed']);
         $this->assertFalse($spawned);
         \RunnerDeck\System\Shell::fake(null);

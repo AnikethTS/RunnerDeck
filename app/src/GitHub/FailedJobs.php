@@ -25,6 +25,8 @@ final class FailedJobs
             $row['last_job_failed'] = $job !== null && in_array($conclusion, self::FAILED, true);
             $row['last_job_conclusion'] = $conclusion;
             $row['last_job_name'] = is_array($job) ? (string) ($job['name'] ?? '') : '';
+            $url = is_array($job) ? (string) ($job['html_url'] ?? '') : '';
+            $row['last_job_url'] = $url;
         }
         unset($row);
         return $runners;

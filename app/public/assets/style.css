@@ -954,7 +954,15 @@ main {
 .runner-fact h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .runner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .runner-actions .btn { text-decoration: none; }
-.runner-log-section h3 { margin: 0 0 8px; font-size: 13px; }
+.runner-log-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.runner-log-head h3 { margin: 0; font-size: 13px; }
+.runner-log-head .filter-input { max-width: 240px; }
 .runner-log {
   margin: 0;
   white-space: pre-wrap;
@@ -967,6 +975,10 @@ main {
   background: var(--surface-1);
   font-size: 12px;
   line-height: 1.45;
+}
+.runner-log mark {
+  background: var(--status-warning, #e6c200);
+  color: inherit;
 }
 @media (width <= 720px) {
   .runner-facts { grid-template-columns: 1fr; }

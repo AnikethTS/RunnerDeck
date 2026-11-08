@@ -6,6 +6,12 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The runner page shows the job that runner is working on, and the log on that page can be searched in place.
+- A failed last job links to that job on GitHub from the row and the runner page.
+- The find box, status filter, and column sort stay in place after a reload.
+
 ### Changed
 
 - The dashboard poll keeps the table scroll position, the selected rows, and keyboard focus when a row's markup has not changed.
