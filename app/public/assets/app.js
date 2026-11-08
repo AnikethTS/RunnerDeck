@@ -225,7 +225,48 @@ function initDashboard() {
     }
   }
 
+  const VIEW_KEY = 'runnerdeck-dashboard-view';
+  const SORT_KEYS = new Set(['id', 'status', 'cpu', 'uptime', 'crashes', 'disk']);
+
+  function saveView() {
+    const filter = document.getElementById('runner-filter');
+    const state = document.getElementById('runner-state-filter');
+    try {
+      localStorage.setItem(VIEW_KEY, JSON.stringify({
+        q: filter ? filter.value : '',
+        state: state ? state.value : '',
+        sort: sortState.key,
+        dir: sortState.dir,
+      }));
+    } catch {
+      /* storage unavailable */
+    }
+  }
+
+  function restoreView() {
+    let pref = null;
+    try {
+      pref = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
+    } catch {
+      pref = null;
+    }
+    if (!pref || typeof pref !== 'object') return;
+    const filter = document.getElementById('runner-filter');
+    const state = document.getElementById('runner-state-filter');
+    if (filter && typeof pref.q === 'string') filter.value = pref.q;
+    if (state && typeof pref.state === 'string' && [...state.options].some((option) => option.value === pref.state)) {
+      state.value = pref.state;
+    }
+    if (typeof pref.sort === 'string' && SORT_KEYS.has(pref.sort)) {
+      sortState.key = pref.sort;
+      sortState.dir = pref.dir === -1 ? -1 : 1;
+    }
+  }
+
+  restoreView();
+
   function rerenderFromFilters() {
+    saveView();
     if (lastSnapshot) render(lastSnapshot);
   }
 
@@ -250,6 +291,7 @@ function initDashboard() {
       const key = control.dataset.sort;
       sortState.dir = sortState.key === key ? sortState.dir * -1 : 1;
       sortState.key = key;
+      saveView();
       if (lastSnapshot) render(lastSnapshot);
     });
   });

@@ -232,6 +232,37 @@ final class DashboardViewTest extends TestCase
         ]);
         $this->assertStringContainsString('ephemeral', $html);
         $this->assertStringContainsString('last job failed: lint', $html);
+        $this->assertStringNotContainsString('row-flag-link', $html);
+    }
+
+    public function testRowHtmlLinksTheFailedJob(): void
+    {
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => null,
+            'last_job_failed' => true,
+            'last_job_name' => 'lint',
+            'last_job_url' => 'https://github.com/acme/actions/runs/1',
+        ]);
+        $this->assertStringContainsString('href="https://github.com/acme/actions/runs/1"', $html);
+        $unsafe = \RunnerDeck\Presentation\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 1,
+            'log_tail' => [],
+            'github' => null,
+            'last_job_failed' => true,
+            'last_job_name' => 'lint',
+            'last_job_url' => 'javascript:alert(1)',
+        ]);
+        $this->assertStringNotContainsString('javascript:', $unsafe);
     }
 
     public function testRowHtmlShowsPausedAutoRestart(): void
@@ -334,6 +365,7 @@ final class DashboardViewTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/data-action="clear-work"[^>]*disabled/', $html);
         $this->assertMatchesRegularExpression('/data-action="force-idle"\s+hidden/', $html);
         $this->assertStringContainsString('data-crashes="[1700000000]"', $html);
+        $this->assertStringContainsString('id="runner-log-search"', $html);
     }
 
     public function testRunnerPageCoversPausedRunningAndEmptyLog(): void

@@ -35,13 +35,80 @@ if (page) {
     return (data.runners || []).find((row) => row.id === runnerId) || null;
   }
 
+  let logPlain = document.getElementById('runner-log')?.textContent || '';
+
+  function paintLog(text) {
+    logPlain = text;
+    const pre = document.getElementById('runner-log');
+    const query = document.getElementById('runner-log-search')?.value || '';
+    const status = document.getElementById('runner-log-search-status');
+    if (!pre) return;
+    const scroll = pre.scrollTop;
+    if (!query) {
+      pre.textContent = text;
+      if (status) status.textContent = '';
+      pre.scrollTop = scroll;
+      return;
+    }
+    const pattern = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const fragment = document.createDocumentFragment();
+    let offset = 0;
+    let matches = 0;
+    for (const match of text.matchAll(pattern)) {
+      matches += 1;
+      fragment.append(document.createTextNode(text.slice(offset, match.index)));
+      const mark = document.createElement('mark');
+      mark.textContent = match[0];
+      fragment.append(mark);
+      offset = match.index + match[0].length;
+    }
+    fragment.append(document.createTextNode(text.slice(offset)));
+    pre.replaceChildren(fragment);
+    if (status) status.textContent = matches ? '' : 'No matches';
+    pre.scrollTop = scroll;
+  }
+
   async function refreshLog() {
     const row = await runnerRow();
     const pre = document.getElementById('runner-log');
     if (!row || !pre || document.getElementById('log-modal')?.hidden === false) return;
     const lines = Array.isArray(row.log_tail) ? row.log_tail : [];
     const text = lines.join('\n').trim() || '(no log yet)';
-    if (pre.textContent !== text) pre.textContent = text;
+    if (text !== logPlain) paintLog(text);
+  }
+
+  function fillJob(host, job) {
+    if (!host) return;
+    host.replaceChildren();
+    if (!job) {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    const title = document.createElement(job.html_url ? 'a' : 'span');
+    title.textContent = job.name || 'job';
+    if (job.html_url) {
+      title.href = job.html_url;
+      title.target = '_blank';
+      title.rel = 'noopener noreferrer';
+    }
+    const meta = document.createElement('span');
+    meta.className = 'muted';
+    meta.textContent = [job.workflow, job.duration, job.repo].filter(Boolean).join(' · ');
+    host.append(title, document.createTextNode(' '), meta);
+  }
+
+  async function refreshQueue() {
+    const res = await fetch('api.php?action=queue');
+    if (res.status === 401) {
+      window.location.assign('index.php');
+      return;
+    }
+    const data = await res.json();
+    const name = agentName();
+    const live = (Array.isArray(data.live) ? data.live : [])
+      .find((job) => job && job.runner_name === name) || null;
+    fillJob(document.querySelector('#runner-page .live-job'), live);
   }
 
   async function refreshPage() {
@@ -49,6 +116,7 @@ if (page) {
     const noteText = document.getElementById('runner-note')?.textContent || '';
     const log = document.getElementById('runner-log');
     const logScroll = log ? log.scrollTop : 0;
+    const query = document.getElementById('runner-log-search')?.value || '';
     const res = await fetch(`runner.php?id=${encodeURIComponent(runnerId)}`, { cache: 'no-store' });
     if (res.status === 401 || res.redirected) {
       window.location.assign('index.php');
@@ -63,8 +131,12 @@ if (page) {
     current.replaceWith(next);
     const noteEl = document.getElementById('runner-note');
     if (noteEl && noteText) noteEl.textContent = noteText;
+    const search = document.getElementById('runner-log-search');
+    if (search) search.value = query;
     const newLog = document.getElementById('runner-log');
+    paintLog(newLog ? newLog.textContent : '');
     if (newLog) newLog.scrollTop = logScroll;
+    await refreshQueue();
   }
 
   async function finish(data, gone) {
@@ -287,6 +359,11 @@ if (page) {
     }
   });
 
+  document.addEventListener('input', (event) => {
+    if (event.target?.id !== 'runner-log-search') return;
+    paintLog(logPlain);
+  });
+
   document.getElementById('crash-history-close').addEventListener('click', () => {
     document.getElementById('crash-history-modal').hidden = true;
   });
@@ -296,6 +373,9 @@ if (page) {
   });
 
   window.setInterval(() => {
-    if (!document.hidden) refreshLog().catch(() => {});
+    if (document.hidden) return;
+    refreshLog().catch(() => {});
+    refreshQueue().catch(() => {});
   }, 5000);
+  refreshQueue().catch(() => {});
 }
