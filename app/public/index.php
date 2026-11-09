@@ -302,7 +302,9 @@ Layout::topbarEnd(!$needsSetup);
             <option value="busy">Busy</option>
             <option value="crashed">Crashed</option>
             <option value="mismatch">Mismatch</option>
+            <option value="attention">Needs attention</option>
           </select>
+          <span id="runner-filter-count" class="muted filter-count" hidden></span>
           <span id="last-updated" class="muted"><?= htmlspecialchars($updated) ?></span>
           <span id="action-status" class="muted action-status" hidden></span>
         </div>

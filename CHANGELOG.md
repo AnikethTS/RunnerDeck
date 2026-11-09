@@ -11,6 +11,9 @@ follows [SemVer](https://semver.org/).
 - The runner page shows the job that runner is working on, and the log on that page can be searched in place.
 - A failed last job links to that job on GitHub from the row and the runner page.
 - The find box, status filter, and column sort stay in place after a reload.
+- The runner page lists the last two finished jobs for that runner.
+- Needs attention shows crashed, mismatched, failed-last-job, and stale-agent runners together.
+- The find box and status filter show how many rows are visible, such as 3 of 12.
 
 ### Changed
 

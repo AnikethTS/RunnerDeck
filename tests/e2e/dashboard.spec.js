@@ -300,6 +300,24 @@ test('the state filter narrows idle, busy, crashed, and mismatch rows', async ({
   await expect(page.locator('tr[data-runner="crash-one"]')).toBeVisible();
 });
 
+test('needs attention and the filter count', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({ id: 'ok-one', agent_name: 'ok-one' }),
+    fixtureRunner({ id: 'crash-one', agent_name: 'crash-one', crash_flagged: true }),
+    fixtureRunner({ id: 'behind-one', agent_name: 'behind-one', agent_behind: true }),
+    fixtureRunner({ id: 'failed-one', agent_name: 'failed-one', last_job_failed: true }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page.locator('#runner-filter-count')).toBeHidden();
+  await page.locator('#runner-state-filter').selectOption('attention');
+  await expect(page.locator('tr[data-runner]')).toHaveCount(3);
+  await expect(page.locator('tr[data-runner="ok-one"]')).toHaveCount(0);
+  await expect(page.locator('#runner-filter-count')).toHaveText('3 of 4');
+  await page.locator('#runner-filter').fill('behind');
+  await expect(page.locator('#runner-filter-count')).toHaveText('1 of 4');
+});
+
 test('the find box, status filter, and sort survive a reload', async ({ page }) => {
   await mockStatus(page, [
     fixtureRunner({ id: 'runner-2', agent_name: 'zzz-last' }),
@@ -952,12 +970,39 @@ test('runner page shows the live job and searches the log', async ({ page }) => 
         duration: '4m',
       }],
       jobs: [],
-      recent: [],
+      recent: [
+        {
+          name: 'lint',
+          conclusion: 'success',
+          repo: 'acme/app',
+          html_url: 'https://example.test/job/8',
+          runner_name: name || 'runner-1',
+          duration: '1m',
+        },
+        {
+          name: 'test',
+          conclusion: 'failure',
+          repo: 'acme/app',
+          html_url: 'https://example.test/job/7',
+          runner_name: name || 'runner-1',
+          duration: '2m',
+        },
+        {
+          name: 'other',
+          conclusion: 'success',
+          html_url: 'https://example.test/job/6',
+          runner_name: 'someone-else',
+        },
+      ],
     }),
   }));
   await page.reload();
   await expect(page.locator('#runner-page .live-job a')).toHaveAttribute('href', 'https://example.test/job/10');
   await expect(page.locator('#runner-page .live-job')).toContainText('build');
+  await expect(page.locator('#runner-page .last-jobs a')).toHaveCount(2);
+  await expect(page.locator('#runner-page .last-jobs')).toContainText('lint');
+  await expect(page.locator('#runner-page .last-jobs')).toContainText('failure');
+  await expect(page.locator('#runner-page .last-jobs')).not.toContainText('other');
   await page.locator('#runner-log-search').fill('this-will-not-match');
   await expect(page.locator('#runner-log-search-status')).toHaveText('No matches');
   await page.locator('#runner-log-search').fill('');

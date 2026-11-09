@@ -7,6 +7,12 @@ export function matchesState(runner, state) {
   if (state === 'busy') return Boolean(runner.github && runner.github.busy);
   if (state === 'crashed') return Boolean(runner.crash_flagged);
   if (state === 'mismatch') return Boolean(runner.mismatch_flagged);
+  if (state === 'attention') {
+    return Boolean(runner.crash_flagged)
+      || Boolean(runner.mismatch_flagged)
+      || Boolean(runner.last_job_failed)
+      || Boolean(runner.agent_behind);
+  }
   return true;
 }
 

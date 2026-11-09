@@ -595,9 +595,10 @@ main {
 .dash-find .filter-input { width: min(100%, 240px); }
 .filter-select {
   width: auto;
-  min-width: 8.5rem;
+  min-width: 11rem;
   cursor: pointer;
 }
+.filter-count { white-space: nowrap; }
 
 .checkbox-label {
   display: flex;
