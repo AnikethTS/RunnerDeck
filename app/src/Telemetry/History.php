@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Telemetry;
 
-// Rolling pool-wide CPU/RAM history, sampled once per Dashboard::snapshot()
-// call (the existing poll cycle is the sampler — no separate daemon/cron).
+// Rolling pool-wide CPU/RAM history. The dashboard poll is the sampler,
+// and it keeps at most one sample per SAMPLE_SECONDS.
 // Best-effort throughout: a missing pdo_sqlite extension or a write failure
 // degrades to "no history," never breaks the rest of the dashboard.
 final class History
 {
     public const HOUR_SECONDS = 3600;
     public const DAY_SECONDS = 86400;
+    public const SAMPLE_SECONDS = 30;
     private const RETENTION_SECONDS = self::DAY_SECONDS;
 
     public static function isAvailable(): bool
@@ -57,6 +58,11 @@ final class History
     {
         try {
             $db = self::db();
+            $latest = $db->query('SELECT COALESCE(MAX(ts), 0) FROM samples');
+            $lastTs = $latest === false ? 0 : (int) $latest->fetchColumn();
+            if ($lastTs > 0 && (time() - $lastTs) < self::SAMPLE_SECONDS) {
+                return;
+            }
             $db->prepare(
                 'INSERT INTO samples (ts, avg_cpu, total_rss_kb, disk_free_kb) VALUES (?, ?, ?, ?)'
             )->execute([time(), $avgCpu, $totalRssKb, $diskFreeKb]);

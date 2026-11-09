@@ -14,6 +14,8 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
+- Last hour charts keep one sample every 30 seconds, and the SVG is drawn from those points.
+- The 5-second dashboard poll leaves each runner's log tail out of the JSON. The row still shows the latest line, and the live log loads the tail on its own.
 - The dashboard poll keeps the table scroll position, the selected rows, and keyboard focus when a row's markup has not changed.
 - A runner page action refreshes that page in place. Delete still returns to the list.
 - Pull requests scan the Docker image with the same Trivy rules as a release. A release pushes the image only after that scan passes.

@@ -230,7 +230,8 @@ final class Dashboard
     public static function historyView(): array
     {
         $unavailable = !History::isAvailable();
-        $samples = History::recent();
+        $maxPoints = (int) (History::HOUR_SECONDS / History::SAMPLE_SECONDS);
+        $samples = History::downsample(History::recent(), max(2, $maxPoints));
         $cpu = array_values(array_map(static fn (array $s): float => (float) $s['avg_cpu'], $samples));
         $mem = array_values(array_map(
             static fn (array $s): float => ((int) $s['total_rss_kb']) / 1024.0,

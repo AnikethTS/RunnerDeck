@@ -20,7 +20,30 @@ final class StatusAction
         $snapshot = Dashboard::snapshot($lines);
         if (($_GET['view'] ?? '') === '1') {
             $snapshot['view'] = DashboardView::pollView($snapshot);
+            $snapshot['runners'] = self::withoutLogTails($snapshot['runners'] ?? null);
         }
         JsonApi::respond($snapshot);
+    }
+
+    /**
+     * The poll already paints the log preview in rows_html. The live-log
+     * window loads tails from a status call that omits view=1.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function withoutLogTails(mixed $runners): array
+    {
+        if (!is_array($runners)) {
+            return [];
+        }
+        $out = [];
+        foreach ($runners as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            unset($row['log_tail']);
+            $out[] = $row;
+        }
+        return $out;
     }
 }
