@@ -95,7 +95,7 @@
   same, you just don't get the chart.
 - A **filter box** narrows the table by runner ID, registered name,
   agent version, or GitHub label. A
-  **state** dropdown (idle / busy / crashed / mismatch) stacks on that
+  **state** dropdown (idle / busy / crashed / mismatch / needs attention) stacks on that
   name filter from the same snapshot. Each runner's log can be
   **downloaded in full**, not just tailed — or
   narrowed to a time range first, using whatever timestamps the runner's

@@ -27,6 +27,17 @@ function initDashboard() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
   }
 
+  function paintFilterCount(visible) {
+    const el = document.getElementById('runner-filter-count');
+    if (!el) return;
+    const total = lastSnapshot && Array.isArray(lastSnapshot.runners) ? lastSnapshot.runners.length : 0;
+    const query = (document.getElementById('runner-filter')?.value || '').trim();
+    const state = document.getElementById('runner-state-filter')?.value || '';
+    const narrowed = query !== '' || state !== '';
+    el.textContent = narrowed ? `${visible.length} of ${total}` : '';
+    el.hidden = !narrowed;
+  }
+
   function setBanner(text, hidden) {
     bannerEl.hidden = hidden;
     bannerEl.className = 'banner';
@@ -71,6 +82,7 @@ function initDashboard() {
     });
 
     const visible = visibleRows();
+    paintFilterCount(visible);
     const rowsKey = JSON.stringify({
       runners: snapshot.view && snapshot.view.rows_html ? snapshot.view.rows_html : snapshot.runners,
       filter: document.getElementById('runner-filter').value,

@@ -98,6 +98,31 @@ if (page) {
     host.append(title, document.createTextNode(' '), meta);
   }
 
+  function fillRecent(host, jobs) {
+    if (!host) return;
+    host.replaceChildren();
+    if (!jobs.length) {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    jobs.forEach((job) => {
+      const line = document.createElement('div');
+      const title = document.createElement(job.html_url ? 'a' : 'span');
+      title.textContent = job.name || 'job';
+      if (job.html_url) {
+        title.href = job.html_url;
+        title.target = '_blank';
+        title.rel = 'noopener noreferrer';
+      }
+      const meta = document.createElement('span');
+      meta.className = 'muted';
+      meta.textContent = [job.conclusion, job.duration, job.repo].filter(Boolean).join(' · ');
+      line.append(title, document.createTextNode(' '), meta);
+      host.append(line);
+    });
+  }
+
   async function refreshQueue() {
     const res = await fetch('api.php?action=queue');
     if (res.status === 401) {
@@ -108,7 +133,11 @@ if (page) {
     const name = agentName();
     const live = (Array.isArray(data.live) ? data.live : [])
       .find((job) => job && job.runner_name === name) || null;
+    const recent = (Array.isArray(data.recent) ? data.recent : [])
+      .filter((job) => job && job.runner_name === name)
+      .slice(0, 2);
     fillJob(document.querySelector('#runner-page .live-job'), live);
+    fillRecent(document.querySelector('#runner-page .last-jobs'), recent);
   }
 
   async function refreshPage() {
