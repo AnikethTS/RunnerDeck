@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- The dashboard shows `node -v` and that jobs inherit that binary.
+- `doctor.php` refuses a pool directory that sits under a `package.json`, and it estimates free space for Start all from one shared externals tree plus each slot.
 - The runner page shows the job that runner is working on, and the log on that page can be searched in place.
 - A failed last job links to that job on GitHub from the row and the runner page.
 - The find box, status filter, and column sort stay in place after a reload.
@@ -18,10 +20,12 @@ follows [SemVer](https://semver.org/).
 ### Fixed
 
 - The desktop module requires Go 1.26.11, so govulncheck no longer fails on GO-2026-6859 in `net/http`.
-- The Docker image upgrades Alpine `krb5-libs` so the image scan is not blocked by the HIGH fixes in 1.22.3-r0.
 
 ### Changed
 
+- Slots that share an agent binary hardlink `externals` instead of keeping a second copy.
+- Compose pulls `ghcr.io/anikethts/runnerdeck:latest`, leaves `build:` commented, stores data in `../runnerdeck-data`, and does not restart when TOTP is missing.
+- The published image is Debian bookworm. GitHub's runner needs glibc, so the image is no longer Alpine.
 - Last hour charts keep one sample every 30 seconds, and the drawn chart is reused until the next sample or 30 seconds.
 - The runner page reuses a log tail when `runner.log` has not changed, and it asks for the job queue every 20 seconds.
 - Pull request and release image scans use Trivy 0.76.2.

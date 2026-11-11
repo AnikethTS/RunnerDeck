@@ -12,7 +12,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_REPO` | only if `scope=repo` | — | `owner/repo` the runners belong to |
 | `RUNNERDECK_LABEL` | no | `self-hosted-runnerdeck` | Shared label across the pool; also `runner-base`'s own registered name. The dashboard queued-jobs panel counts GitHub jobs whose labels include this value |
 | `RUNNERDECK_EXTRA_LABELS` | no | off | Comma-separated extra GitHub labels applied with the shared label on add/rename. Per-slot extras on Add runner are stored in the slot and merged on `config.sh`. Settings → Repository |
-| `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live |
+| `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live. `doctor.php` refuses this directory when a `package.json` is in it or above it — Node would load the runner `hashFiles` script as an ES module |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
 | `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
 | `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php app/bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Security & safety](security-and-safety.md#hosting-remotely) |

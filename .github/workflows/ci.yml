@@ -183,7 +183,7 @@ jobs:
       - name: Lint shell scripts
         run: |
           shopt -s nullglob
-          shellcheck -x -S warning run.sh bin/*.sh app/bin/*.sh tools/ci/*.sh
+          shellcheck -x -S warning run.sh bin/*.sh app/bin/*.sh tools/ci/*.sh docker/entrypoint.sh
 
   gitleaks:
     name: Security · Secret scan
@@ -991,7 +991,9 @@ jobs:
         run: |
           docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' runnerdeck:ci \
             | grep -qx 'RUNNER_ALLOW_RUNASROOT=1'
-          docker run --rm --entrypoint apk runnerdeck:ci info -e icu-libs krb5-libs
+          docker run --rm --entrypoint dpkg runnerdeck:ci -s libicu72
+          docker run --rm --entrypoint dpkg runnerdeck:ci -s libkrb5-3
+          docker run --rm --entrypoint cat runnerdeck:ci /etc/os-release | grep -q 'Debian'
 
       - name: Run the container and hit the status endpoint
         env:

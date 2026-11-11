@@ -528,6 +528,9 @@ main {
   margin-bottom: 14px;
   flex-wrap: wrap;
 }
+.job-node {
+  margin: 0;
+}
 .dash-panel {
   flex-direction: column;
   align-items: stretch;
