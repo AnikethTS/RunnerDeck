@@ -187,4 +187,89 @@ final class HistoryTest extends TestCase
     {
         $this->assertSame(['now' => '—', 'span' => ''], \RunnerDeck\Telemetry\History::summary([], '%', 1));
     }
+
+    #[RunInSeparateProcess]
+    public function testLatestSampleTsIsZeroWhenHistoryCannotOpen(): void
+    {
+        putenv('RUNNERDECK_HISTORY_FILE=/dev/null/runnerdeck-unwritable/history.sqlite');
+
+        $this->assertSame(0, \RunnerDeck\Telemetry\History::latestSampleTs());
+    }
+
+    #[RunInSeparateProcess]
+    public function testCachedChartRejectsABadPayload(): void
+    {
+        $dir = dirname($this->dbFile);
+        mkdir($dir, 0700, true);
+        $path = $dir . '/history_chart.json';
+        file_put_contents($path, '{');
+        $this->assertNull(\RunnerDeck\Telemetry\History::cachedChart(1));
+
+        file_put_contents($path, (string) json_encode([
+            'sample_ts' => 1,
+            'built_at' => time(),
+            'view' => ['cpu_svg' => 1, 'mem_svg' => '<svg/>'],
+        ]));
+        $this->assertNull(\RunnerDeck\Telemetry\History::cachedChart(1));
+    }
+
+    #[RunInSeparateProcess]
+    public function testRememberChartSkipsWhenThePayloadCannotBeEncoded(): void
+    {
+        $dir = dirname($this->dbFile);
+        mkdir($dir, 0700, true);
+        $view = $this->chartView();
+        $view['cpu_svg'] = INF;
+        \RunnerDeck\Telemetry\History::rememberChart(1, $view);
+
+        $this->assertFileDoesNotExist($dir . '/history_chart.json');
+    }
+
+    #[RunInSeparateProcess]
+    public function testRememberChartSkipsWhenTheCacheDirectoryCannotBeCreated(): void
+    {
+        putenv('RUNNERDECK_HISTORY_FILE=/dev/null/runnerdeck-unwritable/history.sqlite');
+        \RunnerDeck\Telemetry\History::rememberChart(1, $this->chartView());
+
+        $this->assertFileDoesNotExist('/dev/null/history_chart.json');
+    }
+
+    #[RunInSeparateProcess]
+    public function testRememberChartSkipsWhenTheCacheFileCannotBeWritten(): void
+    {
+        $dir = dirname($this->dbFile);
+        mkdir($dir, 0700, true);
+        $tmp = $dir . '/history_chart.json.' . getmypid() . '.tmp';
+        mkdir($tmp, 0700, true);
+        try {
+            \RunnerDeck\Telemetry\History::rememberChart(1, $this->chartView());
+            $this->assertFileDoesNotExist($dir . '/history_chart.json');
+        } finally {
+            @rmdir($tmp);
+        }
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * }
+     */
+    private function chartView(): array
+    {
+        return [
+            'available' => true,
+            'cpu_svg' => '<svg/>',
+            'mem_svg' => '<svg/>',
+            'cpu_now' => '1.0%',
+            'cpu_span' => '',
+            'mem_now' => '1 KiB',
+            'mem_span' => '',
+        ];
+    }
 }

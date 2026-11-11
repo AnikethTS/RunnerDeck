@@ -817,7 +817,11 @@ jobs:
 
       - name: Install PHP for php -S
         run: |
-          apt-get update
+          for attempt in 1 2 3 4 5; do
+            apt-get update && break
+            if [ "$attempt" -eq 5 ]; then exit 1; fi
+            sleep 20
+          done
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends php-cli php-sqlite3
 
       - name: Install JS dev tooling
@@ -853,7 +857,11 @@ jobs:
       - name: Install git, curl, unzip, and distro PHP
         run: |
           export DEBIAN_FRONTEND=noninteractive
-          apt-get update
+          for attempt in 1 2 3 4 5; do
+            apt-get update && break
+            if [ "$attempt" -eq 5 ]; then exit 1; fi
+            sleep 20
+          done
           apt-get install -y --no-install-recommends \
             ca-certificates curl git unzip \
             php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
