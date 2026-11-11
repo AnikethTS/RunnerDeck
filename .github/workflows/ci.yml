@@ -436,6 +436,10 @@ jobs:
           extensions: json, pdo_sqlite
           coverage: none
 
+      - name: Refresh apt indexes
+        if: steps.gate.outputs.enabled == 'true' && runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
       - name: Register a real runner, run a job on it, and clean up
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
@@ -817,11 +821,7 @@ jobs:
 
       - name: Install PHP for php -S
         run: |
-          for attempt in 1 2 3 4 5; do
-            apt-get update && break
-            if [ "$attempt" -eq 5 ]; then exit 1; fi
-            sleep 20
-          done
+          sh tools/ci/apt-ubuntu-mirrors.sh
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends php-cli php-sqlite3
 
       - name: Install JS dev tooling
@@ -851,29 +851,15 @@ jobs:
         include:
           - { name: "Ubuntu 22.04", image: "ubuntu:22.04" }
           - { name: "Debian 12", image: "debian:12-slim" }
-    container:
-      image: ${{ matrix.image }}
     steps:
-      - name: Install git, curl, unzip, and distro PHP
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          for attempt in 1 2 3 4 5; do
-            apt-get update && break
-            if [ "$attempt" -eq 5 ]; then exit 1; fi
-            sleep 20
-          done
-          apt-get install -y --no-install-recommends \
-            ca-certificates curl git unzip \
-            php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
-          php -v
-          php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install Composer and run PHPUnit
-        run: bash tools/ci/ci-apt-phpunit.sh
+      - name: Install distro PHP and run PHPUnit
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "${{ matrix.image }}" \
+            sh tools/ci/apt-distro-phpunit.sh
 
   dnf-php-test:
     name: Unit · ${{ matrix.name }} · dnf PHP
