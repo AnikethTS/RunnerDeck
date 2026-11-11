@@ -22,6 +22,7 @@ final class HistoryTest extends TestCase
     {
         putenv('RUNNERDECK_HISTORY_FILE');
         @unlink($this->dbFile);
+        @unlink(dirname($this->dbFile) . '/history_chart.json');
         @rmdir(dirname($this->dbFile));
     }
 
@@ -67,6 +68,25 @@ final class HistoryTest extends TestCase
         $samples = \RunnerDeck\Telemetry\History::recent();
         $this->assertCount(2, $samples);
         $this->assertSame(9.0, $samples[1]['avg_cpu']);
+    }
+
+    #[RunInSeparateProcess]
+    public function testHistoryViewReusesTheChartUntilTheWindowPasses(): void
+    {
+        \RunnerDeck\Telemetry\History::record(10.0, 1000);
+        $first = \RunnerDeck\Presentation\Dashboard::historyView();
+        $db = new PDO('sqlite:' . $this->dbFile);
+        $db->prepare('UPDATE samples SET avg_cpu = 99')->execute();
+        $second = \RunnerDeck\Presentation\Dashboard::historyView();
+        $this->assertSame($first['cpu_now'], $second['cpu_now']);
+
+        $path = dirname($this->dbFile) . '/history_chart.json';
+        $raw = json_decode((string) file_get_contents($path), true);
+        $this->assertIsArray($raw);
+        $raw['built_at'] = time() - \RunnerDeck\Telemetry\History::SAMPLE_SECONDS - 1;
+        file_put_contents($path, (string) json_encode($raw));
+        $third = \RunnerDeck\Presentation\Dashboard::historyView();
+        $this->assertSame('99.0%', $third['cpu_now']);
     }
 
     #[RunInSeparateProcess]

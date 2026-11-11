@@ -17,7 +17,8 @@ follows [SemVer](https://semver.org/).
 
 ### Changed
 
-- Last hour charts keep one sample every 30 seconds, and the SVG is drawn from those points.
+- Last hour charts keep one sample every 30 seconds, and the drawn chart is reused until the next sample or 30 seconds.
+- The runner page reuses a log tail when `runner.log` has not changed, and it asks for the job queue every 20 seconds.
 - The 5-second dashboard poll leaves each runner's log tail out of the JSON. The row still shows the latest line, and the live log loads the tail on its own.
 - The dashboard poll keeps the table scroll position, the selected rows, and keyboard focus when a row's markup has not changed.
 - A runner page action refreshes that page in place. Delete still returns to the list.
