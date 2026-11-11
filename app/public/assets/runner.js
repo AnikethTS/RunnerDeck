@@ -404,7 +404,10 @@ if (page) {
   window.setInterval(() => {
     if (document.hidden) return;
     refreshLog().catch(() => {});
-    refreshQueue().catch(() => {});
   }, 5000);
+  window.setInterval(() => {
+    if (document.hidden) return;
+    refreshQueue().catch(() => {});
+  }, 20000);
   refreshQueue().catch(() => {});
 }

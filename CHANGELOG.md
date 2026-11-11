@@ -15,9 +15,16 @@ follows [SemVer](https://semver.org/).
 - Needs attention shows crashed, mismatched, failed-last-job, and stale-agent runners together.
 - The find box and status filter show how many rows are visible, such as 3 of 12.
 
+### Fixed
+
+- The desktop module requires Go 1.26.11, so govulncheck no longer fails on GO-2026-6859 in `net/http`.
+- The Docker image upgrades Alpine `krb5-libs` so the image scan is not blocked by the HIGH fixes in 1.22.3-r0.
+
 ### Changed
 
-- Last hour charts keep one sample every 30 seconds, and the SVG is drawn from those points.
+- Last hour charts keep one sample every 30 seconds, and the drawn chart is reused until the next sample or 30 seconds.
+- The runner page reuses a log tail when `runner.log` has not changed, and it asks for the job queue every 20 seconds.
+- Pull request and release image scans use Trivy 0.76.2.
 - The 5-second dashboard poll leaves each runner's log tail out of the JSON. The row still shows the latest line, and the live log loads the tail on its own.
 - The dashboard poll keeps the table scroll position, the selected rows, and keyboard focus when a row's markup has not changed.
 - A runner page action refreshes that page in place. Delete still returns to the list.

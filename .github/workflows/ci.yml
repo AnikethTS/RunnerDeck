@@ -436,6 +436,10 @@ jobs:
           extensions: json, pdo_sqlite
           coverage: none
 
+      - name: Refresh apt indexes
+        if: steps.gate.outputs.enabled == 'true' && runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
       - name: Register a real runner, run a job on it, and clean up
         if: steps.gate.outputs.enabled == 'true'
         shell: bash
@@ -489,6 +493,10 @@ jobs:
 
       - name: Install JS dev tooling
         run: npm ci
+
+      - name: Refresh apt indexes
+        if: runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
 
       - name: Install Chromium
         shell: bash
@@ -569,6 +577,10 @@ jobs:
         if: needs.plan.outputs.live_extended == 'true'
         run: npm ci
 
+      - name: Refresh apt indexes
+        if: needs.plan.outputs.live_extended == 'true' && runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
       - name: Install Chromium
         if: needs.plan.outputs.live_extended == 'true'
         shell: bash
@@ -627,6 +639,9 @@ jobs:
 
       - name: Install JS dev tooling
         run: npm ci
+
+      - name: Refresh apt indexes
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -817,7 +832,7 @@ jobs:
 
       - name: Install PHP for php -S
         run: |
-          apt-get update
+          sh tools/ci/apt-ubuntu-mirrors.sh
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends php-cli php-sqlite3
 
       - name: Install JS dev tooling
@@ -847,25 +862,15 @@ jobs:
         include:
           - { name: "Ubuntu 22.04", image: "ubuntu:22.04" }
           - { name: "Debian 12", image: "debian:12-slim" }
-    container:
-      image: ${{ matrix.image }}
     steps:
-      - name: Install git, curl, unzip, and distro PHP
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            ca-certificates curl git unzip \
-            php-cli php-xml php-mbstring php-sqlite3 php-zip php-curl
-          php -v
-          php -r 'exit((extension_loaded("posix") && extension_loaded("pcntl")) ? 0 : 1);'
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install Composer and run PHPUnit
-        run: bash tools/ci/ci-apt-phpunit.sh
+      - name: Install distro PHP and run PHPUnit
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work "${{ matrix.image }}" \
+            sh tools/ci/apt-distro-phpunit.sh
 
   dnf-php-test:
     name: Unit · ${{ matrix.name }} · dnf PHP
@@ -975,6 +980,7 @@ jobs:
       - name: Scan the image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: v0.76.2
           image-ref: runnerdeck:ci
           format: table
           exit-code: "1"

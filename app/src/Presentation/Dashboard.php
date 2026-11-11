@@ -229,6 +229,33 @@ final class Dashboard
      */
     public static function historyView(): array
     {
+        if (History::isAvailable()) {
+            $sampleTs = History::latestSampleTs();
+            $cached = History::cachedChart($sampleTs);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+        $view = self::buildHistoryView();
+        if (History::isAvailable()) {
+            History::rememberChart(History::latestSampleTs(), $view);
+        }
+        return $view;
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * }
+     */
+    private static function buildHistoryView(): array
+    {
         $unavailable = !History::isAvailable();
         $maxPoints = (int) (History::HOUR_SECONDS / History::SAMPLE_SECONDS);
         $samples = History::downsample(History::recent(), max(2, $maxPoints));

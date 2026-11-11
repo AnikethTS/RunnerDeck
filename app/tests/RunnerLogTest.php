@@ -54,6 +54,23 @@ final class RunnerLogTest extends TestCase
         );
     }
 
+    public function testTailReusesTheReadWhenTheFileIsUnchanged(): void
+    {
+        $path = $this->dir . '/runner.log';
+        file_put_contents($path, "alpha\n");
+        $first = \RunnerDeck\Pool\RunnerLog::tail($this->dir, 5);
+        $mtime = filemtime($path);
+        $this->assertNotFalse($mtime);
+        file_put_contents($path, "beta!\n");
+        touch($path, $mtime);
+        clearstatcache(true, $path);
+
+        $this->assertSame($first, \RunnerDeck\Pool\RunnerLog::tail($this->dir, 5));
+
+        file_put_contents($path, "beta!\nextra\n");
+        $this->assertSame(['beta!', 'extra'], \RunnerDeck\Pool\RunnerLog::tail($this->dir, 5));
+    }
+
     public function testTailUsesOnlyRotatedWhenCurrentIsMissing(): void
     {
         file_put_contents($this->dir . '/runner.log.1', "a\nb\nc\n");

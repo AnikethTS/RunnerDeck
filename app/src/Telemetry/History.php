@@ -54,12 +54,103 @@ final class History
         return $pdo;
     }
 
+    public static function latestSampleTs(): int
+    {
+        try {
+            $latest = self::db()->query('SELECT COALESCE(MAX(ts), 0) FROM samples');
+            return $latest === false ? 0 : (int) $latest->fetchColumn();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * }|null
+     */
+    public static function cachedChart(int $sampleTs): ?array
+    {
+        $raw = @file_get_contents(self::chartCachePath());
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (
+            !is_array($decoded)
+            || (int) ($decoded['sample_ts'] ?? -1) !== $sampleTs
+            || !is_array($decoded['view'] ?? null)
+        ) {
+            return null;
+        }
+        $builtAt = (int) ($decoded['built_at'] ?? 0);
+        if ($builtAt <= 0 || (time() - $builtAt) >= self::SAMPLE_SECONDS) {
+            return null;
+        }
+        $view = $decoded['view'];
+        if (!is_string($view['cpu_svg'] ?? null) || !is_string($view['mem_svg'] ?? null)) {
+            return null;
+        }
+        return [
+            'available' => (bool) ($view['available'] ?? false),
+            'cpu_svg' => $view['cpu_svg'],
+            'mem_svg' => $view['mem_svg'],
+            'cpu_now' => is_string($view['cpu_now'] ?? null) ? $view['cpu_now'] : '—',
+            'cpu_span' => is_string($view['cpu_span'] ?? null) ? $view['cpu_span'] : '',
+            'mem_now' => is_string($view['mem_now'] ?? null) ? $view['mem_now'] : '—',
+            'mem_span' => is_string($view['mem_span'] ?? null) ? $view['mem_span'] : '',
+        ];
+    }
+
+    /**
+     * @param array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string
+     * } $view
+     */
+    public static function rememberChart(int $sampleTs, array $view): void
+    {
+        $payload = json_encode([
+            'sample_ts' => $sampleTs,
+            'built_at' => time(),
+            'view' => $view,
+        ]);
+        if (!is_string($payload)) {
+            return;
+        }
+        $path = self::chartCachePath();
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return;
+        }
+        $tmp = $path . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, $payload, LOCK_EX) === false) {
+            return;
+        }
+        @rename($tmp, $path);
+    }
+
+    private static function chartCachePath(): string
+    {
+        return dirname(self::path()) . '/history_chart.json';
+    }
+
     public static function record(float $avgCpu, int $totalRssKb, ?int $diskFreeKb = null): void
     {
         try {
             $db = self::db();
-            $latest = $db->query('SELECT COALESCE(MAX(ts), 0) FROM samples');
-            $lastTs = $latest === false ? 0 : (int) $latest->fetchColumn();
+            $lastTs = self::latestSampleTs();
             if ($lastTs > 0 && (time() - $lastTs) < self::SAMPLE_SECONDS) {
                 return;
             }

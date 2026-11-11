@@ -12,6 +12,9 @@ final class RunnerLog
 
     private static ?int $maxBytesFake = null;
 
+    /** @var array<string, array{stamp: string, lines: list<string>}> */
+    private static array $tailCache = [];
+
     public static function fakeMaxBytes(?int $bytes): void
     {
         self::$maxBytesFake = $bytes;
@@ -61,6 +64,19 @@ final class RunnerLog
         if ($lines <= 0) {
             return [];
         }
+        $stamp = self::stamp($dir . '/' . self::FILE) . '|' . self::stamp($dir . '/' . self::ROTATED);
+        $key = $dir . "\n" . $lines;
+        if (isset(self::$tailCache[$key]) && self::$tailCache[$key]['stamp'] === $stamp) {
+            return self::$tailCache[$key]['lines'];
+        }
+        $read = self::readTail($dir, $lines);
+        self::$tailCache[$key] = ['stamp' => $stamp, 'lines' => $read];
+        return $read;
+    }
+
+    /** @return list<string> */
+    private static function readTail(string $dir, int $lines): array
+    {
         $current = self::tailFile($dir . '/' . self::FILE, $lines);
         $need = $lines - count($current);
         if ($need <= 0) {
@@ -68,6 +84,17 @@ final class RunnerLog
         }
         $older = self::tailFile($dir . '/' . self::ROTATED, $need);
         return array_merge($older, $current);
+    }
+
+    private static function stamp(string $path): string
+    {
+        clearstatcache(true, $path);
+        if (!is_file($path)) {
+            return 'missing';
+        }
+        $mtime = filemtime($path);
+        $size = filesize($path);
+        return ($mtime === false ? '0' : (string) $mtime) . ':' . ($size === false ? '0' : (string) $size);
     }
 
     /**

@@ -256,7 +256,7 @@ curl -sS 'http://127.0.0.1:8090/api.php?action=log&runner=runner-base&lines=50'
 Last-hour CPU/RAM (and optional `disk_free_kb`) history. `action=status`
 stores at most one sample every 30 seconds (see [How it works](docs/how-it-works.md)).
 Samples are kept 24 hours for `history.php`; this action still returns the last hour.
-The dashboard chart draws at most 120 of those points.
+The dashboard chart draws at most 120 of those points and reuses that drawing until the next sample or 30 seconds.
 `available: false` means `pdo_sqlite` isn't installed — `samples` is always
 present but empty in that case.
 
