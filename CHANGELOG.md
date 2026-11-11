@@ -15,6 +15,10 @@ follows [SemVer](https://semver.org/).
 - Needs attention shows crashed, mismatched, failed-last-job, and stale-agent runners together.
 - The find box and status filter show how many rows are visible, such as 3 of 12.
 
+### Fixed
+
+- The desktop module requires Go 1.26.11, so govulncheck no longer fails on GO-2026-6859 in `net/http`.
+
 ### Changed
 
 - Last hour charts keep one sample every 30 seconds, and the drawn chart is reused until the next sample or 30 seconds.
