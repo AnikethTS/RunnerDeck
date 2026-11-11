@@ -21,6 +21,16 @@ if getent hosts "$fallback_host" >/dev/null 2>&1; then
 fi
 
 rewrite_ubuntu_mirrors() {
+    # Ubuntu 26.04 lists mirrors in apt-mirrors.txt and points sources at
+    # mirror+file:/etc/apt/apt-mirrors.txt, so editing sources.list alone
+    # leaves apt on the hosts that do not resolve.
+    if [ -f /etc/apt/apt-mirrors.txt ]; then
+        sed -i \
+            -e "s|https\\?://azure.archive.ubuntu.com/ubuntu|${fallback_url}|g" \
+            -e "s|https\\?://archive.ubuntu.com/ubuntu|${fallback_url}|g" \
+            -e "s|https\\?://security.ubuntu.com/ubuntu|${fallback_url}|g" \
+            /etc/apt/apt-mirrors.txt
+    fi
     for file in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
         if [ ! -f "$file" ]; then
             continue
@@ -29,12 +39,16 @@ rewrite_ubuntu_mirrors() {
             -e "s|https\\?://azure.archive.ubuntu.com/ubuntu|${fallback_url}|g" \
             -e "s|https\\?://archive.ubuntu.com/ubuntu|${fallback_url}|g" \
             -e "s|https\\?://security.ubuntu.com/ubuntu|${fallback_url}|g" \
+            -e "s|mirror+file:/etc/apt/apt-mirrors.txt|${fallback_url}|g" \
             "$file"
     done
 }
 
 host_in_sources() {
     host=$1
+    if [ -f /etc/apt/apt-mirrors.txt ] && grep -q "$host" /etc/apt/apt-mirrors.txt; then
+        return 0
+    fi
     for file in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
         if [ -f "$file" ] && grep -q "$host" "$file"; then
             return 0

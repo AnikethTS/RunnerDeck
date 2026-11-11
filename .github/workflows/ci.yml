@@ -494,6 +494,10 @@ jobs:
       - name: Install JS dev tooling
         run: npm ci
 
+      - name: Refresh apt indexes
+        if: runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
       - name: Install Chromium
         shell: bash
         run: |
@@ -573,6 +577,10 @@ jobs:
         if: needs.plan.outputs.live_extended == 'true'
         run: npm ci
 
+      - name: Refresh apt indexes
+        if: needs.plan.outputs.live_extended == 'true' && runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
       - name: Install Chromium
         if: needs.plan.outputs.live_extended == 'true'
         shell: bash
@@ -631,6 +639,9 @@ jobs:
 
       - name: Install JS dev tooling
         run: npm ci
+
+      - name: Refresh apt indexes
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
