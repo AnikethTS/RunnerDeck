@@ -9,7 +9,9 @@
 #    Set version: v0.2.5 to pin a JAR.
 #
 # Artifact, sticky PR comment, and Checks notices are posted by the Action.
-# Fork PRs skip comment and annotations. Fail-open (no --policy).
+# Fork PRs skip comment and annotations. The annotations job below still
+# reports the required check name, because a fork token cannot create it.
+# Fail-open (no --policy).
 name: ChangeRadar
 
 on:
@@ -43,3 +45,12 @@ jobs:
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
           # version: v0.2.5
+
+  annotations:
+    name: ChangeRadar annotations
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fork pull requests do not receive file annotations
+        run: echo "ChangeRadar wrote the impact report. File annotations are posted on a same-repository pull request."
