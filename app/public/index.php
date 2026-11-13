@@ -11,6 +11,7 @@ use RunnerDeck\Security\Csrf;
 use RunnerDeck\Presentation\Dashboard;
 use RunnerDeck\Presentation\DashboardView;
 use RunnerDeck\Security\HostingWarnings;
+use RunnerDeck\Host\JobRuntime;
 use RunnerDeck\Presentation\Layout;
 use RunnerDeck\Security\SecurityHeaders;
 
@@ -293,6 +294,7 @@ Layout::topbarEnd(!$needsSetup);
       </section>
 
       <div class="toolbar dash-panel">
+        <p class="muted job-node"><?= htmlspecialchars(JobRuntime::line()) ?></p>
         <div class="dash-find">
           <input type="search" id="runner-filter" class="filter-input"
                  placeholder="Filter by name, label, or version…" />

@@ -15,7 +15,13 @@ final class Provisioner
 {
     public static function ensureInstalled(string $dir, bool $replace = false): array
     {
+        $blocked = PoolLayout::packageJsonBlockMessage(dirname($dir));
+        if ($blocked !== null) {
+            return self::fail('provision.pool', $blocked);
+        }
+
         if (!$replace && self::binariesPresent($dir)) {
+            PoolLayout::shareExternals($dir);
             return ['ok' => true, 'message' => 'runner binaries already present'];
         }
 
@@ -91,6 +97,7 @@ final class Provisioner
             return $deps;
         }
 
+        PoolLayout::shareExternals($dir);
         return ['ok' => true, 'message' => "runner binaries installed ({$download['os']}/{$download['architecture']})"];
     }
 
@@ -184,8 +191,8 @@ final class Provisioner
     /**
      * GitHub's Linux tarball ships bin/installdependencies.sh (libicu, libkrb5,
      * …), which needs root, so it runs through passwordless sudo when not root.
-     * Skipped on macOS and Windows, and on Alpine: that script is apt/yum only; the image installs the
-     * libs via apk instead.
+     * Skipped on macOS and Windows, and on Alpine: that script is apt/yum only.
+     * The Debian image installs libicu and libkrb5, then still runs the script.
      *
      * @return array{ok: bool, message: string}
      */
