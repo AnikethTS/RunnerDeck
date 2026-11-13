@@ -29,6 +29,7 @@ jobs:
       smoke: ${{ steps.plan.outputs.smoke }}
       e2e: ${{ steps.plan.outputs.e2e }}
       live: ${{ steps.plan.outputs.live }}
+      run_live: ${{ steps.plan.outputs.run_live }}
       live_extended: ${{ steps.plan.outputs.live_extended }}
       package: ${{ steps.plan.outputs.package }}
     steps:
@@ -36,6 +37,8 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
         run: |
           has() { echo "$LABELS" | jq -e --arg l "$1" 'index($l) != null' >/dev/null 2>&1; }
           everything=false
@@ -45,13 +48,21 @@ jobs:
           pick() {
             if [ "$everything" = true ] || [ "$full" = true ] || has "ci:$1"; then echo true; else echo false; fi
           }
+          live="$(pick live)"
+          # A fork pull request cannot read E2E_RUNNER_TOKEN. The matrix still
+          # starts so the required check names are reported.
+          run_live=false
+          if [ "$live" = true ] && { [ "$EVENT" != "pull_request" ] || [ "$HEAD_REPO" = "$THIS_REPO" ]; }; then
+            run_live=true
+          fi
           {
             echo "fast=true"
             echo "unit=$(pick unit)"
             echo "quality=$(pick quality)"
             echo "smoke=$(pick smoke)"
             echo "e2e=$(pick e2e)"
-            echo "live=$(pick live)"
+            echo "live=$live"
+            echo "run_live=$run_live"
             echo "package=$(pick package)"
             if [ "$everything" = true ] || has ci:live-extended; then echo "live_extended=true"; else echo "live_extended=false"; fi
           } >> "$GITHUB_OUTPUT"
@@ -399,7 +410,6 @@ jobs:
   e2e-real-runner:
     name: E2E · Real runner · ${{ matrix.platform }}
     needs: plan
-    if: needs.plan.outputs.live == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -414,12 +424,19 @@ jobs:
       E2E_REPO: ${{ vars.E2E_REPO }}
       E2E_TAG: rd-e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
     steps:
+      - name: Report the check without registering a runner
+        if: needs.plan.outputs.run_live != 'true'
+        shell: bash
+        run: echo "A real runner is registered on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.plan.outputs.run_live == 'true'
         with:
           persist-credentials: false
 
       - name: Check end-to-end configuration
         id: gate
+        if: needs.plan.outputs.run_live == 'true'
         shell: bash
         run: |
           if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
@@ -453,7 +470,6 @@ jobs:
   e2e-live:
     name: E2E · Live dashboard · ${{ matrix.platform }}
     needs: plan
-    if: needs.plan.outputs.live == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -468,11 +484,18 @@ jobs:
       E2E_REPO: ${{ vars.E2E_REPO }}
       E2E_TAG: rd-live-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
     steps:
+      - name: Report the check without driving the dashboard
+        if: needs.plan.outputs.run_live != 'true'
+        shell: bash
+        run: echo "The live dashboard runs on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.plan.outputs.run_live == 'true'
         with:
           persist-credentials: false
 
       - name: Check end-to-end configuration
+        if: needs.plan.outputs.run_live == 'true'
         shell: bash
         run: |
           if [ -z "$GH_TOKEN" ] || [ -z "$E2E_REPO" ]; then
@@ -481,24 +504,28 @@ jobs:
           fi
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        if: needs.plan.outputs.run_live == 'true'
         with:
           php-version: "8.5.12"
           extensions: json, pdo_sqlite
           coverage: none
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: needs.plan.outputs.run_live == 'true'
         with:
           node-version: "24"
           cache: npm
 
       - name: Install JS dev tooling
+        if: needs.plan.outputs.run_live == 'true'
         run: npm ci
 
       - name: Refresh apt indexes
-        if: runner.os == 'Linux'
+        if: needs.plan.outputs.run_live == 'true' && runner.os == 'Linux'
         run: sh tools/ci/apt-ubuntu-mirrors.sh
 
       - name: Install Chromium
+        if: needs.plan.outputs.run_live == 'true'
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
@@ -508,10 +535,11 @@ jobs:
           fi
 
       - name: Drive every dashboard button against real runners
+        if: needs.plan.outputs.run_live == 'true'
         run: npx playwright test -c tests/e2e-live/playwright.config.js
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        if: failure() && needs.plan.outputs.run_live == 'true'
         with:
           name: live-e2e-${{ matrix.os }}
           path: |
@@ -520,7 +548,7 @@ jobs:
           retention-days: 7
 
       - name: Remove leftover runners and runs
-        if: always()
+        if: always() && needs.plan.outputs.run_live == 'true'
         shell: bash
         run: ./tools/ci/e2e-real-runner.sh cleanup
 

@@ -17,6 +17,7 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- A fork pull request reports the required ChangeRadar annotation check and the latest live-dashboard and real-runner checks. Those runner checks still register a runner only for this repository.
 - The desktop module requires Go 1.26.11, so govulncheck no longer fails on GO-2026-6859 in `net/http`.
 - The Docker image upgrades Alpine `krb5-libs` so the image scan is not blocked by the HIGH fixes in 1.22.3-r0.
 
