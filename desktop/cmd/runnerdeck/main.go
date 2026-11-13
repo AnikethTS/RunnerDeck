@@ -15,7 +15,7 @@ import (
 
 var embeddedVersion string
 
-const totalSteps = 4
+const totalSteps = 5
 
 func main() {
 	os.Exit(run(os.Args[1:]))
@@ -115,10 +115,15 @@ func start(c ui, opts options, l layout) (int, *processGroup, *exec.Cmd, *exec.C
 		return none(1)
 	}
 
-	c.step(3, totalSteps, "Checking the GitHub CLI")
+	c.step(3, totalSteps, "Checking curl and tar")
+	if !ensureDownloadTools(c, exec.LookPath) {
+		return none(1)
+	}
+
+	c.step(4, totalSteps, "Checking the GitHub CLI")
 	env = ensureGitHubCLI(c, env)
 
-	c.step(4, totalSteps, "Starting the dashboard")
+	c.step(5, totalSteps, "Starting the dashboard")
 	if !isLoopback(opts.host) && !authEnabled(l, env) {
 		c.fail("Listening beyond this computer requires a TOTP login. Run: php\\php.exe app\\bin\\setup-totp.php")
 		return none(1)
