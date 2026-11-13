@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: AnikethTS/ChangeRadar@414c23d99a59e59dad7a1d069e1bf2e8004adac9 # v0.2.7
+      - uses: AnikethTS/ChangeRadar@6a0b03a5a9aa6b596ca58f34c95facdaebecea39 # v0.2.8
         with:
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
