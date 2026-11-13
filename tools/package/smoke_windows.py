@@ -126,7 +126,7 @@ def main() -> None:
     if "Welcome to RunnerDeck" not in output:
         fail(f"the welcome banner was not printed. Output was:\n{output[:800]}")
     print("ok  the welcome banner is printed")
-    for expected in ("[1/4] Preparing RunnerDeck", "[2/4] Checking PHP", "[4/4] Starting the dashboard"):
+    for expected in ("[1/5] Preparing RunnerDeck", "[2/5] Checking PHP", "[5/5] Starting the dashboard"):
         if expected not in output:
             fail(f"the guided steps are missing {expected!r}. Output was:\n{output[:1200]}")
     print("ok  the guided setup steps are printed")
