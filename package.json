@@ -16,7 +16,7 @@
     "@playwright/test": "^1.64.1",
     "eslint": "^10.14.0",
     "stylelint": "^17.16.0",
-    "stylelint-config-standard": "^40.0.0"
+    "stylelint-config-standard": "^41.0.0"
   },
   "overrides": {
     "source-map-js": "1.2.2",
