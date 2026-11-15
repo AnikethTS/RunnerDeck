@@ -87,7 +87,7 @@ runnerdeck config get drain-timeout
 | `runnerdeck install [--dir D] [--force]` | From a source checkout, link `runnerdeck` into `~/.local/bin` (or `D`). It tells you if that folder is not on your PATH. |
 | `runnerdeck uninstall [--dir D]` | Remove that link. It only removes a link that points at this checkout. |
 | `runnerdeck completion bash\|zsh\|fish\|powershell` | Print a completion script; see [Shell completion](#shell-completion). |
-| `runnerdeck version`, `--version`, `-v` | Print the version. |
+| `runnerdeck version`, `--version`, `-v` | Print the version. On a terminal it shows the RunnerDeck logo and welcome message, like `run.sh`; in a pipe, with `--json`, `-q` or `RUNNERDECK_NO_BANNER=1` it prints just `RunnerDeck 1.15.0`. |
 
 Flags:
 

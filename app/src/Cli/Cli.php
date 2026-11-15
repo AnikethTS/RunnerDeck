@@ -8,6 +8,7 @@ use RunnerDeck\Configuration\Config;
 use RunnerDeck\Http\Api;
 use RunnerDeck\Lifecycle\CrashState;
 use RunnerDeck\Pool\ProcessControl;
+use RunnerDeck\Presentation\Banner;
 use RunnerDeck\Pool\RunnerInfo;
 use RunnerDeck\Pool\RunnerLog;
 use RunnerDeck\Pool\RunnerPool;
@@ -72,6 +73,7 @@ TXT;
     private bool $force = false;
     private bool $quiet = false;
     private bool $color = false;
+    private bool $interactive = false;
 
     /** @var null|callable(): bool Test seam: return false to end `logs -f`. */
     private $keepFollowing = null;
@@ -114,6 +116,7 @@ TXT;
         $this->json = isset($flags['json']);
         $this->force = isset($flags['force']);
         $this->quiet = isset($flags['quiet']) || isset($flags['q']);
+        $this->interactive = isset($flags['color']) || $this->isTerminal($this->out);
         $this->color = !isset($flags['no-color']) && (
             isset($flags['color']) || (getenv('NO_COLOR') === false && $this->isTerminal($this->out))
         );
@@ -123,7 +126,7 @@ TXT;
         }
 
         return match ($command) {
-            'version', '--version', '-v' => $this->say('RunnerDeck ' . Config::version()),
+            'version', '--version', '-v' => $this->version(),
             'list', 'ls' => $this->list($flags, false),
             'status' => $this->list($flags, true),
             'start' => $this->start($flags, $args),
@@ -215,6 +218,16 @@ TXT;
         }
         fwrite($ok ? $this->out : $this->err, $message . "\n");
         return $ok ? 0 : 1;
+    }
+
+    private function version(): int
+    {
+        $banner = $this->interactive && !$this->quiet && !$this->json && getenv('RUNNERDECK_NO_BANNER') !== '1';
+        if ($banner) {
+            fwrite($this->out, Banner::render($this->color));
+            return 0;
+        }
+        return $this->say('RunnerDeck ' . Config::version());
     }
 
     /** @param resource $stream */

@@ -15,6 +15,7 @@ follows [SemVer](https://semver.org/).
 - `runnerdeck status` adds a GITHUB column (idle, busy, offline, unregistered). `list` and `status` take `--watch`, output is coloured on a terminal (`--no-color`, `NO_COLOR`), and `-q` prints only errors.
 - `runnerdeck completion bash|zsh|fish|powershell` prints a shell completion script that also completes runner ids and setting names, and the Debian package and Homebrew install a `runnerdeck(1)` manual page.
 - `runnerdeck install` and `uninstall` link a source checkout's `runnerdeck` into `~/.local/bin`.
+- `runnerdeck --version` shows the logo and welcome message on a terminal, like `run.sh`, and stays one plain line in a pipe or with `-q`, `--json` or `RUNNERDECK_NO_BANNER=1`.
 - `tools/dev/cli-sandbox.sh` opens a shell where `runnerdeck` works on a throwaway pool and settings folder.
 - A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. The Windows installer puts the same `runnerdeck` command on your PATH (a task you can untick), and `RunnerDeck.exe cli <command>` works in the portable zip and exe. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
 

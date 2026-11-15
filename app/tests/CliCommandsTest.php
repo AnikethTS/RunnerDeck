@@ -23,6 +23,40 @@ final class CliCommandsTest extends CliTestCase
         }
     }
 
+    public function testVersionShowsTheLogoOnATerminalAndPlainTextOtherwise(): void
+    {
+        [, $plain] = $this->cli(['-v']);
+        $this->assertSame('RunnerDeck ' . \RunnerDeck\Configuration\Config::version() . "\n", $plain);
+
+        foreach ([['--version', '--color'], ['version', '--color', '--no-color']] as $argv) {
+            [$code, $out] = $this->cli($argv);
+            $this->assertSame(0, $code);
+            $this->assertStringContainsString('Welcome to RunnerDeck', $out);
+            $this->assertStringContainsString('One dashboard for every self-hosted', $out);
+            $this->assertStringContainsString('@@@', $out);
+        }
+        [, $coloured] = $this->cli(['-v', '--color']);
+        $this->assertStringContainsString("\033[", $coloured);
+        [, $uncoloured] = $this->cli(['-v', '--color', '--no-color']);
+        $this->assertStringNotContainsString("\033[", $uncoloured);
+    }
+
+    public function testVersionStaysPlainForQuietJsonAndNoBanner(): void
+    {
+        foreach ([['-v', '--color', '-q'], ['-v', '--color', '--json']] as $argv) {
+            [, $out] = $this->cli($argv);
+            $this->assertSame(1, substr_count($out, "\n"), implode(' ', $argv));
+            $this->assertStringStartsWith('RunnerDeck ', $out);
+        }
+        putenv('RUNNERDECK_NO_BANNER=1');
+        try {
+            [, $out] = $this->cli(['-v', '--color']);
+        } finally {
+            putenv('RUNNERDECK_NO_BANNER');
+        }
+        $this->assertStringStartsWith('RunnerDeck ', $out);
+    }
+
     public function testRollingRestartNeedsRunners(): void
     {
         [$code, , $err] = $this->cli(['rolling-restart']);
