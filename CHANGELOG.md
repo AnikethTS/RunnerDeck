@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-16
+
 ### Added
 
 - The dashboard shows `node -v` and that jobs inherit that binary.
