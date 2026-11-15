@@ -8,11 +8,6 @@ use RunnerDeck\Configuration\Config;
 use RunnerDeck\GitHub\UpdateCheck;
 use RunnerDeck\System\Shell;
 
-/**
- * `runnerdeck update`: finds the latest release and upgrades the way this
- * copy was installed. Downloads are checked against the release's
- * SHA256SUMS file before anything runs.
- */
 final class Updater
 {
     private const REPO = 'AnikethTS/RunnerDeck';
@@ -31,7 +26,7 @@ final class Updater
      * @param resource $out
      * @param resource $err
      * @param resource $in
-     * @param null|callable(list<string>): int $interactive Runs a command on the user's terminal.
+     * @param null|callable(list<string>): int $interactive
      */
     public function __construct($out, $err, $in, ?callable $interactive = null)
     {
@@ -70,7 +65,6 @@ final class Updater
         ];
     }
 
-    /** Whether $file's SHA-256 matches its line in a `sha256sum`-style listing. */
     public static function checksumMatches(string $file, string $sums): bool
     {
         $name = basename($file);
@@ -83,7 +77,7 @@ final class Updater
         return false;
     }
 
-    /** @return array{asset: string, sums: string}|null the release files this method downloads */
+    /** @return array{asset: string, sums: string}|null */
     public static function assetsFor(string $method, string $version): ?array
     {
         return match ($method) {
@@ -222,7 +216,7 @@ final class Updater
     }
 
     /** @param list<string> $cmd */
-    private static function onTerminal(array $cmd): int
+    public static function onTerminal(array $cmd): int
     {
         $proc = @proc_open($cmd, [0 => STDIN, 1 => STDOUT, 2 => STDERR], $pipes);
         return is_resource($proc) ? proc_close($proc) : -1;

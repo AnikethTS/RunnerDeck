@@ -1,5 +1,7 @@
 # Configuration
 
+Every saved setting can also be read and changed from a terminal with `runnerdeck config list|get|set|unset`; names are the variables below in lowercase with hyphens (`RUNNERDECK_DRAIN_TIMEOUT` is `drain-timeout`). See [Command line](cli.md#setup).
+
 Three layers, highest priority first: **real environment variables** (e.g.
 a systemd unit's `Environment=`) → **`.env`** (see `.env.example`) →
 **settings saved through the UI** (`storage/settings.json`). You only need
@@ -27,7 +29,7 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_LONG_JOB_MINUTES` | no | off | Whole number 1–1440. Fire the crash webhook once when an in-progress job assigned to a runner on this host has run this long. Settings → Automation |
 | `RUNNERDECK_MIN_FREE_DISK_GIB` | no | `1` | Refuse Start / add / scale-to-queue when the pool filesystem has less than this many GiB free. `0` = off. Unknown disk fails open. Settings → Automation |
 | `RUNNERDECK_MIN_FREE_RAM_MIB` | no | `256` | Refuse starts when Linux `MemAvailable` is below this many MiB. `0` = off. Windows reads it via CIM. Unreadable RAM (macOS) fails open. Settings → Automation |
-| `RUNNERDECK_NO_BANNER` | no | off | `1` to hide the welcome message that `run.sh`, `run.ps1`, `app/bin/doctor.php` and `app/bin/setup-totp.php` print on start |
+| `RUNNERDECK_NO_BANNER` | no | off | `1` to hide the welcome message that `run.sh`, `run.ps1`, `runnerdeck --version`, `app/bin/doctor.php` and `app/bin/setup-totp.php` print on start |
 | `RUNNERDECK_SYSLOG` | no | off | `1` to send crash/alert events as RFC5424 to the local syslog socket. Settings → Notifications |
 | `RUNNERDECK_SYSLOG_SOCKET` | no | `/dev/log` | Absolute unix datagram path. Env only |
 | `RUNNERDECK_SLOT_CPU_PERCENT` | no | off | Whole number 1–100. cgroup v2 `cpu.max` as that percent of one CPU when a slot starts. Settings → Automation |

@@ -66,16 +66,45 @@ The `e2e-live` job runs `tests/e2e-live/dashboard-live.spec.js` with Playwright 
 
 ### Command line
 
-`app/bin/runnerdeck.php` is the entry point; `app/src/Cli/Cli.php` parses the
-arguments and calls `ProcessControl` / `RunnerPool` directly (not HTTP), and
-`app/src/Cli/Updater.php` is `runnerdeck update`. Output goes to injected
-streams and `Updater` takes an injected runner for its shell commands, so
-`app/tests/CliTest.php` and `app/tests/UpdaterTest.php` run every command
-without touching real runners, GitHub or the package manager. Keep a new
-command's logic in `src/` and the flags in `Cli`, not in the entry script.
-Entry points that reach it: `packaging/common/runnerdeck` (Debian, Homebrew),
+`app/bin/runnerdeck.php` is the entry point. `app/src/Cli/Cli.php` parses the
+arguments and calls `ProcessControl` / `RunnerPool` directly (not HTTP). The
+rest of `app/src/Cli/`: `Ops` (drain, rolling restart, maintenance, rename,
+resize, mirroring the API actions), `ConfigCommand` (`config` and `setup`, going
+through `SaveSettingsAction::save` so the validation is shared), `Updater`
+(`update`), `Installer` (`install`), and `Completion` (shell scripts).
+Output goes to injected streams and shell commands go through an injected
+runner, so the tests drive every command without touching real runners,
+GitHub or the package manager: `CliTest`, `CliCommandsTest` (both extend
+`CliTestCase`, which gives each test its own pool and settings folder),
+`UpdaterTest`, `ConfigCommandTest`, `CompletionTest` (also syntax-checks each
+script in bash, zsh and fish when installed) and `InstallerTest`. Keep a new
+command's logic in `src/` and its flags in `Cli`, not in the entry script.
+Entry points: `packaging/common/runnerdeck` (Debian, Homebrew),
 `./runnerdeck` (checkout), and on Windows `RunnerDeck.exe cli` through
-`packaging/windows/runnerdeck.cmd`. User docs: [Command line](cli.md).
+`packaging/windows/runnerdeck.cmd`. The man page is
+`packaging/common/runnerdeck.1`; add new commands there, to the usage text in
+`Cli`, and to `Completion::COMMANDS`. User docs: [Command line](cli.md).
+
+**Trying it by hand.** `tools/dev/cli-sandbox.sh` opens a shell where
+`runnerdeck` works on a throwaway pool and settings folder (removed when you
+exit), so nothing touches your real runners. Use a throwaway test repository
+for anything that registers a runner:
+
+```bash
+tools/dev/cli-sandbox.sh
+runnerdeck --version && runnerdeck list          # empty pool
+runnerdeck setup --repo you/throwaway-repo       # then: runnerdeck auth status
+runnerdeck add --ephemeral && runnerdeck status  # registers a real runner
+runnerdeck logs runner-1 -n 20
+runnerdeck stop runner-1 && runnerdeck delete runner-1
+runnerdeck config set pool-cap 4 && runnerdeck config list
+runnerdeck maintenance on && runnerdeck maintenance off
+runnerdeck update --check
+```
+
+Also check the error paths (`runnerdeck stop ghost`, `runnerdeck config set
+pool-cap 99`, `runnerdeck bogus`; each should print a message and exit 1) and
+`runnerdeck completion bash | bash -n`.
 
 ### Packaging
 

@@ -1,10 +1,11 @@
 # How it works
 
-- **The command line** (`runnerdeck list`, `stop`, `update`, ...) is a second
-  front end to the same classes the API actions call (`ProcessControl`,
-  `RunnerPool`), so it needs no running server and cannot drift from the
-  dashboard. It runs the same GitHub busy check before it stops or deletes a
-  runner. See [Command line](cli.md).
+- **The command line** (`runnerdeck list`, `stop`, `drain`, `config`, `update`,
+  ...) is a second front end to the same classes the API actions call
+  (`ProcessControl`, `RunnerPool`, `Drain`, `RollingRestart`, and the settings
+  validation behind the Settings screen), so it needs no running server and
+  cannot drift from the dashboard. It runs the same GitHub busy check before it
+  stops, restarts, renames or deletes a runner. See [Command line](cli.md).
 
 - **Local process state** comes from reading each runner directory directly
   — its `.runner` config, its `runner.pid` file, and (as a fallback, since

@@ -186,12 +186,39 @@ final class CliTest extends TestCase
         }
     }
 
-    public function testStatusIsAnAliasForList(): void
+    public function testStatusAddsWhatGithubReports(): void
     {
-        [, $list] = $this->cli(['list']);
-        [$code, $status] = $this->cli(['status']);
+        $name = RunnerPool::agentNameFor('runner-1');
+        \RunnerDeck\System\Shell::fake(fn (array $cmd): array => [
+            'code' => 0,
+            'stdout' => json_encode(['runners' => [
+                ['name' => $name, 'status' => 'online', 'busy' => true, 'labels' => [], 'os' => 'Linux', 'id' => 1],
+            ]]),
+            'stderr' => '',
+        ]);
+        try {
+            [$code, $out] = $this->cli(['status']);
+            [, $json] = $this->cli(['status', '--json']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
         $this->assertSame(0, $code);
-        $this->assertSame($list, $status);
+        $this->assertStringContainsString('GITHUB', $out);
+        $this->assertMatchesRegularExpression('/runner-1\s.*busy/', $out);
+        $this->assertMatchesRegularExpression('/runner-2\s.*unregistered/', $out);
+        $this->assertSame('busy', json_decode($json, true)['runners'][0]['github']);
+    }
+
+    public function testStatusShowsAQuestionMarkWhenGithubIsUnreachable(): void
+    {
+        \RunnerDeck\System\Shell::fake(fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => 'off']);
+        try {
+            [$code, $out] = $this->cli(['status']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertMatchesRegularExpression('/runner-1\s.*\?/', $out);
     }
 
     public function testAnUnconfiguredRunnerShowsAsNew(): void
@@ -231,7 +258,7 @@ final class CliTest extends TestCase
             \RunnerDeck\System\Shell::fake(null);
         }
         $this->assertSame(1, $code);
-        $this->assertStringContainsString('Pass force=1', $err);
+        $this->assertStringContainsString('Pass --force', $err);
     }
 
     public function testStopJsonCarriesTheBusyFlagWhenAJobIsRunning(): void
@@ -459,8 +486,8 @@ final class CliTest extends TestCase
         }
         $this->assertSame(1, $restart);
         $this->assertSame(1, $delete);
-        $this->assertStringContainsString('Pass force=1', $restartErr);
-        $this->assertStringContainsString('Pass force=1', $deleteErr);
+        $this->assertStringContainsString('Pass --force', $restartErr);
+        $this->assertStringContainsString('Pass --force', $deleteErr);
         $this->assertDirectoryExists($this->pool . '/runner-1');
     }
 
@@ -470,7 +497,7 @@ final class CliTest extends TestCase
         $ran = [];
         $out = fopen('php://memory', 'w+');
         $cli = new Cli($out, fopen('php://memory', 'w+'), fopen('php://memory', 'r'));
-        $cli->runUpdateCommandsWith(function (array $cmd) use (&$ran): int {
+        $cli->runCommandsWith(function (array $cmd) use (&$ran): int {
             $ran[] = $cmd;
             return 0;
         });

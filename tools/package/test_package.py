@@ -1,3 +1,4 @@
+import gzip
 import io
 import re
 import sys
@@ -70,6 +71,8 @@ class DebianPackage(unittest.TestCase):
             "./usr/share/runnerdeck/VERSION",
             "./usr/share/runnerdeck/app/public/index.php",
             "./usr/share/runnerdeck/app/src/bootstrap.php",
+            "./usr/share/runnerdeck/app/bin/runnerdeck.php",
+            "./usr/share/man/man1/runnerdeck.1.gz",
             "./usr/share/applications/runnerdeck.desktop",
             "./usr/lib/systemd/user/runnerdeck.service",
             "./usr/share/icons/hicolor/512x512/apps/runnerdeck.png",
@@ -78,6 +81,13 @@ class DebianPackage(unittest.TestCase):
         self.assertEqual(0o755, data["./usr/bin/runnerdeck"].mode)
         self.assertEqual(0o755, data["./usr/share/runnerdeck/run.sh"].mode)
         self.assertEqual(0, data["./usr/bin/runnerdeck"].uid)
+
+    def test_the_man_page_is_compressed_and_names_every_command(self):
+        with tarfile.open(fileobj=io.BytesIO(self.members["data.tar.gz"]), mode="r:gz") as archive:
+            page = gzip.decompress(archive.extractfile("./usr/share/man/man1/runnerdeck.1.gz").read()).decode()
+        self.assertTrue(page.startswith(".TH RUNNERDECK 1"))
+        for command in ("rolling-restart", "maintenance", "config list", "completion", "update"):
+            self.assertIn(command, page)
 
     def test_the_package_ships_no_dev_tooling(self):
         names = read_tar(self.members["data.tar.gz"])

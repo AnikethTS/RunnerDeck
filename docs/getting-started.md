@@ -58,8 +58,9 @@ read runners, and whether the pool and storage directories are writable —
 and exits non-zero if anything required is missing, so it's safe to use in
 a setup script too. A packaged install has the same check as `runnerdeck doctor`.
 
-Prefer a terminal over the dashboard? Once it is set up, `runnerdeck list`,
-`add`, `start`, `stop`, `logs` and `update` manage the pool without opening a
+Prefer a terminal over the dashboard? `runnerdeck setup` picks the org or repo,
+`runnerdeck auth login` signs in to GitHub, and `runnerdeck add`, `start`,
+`stop`, `logs`, `config` and `update` manage the rest without opening a
 browser; see [Command line](cli.md).
 
 ## First-time setup
