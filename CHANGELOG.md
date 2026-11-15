@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-16
+
 ### Added
 
 - The runner page shows the job that runner is working on, and the log on that page can be searched in place.
