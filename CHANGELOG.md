@@ -10,6 +10,12 @@ follows [SemVer](https://semver.org/).
 
 - `runnerdeck update` (alias `upgrade`) checks the latest release and upgrades the way this copy was installed: `brew upgrade`, a checksum-verified `.deb` installed with `sudo apt`, the checksum-verified Windows Setup wizard, or `git pull --ff-only`. `--check` only reports (and takes `--json`), `--yes` skips the prompt. Docker and unidentified installs get instructions instead. `RUNNERDECK_INSTALL_METHOD` overrides the detected install type.
 - A command line reference, `docs/cli.md`, and tests for every `runnerdeck` command.
+- The command line covers the rest of the dashboard's pool actions: `rolling-restart`, `drain`, `resize`, `rename`, `force-idle` and `maintenance on|off|status`, with `--timeout` for how long to wait on a running job.
+- `runnerdeck setup` picks the org or repo (asking for anything left out), `runnerdeck config list|get|set|unset` reads and changes every saved setting using the Settings screen's own validation, and `runnerdeck auth status|login|totp` handles the GitHub and dashboard sign-in.
+- `runnerdeck status` adds a GITHUB column (idle, busy, offline, unregistered). `list` and `status` take `--watch`, output is coloured on a terminal (`--no-color`, `NO_COLOR`), and `-q` prints only errors.
+- `runnerdeck completion bash|zsh|fish|powershell` prints a shell completion script that also completes runner ids and setting names, and the Debian package and Homebrew install a `runnerdeck(1)` manual page.
+- `runnerdeck install` and `uninstall` link a source checkout's `runnerdeck` into `~/.local/bin`.
+- `tools/dev/cli-sandbox.sh` opens a shell where `runnerdeck` works on a throwaway pool and settings folder.
 - A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. The Windows installer puts the same `runnerdeck` command on your PATH (a task you can untick), and `RunnerDeck.exe cli <command>` works in the portable zip and exe. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
 
 ## [1.15.0] - 2026-11-16

@@ -12,14 +12,10 @@ import (
 // Visual C++ runtime is missing.
 const exitMissingDLL = 0xC0000135
 
-// isCLI reports whether the arguments ask for the command line rather than
-// the dashboard: RunnerDeck.exe cli list.
 func isCLI(args []string) bool {
 	return len(args) > 0 && args[0] == "cli"
 }
 
-// cliCommand runs the PHP command line (app/bin/runnerdeck.php) with the
-// bundled PHP.
 func cliCommand(l layout, env []string, args []string) *exec.Cmd {
 	full := append([]string{filepath.Join(l.app, "bin", "runnerdeck.php")}, args...)
 	cmd := exec.Command(l.php, full...)

@@ -111,7 +111,7 @@ def readme(version: str, php_version: str) -> str:
         "You also need the GitHub CLI: winget install GitHub.cli, then gh auth login.\r\n"
         "Your settings and runners are kept in %LOCALAPPDATA%\\RunnerDeck.\r\n"
         f"Options: {PRODUCT_EXE} --port 9000 --no-browser --version\r\n"
-        f"Command line: {PRODUCT_EXE} cli list (also start, stop, restart, add, delete, logs)\r\n"
+        f"Command line: {PRODUCT_EXE} cli list (also status, add, start, stop, restart, drain, config, logs)\r\n"
         "\r\n"
         f"Bundled PHP {php_version} (php.net). This download is not code-signed, so\r\n"
         "Windows SmartScreen may warn the first time: choose More info, then Run anyway.\r\n"

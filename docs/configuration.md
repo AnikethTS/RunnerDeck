@@ -1,5 +1,7 @@
 # Configuration
 
+Every saved setting can also be read and changed from a terminal with `runnerdeck config list|get|set|unset`; names are the variables below in lowercase with hyphens (`RUNNERDECK_DRAIN_TIMEOUT` is `drain-timeout`). See [Command line](cli.md#setup).
+
 Three layers, highest priority first: **real environment variables** (e.g.
 a systemd unit's `Environment=`) → **`.env`** (see `.env.example`) →
 **settings saved through the UI** (`storage/settings.json`). You only need
