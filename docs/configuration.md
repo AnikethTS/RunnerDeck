@@ -14,7 +14,8 @@ one of these — most people will just use the in-app setup screen:
 | `RUNNERDECK_EXTRA_LABELS` | no | off | Comma-separated extra GitHub labels applied with the shared label on add/rename. Per-slot extras on Add runner are stored in the slot and merged on `config.sh`. Settings → Repository |
 | `RUNNERDECK_POOL_DIR` | no | `<repo>/../runners` | Where `runner-base`, `runner-1`, ... live. `doctor.php` refuses this directory when a `package.json` is in it or above it — Node would load the runner `hashFiles` script as an ES module |
 | `RUNNERDECK_GH_BIN` | no | auto-detected | Explicit path to `gh`, if it's not resolvable from PATH in whatever context launches `run.sh` |
-| `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases |
+| `RUNNERDECK_CHECK_UPDATES` | no | off | `1` to enable the header's "update available" check against this project's own GitHub Releases. `runnerdeck update` does not need it |
+| `RUNNERDECK_INSTALL_METHOD` | no | detected | Tells `runnerdeck update` how this copy was installed: `brew`, `deb`, `windows`, `git`, `docker` or `unknown`. Set it only if the guess is wrong; see [Command line](cli.md#updating) |
 | `RUNNERDECK_AUTH_TOTP_SECRET` | no | off | Set via `php app/bin/setup-totp.php` or **Settings → Login** in the dashboard, not by hand — requires an authenticator app code to use the dashboard or API. See [Security & safety](security-and-safety.md#hosting-remotely) |
 | `RUNNERDECK_SESSION_IDLE_MINUTES` | no | off | Whole number 1–1440. When login is on, the session ends after this many minutes with no requests. Hidden dashboard tabs do not poll, so they count as idle. Settings → Login |
 | `RUNNERDECK_AUTO_RESTART` | no | off | `1` to automatically restart a runner that crashed unexpectedly (up to 3 attempts before giving up and flagging it). Toggle from Settings |

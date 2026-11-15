@@ -87,20 +87,22 @@ Your settings and runners are stored in `~/.local/share/runnerdeck`.
 The same pool can be managed from a terminal, with no dashboard running:
 
 ```bash
+runnerdeck --version            # also -v; --help for the list
 runnerdeck list                 # runners on this machine (--json for scripts)
 runnerdeck add --label gpu      # add and start a runner (--name, --ephemeral)
 runnerdeck stop runner-1        # asks GitHub first; --force skips the check
-runnerdeck restart --all        # or name runners; start/stop also take --all
+runnerdeck restart runner-1     # start and stop also take --all
 runnerdeck logs runner-1 -f     # follow a runner's log (-n for line count)
 runnerdeck delete runner-2      # stop, deregister and remove
+runnerdeck update               # upgrade the way you installed (--check to look)
 runnerdeck doctor               # check the machine's setup
 runnerdeck run --open           # start the dashboard (also the default)
 ```
 
-From a source checkout use `./runnerdeck` instead. The Windows installer adds
-the same `runnerdeck` command to your PATH (a task you can untick); open a new
-terminal after installing. On Windows, `runnerdeck run --port 9000` starts the
-dashboard. With the portable zip or exe, run `RunnerDeck.exe cli list`.
+The Debian package, Homebrew and the Windows installer put `runnerdeck` on your
+PATH (open a new terminal after installing on Windows). From a source checkout
+use `./runnerdeck`; with the portable Windows zip or exe, use
+`RunnerDeck.exe cli list`. Full reference: [Command line](docs/cli.md).
 
 ## Screenshots
 
@@ -142,6 +144,7 @@ Curious exactly how any of that works under the hood? See
 
 - [Getting started](docs/getting-started.md) — prerequisites, platform
   support, first-time setup, Add to Home Screen
+- [Command line](docs/cli.md) — every `runnerdeck` command, flags, updating and scripting
 - [How it works](docs/how-it-works.md) — the full behavior reference
 - [Docker](docs/docker.md) — running RunnerDeck in a container (or Podman)
 - [Hosting](docs/hosting.md) — php-fpm, TLS, IP allowlist / mTLS

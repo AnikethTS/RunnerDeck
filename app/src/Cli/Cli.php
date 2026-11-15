@@ -31,11 +31,13 @@ Commands:
                                Add and start a new runner
   delete <runner...>           Stop, deregister and remove runners
   logs <runner> [-n N] [-f]    Show a runner's log; -f follows it
+  update [--check] [--yes]     Upgrade to the latest release (--check only looks)
   doctor                       Check this machine's setup
   version                      Print the version
 
 Options:
-  --json     Machine-readable output (list, start, stop, restart, add, delete)
+  --json     Machine-readable output (list, start, stop, restart, add, delete, update --check)
+  --yes, -y  Do not ask before updating
   --force    Do not check GitHub for a running job first
   -h, --help Show this help
 TXT;
@@ -44,20 +46,33 @@ TXT;
     private $out;
     /** @var resource */
     private $err;
+    /** @var resource */
+    private $in;
     private bool $json = false;
     private bool $force = false;
 
     /** @var null|callable(): bool Test seam: return false to end `logs -f`. */
     private $keepFollowing = null;
 
+    /** @var null|callable(list<string>): int */
+    private $updateRunner = null;
+
     /**
      * @param resource|null $out
      * @param resource|null $err
+     * @param resource|null $in
      */
-    public function __construct($out = null, $err = null)
+    public function __construct($out = null, $err = null, $in = null)
     {
         $this->out = $out ?? STDOUT;
         $this->err = $err ?? STDERR;
+        $this->in = $in ?? STDIN;
+    }
+
+    /** @param null|callable(list<string>): int $runner Test seam for the commands `update` runs. */
+    public function runUpdateCommandsWith(?callable $runner): void
+    {
+        $this->updateRunner = $runner;
     }
 
     public function followWhile(?callable $keepFollowing): void
@@ -86,6 +101,7 @@ TXT;
             'list', 'ls', 'status' => $this->list(),
             'start' => $this->start($flags, $args),
             'stop' => $this->stop($flags, $args),
+            'update', 'upgrade' => $this->update($flags),
             'restart' => $this->restart($args),
             'add' => $this->add($flags),
             'delete', 'rm' => $this->delete($args),
@@ -266,6 +282,18 @@ TXT;
             $messages[] = (string) ($result['message'] ?? '');
         }
         return $this->report(['ok' => $ok, 'message' => implode("\n", $messages)]);
+    }
+
+    /** @param array<string, mixed> $flags */
+    private function update(array $flags): int
+    {
+        $updater = new Updater($this->out, $this->err, $this->in, $this->updateRunner);
+        return $updater->run(
+            isset($flags['check']),
+            isset($flags['yes']) || isset($flags['y']),
+            $this->json,
+            dirname(__DIR__, 3)
+        );
     }
 
     /** @param array<string, mixed> $flags */

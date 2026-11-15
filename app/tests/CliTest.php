@@ -19,6 +19,8 @@ final class CliTest extends TestCase
         mkdir($this->pool . '/runner-1', 0755, true);
         mkdir($this->pool . '/runner-2', 0755, true);
         file_put_contents($this->pool . '/runner-1/runner.log', "one\ntwo\nthree\n");
+        mkdir($this->pool . '-storage', 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $this->pool . '-storage/settings.json');
         putenv('RUNNERDECK_POOL_DIR=' . $this->pool);
         putenv('RUNNERDECK_ORG=acme');
         putenv('RUNNERDECK_SCOPE=org');
@@ -34,6 +36,7 @@ final class CliTest extends TestCase
         putenv('RUNNERDECK_POOL_DIR');
         putenv('RUNNERDECK_ORG');
         putenv('RUNNERDECK_SCOPE');
+        putenv('RUNNERDECK_SETTINGS_FILE');
     }
 
     /** @param list<string> $argv @return array{0: int, 1: string, 2: string} */
@@ -172,5 +175,265 @@ final class CliTest extends TestCase
         $text = (string) stream_get_contents($out);
         $this->assertSame(1, substr_count($text, "three\n"));
         $this->assertSame(1, substr_count($text, "four\n"));
+    }
+
+    public function testVersionFlagsWorkLikeTheCommand(): void
+    {
+        foreach ([['-v'], ['--version'], ['version']] as $argv) {
+            [$code, $out] = $this->cli($argv);
+            $this->assertSame(0, $code);
+            $this->assertStringStartsWith('RunnerDeck ', $out);
+        }
+    }
+
+    public function testStatusIsAnAliasForList(): void
+    {
+        [, $list] = $this->cli(['list']);
+        [$code, $status] = $this->cli(['status']);
+        $this->assertSame(0, $code);
+        $this->assertSame($list, $status);
+    }
+
+    public function testAnUnconfiguredRunnerShowsAsNew(): void
+    {
+        [, $out] = $this->cli(['list']);
+        $this->assertMatchesRegularExpression('/runner-1\s+new\s/', $out);
+    }
+
+    public function testFlagsMayComeBeforeOrAfterTheRunnerNames(): void
+    {
+        $orders = [
+            ['stop', '--force', 'runner-1'],
+            ['stop', 'runner-1', '--force'],
+            ['stop', '--force=1', 'runner-1'],
+        ];
+        foreach ($orders as $argv) {
+            [$code, $out] = $this->cli($argv);
+            $this->assertSame(0, $code);
+            $this->assertStringContainsString('runner-1 not running', $out);
+        }
+    }
+
+    public function testStopMarksTheRunnerAsDeliberatelyStopped(): void
+    {
+        $this->cli(['stop', 'runner-1', '--force']);
+        $this->assertTrue(\RunnerDeck\Lifecycle\CrashState::export()['runner-1']['justStopped'] ?? false);
+    }
+
+    public function testStopRefusesWhenGithubCannotConfirmTheRunnerIsIdle(): void
+    {
+        \RunnerDeck\System\Shell::fake(
+            fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => 'no network']
+        );
+        try {
+            [$code, , $err] = $this->cli(['stop', 'runner-1']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('Pass force=1', $err);
+    }
+
+    public function testStopJsonCarriesTheBusyFlagWhenAJobIsRunning(): void
+    {
+        $name = RunnerPool::agentNameFor('runner-1');
+        \RunnerDeck\System\Shell::fake(function (array $cmd) use ($name): array {
+            $runners = ['runners' => [['name' => $name, 'status' => 'online', 'busy' => true,
+                'labels' => [], 'os' => 'Linux', 'id' => 1]]];
+            return ['code' => 0, 'stdout' => json_encode($runners), 'stderr' => ''];
+        });
+        try {
+            [$code, $out] = $this->cli(['stop', 'runner-1', '--json']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $data = json_decode($out, true);
+        $this->assertSame(1, $code);
+        $this->assertTrue($data['busy'] ?? false);
+    }
+
+    public function testStopKillsARunningRunner(): void
+    {
+        file_put_contents($this->pool . '/runner-1/runner.pid', '4242');
+        RunnerPool::fakeCheckProcess(fn () => [true, 4242]);
+        $alive = true;
+        ProcessControl::fakeAlive(function () use (&$alive): bool {
+            return $alive;
+        });
+        ProcessControl::fakeTermWait(0);
+        $signals = [];
+        ProcessControl::fakeKill(function (int $pid, int $signal) use (&$alive, &$signals): bool {
+            $signals[] = [$pid, $signal];
+            $alive = false;
+            return true;
+        });
+        try {
+            [$code, $out] = $this->cli(['stop', 'runner-1', '--force']);
+        } finally {
+            ProcessControl::fakeAlive(null);
+            ProcessControl::fakeTermWait(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 stopped (pid 4242)', $out);
+        $this->assertSame(4242, $signals[0][0]);
+    }
+
+    public function testStartReportsARunnerThatIsAlreadyRunning(): void
+    {
+        RunnerPool::fakeCheckProcess(fn () => [true, 777]);
+        RunnerPool::fakeLiveListeners([]);
+        [$code, $out] = $this->cli(['start', 'runner-1']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 already running (pid 777)', $out);
+    }
+
+    public function testStartIsRefusedInMaintenanceMode(): void
+    {
+        $this->useMaintenance(true);
+        [$code, , $err] = $this->cli(['start', 'runner-1']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('maintenance', strtolower($err));
+    }
+
+    public function testStartAllNamesEveryRunner(): void
+    {
+        RunnerPool::fakeCheckProcess(fn () => [true, 5]);
+        [$code, $out] = $this->cli(['start', '--all']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 already running', $out);
+        $this->assertStringContainsString('runner-2 already running', $out);
+    }
+
+    public function testAddIsRefusedWhenTheDiskIsFull(): void
+    {
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [1024, 100 * 1024 * 1024 * 1024]);
+        try {
+            [$code, , $err] = $this->cli(['add', '--name', 'ci-box', '--ephemeral', '--label', 'gpu,fast']);
+        } finally {
+            \RunnerDeck\Host\HostPressure::fakeDisk(null);
+        }
+        $this->assertSame(1, $code);
+        $this->assertNotSame('', trim($err));
+    }
+
+    public function testAddJsonReportsTheRefusalAsJson(): void
+    {
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [1024, 100 * 1024 * 1024 * 1024]);
+        try {
+            [$code, $out] = $this->cli(['add', '--json']);
+        } finally {
+            \RunnerDeck\Host\HostPressure::fakeDisk(null);
+        }
+        $this->assertSame(1, $code);
+        $this->assertFalse(json_decode($out, true)['ok']);
+    }
+
+    public function testRestartOfAnUnknownRunnerFailsBeforeTouchingAnything(): void
+    {
+        [$code, , $err] = $this->cli(['restart', 'ghost', '--force']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('unknown runner(s): ghost', $err);
+    }
+
+    public function testRestartWithNoRunnerAsksForOne(): void
+    {
+        [$code, , $err] = $this->cli(['restart']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('name at least one runner', $err);
+    }
+
+    public function testRestartStopsThenReportsWhyItCannotStart(): void
+    {
+        $this->useMaintenance(true);
+        [$code] = $this->cli(['restart', 'runner-1', '--force']);
+        $this->assertSame(1, $code);
+    }
+
+    public function testDeleteRemovesAnUnconfiguredRunner(): void
+    {
+        \RunnerDeck\System\Shell::fake(function (array $cmd): array {
+            if (($cmd[0] ?? '') === 'rm') {
+                exec('rm -rf ' . escapeshellarg($cmd[2]));
+            }
+            return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+        });
+        try {
+            [$code, $out] = $this->cli(['delete', 'runner-2', '--force']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-2 deleted', $out);
+        $this->assertDirectoryDoesNotExist($this->pool . '/runner-2');
+    }
+
+    public function testRmIsAnAliasForDelete(): void
+    {
+        [$code, , $err] = $this->cli(['rm', 'ghost']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('unknown runner(s): ghost', $err);
+    }
+
+    public function testDeleteNeedsARunnerName(): void
+    {
+        [$code, , $err] = $this->cli(['delete']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('name at least one runner', $err);
+    }
+
+    public function testLogsLinesFlagAndDefaultCount(): void
+    {
+        [, $out] = $this->cli(['logs', 'runner-1', '--lines=1']);
+        $this->assertSame("three\n", $out);
+        [, $all] = $this->cli(['logs', 'runner-1']);
+        $this->assertStringContainsString('one', $all);
+    }
+
+    public function testListJsonOnAnEmptyPoolIsStillValidJson(): void
+    {
+        putenv('RUNNERDECK_POOL_DIR=' . $this->pool . '/none');
+        [$code, $out] = $this->cli(['list', '--json']);
+        $this->assertSame(0, $code);
+        $this->assertSame([], json_decode($out, true)['runners']);
+    }
+
+    public function testUpdateNeedsNoRunnersAndReportsCheckErrors(): void
+    {
+        \RunnerDeck\System\Shell::fake(
+            fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in']
+        );
+        try {
+            [$code, , $err] = $this->cli(['update', '--check']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('could not check for updates: not logged in', $err);
+    }
+
+    public function testUpgradeIsAnAliasForUpdate(): void
+    {
+        $this->fakeLatest('99.0.0');
+        try {
+            [$code, $out] = $this->cli(['upgrade', '--check']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('RunnerDeck 99.0.0 is available', $out);
+    }
+
+    private function fakeLatest(string $version): void
+    {
+        \RunnerDeck\System\Shell::fake(fn (array $cmd): array => [
+            'code' => 0,
+            'stdout' => json_encode(['tag_name' => 'v' . $version]),
+            'stderr' => '',
+        ]);
+    }
+
+    private function useMaintenance(bool $on): void
+    {
+        \RunnerDeck\Host\HostMode::setMaintenance($on);
     }
 }
