@@ -199,7 +199,7 @@ TXT;
         return 0;
     }
 
-    private static function duration(?int $seconds): string
+    public static function duration(?int $seconds): string
     {
         if ($seconds === null) {
             return '-';

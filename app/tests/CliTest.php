@@ -436,4 +436,52 @@ final class CliTest extends TestCase
     {
         \RunnerDeck\Host\HostMode::setMaintenance($on);
     }
+
+    public function testDurationsUseTheLargestUnit(): void
+    {
+        $this->assertSame('-', Cli::duration(null));
+        $this->assertSame('42s', Cli::duration(42));
+        $this->assertSame('5m', Cli::duration(300));
+        $this->assertSame('2h3m', Cli::duration(2 * 3600 + 3 * 60 + 5));
+        $this->assertSame('3d4h', Cli::duration(3 * 86400 + 4 * 3600));
+    }
+
+    public function testRestartAndDeleteRefuseWhenGithubCannotConfirmIdle(): void
+    {
+        \RunnerDeck\System\Shell::fake(
+            fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => 'offline']
+        );
+        try {
+            [$restart, , $restartErr] = $this->cli(['restart', 'runner-1']);
+            [$delete, , $deleteErr] = $this->cli(['delete', 'runner-1']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(1, $restart);
+        $this->assertSame(1, $delete);
+        $this->assertStringContainsString('Pass force=1', $restartErr);
+        $this->assertStringContainsString('Pass force=1', $deleteErr);
+        $this->assertDirectoryExists($this->pool . '/runner-1');
+    }
+
+    public function testUpdateRunsItsCommandsThroughTheInjectedRunner(): void
+    {
+        $this->fakeLatest('99.0.0');
+        $ran = [];
+        $out = fopen('php://memory', 'w+');
+        $cli = new Cli($out, fopen('php://memory', 'w+'), fopen('php://memory', 'r'));
+        $cli->runUpdateCommandsWith(function (array $cmd) use (&$ran): int {
+            $ran[] = $cmd;
+            return 0;
+        });
+        putenv('RUNNERDECK_INSTALL_METHOD=brew');
+        try {
+            $code = $cli->run(['update', '-y']);
+        } finally {
+            putenv('RUNNERDECK_INSTALL_METHOD');
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertSame([['brew', 'upgrade', 'anikethts/runnerdeck/runnerdeck']], $ran);
+    }
 }

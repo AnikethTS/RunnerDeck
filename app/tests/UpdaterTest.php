@@ -216,6 +216,29 @@ final class UpdaterTest extends TestCase
         $this->assertSame([], $this->ran);
     }
 
+    public function testWithoutAnInjectedRunnerCommandsRunOnTheRealTerminal(): void
+    {
+        $this->latest('99.0.0');
+        $out = fopen('php://memory', 'w+');
+        $err = fopen('php://memory', 'w+');
+        $updater = new Updater($out, $err, fopen('php://memory', 'r'));
+        $code = $updater->run(false, true, false, $this->tmp() . '/not-a-checkout', 'git');
+        rewind($err);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('git exited with', (string) stream_get_contents($err));
+    }
+
+    public function testApplyRefusesInstallTypesWithoutADownload(): void
+    {
+        $err = fopen('php://memory', 'w+');
+        $updater = new Updater(fopen('php://memory', 'w+'), $err, fopen('php://memory', 'r'));
+        $apply = new \ReflectionMethod($updater, 'apply');
+        $this->assertSame(1, $apply->invoke($updater, 'unknown', '9.9.9', '/srv/rd'));
+        rewind($err);
+        $text = (string) stream_get_contents($err);
+        $this->assertStringContainsString('cannot update an install of type unknown', $text);
+    }
+
     private function tmp(): string
     {
         $dir = sys_get_temp_dir() . '/runnerdeck-updater-' . uniqid();

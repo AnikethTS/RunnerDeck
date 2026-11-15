@@ -167,9 +167,7 @@ final class Updater
             return $this->problem("cannot update an install of type {$method}");
         }
         $dir = sys_get_temp_dir() . '/runnerdeck-update-' . bin2hex(random_bytes(6));
-        if (!mkdir($dir, 0755, true)) {
-            return $this->problem("cannot create {$dir}");
-        }
+        @mkdir($dir, 0755, true);
         try {
             $file = $this->download($dir, $latest, $assets);
             if ($file === null) {
