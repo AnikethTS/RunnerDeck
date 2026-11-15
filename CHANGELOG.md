@@ -8,6 +8,8 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- `runnerdeck update` (alias `upgrade`) checks the latest release and upgrades the way this copy was installed: `brew upgrade`, a checksum-verified `.deb` installed with `sudo apt`, the checksum-verified Windows Setup wizard, or `git pull --ff-only`. `--check` only reports (and takes `--json`), `--yes` skips the prompt. Docker and unidentified installs get instructions instead. `RUNNERDECK_INSTALL_METHOD` overrides the detected install type.
+- A command line reference, `docs/cli.md`, and tests for every `runnerdeck` command.
 - A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. The Windows installer puts the same `runnerdeck` command on your PATH (a task you can untick), and `RunnerDeck.exe cli <command>` works in the portable zip and exe. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
 
 ## [1.15.0] - 2026-11-16

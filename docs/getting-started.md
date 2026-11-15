@@ -56,7 +56,11 @@ It checks the PHP version and extensions, `bash`/`curl`/`tar`, whether `gh`
 is installed and authenticated, whether the configured scope can actually
 read runners, and whether the pool and storage directories are writable —
 and exits non-zero if anything required is missing, so it's safe to use in
-a setup script too.
+a setup script too. A packaged install has the same check as `runnerdeck doctor`.
+
+Prefer a terminal over the dashboard? Once it is set up, `runnerdeck list`,
+`add`, `start`, `stop`, `logs` and `update` manage the pool without opening a
+browser; see [Command line](cli.md).
 
 ## First-time setup
 
@@ -83,6 +87,9 @@ a setup script too.
    prints a systemd unit (Linux, starts at boot) or a launchd agent
    (macOS, starts at login). Add `--install` to write it and start it.
    On Windows, the installer can start RunnerDeck when you sign in.
+
+   If you installed a package (Debian, Homebrew, or the Windows installer),
+   start it with `runnerdeck` (or `runnerdeck run --open`) instead.
 
 2. **Open `http://127.0.0.1:8090/`.** If nothing's configured yet, you'll
    land on a setup screen: pick org scope (needs a GitHub org you admin) or

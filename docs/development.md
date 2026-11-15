@@ -64,6 +64,19 @@ The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and 
 
 The `e2e-live` job runs `tests/e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
 
+### Command line
+
+`app/bin/runnerdeck.php` is the entry point; `app/src/Cli/Cli.php` parses the
+arguments and calls `ProcessControl` / `RunnerPool` directly (not HTTP), and
+`app/src/Cli/Updater.php` is `runnerdeck update`. Output goes to injected
+streams and `Updater` takes an injected runner for its shell commands, so
+`app/tests/CliTest.php` and `app/tests/UpdaterTest.php` run every command
+without touching real runners, GitHub or the package manager. Keep a new
+command's logic in `src/` and the flags in `Cli`, not in the entry script.
+Entry points that reach it: `packaging/common/runnerdeck` (Debian, Homebrew),
+`./runnerdeck` (checkout), and on Windows `RunnerDeck.exe cli` through
+`packaging/windows/runnerdeck.cmd`. User docs: [Command line](cli.md).
+
 ### Packaging
 
 Everything that ships is built by one tool, `tools/package/build.py --target <name>` (repeat `--target`, or use `windows` for all three Windows targets). CI and the release workflow call exactly this, so what CI tests is what ships. Artifacts are named `RunnerDeck-<version>-<os>-<arch>[-setup].<ext>` (`x64` and `arm64`) with one `SHA256SUMS-<os>-<arch>` file per platform, and the version always comes from `VERSION`.
