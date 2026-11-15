@@ -40,6 +40,37 @@ def wait_for(check, seconds: float) -> bool:
     return False
 
 
+def cli(env: dict, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["runnerdeck", *args], capture_output=True, text=True, timeout=60, env=env)
+
+
+def check_command_line(env: dict, version: str) -> None:
+    listed = cli(env, "list", "--json")
+    if listed.returncode != 0 or json.loads(listed.stdout).get("ok") is not True:
+        fail(f"list --json gave {listed.returncode}: {listed.stdout!r} {listed.stderr!r}")
+    names = cli(env, "config", "list", "--all")
+    if names.returncode != 0 or "drain-timeout" not in names.stdout:
+        fail(f"config list --all gave {names.stdout!r}")
+    unknown = cli(env, "bogus")
+    if unknown.returncode != 1 or "unknown command" not in unknown.stderr:
+        fail(f"an unknown command gave {unknown.returncode}: {unknown.stderr!r}")
+    for shell in ("bash", "zsh", "fish", "powershell"):
+        script = cli(env, "completion", shell)
+        if script.returncode != 0 or "runnerdeck" not in script.stdout:
+            fail(f"completion {shell} gave {script.returncode}")
+        if shell == "bash":
+            parsed = subprocess.run(["bash", "-n"], input=script.stdout, capture_output=True, text=True)
+            if parsed.returncode != 0:
+                fail(f"the bash completion does not parse: {parsed.stderr}")
+    page = Path("/usr/share/man/man1/runnerdeck.1.gz")
+    if not page.exists():
+        fail("the man page was not installed")
+    rendered = subprocess.run(["man", "-l", str(page)], capture_output=True, text=True, env=dict(env, MANWIDTH="100"))
+    if rendered.returncode == 0 and "rolling-restart" not in rendered.stdout:
+        fail("the man page does not describe rolling-restart")
+    print("ok  the command line works from the installed package: list, config, completion, man page")
+
+
 def main() -> None:
     target = next((a for a in sys.argv[1:] if not a.startswith("--")), "dist")
     path = Path(target)
@@ -57,6 +88,7 @@ def main() -> None:
         env = dict(os.environ, HOME=home, RUNNERDECK_NO_BANNER="1")
         for name in ("RUNNERDECK_ORG", "RUNNERDECK_REPO", "RUNNERDECK_SCOPE"):
             env.pop(name, None)
+        check_command_line(env, version)
         server = subprocess.Popen(
             ["runnerdeck", str(PORT)], env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
             start_new_session=True,

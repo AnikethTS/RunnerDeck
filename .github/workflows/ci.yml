@@ -467,6 +467,66 @@ jobs:
         shell: bash
         run: ./tools/ci/e2e-real-runner.sh cleanup
 
+  e2e-cli:
+    name: E2E · Command line · ${{ matrix.platform }}
+    needs: plan
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu latest" }
+          - { os: macos-latest, platform: "macOS latest" }
+          - { os: windows-latest, platform: "Windows latest" }
+    env:
+      GH_TOKEN: ${{ secrets.E2E_RUNNER_TOKEN }}
+      E2E_REPO: ${{ vars.E2E_REPO }}
+      E2E_TAG: rd-cli-${{ github.run_id }}-${{ github.run_attempt }}-${{ strategy.job-index }}
+    steps:
+      - name: Report the check without registering a runner
+        if: needs.plan.outputs.run_live != 'true'
+        shell: bash
+        run: echo "The command line registers a real runner on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.plan.outputs.run_live == 'true'
+        with:
+          persist-credentials: false
+
+      - name: Check end-to-end configuration
+        id: gate
+        if: needs.plan.outputs.run_live == 'true'
+        shell: bash
+        run: |
+          if [ -n "$GH_TOKEN" ] && [ -n "$E2E_REPO" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::E2E_RUNNER_TOKEN secret and E2E_REPO variable must be set"
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          php-version: "8.5.12"
+          extensions: json, pdo_sqlite
+          coverage: none
+
+      - name: Refresh apt indexes
+        if: steps.gate.outputs.enabled == 'true' && runner.os == 'Linux'
+        run: sh tools/ci/apt-ubuntu-mirrors.sh
+
+      - name: Drive a real runner through its life with the command line
+        if: steps.gate.outputs.enabled == 'true'
+        shell: bash
+        run: ./tools/ci/e2e-cli.sh
+
+      - name: Remove leftover runners and runs
+        if: always() && steps.gate.outputs.enabled == 'true'
+        shell: bash
+        run: ./tools/ci/e2e-cli.sh cleanup
+
   e2e-live:
     name: E2E · Live dashboard · ${{ matrix.platform }}
     needs: plan
@@ -845,6 +905,45 @@ jobs:
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           bash tools/ci/ci-smoke-status.sh
 
+  cli-smoke:
+    name: Smoke · Command line · ${{ matrix.platform }}
+    needs: plan
+    if: needs.plan.outputs.smoke == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.12" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.1" }
+          - { os: macos-latest, platform: "macOS latest", php: "8.5.12" }
+          - { os: windows-latest, platform: "Windows latest", php: "8.5.12" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, pdo_sqlite
+          coverage: none
+
+      - name: Install the shells whose completion scripts are checked
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            Linux) sudo apt-get update -qq && sudo apt-get install -y -qq zsh fish groff ;;
+            macOS) brew install fish ;;
+          esac
+
+      - name: Drive every command against a throwaway pool
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./tools/ci/cli-smoke.sh
+
   e2e-test:
     name: E2E · Browser UI (mocked API)
     needs: plan
@@ -1040,7 +1139,7 @@ jobs:
 
   gate:
     name: CI · Merge gate
-    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, cli-smoke, e2e-cli, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

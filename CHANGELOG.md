@@ -8,6 +8,7 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- CI tests the command line on every OS: `cli-smoke` runs every `runnerdeck` command against a throwaway pool (and checks that the completion scripts parse and the man page lints), `e2e-cli` drives a real runner through `setup`, `add`, `stop`, `start`, a job, `rolling-restart`, `rename`, `maintenance`, `drain` and `delete`, and the Debian, Windows zip and exe, and Windows installer smoke tests now run the installed command line.
 - `runnerdeck update` (alias `upgrade`) checks the latest release and upgrades the way this copy was installed: `brew upgrade`, a checksum-verified `.deb` installed with `sudo apt`, the checksum-verified Windows Setup wizard, or `git pull --ff-only`. `--check` only reports (and takes `--json`), `--yes` skips the prompt. Docker and unidentified installs get instructions instead. `RUNNERDECK_INSTALL_METHOD` overrides the detected install type.
 - A command line reference, `docs/cli.md`, and tests for every `runnerdeck` command.
 - The command line covers the rest of the dashboard's pool actions: `rolling-restart`, `drain`, `resize`, `rename`, `force-idle` and `maintenance on|off|status`, with `--timeout` for how long to wait on a running job.
