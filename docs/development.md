@@ -73,6 +73,7 @@ Everything that ships is built by one tool, `tools/package/build.py --target <na
 | `desktop/` | The Go desktop shell (module `github.com/AnikethTS/RunnerDeck/desktop`, entry point `cmd/runnerdeck`): tray, window, process supervision, first-run checks. Platform code is in `_windows.go` / `_other.go` files, the rest is shared. |
 | `packaging/common/` | Inputs shared by every target, such as `php-branch.txt`. |
 | `packaging/windows/installer/` | The Inno Setup script. |
+| `packaging/windows/runnerdeck.cmd` | The `runnerdeck` command the installer puts on PATH: it starts the dashboard, or runs `RunnerDeck.exe cli <command>`, which unpacks the runtime and runs `app/bin/runnerdeck.php` (the tray build attaches to the parent console to print). |
 | `tools/package/` | `build.py`, `common.py` (version, checksums, naming, app staging) and one module per OS, plus the smoke tests. |
 | `tools/ci/` | CI-only helper scripts. |
 

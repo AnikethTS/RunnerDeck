@@ -33,6 +33,7 @@ Compression=lzma2/ultra
 SolidCompression=yes
 WizardStyle=modern
 AppMutex=RunnerDeckTray
+ChangesEnvironment=yes
 CloseApplications=no
 VersionInfoVersion={#AppVersion}
 
@@ -43,11 +44,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "vcredist"; Description: "Install the Microsoft Visual C++ runtime (PHP needs it)"; GroupDescription: "Required tools:"; Check: NeedVCRedist
 Name: "webview2"; Description: "Install the Microsoft Edge WebView2 runtime (draws the RunnerDeck window)"; GroupDescription: "Required tools:"; Check: NeedWebView2
 Name: "ghcli"; Description: "Install the GitHub CLI (RunnerDeck uses it to talk to GitHub)"; GroupDescription: "Required tools:"; Check: NeedGhCli
+Name: "addtopath"; Description: "Add the runnerdeck command to my PATH"; GroupDescription: "Command line:"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; Flags: unchecked
 Name: "startup"; Description: "Start RunnerDeck when I sign in to Windows"; Flags: unchecked
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; DestName: "RunnerDeck.exe"; Flags: ignoreversion
+Source: "{#RepoRoot}\packaging\windows\runnerdeck.cmd"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#RepoRoot}\desktop\cmd\runnerdeck\icon.ico"; DestDir: "{app}"; DestName: "RunnerDeck.ico"; Flags: ignoreversion
 
 [InstallDelete]
@@ -59,6 +62,7 @@ Name: "{group}\Uninstall RunnerDeck"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\RunnerDeck"; Filename: "{app}\RunnerDeck.exe"; IconFilename: "{app}\RunnerDeck.ico"; Tasks: desktopicon
 
 [Registry]
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NeedsPathEntry; Tasks: addtopath
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RunnerDeck"; ValueData: """{app}\RunnerDeck.exe"" --background"; Flags: uninsdeletevalue; Tasks: startup
 
 [Run]
@@ -235,12 +239,47 @@ begin
     InstallGhCli();
 end;
 
+function PathEntry(): String;
+begin
+  Result := ExpandConstant('{app}\bin');
+end;
+
+function NeedsPathEntry(): Boolean;
+var
+  Paths: String;
+begin
+  if not RegQueryStringValue(HKCU, 'Environment', 'Path', Paths) then
+  begin
+    Result := True;
+    Exit;
+  end;
+  Result := Pos(';' + Uppercase(PathEntry()) + ';', ';' + Uppercase(Paths) + ';') = 0;
+end;
+
+procedure RemoveFromPath();
+var
+  Paths, Entry: String;
+  P: Integer;
+begin
+  if not RegQueryStringValue(HKCU, 'Environment', 'Path', Paths) then
+    Exit;
+  Entry := PathEntry();
+  P := Pos(';' + Uppercase(Entry) + ';', ';' + Uppercase(Paths) + ';');
+  if P = 0 then
+    Exit;
+  Delete(Paths, P, Length(Entry) + 1);
+  if (Length(Paths) > 0) and (Paths[Length(Paths)] = ';') then
+    Delete(Paths, Length(Paths), 1);
+  RegWriteExpandStringValue(HKCU, 'Environment', 'Path', Paths);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;
 begin
   if CurUninstallStep <> usPostUninstall then
     Exit;
+  RemoveFromPath();
   DataDir := ExpandConstant('{localappdata}\RunnerDeck');
   if not DirExists(DataDir) then
     Exit;

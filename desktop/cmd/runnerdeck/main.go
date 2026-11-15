@@ -22,6 +22,9 @@ func main() {
 }
 
 func run(args []string) int {
+	if isCLI(args) {
+		return runCLI(args[1:])
+	}
 	opts, err := parseOptions(args, os.Getenv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "runnerdeck:", err)

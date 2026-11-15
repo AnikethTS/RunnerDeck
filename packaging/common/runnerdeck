@@ -7,12 +7,32 @@ PORT="${RUNNERDECK_PORT:-8090}"
 OPEN=0
 
 usage() {
-    echo "Usage: runnerdeck [--open] [PORT]"
+    echo "Usage: runnerdeck run [--open] [PORT]   start the dashboard (the default)"
+    echo "       runnerdeck <command> [options]    manage runners from the terminal"
     echo "       runnerdeck --version"
-    echo "Starts the RunnerDeck dashboard on http://127.0.0.1:PORT (default 8090)."
-    echo "  --open   open the dashboard in your browser once it is up"
+    echo "Commands: list, start, stop, restart, add, delete, logs, doctor."
+    echo "Run 'runnerdeck help' for details. The dashboard listens on"
+    echo "http://127.0.0.1:PORT (default 8090); --open opens it in your browser."
     echo "Data lives in \$RUNNERDECK_DATA_DIR (default: your user data directory)."
 }
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    default_data="$HOME/Library/Application Support/RunnerDeck"
+else
+    default_data="${XDG_DATA_HOME:-$HOME/.local/share}/runnerdeck"
+fi
+DATA="${RUNNERDECK_DATA_DIR:-$default_data}"
+mkdir -p "$DATA/db" "$DATA/runners"
+export RUNNERDECK_SETTINGS_FILE="${RUNNERDECK_SETTINGS_FILE:-$DATA/settings.json}"
+export RUNNERDECK_HISTORY_FILE="${RUNNERDECK_HISTORY_FILE:-$DATA/db/history.sqlite}"
+export RUNNERDECK_POOL_DIR="${RUNNERDECK_POOL_DIR:-$DATA/runners}"
+
+# Anything that is not the dashboard goes to the PHP command line.
+case "${1:-}" in
+    "" | run | --open | --version | -v | --help | -h | [0-9]*) ;;
+    *) exec php "$APP_ROOT/app/bin/runnerdeck.php" "$@" ;;
+esac
+[ "${1:-}" = "run" ] && shift
 
 for arg in "$@"; do
     case "$arg" in
@@ -33,17 +53,6 @@ for arg in "$@"; do
             ;;
     esac
 done
-
-if [ "$(uname -s)" = "Darwin" ]; then
-    default_data="$HOME/Library/Application Support/RunnerDeck"
-else
-    default_data="${XDG_DATA_HOME:-$HOME/.local/share}/runnerdeck"
-fi
-DATA="${RUNNERDECK_DATA_DIR:-$default_data}"
-mkdir -p "$DATA/db" "$DATA/runners"
-export RUNNERDECK_SETTINGS_FILE="${RUNNERDECK_SETTINGS_FILE:-$DATA/settings.json}"
-export RUNNERDECK_HISTORY_FILE="${RUNNERDECK_HISTORY_FILE:-$DATA/db/history.sqlite}"
-export RUNNERDECK_POOL_DIR="${RUNNERDECK_POOL_DIR:-$DATA/runners}"
 
 if [ "$OPEN" = 1 ]; then
     (
