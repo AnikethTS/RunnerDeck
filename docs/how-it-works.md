@@ -21,8 +21,8 @@
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
   runner" page uses), verifies its checksum, extracts it, runs
-  `app/bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine,
-  where the Docker image installs those libs via apk), requests a fresh
+  `app/bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine;
+  the published image is Debian and installs libicu and libkrb5 itself), requests a fresh
   org registration token, and runs `config.sh` (`config.cmd` on Windows,
   where the package is a zip extracted with `tar`) — the same flow you'd do
   by hand, done for you. No manual pre-setup step. If `tar` fails with
@@ -34,6 +34,8 @@
   the dashboard report the shim, and report when `bsdtar` is missing too. On Windows, runner names
   and labels are limited to letters, digits, `.`, `_`, `-` because
   `config.cmd` goes through `cmd.exe`.
+- **Externals** (the bundled Node and other runtimes, about 600 MB) are hardlinked across slots that have the same listener binary. `doctor.php` estimates Start all as that one tree plus about 150 MB per slot, and refuses when the pool directory has a `package.json` above it.
+- The dashboard prints `node -v` with "jobs inherit this". A job uses the Node on this host's PATH.
 - **Stopping** sends `SIGTERM` to the actual process (by pidfile, or by the
   `/proc` fallback if the pidfile is missing) and waits up to 20s for it
   to exit, then `SIGKILL` if it is still alive. Stop fails if the process

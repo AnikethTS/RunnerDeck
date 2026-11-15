@@ -579,4 +579,22 @@ final class ProcessControlTest extends TestCase
         $this->assertSame($shim . ':/usr/bin:/bin', $path);
         $this->assertStringContainsString("exec '/usr/bin/bsdtar'", (string) file_get_contents($shim . '/tar'));
     }
+
+    public function testStartRefusesAPoolUnderPackageJson(): void
+    {
+        $root = sys_get_temp_dir() . '/runnerdeck-pkgjson-' . uniqid();
+        mkdir($root . '/pool', 0755, true);
+        file_put_contents($root . '/package.json', '{"type":"module"}');
+        putenv('RUNNERDECK_POOL_DIR=' . $root . '/pool');
+
+        try {
+            $result = \RunnerDeck\Pool\ProcessControl::startIndividual($this->runner());
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('package.json', $result['message']);
+        $this->assertStringContainsString('hashFiles', $result['message']);
+    }
 }

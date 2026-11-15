@@ -1,14 +1,19 @@
 services:
   runnerdeck:
-    build: .
-    # image: ghcr.io/anikethts/runnerdeck:latest  # comment out build: to use a release image
+    image: ghcr.io/anikethts/runnerdeck:latest
+    # Build this checkout instead of pulling the release image:
+    # build: .
     # Host publish stays loopback. The process still listens on 0.0.0.0
     # inside the container, which requires TOTP (`php app/bin/setup-totp.php`
     # via `docker compose run --rm -it runnerdeck php app/bin/setup-totp.php`).
+    # restart stays off: a missing enrollment prints that command and exits,
+    # and Compose leaves the container stopped.
     ports:
       - "127.0.0.1:8090:8090"
     volumes:
-      - ./data:/data:z
+      # Next to the checkout, not inside it. A pool under this repo's
+      # package.json makes Node treat hashFiles as an ES module.
+      - ${RUNNERDECK_DATA_DIR:-../runnerdeck-data}:/data:z
       # Host `gh auth login` (read-only). Comment this out to authenticate
       # inside the container instead — `gh auth login` has to write here.
       - ~/.config/gh:/root/.config/gh:ro,z
@@ -17,4 +22,7 @@ services:
       RUNNERDECK_ORG: your-org-name
       # RUNNERDECK_SCOPE: repo
       # RUNNERDECK_REPO: your-username/your-repo
-    restart: unless-stopped
+      # Host user who will also run the dashboard against this data dir.
+      RUNNERDECK_DATA_UID: ${RUNNERDECK_DATA_UID:-1000}
+      RUNNERDECK_DATA_GID: ${RUNNERDECK_DATA_GID:-1000}
+    restart: "no"

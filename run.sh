@@ -28,7 +28,11 @@ if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "::1" ]; then
         require $argv[1] . "/src/bootstrap.php";
         exit(\RunnerDeck\Configuration\Config::authEnabled() ? 0 : 1);
     ' -- "$DIR"; then
-        echo "Non-loopback bind requires TOTP login. Run: php app/bin/setup-totp.php" >&2
+        if [ -f /.dockerenv ]; then
+            echo "Non-loopback bind requires TOTP login. Run: docker compose run --rm -it runnerdeck php app/bin/setup-totp.php" >&2
+        else
+            echo "Non-loopback bind requires TOTP login. Run: php app/bin/setup-totp.php" >&2
+        fi
         exit 1
     fi
 fi

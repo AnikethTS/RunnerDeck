@@ -6,6 +6,7 @@ declare(strict_types=1);
 require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Configuration\Config;
+use RunnerDeck\Pool\PoolLayout;
 use RunnerDeck\Pool\Provisioner;
 use RunnerDeck\Security\HostingWarnings;
 use RunnerDeck\Configuration\Settings;
@@ -228,6 +229,28 @@ if (is_dir($poolDir) && is_writable($poolDir)) {
     ok('pool directory', "{$poolDir} (will be created on first start)", $color);
 } else {
     $failures += fail('pool directory', "{$poolDir} is not writable", $color);
+}
+$packageJson = PoolLayout::packageJsonBlockMessage($poolDir);
+if ($packageJson !== null) {
+    $failures += fail('pool directory', $packageJson, $color);
+}
+
+$slotCount = PoolLayout::slotCount();
+$space = PoolLayout::spaceSentence($slotCount, $pressure['disk_free_kb']);
+$needKiB = PoolLayout::estimatedKiB(max(1, $slotCount));
+if ($pressure['disk_free_kb'] === null) {
+    $warnings += warn('slot disk', $space, $color);
+} elseif ($pressure['disk_free_kb'] < $needKiB) {
+    $failures += fail('slot disk', $space . ' — Start all would fill the disk', $color);
+} else {
+    ok('slot disk', $space, $color);
+}
+if (PoolLayout::externalsDuplicated()) {
+    $warnings += warn(
+        'externals',
+        'each slot has its own externals tree — the next start hardlinks them onto one copy',
+        $color
+    );
 }
 
 $probeRoot = null;
