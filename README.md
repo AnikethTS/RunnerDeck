@@ -82,6 +82,24 @@ opens in its own window (no browser tab) and keeps running as a small icon in th
 `sudo apt install ./RunnerDeck-<version>-linux-all.deb`. Then start it with `runnerdeck --open`.
 Your settings and runners are stored in `~/.local/share/runnerdeck`.
 
+## Command line
+
+The same pool can be managed from a terminal, with no dashboard running:
+
+```bash
+runnerdeck list                 # runners on this machine (--json for scripts)
+runnerdeck add --label gpu      # add and start a runner (--name, --ephemeral)
+runnerdeck stop runner-1        # asks GitHub first; --force skips the check
+runnerdeck restart --all        # or name runners; start/stop also take --all
+runnerdeck logs runner-1 -f     # follow a runner's log (-n for line count)
+runnerdeck delete runner-2      # stop, deregister and remove
+runnerdeck doctor               # check the machine's setup
+runnerdeck run --open           # start the dashboard (also the default)
+```
+
+From a source checkout use `./runnerdeck` instead. The Windows installer does
+not include the command line yet; use `php app/bin/runnerdeck.php` there.
+
 ## Screenshots
 
 | Dashboard | Live log |

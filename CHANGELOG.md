@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
+
 ## [1.15.0] - 2026-11-16
 
 ### Added
