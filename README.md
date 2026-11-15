@@ -97,8 +97,10 @@ runnerdeck doctor               # check the machine's setup
 runnerdeck run --open           # start the dashboard (also the default)
 ```
 
-From a source checkout use `./runnerdeck` instead. The Windows installer does
-not include the command line yet; use `php app/bin/runnerdeck.php` there.
+From a source checkout use `./runnerdeck` instead. The Windows installer adds
+the same `runnerdeck` command to your PATH (a task you can untick); open a new
+terminal after installing. On Windows, `runnerdeck run --port 9000` starts the
+dashboard. With the portable zip or exe, run `RunnerDeck.exe cli list`.
 
 ## Screenshots
 

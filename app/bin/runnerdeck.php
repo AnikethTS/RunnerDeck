@@ -14,6 +14,11 @@ if ($command === 'doctor') {
     exit(0);
 }
 
+if ($command === 'run' && PHP_OS_FAMILY === 'Windows') {
+    fwrite(STDERR, "runnerdeck: start the dashboard with RunnerDeck.exe\n");
+    exit(1);
+}
+
 if ($command === 'run') {
     $ports = array_filter(array_slice($args, 1), static fn (string $a): bool => ctype_digit($a));
     $parts = [dirname(__DIR__, 2) . '/run.sh', ...$ports];

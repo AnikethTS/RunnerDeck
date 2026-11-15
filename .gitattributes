@@ -4,6 +4,7 @@
 
 # Windows launcher needs CRLF regardless of the committer's platform.
 run.ps1 text eol=crlf
+*.cmd text eol=crlf
 
 # Binary assets: never diff/convert.
 *.png binary
