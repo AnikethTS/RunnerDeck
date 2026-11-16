@@ -20,6 +20,10 @@ follows [SemVer](https://semver.org/).
 - `tools/dev/cli-sandbox.sh` opens a shell where `runnerdeck` works on a throwaway pool and settings folder.
 - A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. The Windows installer puts the same `runnerdeck` command on your PATH (a task you can untick), and `RunnerDeck.exe cli <command>` works in the portable zip and exe. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
 
+### Fixed
+
+- The Docker image upgrades Debian `linux-libc-dev` to 6.1.192-1 so the image scan is not blocked by the kernel header findings (one CRITICAL, 123 HIGH) in 6.1.190-1.
+
 ## [1.15.0] - 2026-11-16
 
 ### Added
