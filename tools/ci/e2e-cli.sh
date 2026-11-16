@@ -79,7 +79,7 @@ wait_for_field() {
   local field="$1" want="$2" seconds="$3" got=""
   local deadline=$((SECONDS + seconds))
   while [ "$SECONDS" -lt "$deadline" ]; do
-    got="$("${rd[@]}" status --json 2>/dev/null | jq -r ".runners[0].${field} // empty" 2>/dev/null || true)"
+    got="$("${rd[@]}" status --json 2>/dev/null | jq -r ".runners[0].${field} | tostring" 2>/dev/null || true)"
     if [ "$got" = "$want" ]; then
       return 0
     fi
