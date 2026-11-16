@@ -27,9 +27,12 @@
 - **Starting an unconfigured runner slot** downloads the official runner
   package for this machine's OS/arch (via the same
   `orgs/.../actions/runners/downloads` endpoint GitHub's own "Add new
-  runner" page uses), verifies its checksum, extracts it, runs
-  `app/bin/installdependencies.sh` on Linux (apt/yum hosts; skipped on Alpine;
-  the published image is Debian and installs libicu and libkrb5 itself), requests a fresh
+  runner" page uses), verifies its checksum, extracts it, starts
+  the runner's `Runner.Listener --version` and, only if it will not start
+  (missing libicu, libkrb5, ...), runs GitHub's `bin/installdependencies.sh` on
+  Linux (apt/yum hosts; skipped on Alpine and macOS; as root, or through
+  `sudo -n`, and if sudo would ask for a password it stops and prints the command
+  for you to run yourself), requests a fresh
   org registration token, and runs `config.sh` (`config.cmd` on Windows,
   where the package is a zip extracted with `tar`) — the same flow you'd do
   by hand, done for you. No manual pre-setup step. If `tar` fails with

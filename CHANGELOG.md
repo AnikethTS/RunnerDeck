@@ -23,6 +23,7 @@ follows [SemVer](https://semver.org/).
 ### Fixed
 
 - The Docker image upgrades Debian `linux-libc-dev` to 6.1.192-1 so the image scan is not blocked by the kernel header findings (one CRITICAL, 123 HIGH) in 6.1.190-1.
+- Adding a runner no longer runs GitHub's `installdependencies.sh` (and so no longer needs sudo) when the runner already starts, so a machine whose libraries are installed works without passwordless sudo. When the libraries are missing and sudo would ask for a password, or sudo is not installed, the error now says so and gives the exact command to run yourself, instead of a generic ".NET runner binary will not start" message. `runnerdeck doctor` warns about this before the first runner is added.
 
 ## [1.15.0] - 2026-11-16
 

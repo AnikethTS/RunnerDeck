@@ -270,6 +270,15 @@ if ($probeRoot !== null) {
     }
 }
 
+if (PHP_OS_FAMILY === 'Linux' && !is_file('/etc/alpine-release')) {
+    $libs = Provisioner::osLibrariesStatus($poolDir);
+    if ($libs['ok']) {
+        ok('runner OS libraries', $libs['detail'], $color);
+    } else {
+        $warnings += warn('runner OS libraries', $libs['detail'], $color);
+    }
+}
+
 $storageDir = Settings::storageDir();
 if ((is_dir($storageDir) && is_writable($storageDir)) || (!is_dir($storageDir) && is_writable(dirname($storageDir)))) {
     ok('storage directory', $storageDir, $color);

@@ -47,7 +47,8 @@ stays stopped.
 - The image runs as root and sets `RUNNER_ALLOW_RUNASROOT=1` because
   GitHub's `config.sh` otherwise refuses UID 0. It installs the shared
   libraries the .NET runner needs (`libicu72`, `libkrb5-3`, …).
-  `installdependencies.sh` is apt-based and runs on this image.
+  `installdependencies.sh` is apt-based; it only runs on this image if the
+  runner will not start without it.
 - Edit the `environment:` block in `docker-compose.yml` for your org/repo
   scope — same variables as [Configuration](configuration.md).
 - The container binds `0.0.0.0` internally so Docker's port mapping can
