@@ -58,11 +58,29 @@ export async function dispatchProbe() {
   throw new Error('could not dispatch the probe workflow');
 }
 
+async function findProbeRun() {
+  const { body } = await api(`/repos/${repo}/actions/runs?event=workflow_dispatch&per_page=100`);
+  return ((body && body.workflow_runs) || []).find((r) => r.display_title === `e2e ${tag}`) || null;
+}
+
+// GitHub sometimes accepts a dispatch and never starts the run (it stays queued
+// with no jobs), so dispatch again if no run shows up within three minutes.
+export async function runProbe() {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    await dispatchProbe();
+    const giveUp = Date.now() + 3 * 60_000;
+    while (Date.now() < giveUp) {
+      if (await findProbeRun()) return probeRunConclusion();
+      await new Promise((resolve) => setTimeout(resolve, 8000));
+    }
+  }
+  return 'timeout';
+}
+
 export async function probeRunConclusion(timeoutMs = 8 * 60_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const { body } = await api(`/repos/${repo}/actions/runs?event=workflow_dispatch&per_page=30`);
-    const run = ((body && body.workflow_runs) || []).find((r) => r.display_title === `e2e ${tag}`);
+    const run = await findProbeRun();
     if (run && run.status === 'completed') return run.conclusion;
     await new Promise((resolve) => setTimeout(resolve, 8000));
   }

@@ -62,6 +62,10 @@ pushes `ghcr.io/anikethts/runnerdeck` only after that scan passes.
 
 The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and Windows hosted runners, dispatches `tools/ci/e2e-probe-workflow.yml` onto it, and waits for the job to pass. It needs a dedicated, throwaway test repository containing a copy of `tools/ci/e2e-probe-workflow.yml` at `.github/workflows/runnerdeck-e2e.yml` (copied once by hand, so the token never needs the Workflows permission), a repository variable `E2E_REPO` (`owner/repo`), and a secret `E2E_RUNNER_TOKEN`: a fine-grained token limited to that one repo with Administration, Actions and Contents read/write. Keep that repo private and empty of anything else, since a runner executes its workflows. Without the secret or variable the job fails. Pull requests from forks skip it, because they never receive the secret. Fork pull requests never get the secret.
 
+The `e2e-cli` job (`tools/ci/e2e-cli.sh`) uses the same test repository, variable and secret as `e2e-real-runner`, but drives everything through the `runnerdeck` command line on Ubuntu, macOS and Windows: `setup`, `config set label`, `auth status`, `add`, then `status --json` until GitHub reports the runner idle, `stop` and `start`, a real probe job, `logs`, `rolling-restart`, `rename`, `maintenance on` (a start must be refused) and `off`, `drain`, and `delete`, checking the runner is gone from GitHub. Not covered: refusing to stop a runner that is running a job (the probe job is too short; the unit tests cover it), `update`, and `resize`.
+
+The `cli-smoke` job (`tools/ci/cli-smoke.sh`) needs no secrets. It runs the real command line against a throwaway pool on Ubuntu 22.04 (PHP 8.1), Ubuntu latest, macOS and Windows: every command's output and exit code, `--json` shapes, `setup` and `config`, `maintenance`, `install` and `uninstall`, the man page lint, `update --check`, and that each completion script parses in bash, zsh, fish and PowerShell where installed. The package jobs also run the command line from the installed `.deb`, from `RunnerDeck.exe cli` and through the installed `runnerdeck.cmd`.
+
 The `e2e-live` job runs `tests/e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
 
 ### Command line
@@ -138,9 +142,9 @@ Pull requests get the fast set by default: lint, the secret scan, and the unit s
 | `ci:fast` | Lint, secret scan, unit suite with coverage (always on) |
 | `ci:unit` | Every `Unit ·` job: Linux, macOS, Windows subset, distro containers |
 | `ci:quality` | Random-order test run |
-| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image |
+| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image, and the command line on Linux, macOS and Windows |
 | `ci:e2e` | Browser UI tests with a mocked API |
-| `ci:live` | Live dashboard and real-runner tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
+| `ci:live` | Live dashboard, real-runner and command-line tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
 | `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
 | `ci:package` | Builds the Windows zip, single exe and Setup installer, and smoke-tests each |
 | `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |

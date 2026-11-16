@@ -89,6 +89,8 @@ def main() -> None:
     for command, check in (
         (["version"], lambda out: out.strip() == f"RunnerDeck {version}"),
         (["list", "--json"], lambda out: json.loads(out).get("ok") is True),
+        (["config", "list", "--all"], lambda out: "drain-timeout" in out),
+        (["completion", "powershell"], lambda out: "Register-ArgumentCompleter" in out),
     ):
         shown = subprocess.run(
             ["cmd.exe", "/c", str(shim), *command],
