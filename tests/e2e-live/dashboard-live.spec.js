@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import {
-  tag, ourRunners, runnerByName, deleteOurRunners, dispatchProbe, probeRunConclusion,
+  tag, ourRunners, runnerByName, deleteOurRunners, runProbe,
 } from './github.js';
 
 test.describe.configure({ mode: 'serial' });
@@ -223,8 +223,7 @@ test('Rename re-registers under the new name', async () => {
 });
 
 test('a real workflow job runs on the runner', async () => {
-  await dispatchProbe();
-  expect(await probeRunConclusion()).toBe('success');
+  expect(await runProbe()).toBe('success');
 });
 
 test('Clear work empties _work on a stopped runner', async () => {

@@ -91,20 +91,28 @@ wait_for_field() {
 }
 
 dispatch_and_wait() {
-  local run_id="" state="" conclusion="" deadline
-  for _ in $(seq 1 12); do
-    if gh workflow run "$workflow" -R "$repo" -f "tag=${tag}" 2>/dev/null; then
-      break
-    fi
-    sleep 5
-  done
-  for _ in $(seq 1 90); do
-    run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 100 \
-      --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"e2e ${tag}\") | .databaseId" | head -n 1)"
+  local run_id="" state="" conclusion="" deadline attempt
+  # GitHub sometimes accepts a dispatch and never starts the run (it stays
+  # queued with no jobs), so dispatch again if none shows up in three minutes.
+  for attempt in 1 2 3; do
+    for _ in $(seq 1 12); do
+      if gh workflow run "$workflow" -R "$repo" -f "tag=${tag}" 2>/dev/null; then
+        break
+      fi
+      sleep 5
+    done
+    for _ in $(seq 1 45); do
+      run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 100 \
+        --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"e2e ${tag}\") | .databaseId" | head -n 1)"
+      if [ -n "$run_id" ]; then
+        break
+      fi
+      sleep 4
+    done
     if [ -n "$run_id" ]; then
       break
     fi
-    sleep 4
+    echo "attempt ${attempt}: the dispatched run never started" >&2
   done
   [ -n "$run_id" ] || { echo "the dispatched run never showed up" >&2; return 1; }
   echo "Run ${run_id}: https://github.com/${repo}/actions/runs/${run_id}"
