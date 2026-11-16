@@ -186,8 +186,8 @@ if [ "$dispatched" -ne 1 ]; then
 fi
 
 run_id=""
-for _ in $(seq 1 30); do
-  run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 30 \
+for _ in $(seq 1 90); do
+  run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 100 \
     --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"e2e ${tag}\") | .databaseId" | head -n 1)"
   if [ -n "$run_id" ]; then
     break
