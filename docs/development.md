@@ -36,7 +36,7 @@ npm run e2e       # Playwright — see tests/e2e/dashboard.spec.js
 `npm run e2e:update-shots` regenerates the README/landing PNGs in dark
 mode (and copies them into `docs/screenshots/`). Generate them in the
 same Playwright image CI uses
-(`mcr.microsoft.com/playwright:v1.64.1-noble`); host Fedora/macOS fonts
+(`mcr.microsoft.com/playwright:v1.65.0-noble`); host Fedora/macOS fonts
 will otherwise fail the pixel compare.
 
 CI prints `[1/N]` as each Playwright and PHPUnit test starts, and stops
