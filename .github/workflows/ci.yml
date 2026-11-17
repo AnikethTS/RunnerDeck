@@ -398,7 +398,7 @@ jobs:
 
       - name: Windows unit tests
         working-directory: app
-        run: vendor/bin/phpunit tests/WindowsSupportTest.php
+        run: vendor/bin/phpunit tests/Unit/System/WindowsSupportTest.php
 
       - name: Real process control smoke (PowerShell, CIM, taskkill)
         shell: pwsh
