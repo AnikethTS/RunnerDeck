@@ -6,12 +6,16 @@ namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 use RunnerDeck\Cli\Installer;
+use RunnerDeck\System\Shell;
 
 final class InstallerTest extends TestCase
 {
     private string $root;
     private string $bin;
     private string $path;
+    private string $home;
+    private string|false $shell;
+    private string|false $xdg;
 
     protected function setUp(): void
     {
@@ -23,12 +27,22 @@ final class InstallerTest extends TestCase
         mkdir($this->root, 0755, true);
         file_put_contents($this->root . '/runnerdeck', "#!/bin/sh\n");
         $this->path = (string) getenv('PATH');
+        $this->shell = getenv('SHELL');
+        $this->xdg = getenv('XDG_CONFIG_HOME');
+        $this->home = sys_get_temp_dir() . '/rd-home-' . uniqid();
+        mkdir($this->home, 0755, true);
+        putenv('HOME=' . $this->home);
+        putenv('XDG_CONFIG_HOME');
+        putenv('SHELL=/bin/bash');
     }
 
     protected function tearDown(): void
     {
         putenv('PATH=' . $this->path);
         putenv('HOME');
+        putenv($this->shell === false ? 'SHELL' : 'SHELL=' . $this->shell);
+        putenv($this->xdg === false ? 'XDG_CONFIG_HOME' : 'XDG_CONFIG_HOME=' . $this->xdg);
+        Shell::fake(null);
     }
 
     public function testInstallLinksTheScriptAndExplainsAMissingPathEntry(): void
@@ -124,5 +138,83 @@ final class InstallerTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('cannot link', $result['message']);
         chmod($this->bin, 0755);
+    }
+
+    public function testPathHintUsesFishSyntaxForFish(): void
+    {
+        putenv('SHELL=/usr/bin/fish');
+        Shell::fake(fn (array $cmd): array => ['code' => 0, 'stdout' => "/usr/bin\n/bin", 'stderr' => '']);
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertStringContainsString('fish_add_path ' . $this->bin, $result['message']);
+        $this->assertStringNotContainsString('export PATH', $result['message']);
+    }
+
+    public function testFishPathComesFromFishNotTheInheritedEnvironment(): void
+    {
+        putenv('SHELL=/usr/bin/fish');
+        putenv('PATH=/usr/bin');
+        Shell::fake(fn (array $cmd): array => [
+            'code' => 0, 'stdout' => "/usr/bin\n{$this->bin}", 'stderr' => '',
+        ]);
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertStringNotContainsString('not on your PATH', $result['message']);
+    }
+
+    public function testFishFallsBackToTheEnvironmentWhenItCannotBeAsked(): void
+    {
+        putenv('SHELL=/usr/bin/fish');
+        putenv('PATH=' . $this->bin . PATH_SEPARATOR . $this->path);
+        Shell::fake(fn (array $cmd): array => ['code' => 127, 'stdout' => '', 'stderr' => 'not found']);
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertStringNotContainsString('not on your PATH', $result['message']);
+    }
+
+    public function testFishCompletionIsWrittenToTheFishCompletionsFolder(): void
+    {
+        putenv('SHELL=/usr/bin/fish');
+        Shell::fake(fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => '']);
+        $result = Installer::install($this->root, $this->bin);
+        $file = $this->home . '/.config/fish/completions/runnerdeck.fish';
+        $this->assertFileExists($file);
+        $this->assertStringContainsString('complete -c runnerdeck', (string) file_get_contents($file));
+        $this->assertStringContainsString($file, $result['message']);
+    }
+
+    public function testFishCompletionHonoursXdgConfigHome(): void
+    {
+        putenv('SHELL=/usr/bin/fish');
+        putenv('XDG_CONFIG_HOME=' . $this->home . '/xdg');
+        Shell::fake(fn (array $cmd): array => ['code' => 1, 'stdout' => '', 'stderr' => '']);
+        Installer::install($this->root, $this->bin);
+        $this->assertFileExists($this->home . '/xdg/fish/completions/runnerdeck.fish');
+    }
+
+    public function testZshCompletionGoesToZfuncWithAFpathNote(): void
+    {
+        putenv('SHELL=/bin/zsh');
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertFileExists($this->home . '/.zfunc/_runnerdeck');
+        $this->assertStringContainsString('fpath=(~/.zfunc $fpath)', $result['message']);
+    }
+
+    public function testBashCompletionIsAppendedToBashrcOnlyOnce(): void
+    {
+        file_put_contents($this->home . '/.bashrc', 'alias ll="ls -l"');
+        Installer::install($this->root, $this->bin);
+        Installer::install($this->root, $this->bin);
+        $rc = (string) file_get_contents($this->home . '/.bashrc');
+        $this->assertStringStartsWith("alias ll=\"ls -l\"\n", $rc);
+        $this->assertSame(1, substr_count($rc, 'source <(runnerdeck completion bash)'));
+    }
+
+    public function testCompletionCanBeSkippedAndUnknownShellsAreLeftAlone(): void
+    {
+        Installer::install($this->root, $this->bin, false, PHP_OS_FAMILY, false);
+        $this->assertFileDoesNotExist($this->home . '/.bashrc');
+
+        putenv('SHELL=/bin/tcsh');
+        $result = Installer::install($this->root, $this->bin, true);
+        $this->assertStringNotContainsString('completion', $result['message']);
+        $this->assertFileDoesNotExist($this->home . '/.bashrc');
     }
 }

@@ -6,6 +6,15 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `runnerdeck install` now sets up tab completion for your shell: fish gets `~/.config/fish/completions/runnerdeck.fish`, zsh gets `~/.zfunc/_runnerdeck`, and bash gets one marked line appended to `~/.bashrc`. `--no-completion` skips it.
+- `bin/install.sh` installs the latest release in one command (`curl -fsSL .../bin/install.sh | sh`): it checks the zip's SHA-256, unpacks it to `~/.local/share/runnerdeck` and runs `./runnerdeck install`. Run it again to upgrade; your data is kept.
+
+### Fixed
+
+- `runnerdeck install` told fish users to run `export PATH=...`. It now suggests `fish_add_path`, and checks fish's own PATH, so it no longer warns that `~/.local/bin` is missing when fish has it in `fish_user_paths`.
+
 ## [2.0.0] - 2026-11-17
 
 This version adds the `runnerdeck` command line. The dashboard still runs the same pool.

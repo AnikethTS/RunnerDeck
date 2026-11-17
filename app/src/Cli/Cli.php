@@ -47,7 +47,8 @@ Setup:
 Program:
   run [--open] [PORT]          Start the dashboard (default port 8090)
   update [--check] [--yes]     Upgrade to the latest release (--check only looks)
-  install [--dir D]            Link ./runnerdeck onto your PATH (source checkout)
+  install [--dir D]            Link ./runnerdeck onto your PATH and set up tab completion
+                               (source checkout; --no-completion skips completion)
   uninstall [--dir D]          Remove that link
   completion bash|zsh|fish|powershell
                                Print a shell completion script
@@ -719,7 +720,13 @@ TXT;
     private function install(array $flags): int
     {
         $dir = is_string($flags['dir'] ?? null) ? $flags['dir'] : Installer::defaultDir();
-        return $this->report(Installer::install(dirname(__DIR__, 3), $dir, $this->force));
+        return $this->report(Installer::install(
+            dirname(__DIR__, 3),
+            $dir,
+            $this->force,
+            PHP_OS_FAMILY,
+            !isset($flags['no-completion'])
+        ));
     }
 
     /** @param array<string, mixed> $flags */
