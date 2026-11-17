@@ -153,7 +153,7 @@ Pushes to `main`, the nightly run and manual runs always run everything. The `CI
 
 CI also enforces a minimum line coverage (`tools/ci/coverage-gate.php`, currently 75%), runs the suite in random order with three seeds, and re-runs everything nightly. Raise the coverage floor whenever coverage improves; never lower it to land a change. The same Clover report is uploaded to Codecov. A public repository can do that without a token; set `CODECOV_TOKEN` if Codecov asks for one, and install the Codecov GitHub App for the pull-request comment.
 
-The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`app/tests/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `tools/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
+The Windows code paths are unit-tested on Linux with `Platform::fakeWindows()` and a faked `Shell` (`app/tests/Unit/System/WindowsSupportTest.php`); the `windows-test` CI job runs that file and `tools/ci/windows-smoke.php`, which drives the real PowerShell, CIM and `taskkill` calls on `windows-latest` and `windows-2022`. The rest of the suite is Unix-only and is not run there.
 
 CI (`.github/workflows/ci.yml`) runs all of the above plus a boot smoke test
 on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-15`, and Intel `macos-15-intel` (PHP 8.1),
@@ -248,7 +248,8 @@ runnerdeck/
     Http/           API router (`RunnerDeck\Http\Api`)
     Http/Action/    one class per `api.php?action=`, grouped as Runners/, Authentication/,
                     Administration/ and Monitoring/ (`RunnerDeck\Http\Action\<Group>\`)
-  app/tests/        PHPUnit unit tests for the pure-logic pieces above
+  app/tests/        PHPUnit tests: Unit/<Area>/ mirrors src/<Area>/, Support/ holds shared helpers
+                    (see app/tests/README.md)
   tests/e2e/        Playwright UI tests with a mocked API
   tests/e2e-live/   Playwright tests against real GitHub (see below)
   desktop/          Go desktop shell: tray, window, supervisor (see Packaging)

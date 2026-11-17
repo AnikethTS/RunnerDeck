@@ -26,7 +26,8 @@ now — the project's policy on AI-assisted contributions.
 - Create a branch off `main`: `git checkout -b your-change-name`.
 - Keep PRs focused. One logical change per PR is much easier to review than
   a bundle of unrelated fixes — see [Scope](#scope) below.
-- Add or update tests under `app/tests/` for anything you change in `app/src/`.
+- Add or update tests under `app/tests/Unit/` for anything you change in `app/src/`, in the folder that matches
+  the source (`src/Pool/X.php` is tested by `tests/Unit/Pool/XTest.php`; see `app/tests/README.md`).
   `ProcessControl`, `Provisioner`, `ProcessDecision`, `AppLog`, `Api`, `RunnerPool`, `Config`, `Shell`, `Csrf`, `Auth`, `Totp`, and `CrashState`
   all have existing test files to follow the pattern of.
 - If a test in `tests/e2e/dashboard.spec.js` exists because of a specific issue,
