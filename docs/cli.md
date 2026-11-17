@@ -61,7 +61,7 @@ anything runs.
 | `runnerdeck auth status` | Whether `gh` is signed in. |
 | `runnerdeck auth login` | Run `gh auth login` for you. |
 | `runnerdeck auth totp` | Set up the dashboard's TOTP login (needed to bind off localhost). |
-| `runnerdeck doctor` | Check PHP, `gh`, scope access and directories. Same as `php app/bin/doctor.php`. |
+| `runnerdeck doctor` | Check PHP, `gh`, scope access, directories and, on Linux, whether a new runner's OS libraries can be installed without a sudo password. Same as `php app/bin/doctor.php`. |
 
 Setting names are the `RUNNERDECK_*` variables from
 [Configuration](configuration.md) in lowercase with hyphens:

@@ -43,6 +43,12 @@ shipped." Be specific about what that means before assuming an old box works:
     jobs from) one repo you're an admin of, which you are by default for
     repos you own. Needs the `repo` scope, which `gh auth login`'s default
     scopes already include — nothing extra to request in the common case.
+- On Linux, the runner needs `libicu`, `libkrb5` and a few other libraries.
+  If they are missing, RunnerDeck installs them once with GitHub's
+  `installdependencies.sh`, which needs root: it runs through `sudo -n`, so it
+  needs passwordless sudo (or RunnerDeck running as root). If sudo asks for a
+  password, adding a runner stops with the exact command to run yourself, and
+  `runnerdeck doctor` warns about it beforehand.
 - `curl` and `tar` (or `unzip` on Windows) for downloading and extracting
   the runner package — both are standard on Linux/macOS.
 
