@@ -7,6 +7,10 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    ignore:
+      # PHPUnit 11+ requires PHP 8.2+/8.4+, but the app supports PHP ^8.1.
+      - dependency-name: phpunit/phpunit
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /
