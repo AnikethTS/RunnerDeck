@@ -62,7 +62,53 @@ pushes `ghcr.io/anikethts/runnerdeck` only after that scan passes.
 
 The `e2e-real-runner` job registers a real ephemeral runner on Linux, macOS and Windows hosted runners, dispatches `tools/ci/e2e-probe-workflow.yml` onto it, and waits for the job to pass. It needs a dedicated, throwaway test repository containing a copy of `tools/ci/e2e-probe-workflow.yml` at `.github/workflows/runnerdeck-e2e.yml` (copied once by hand, so the token never needs the Workflows permission), a repository variable `E2E_REPO` (`owner/repo`), and a secret `E2E_RUNNER_TOKEN`: a fine-grained token limited to that one repo with Administration, Actions and Contents read/write. Keep that repo private and empty of anything else, since a runner executes its workflows. Without the secret or variable the job fails. Pull requests from forks skip it, because they never receive the secret. Fork pull requests never get the secret.
 
+The `e2e-cli` job (`tools/ci/e2e-cli.sh`) uses the same test repository, variable and secret as `e2e-real-runner`, but drives everything through the `runnerdeck` command line on Ubuntu, macOS and Windows: `setup`, `config set label`, `auth status`, `add`, then `status --json` until GitHub reports the runner idle, `stop` and `start`, a real probe job, `logs`, `rolling-restart`, `rename`, `maintenance on` (a start must be refused) and `off`, `drain`, and `delete`, checking the runner is gone from GitHub. Not covered: refusing to stop a runner that is running a job (the probe job is too short; the unit tests cover it), `update`, and `resize`.
+
+The `cli-smoke` job (`tools/ci/cli-smoke.sh`) needs no secrets. It runs the real command line against a throwaway pool on Ubuntu 22.04 (PHP 8.1), Ubuntu latest, macOS and Windows: every command's output and exit code, `--json` shapes, `setup` and `config`, `maintenance`, `install` and `uninstall`, the man page lint, `update --check`, and that each completion script parses in bash, zsh, fish and PowerShell where installed. The package jobs also run the command line from the installed `.deb`, from `RunnerDeck.exe cli` and through the installed `runnerdeck.cmd`.
+
 The `e2e-live` job runs `tests/e2e-live/dashboard-live.spec.js` with Playwright against the real dashboard on Ubuntu (latest, 22.04, 22.04 arm), macOS (Apple silicon and Intel), Windows (latest and 2022), and Fedora, using the same test repo and secrets as `e2e-real-runner`. Fedora has no hosted runner, so the dashboard and its runners run in a `fedora:44` container while Playwright drives it from the host (`E2E_EXTERNAL_SERVER=1`). It clicks Add Runner, Start, Stop, Restart, Pause/Resume AR, View live log, Rename, Clear work, Export JSON, Pool size Apply, the bulk actions, Stop All, Start All, Rolling Restart, Maintenance, Drain All, Delete, and the Settings save, and checks the runner state on GitHub after each. It also runs a real workflow job and times every header tab. Not covered: Upgrade agents and Safe reboot. Run it locally with `E2E_REPO`, `GH_TOKEN` and `E2E_TAG` set and `npm run e2e:live`; it registers real runners on your machine.
+
+### Command line
+
+`app/bin/runnerdeck.php` is the entry point. `app/src/Cli/Cli.php` parses the
+arguments and calls `ProcessControl` / `RunnerPool` directly (not HTTP). The
+rest of `app/src/Cli/`: `Ops` (drain, rolling restart, maintenance, rename,
+resize, mirroring the API actions), `ConfigCommand` (`config` and `setup`, going
+through `SaveSettingsAction::save` so the validation is shared), `Updater`
+(`update`), `Installer` (`install`), and `Completion` (shell scripts).
+Output goes to injected streams and shell commands go through an injected
+runner, so the tests drive every command without touching real runners,
+GitHub or the package manager: `CliTest`, `CliCommandsTest` (both extend
+`CliTestCase`, which gives each test its own pool and settings folder),
+`UpdaterTest`, `ConfigCommandTest`, `CompletionTest` (also syntax-checks each
+script in bash, zsh and fish when installed) and `InstallerTest`. Keep a new
+command's logic in `src/` and its flags in `Cli`, not in the entry script.
+Entry points: `packaging/common/runnerdeck` (Debian, Homebrew),
+`./runnerdeck` (checkout), and on Windows `RunnerDeck.exe cli` through
+`packaging/windows/runnerdeck.cmd`. The man page is
+`packaging/common/runnerdeck.1`; add new commands there, to the usage text in
+`Cli`, and to `Completion::COMMANDS`. User docs: [Command line](cli.md).
+
+**Trying it by hand.** `tools/dev/cli-sandbox.sh` opens a shell where
+`runnerdeck` works on a throwaway pool and settings folder (removed when you
+exit), so nothing touches your real runners. Use a throwaway test repository
+for anything that registers a runner:
+
+```bash
+tools/dev/cli-sandbox.sh
+runnerdeck --version && runnerdeck list          # empty pool
+runnerdeck setup --repo you/throwaway-repo       # then: runnerdeck auth status
+runnerdeck add --ephemeral && runnerdeck status  # registers a real runner
+runnerdeck logs runner-1 -n 20
+runnerdeck stop runner-1 && runnerdeck delete runner-1
+runnerdeck config set pool-cap 4 && runnerdeck config list
+runnerdeck maintenance on && runnerdeck maintenance off
+runnerdeck update --check
+```
+
+Also check the error paths (`runnerdeck stop ghost`, `runnerdeck config set
+pool-cap 99`, `runnerdeck bogus`; each should print a message and exit 1) and
+`runnerdeck completion bash | bash -n`.
 
 ### Packaging
 
@@ -73,6 +119,7 @@ Everything that ships is built by one tool, `tools/package/build.py --target <na
 | `desktop/` | The Go desktop shell (module `github.com/AnikethTS/RunnerDeck/desktop`, entry point `cmd/runnerdeck`): tray, window, process supervision, first-run checks. Platform code is in `_windows.go` / `_other.go` files, the rest is shared. |
 | `packaging/common/` | Inputs shared by every target, such as `php-branch.txt`. |
 | `packaging/windows/installer/` | The Inno Setup script. |
+| `packaging/windows/runnerdeck.cmd` | The `runnerdeck` command the installer puts on PATH: it starts the dashboard, or runs `RunnerDeck.exe cli <command>`, which unpacks the runtime and runs `app/bin/runnerdeck.php` (the tray build attaches to the parent console to print). |
 | `tools/package/` | `build.py`, `common.py` (version, checksums, naming, app staging) and one module per OS, plus the smoke tests. |
 | `tools/ci/` | CI-only helper scripts. |
 
@@ -95,9 +142,9 @@ Pull requests get the fast set by default: lint, the secret scan, and the unit s
 | `ci:fast` | Lint, secret scan, unit suite with coverage (always on) |
 | `ci:unit` | Every `Unit ·` job: Linux, macOS, Windows subset, distro containers |
 | `ci:quality` | Random-order test run |
-| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image |
+| `ci:smoke` | Boot smoke tests: hosts, Alpine, Docker image, and the command line on Linux, macOS and Windows |
 | `ci:e2e` | Browser UI tests with a mocked API |
-| `ci:live` | Live dashboard and real-runner tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
+| `ci:live` | Live dashboard, real-runner and command-line tests on Ubuntu, macOS and Windows (uses GitHub API quota) |
 | `ci:live-extended` | Live dashboard tests on older OS versions and Fedora (uses GitHub API quota) |
 | `ci:package` | Builds the Windows zip, single exe and Setup installer, and smoke-tests each |
 | `ci:full` | Everything above except `ci:live-extended`. **Required before merging.** |

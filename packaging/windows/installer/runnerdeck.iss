@@ -33,6 +33,7 @@ Compression=lzma2/ultra
 SolidCompression=yes
 WizardStyle=modern
 AppMutex=RunnerDeckTray
+ChangesEnvironment=yes
 CloseApplications=no
 VersionInfoVersion={#AppVersion}
 
@@ -43,11 +44,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "vcredist"; Description: "Install the Microsoft Visual C++ runtime (PHP needs it)"; GroupDescription: "Required tools:"; Check: NeedVCRedist
 Name: "webview2"; Description: "Install the Microsoft Edge WebView2 runtime (draws the RunnerDeck window)"; GroupDescription: "Required tools:"; Check: NeedWebView2
 Name: "ghcli"; Description: "Install the GitHub CLI (RunnerDeck uses it to talk to GitHub)"; GroupDescription: "Required tools:"; Check: NeedGhCli
+Name: "addtopath"; Description: "Add the runnerdeck command to my PATH"; GroupDescription: "Command line:"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; Flags: unchecked
 Name: "startup"; Description: "Start RunnerDeck when I sign in to Windows"; Flags: unchecked
 
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; DestName: "RunnerDeck.exe"; Flags: ignoreversion
+Source: "{#RepoRoot}\packaging\windows\runnerdeck.cmd"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#RepoRoot}\desktop\cmd\runnerdeck\icon.ico"; DestDir: "{app}"; DestName: "RunnerDeck.ico"; Flags: ignoreversion
 
 [InstallDelete]
@@ -59,6 +62,7 @@ Name: "{group}\Uninstall RunnerDeck"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\RunnerDeck"; Filename: "{app}\RunnerDeck.exe"; IconFilename: "{app}\RunnerDeck.ico"; Tasks: desktopicon
 
 [Registry]
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NeedsPathEntry; Tasks: addtopath
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RunnerDeck"; ValueData: """{app}\RunnerDeck.exe"" --background"; Flags: uninsdeletevalue; Tasks: startup
 
 [Run]
@@ -72,6 +76,43 @@ Filename: "{sys}\taskkill.exe"; Parameters: "/F /T /IM RunnerDeck.exe"; Flags: r
 Type: filesandordirs; Name: "{localappdata}\RunnerDeck\runtime"
 
 [Code]
+{ curl.exe and tar.exe ship with Windows 10 version 1803 (build 17134) and
+  later, and with Windows 11. The dashboard uses them to download and unpack
+  the GitHub Actions runner, so check for them here and stop with a clear
+  message instead of failing later on an older build. }
+function MissingDownloadTools(): String;
+begin
+  Result := '';
+  if not FileExists(ExpandConstant('{sys}\curl.exe')) then
+    Result := Result + 'curl.exe, ';
+  if not FileExists(ExpandConstant('{sys}\tar.exe')) then
+    Result := Result + 'tar.exe, ';
+  if Result <> '' then
+    Result := Copy(Result, 1, Length(Result) - 2);
+end;
+
+function InitializeSetup(): Boolean;
+var
+  Missing: String;
+begin
+  Missing := MissingDownloadTools();
+  Result := Missing = '';
+  if Result then
+    Exit;
+  { SuppressibleMsgBox is answered automatically in silent installs, and
+    returning False still stops the install, so /TASKS= runs on machines that
+    have the tools are never blocked. }
+  SuppressibleMsgBox(
+    'This PC is missing ' + Missing + ',' + #13#10 +
+    'which RunnerDeck needs to download and unpack the GitHub Actions runner.' + #13#10 + #13#10 +
+    'curl.exe and tar.exe ship with Windows 10 version 1803 (build 17134) and later,' + #13#10 +
+    'and with Windows 11. Update Windows first' + #13#10 +
+    '(Settings > Update & Security > Windows Update > Check for updates),' + #13#10 +
+    'then run this installer again.' + #13#10 + #13#10 +
+    'https://www.microsoft.com/software-download/windows10',
+    mbError, MB_OK, IDOK);
+end;
+
 function VCRuntimeInstalled(): Boolean;
 var
   Installed: Cardinal;
@@ -198,12 +239,47 @@ begin
     InstallGhCli();
 end;
 
+function PathEntry(): String;
+begin
+  Result := ExpandConstant('{app}\bin');
+end;
+
+function NeedsPathEntry(): Boolean;
+var
+  Paths: String;
+begin
+  if not RegQueryStringValue(HKCU, 'Environment', 'Path', Paths) then
+  begin
+    Result := True;
+    Exit;
+  end;
+  Result := Pos(';' + Uppercase(PathEntry()) + ';', ';' + Uppercase(Paths) + ';') = 0;
+end;
+
+procedure RemoveFromPath();
+var
+  Paths, Entry: String;
+  P: Integer;
+begin
+  if not RegQueryStringValue(HKCU, 'Environment', 'Path', Paths) then
+    Exit;
+  Entry := PathEntry();
+  P := Pos(';' + Uppercase(Entry) + ';', ';' + Uppercase(Paths) + ';');
+  if P = 0 then
+    Exit;
+  Delete(Paths, P, Length(Entry) + 1);
+  if (Length(Paths) > 0) and (Paths[Length(Paths)] = ';') then
+    Delete(Paths, Length(Paths), 1);
+  RegWriteExpandStringValue(HKCU, 'Environment', 'Path', Paths);
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;
 begin
   if CurUninstallStep <> usPostUninstall then
     Exit;
+  RemoveFromPath();
   DataDir := ExpandConstant('{localappdata}\RunnerDeck');
   if not DirExists(DataDir) then
     Exit;

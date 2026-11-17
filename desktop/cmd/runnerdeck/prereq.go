@@ -172,6 +172,54 @@ func ensurePHPRuntime(c ui, l layout, env []string) bool {
 	return true
 }
 
+// downloadTools are the command-line tools the dashboard shells out to when it
+// downloads and unpacks a GitHub Actions runner. Windows ships curl.exe and
+// tar.exe in System32 starting with Windows 10 version 1803 (build 17134) and
+// later; an older build has neither, so the check runs before anything uses
+// them instead of failing later with an unhelpful error.
+var downloadTools = []string{"curl", "tar"}
+
+// missingDownloadTools reports which of downloadTools cannot be found. Every
+// tool is looked up even when an earlier one is missing, so the message can
+// name all of them at once.
+func missingDownloadTools(lookPath func(string) (string, error)) []string {
+	var missing []string
+	for _, tool := range downloadTools {
+		if _, err := lookPath(tool); err != nil {
+			missing = append(missing, tool)
+		}
+	}
+	return missing
+}
+
+func joinTools(names []string) string {
+	switch len(names) {
+	case 0:
+		return ""
+	case 1:
+		return names[0]
+	default:
+		return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
+	}
+}
+
+// ensureDownloadTools verifies curl and tar exist before RunnerDeck relies on
+// them, in the same style as ensurePHPRuntime. On Windows 10 builds earlier
+// than 1803 neither ships with the OS, so it says exactly what is missing and
+// how to get it back.
+func ensureDownloadTools(c ui, lookPath func(string) (string, error)) bool {
+	missing := missingDownloadTools(lookPath)
+	if len(missing) == 0 {
+		c.ok(joinTools(downloadTools) + " found")
+		return true
+	}
+	c.fail("This Windows does not provide " + joinTools(missing) + ".")
+	c.info("RunnerDeck uses them to download and unpack the GitHub Actions runner.")
+	c.info("They ship with Windows 10 version 1803 (build 17134) and later, and with Windows 11.")
+	c.info("Update Windows (Settings > Update & Security > Windows Update), then start RunnerDeck again.")
+	return false
+}
+
 type ghState int
 
 const (

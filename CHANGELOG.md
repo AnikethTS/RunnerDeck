@@ -6,8 +6,35 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-17
+
+This version adds the `runnerdeck` command line. The dashboard still runs the same pool.
+
 ### Added
 
+- CI tests the command line on every OS: `cli-smoke` runs every `runnerdeck` command against a throwaway pool (and checks that the completion scripts parse and the man page lints), `e2e-cli` drives a real runner through `setup`, `add`, `stop`, `start`, a job, `rolling-restart`, `rename`, `maintenance`, `drain` and `delete`, and the Debian, Windows zip and exe, and Windows installer smoke tests now run the installed command line.
+- `runnerdeck update` (alias `upgrade`) checks the latest release and upgrades the way this copy was installed: `brew upgrade`, a checksum-verified `.deb` installed with `sudo apt`, the checksum-verified Windows Setup wizard, or `git pull --ff-only`. `--check` only reports (and takes `--json`), `--yes` skips the prompt. Docker and unidentified installs get instructions instead. `RUNNERDECK_INSTALL_METHOD` overrides the detected install type.
+- A command line reference, `docs/cli.md`, and tests for every `runnerdeck` command.
+- The command line covers the rest of the dashboard's pool actions: `rolling-restart`, `drain`, `resize`, `rename`, `force-idle` and `maintenance on|off|status`, with `--timeout` for how long to wait on a running job.
+- `runnerdeck setup` picks the org or repo (asking for anything left out), `runnerdeck config list|get|set|unset` reads and changes every saved setting using the Settings screen's own validation, and `runnerdeck auth status|login|totp` handles the GitHub and dashboard sign-in.
+- `runnerdeck status` adds a GITHUB column (idle, busy, offline, unregistered). `list` and `status` take `--watch`, output is coloured on a terminal (`--no-color`, `NO_COLOR`), and `-q` prints only errors.
+- `runnerdeck completion bash|zsh|fish|powershell` prints a shell completion script that also completes runner ids and setting names, and the Debian package and Homebrew install a `runnerdeck(1)` manual page.
+- `runnerdeck install` and `uninstall` link a source checkout's `runnerdeck` into `~/.local/bin`.
+- `runnerdeck --version` shows the logo and welcome message on a terminal, like `run.sh`, and stays one plain line in a pipe or with `-q`, `--json` or `RUNNERDECK_NO_BANNER=1`.
+- `tools/dev/cli-sandbox.sh` opens a shell where `runnerdeck` works on a throwaway pool and settings folder.
+- A command line for the runner pool that works without the dashboard running: `runnerdeck list`, `start`, `stop`, `restart`, `add`, `delete`, `logs [-f]`, `doctor`, `version` and `run`. `--json` gives machine-readable output, and `stop`, `restart` and `delete` check GitHub for a running job first unless you pass `--force`. From a source checkout use `./runnerdeck`. The Windows installer puts the same `runnerdeck` command on your PATH (a task you can untick), and `RunnerDeck.exe cli <command>` works in the portable zip and exe. Bare `runnerdeck`, `runnerdeck --open` and `runnerdeck 8090` still start the dashboard.
+
+### Fixed
+
+- The Docker image upgrades Debian `linux-libc-dev` to 6.1.192-1 so the image scan is not blocked by the kernel header findings (one CRITICAL, 123 HIGH) in 6.1.190-1.
+- Adding a runner no longer runs GitHub's `installdependencies.sh` (and so no longer needs sudo) when the runner already starts, so a machine whose libraries are installed works without passwordless sudo. When the libraries are missing and sudo would ask for a password, or sudo is not installed, the error now says so and gives the exact command to run yourself, instead of a generic ".NET runner binary will not start" message. `runnerdeck doctor` warns about this before the first runner is added.
+
+## [1.15.0] - 2026-11-16
+
+### Added
+
+- The dashboard shows `node -v` and that jobs inherit that binary.
+- `doctor.php` refuses a pool directory that sits under a `package.json`, and it estimates free space for Start all from one shared externals tree plus each slot.
 - The runner page shows the job that runner is working on, and the log on that page can be searched in place.
 - A failed last job links to that job on GitHub from the row and the runner page.
 - The find box, status filter, and column sort stay in place after a reload.
@@ -17,11 +44,14 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- A fork pull request reports the required ChangeRadar annotation check and the latest live-dashboard and real-runner checks. Those runner checks still register a runner only for this repository.
 - The desktop module requires Go 1.26.11, so govulncheck no longer fails on GO-2026-6859 in `net/http`.
-- The Docker image upgrades Alpine `krb5-libs` so the image scan is not blocked by the HIGH fixes in 1.22.3-r0.
 
 ### Changed
 
+- Slots that share an agent binary hardlink `externals` instead of keeping a second copy.
+- Compose pulls `ghcr.io/anikethts/runnerdeck:latest`, leaves `build:` commented, stores data in `../runnerdeck-data`, and does not restart when TOTP is missing.
+- The published image is Debian bookworm. GitHub's runner needs glibc, so the image is no longer Alpine.
 - Last hour charts keep one sample every 30 seconds, and the drawn chart is reused until the next sample or 30 seconds.
 - The runner page reuses a log tail when `runner.log` has not changed, and it asks for the job queue every 20 seconds.
 - Pull request and release image scans use Trivy 0.76.2.

@@ -62,6 +62,11 @@ final class ProcessControl
             return ['ok' => false, 'message' => $blocked];
         }
 
+        $poolBlocked = PoolLayout::packageJsonBlockMessage(Config::poolDir());
+        if ($poolBlocked !== null) {
+            return ['ok' => false, 'message' => $poolBlocked];
+        }
+
         $resolved = ProcessDecision::resolveStart(
             RunnerPool::checkProcess("{$r->dir}/runner.pid"),
             RunnerPool::liveListenersByDir(),

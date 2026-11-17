@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the RunnerDeck command line from a source checkout: ./runnerdeck list
+self=$0
+while [ -h "$self" ]; do
+    dir=$(cd "$(dirname "$self")" && pwd)
+    link=$(readlink "$self")
+    case "$link" in
+        /*) self=$link ;;
+        *) self=$dir/$link ;;
+    esac
+done
+exec php "$(cd "$(dirname "$self")" && pwd)/app/bin/runnerdeck.php" "$@"

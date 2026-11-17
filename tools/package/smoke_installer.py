@@ -83,6 +83,23 @@ def main() -> None:
     print(f"ok  installed app reports {shown.stdout.strip()}")
 
     env = dict(os.environ, RUNNERDECK_DATA_DIR=str(data_dir))
+    shim = install_dir / "bin" / "runnerdeck.cmd"
+    if not shim.exists():
+        fail("bin\\runnerdeck.cmd was not installed")
+    for command, check in (
+        (["version"], lambda out: out.strip() == f"RunnerDeck {version}"),
+        (["list", "--json"], lambda out: json.loads(out).get("ok") is True),
+        (["config", "list", "--all"], lambda out: "drain-timeout" in out),
+        (["completion", "powershell"], lambda out: "Register-ArgumentCompleter" in out),
+    ):
+        shown = subprocess.run(
+            ["cmd.exe", "/c", str(shim), *command],
+            capture_output=True, text=True, timeout=180, env=env, stdin=subprocess.DEVNULL,
+        )
+        if shown.returncode != 0 or not check(shown.stdout):
+            fail(f"runnerdeck {' '.join(command)} gave exit {shown.returncode}: {shown.stdout!r} {shown.stderr!r}")
+    print("ok  the runnerdeck command works from the installed folder")
+
     for name in ("RUNNERDECK_ORG", "RUNNERDECK_REPO", "RUNNERDECK_SCOPE"):
         env.pop(name, None)
     app = subprocess.Popen(

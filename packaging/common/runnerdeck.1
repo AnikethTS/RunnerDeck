@@ -1,0 +1,110 @@
+.TH RUNNERDECK 1 "2026-11-16" "RunnerDeck" "User Commands"
+.SH NAME
+runnerdeck \- manage a pool of self-hosted GitHub Actions runners
+.SH SYNOPSIS
+.B runnerdeck
+[\fIcommand\fR] [\fIoptions\fR]
+.SH DESCRIPTION
+RunnerDeck runs a pool of self-hosted GitHub Actions runners on this machine.
+With no command it starts the dashboard on http://127.0.0.1:8090. The other
+commands manage the same pool from a terminal, without the dashboard running.
+.SH RUNNER COMMANDS
+.TP
+.B list, ls [--watch]
+Show the runners on this machine.
+.TP
+.B status [--watch]
+Like list, with what GitHub reports for each runner.
+.TP
+.B start \fIrunner...\fR | --all
+Start runners.
+.TP
+.B stop \fIrunner...\fR | --all
+Stop runners. Refuses if a runner is running a job, unless --force is given.
+.TP
+.B restart \fIrunner...\fR
+Stop, then start, runners.
+.TP
+.B rolling-restart \fIrunner...\fR | --all
+Wait for each runner to be idle, then restart it, one at a time.
+.TP
+.B drain \fIrunner...\fR | --all
+Wait until idle, then stop the runners and clear their work folders.
+.TP
+.B add [--name \fIN\fR] [--ephemeral] [--label \fIL\fR]
+Add and start a new runner.
+.TP
+.B delete, rm \fIrunner...\fR
+Stop, deregister and remove runners.
+.TP
+.B rename \fIrunner\fR \fIname\fR
+Re-register a runner under a new name.
+.TP
+.B force-idle \fIrunner\fR
+Clear a stuck busy state on GitHub for a runner that is stopped here.
+.TP
+.B resize \fIcount\fR
+Make the pool runner-base plus \fIcount\fR runners (1 to 30).
+.TP
+.B maintenance on|off|status
+Drain every runner and refuse new starts, or lift that.
+.TP
+.B logs \fIrunner\fR [-n \fIN\fR] [-f]
+Show a runner's log. -f follows it.
+.SH SETUP COMMANDS
+.TP
+.B setup [--scope org|repo] [--org \fIO\fR | --repo \fIOWNER/REPO\fR]
+Choose what RunnerDeck manages. Asks for anything not given.
+.TP
+.B config list|get|set|unset
+Read and change settings. "config list --all" shows every name.
+.TP
+.B auth status|login|totp
+Check or start the GitHub sign-in; set up the dashboard TOTP login.
+.TP
+.B doctor
+Check this machine's setup.
+.SH PROGRAM COMMANDS
+.TP
+.B run [--open] [\fIPORT\fR]
+Start the dashboard.
+.TP
+.B update [--check] [--yes]
+Upgrade to the latest release the way this copy was installed.
+.TP
+.B install [--dir \fIDIR\fR], uninstall
+Link the checkout's runnerdeck script onto your PATH, or remove the link.
+Only for a source checkout.
+.TP
+.B completion bash|zsh|fish|powershell
+Print a shell completion script.
+.TP
+.B version, --version, -v
+Print the version.
+.SH OPTIONS
+.TP
+.B --json
+Machine-readable output.
+.TP
+.B --force
+Do not check GitHub for a running job first. This can interrupt a job.
+.TP
+.B --timeout \fISECONDS\fR
+How long drain, rolling-restart and maintenance wait for a job to finish.
+.TP
+.B -y, --yes
+Do not ask before updating.
+.TP
+.B -q, --quiet
+Print only errors.
+.TP
+.B --no-color
+Turn colour off. NO_COLOR=1 does the same.
+.SH EXIT STATUS
+0 on success; 1 if the command failed or was refused.
+.SH FILES
+.TP
+.I ~/.local/share/runnerdeck
+Settings, history and runners (macOS: ~/Library/Application Support/RunnerDeck).
+.SH SEE ALSO
+https://github.com/AnikethTS/RunnerDeck

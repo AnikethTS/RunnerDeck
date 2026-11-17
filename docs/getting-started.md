@@ -7,10 +7,10 @@ shipped." Be specific about what that means before assuming an old box works:
 
 | Platform | Support | Notes |
 |---|---|---|
-| Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. Patch the host runtime to 8.2.35+, 8.3.36+, 8.4.27+, or 8.5.12+ (CVE-2026-109618 / CVE-2026-109619). PHP 8.1 is EOL with no official patch — use a distro backport or move up. CI unit-tests PHP 8.1 and 8.5.12 on `ubuntu-latest`, PHP 8.1 / 8.3.36 / 8.5.12 on `ubuntu-22.04` (x64) and PHP 8.1 on `ubuntu-22.04-arm`, plus distro-`apt` PHPUnit on Ubuntu 22.04 and Debian 12, plus distro-`dnf` PHPUnit on Fedora, Rocky 9, and RHEL UBI 9 (posix/pcntl from `php-process`), plus a dedicated Alpine (musl) smoke test on the same PHP 8.5.12 image digest as the Dockerfile — Alpine doesn't ship `bash` by default, which is the one concrete distro gap this project has, and it's verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
+| Linux | Native | Needs `bash` (not just `sh`) and PHP 8.1+ with `posix`/`pcntl`. Patch the host runtime to 8.2.35+, 8.3.36+, 8.4.27+, or 8.5.12+ (CVE-2026-109618 / CVE-2026-109619). PHP 8.1 is EOL with no official patch — use a distro backport or move up. CI unit-tests PHP 8.1 and 8.5.12 on `ubuntu-latest`, PHP 8.1 / 8.3.36 / 8.5.12 on `ubuntu-22.04` (x64) and PHP 8.1 on `ubuntu-22.04-arm`, plus distro-`apt` PHPUnit on Ubuntu 22.04 and Debian 12, plus distro-`dnf` PHPUnit on Fedora, Rocky 9, and RHEL UBI 9 (posix/pcntl from `php-process`), plus a dedicated Alpine (musl) smoke test. The published image is Debian bookworm so GitHub's glibc runner can start; Alpine doesn't ship `bash` by default, and that gap is verified in CI rather than just claimed. Distros whose default PHP package is older than 8.1 need a backport/PPA. Process liveness uses `/proc`. |
 | macOS | Native | Getting PHP 8.1+ in practice means Homebrew, which drops support for old macOS releases on a rolling basis — that's the real version floor, not anything in this codebase. CI unit-tests PHP 8.5.12 on `macos-latest` and PHP 8.1 / 8.5.12 on `macos-15`, and PHP 8.5.12 on Intel `macos-15-intel` (oldest GitHub-hosted macOS still offered after macos-14's 2 Nov 2026 retirement; macos-13 is already gone). Boot smokes PHP 8.1 on `macos-latest`, `macos-15`, and `macos-15-intel`. Process liveness falls back to `ps`/`lsof` (no `/proc` on Darwin). |
 | Windows | Native (WSL2 only for Linux runners) | Run `RunnerDeck-<version>-windows-x64-setup.exe` from the latest release (a per-user installer wizard; RunnerDeck then lives in the system tray, PHP is bundled, data goes in `%LOCALAPPDATA%\RunnerDeck`, not code-signed, so on first run SmartScreen shows "Windows protected your PC": click **More info**, then **Run anyway**). Or `.\run.ps1` runs natively and manages **Windows** runners (`config.cmd`/`run.cmd`), so `runs-on: windows` jobs work. Needs PHP 8.1+ on `PATH` (`winget install PHP.PHP`), `gh`, and the `curl`/`tar` that ship with Windows 10 1803+. Processes are controlled through PowerShell, `tasklist` and `taskkill` instead of `posix`/`pcntl`. Limits on Windows: stop asks the runner to exit with Ctrl+C and only force-kills it (`taskkill /T /F`) if it has not exited after about 15 seconds; `php -S` is single-threaded there, so an open live log blocks other requests until it closes (use php-fpm-style hosting for multi-user setups); cgroup caps (`RUNNERDECK_SLOT_*`) and syslog do nothing; CI runs the Windows unit tests and a real process-control smoke on `windows-latest` and `windows-2022` (PHP 8.1 and 8.5), not the full suite (it is Unix-only). WSL2 is optional and is only needed to manage **Linux** runners from a Windows PC: `.\run.ps1 -Wsl` forwards into WSL2 (Windows 10 build 19041+/11; no WSL1). |
-| Docker | Alternative to a native install | Enroll TOTP first (`docker compose run --rm -it runnerdeck php app/bin/setup-totp.php`), then `docker compose up --build` — see [Docker](docker.md). |
+| Docker | Alternative to a native install | Enroll TOTP first (`docker compose run --rm -it runnerdeck php app/bin/setup-totp.php`), then `docker compose up` — see [Docker](docker.md). The image is the published GHCR release; `build:` in Compose is opt-in. |
 
 > **Fedora note.** Fedora 45 ships OpenSSL 4, and the GitHub runner's bundled .NET
 > could not load it when this was tested (`No usable version of libssl was found`
@@ -43,6 +43,12 @@ shipped." Be specific about what that means before assuming an old box works:
     jobs from) one repo you're an admin of, which you are by default for
     repos you own. Needs the `repo` scope, which `gh auth login`'s default
     scopes already include — nothing extra to request in the common case.
+- On Linux, the runner needs `libicu`, `libkrb5` and a few other libraries.
+  If they are missing, RunnerDeck installs them once with GitHub's
+  `installdependencies.sh`, which needs root: it runs through `sudo -n`, so it
+  needs passwordless sudo (or RunnerDeck running as root). If sudo asks for a
+  password, adding a runner stops with the exact command to run yourself, and
+  `runnerdeck doctor` warns about it beforehand.
 - `curl` and `tar` (or `unzip` on Windows) for downloading and extracting
   the runner package — both are standard on Linux/macOS.
 
@@ -56,7 +62,12 @@ It checks the PHP version and extensions, `bash`/`curl`/`tar`, whether `gh`
 is installed and authenticated, whether the configured scope can actually
 read runners, and whether the pool and storage directories are writable —
 and exits non-zero if anything required is missing, so it's safe to use in
-a setup script too.
+a setup script too. A packaged install has the same check as `runnerdeck doctor`.
+
+Prefer a terminal over the dashboard? `runnerdeck setup` picks the org or repo,
+`runnerdeck auth login` signs in to GitHub, and `runnerdeck add`, `start`,
+`stop`, `logs`, `config` and `update` manage the rest without opening a
+browser; see [Command line](cli.md).
 
 ## First-time setup
 
@@ -83,6 +94,9 @@ a setup script too.
    prints a systemd unit (Linux, starts at boot) or a launchd agent
    (macOS, starts at login). Add `--install` to write it and start it.
    On Windows, the installer can start RunnerDeck when you sign in.
+
+   If you installed a package (Debian, Homebrew, or the Windows installer),
+   start it with `runnerdeck` (or `runnerdeck run --open`) instead.
 
 2. **Open `http://127.0.0.1:8090/`.** If nothing's configured yet, you'll
    land on a setup screen: pick org scope (needs a GitHub org you admin) or

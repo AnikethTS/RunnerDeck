@@ -419,7 +419,13 @@ cd RunnerDeck
 <span class="cmt"># open http://127.0.0.1:8090/, pick org or repo scope on the setup screen</span>
 
 <span class="cmt"># or, no PHP install needed:</span>
-docker compose up --build</pre>
+docker compose up --build
+
+<span class="cmt"># prefer a terminal? after installing the package:</span>
+runnerdeck setup --repo you/repo
+runnerdeck add --label gpu
+runnerdeck status
+runnerdeck update</pre>
   </div>
 </section>
 

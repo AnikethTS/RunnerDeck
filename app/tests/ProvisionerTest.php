@@ -319,6 +319,7 @@ final class ProvisionerTest extends TestCase
     {
         mkdir($this->dir . '/bin', 0755, true);
         file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\ntrue\n");
+        \RunnerDeck\Pool\Provisioner::fakeHost(true, false);
         $ran = false;
         \RunnerDeck\System\Shell::fake(function (array $cmd) use (&$ran): array {
             if (($cmd[0] ?? '') === 'chmod') {
@@ -347,6 +348,7 @@ final class ProvisionerTest extends TestCase
     {
         mkdir($this->dir . '/bin', 0755, true);
         file_put_contents($this->dir . '/bin/installdependencies.sh', "#!/bin/sh\n");
+        \RunnerDeck\Pool\Provisioner::fakeHost(true, false);
         \RunnerDeck\System\Shell::fake(function (array $cmd): array {
             if (($cmd[0] ?? '') === 'chmod') {
                 return ['code' => 0, 'stdout' => '', 'stderr' => ''];
@@ -366,6 +368,7 @@ final class ProvisionerTest extends TestCase
         $this->assertFalse($result['ok']);
         $this->assertStringContainsString('libicu', $result['message']);
         $this->assertStringContainsString('will not start', $result['message']);
+        $this->assertStringContainsString("bash '" . $this->dir . "/bin/installdependencies.sh'", $result['message']);
     }
 
     #[RunInSeparateProcess]

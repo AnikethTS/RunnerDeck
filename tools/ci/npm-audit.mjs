@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Runs `npm audit` but does not fail solely on GHSA-vfj7-8cjw-p6xm.
+ * Runs `npm audit` but does not fail solely on the allowlisted advisories below.
  *
  * braces <=3.0.3 is the latest npm release and is flagged for stack
  * exhaustion on deeply nested patterns. `npm audit fix --force` would
@@ -9,10 +9,18 @@
  *
  * https://github.com/advisories/GHSA-vfj7-8cjw-p6xm
  * https://github.com/micromatch/braces/issues/70
+ *
+ * GHSA-fc5q-39xc-vjpf (picomatch ReDoS via repeated extglobs) is flagged for
+ * every published picomatch, including 4.0.7, so no patched release exists.
+ * stylelint 18 still depends on picomatch and stylelint-config-standard does
+ * not support it yet. picomatch is only used by the dev-only CSS linter, on
+ * our own file paths. Drop this entry once a patched picomatch is published.
+ *
+ * https://github.com/advisories/GHSA-fc5q-39xc-vjpf
  */
 import { spawnSync } from 'node:child_process';
 
-const ALLOWED = new Set(['ghsa-vfj7-8cjw-p6xm']);
+const ALLOWED = new Set(['ghsa-vfj7-8cjw-p6xm', 'ghsa-fc5q-39xc-vjpf']);
 
 const result = spawnSync('npm', ['audit', '--json'], {
   encoding: 'utf8',

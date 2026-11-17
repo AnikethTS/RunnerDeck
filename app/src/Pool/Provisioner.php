@@ -15,7 +15,13 @@ final class Provisioner
 {
     public static function ensureInstalled(string $dir, bool $replace = false): array
     {
+        $blocked = PoolLayout::packageJsonBlockMessage(dirname($dir));
+        if ($blocked !== null) {
+            return self::fail('provision.pool', $blocked);
+        }
+
         if (!$replace && self::binariesPresent($dir)) {
+            PoolLayout::shareExternals($dir);
             return ['ok' => true, 'message' => 'runner binaries already present'];
         }
 
@@ -91,6 +97,7 @@ final class Provisioner
             return $deps;
         }
 
+        PoolLayout::shareExternals($dir);
         return ['ok' => true, 'message' => "runner binaries installed ({$download['os']}/{$download['architecture']})"];
     }
 
@@ -181,11 +188,37 @@ final class Provisioner
         );
     }
 
+    private static ?bool $rootFake = null;
+    private static ?bool $sudoFake = null;
+
+    /** Test seam: pretend to be root or not, and sudo to be installed or not. */
+    public static function fakeHost(?bool $root, ?bool $sudo): void
+    {
+        self::$rootFake = $root;
+        self::$sudoFake = $sudo;
+    }
+
+    private static function isRoot(): bool
+    {
+        return self::$rootFake ?? (function_exists('posix_geteuid') && posix_geteuid() === 0);
+    }
+
+    private static function hasSudo(): bool
+    {
+        return self::$sudoFake ?? is_executable('/usr/bin/sudo');
+    }
+
+    private static function listenerStarts(string $dir): bool
+    {
+        $listener = $dir . '/' . self::listenerRelative();
+        return is_file($listener) && Shell::exec([$listener, '--version'], 20, $dir)['code'] === 0;
+    }
+
     /**
      * GitHub's Linux tarball ships bin/installdependencies.sh (libicu, libkrb5,
-     * …), which needs root, so it runs through passwordless sudo when not root.
-     * Skipped on macOS and Windows, and on Alpine: that script is apt/yum only; the image installs the
-     * libs via apk instead.
+     * …), which needs root. It only runs when the runner binary cannot start
+     * without it, and through passwordless sudo when RunnerDeck is not root.
+     * Skipped on macOS and Windows, and on Alpine: that script is apt/yum only.
      *
      * @return array{ok: bool, message: string}
      */
@@ -201,23 +234,72 @@ final class Provisioner
         if (is_file('/etc/alpine-release')) {
             return ['ok' => true, 'message' => 'skipping installdependencies.sh on Alpine'];
         }
+        if (self::listenerStarts($dir)) {
+            return ['ok' => true, 'message' => 'runner OS libraries already present'];
+        }
 
         Shell::exec(['chmod', '+x', $script], 5);
-        $cmd = ['bash', $script];
-        $root = function_exists('posix_geteuid') && posix_geteuid() === 0;
-        if (!$root && is_executable('/usr/bin/sudo')) {
-            $cmd = ['sudo', '-n', ...$cmd];
+        $root = self::isRoot();
+        $manual = ($root ? '' : 'sudo ') . 'bash ' . escapeshellarg($script);
+        $need = 'the runner needs OS libraries (libicu, libkrb5, …) that are not installed';
+        if (!$root && !self::hasSudo()) {
+            return self::fail(
+                'provision.os_deps',
+                "{$need}, and RunnerDeck is not root and sudo is not installed here."
+                    . " Run this as root, then try again: bash " . escapeshellarg($script)
+            );
         }
+        if (!$root && Shell::exec(['sudo', '-n', 'true'], 5)['code'] !== 0) {
+            return self::fail(
+                'provision.os_deps',
+                "{$need}, and sudo needs a password here, so RunnerDeck cannot install them for you."
+                    . " Run this yourself, then try again: {$manual}"
+            );
+        }
+
+        $cmd = $root ? ['bash', $script] : ['sudo', '-n', 'bash', $script];
         $deps = Shell::exec($cmd, 180, $dir);
         if ($deps['code'] !== 0) {
             $output = trim($deps['stderr'] . "\n" . $deps['stdout']);
             $message = 'failed to install runner OS libraries (libicu, libkrb5, …): '
                 . $output
-                . ' — the .NET runner binary will not start without them';
+                . ' — the .NET runner binary will not start without them. You can run it yourself: '
+                . $manual;
             return self::fail('provision.os_deps', $message, stderr: $output);
         }
 
         return ['ok' => true, 'message' => 'runner OS libraries installed'];
+    }
+
+    /**
+     * What `doctor` reports about the runner's OS libraries, before the first
+     * runner is added.
+     *
+     * @return array{ok: bool, detail: string}
+     */
+    public static function osLibrariesStatus(string $poolDir): array
+    {
+        foreach (glob($poolDir . '/runner-*', GLOB_ONLYDIR) ?: [] as $dir) {
+            if (self::listenerStarts($dir)) {
+                return ['ok' => true, 'detail' => 'an installed runner starts, so its libraries are present'];
+            }
+        }
+        if (self::isRoot()) {
+            return ['ok' => true, 'detail' => 'running as root; the libraries are installed with the first runner'];
+        }
+        if (self::hasSudo() && Shell::exec(['sudo', '-n', 'true'], 5)['code'] === 0) {
+            return ['ok' => true, 'detail' => 'passwordless sudo; the libraries are installed with the first runner'];
+        }
+        $libs = Shell::exec(['sh', '-c', 'ldconfig -p 2>/dev/null | grep -c "libicu"'], 5);
+        if ($libs['code'] === 0 && (int) trim($libs['stdout']) > 0) {
+            return ['ok' => true, 'detail' => 'libicu is installed, so no sudo is needed'];
+        }
+        return [
+            'ok' => false,
+            'detail' => 'a new runner needs libicu, libkrb5 and friends, and installing them needs root while sudo'
+                . ' asks for a password. Install them yourself (apt install libicu-dev libkrb5-3 libssl3 zlib1g,'
+                . ' or the dnf equivalents), or set up passwordless sudo, before adding a runner',
+        ];
     }
 
     /**

@@ -67,6 +67,28 @@ def locate_exe(target: str, single: bool, work: Path) -> Path:
     return exe
 
 
+def check_command_line(exe: Path, env: dict, version: str) -> None:
+    def cli(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([str(exe), "cli", *args], capture_output=True, text=True, timeout=180, env=env)
+
+    shown = cli("--version")
+    if shown.returncode != 0 or shown.stdout.strip() != f"RunnerDeck {version}":
+        fail(f"cli --version gave {shown.returncode}: {shown.stdout!r} {shown.stderr!r}")
+    listed = cli("list", "--json")
+    if listed.returncode != 0 or json.loads(listed.stdout).get("ok") is not True:
+        fail(f"cli list --json gave {listed.returncode}: {listed.stdout!r} {listed.stderr!r}")
+    names = cli("config", "list", "--all")
+    if "drain-timeout" not in names.stdout:
+        fail(f"cli config list --all gave {names.stdout!r}")
+    unknown = cli("bogus")
+    if unknown.returncode != 1 or "unknown command" not in unknown.stderr:
+        fail(f"cli bogus gave {unknown.returncode}: {unknown.stderr!r}")
+    script = cli("completion", "powershell")
+    if script.returncode != 0 or "Register-ArgumentCompleter" not in script.stdout:
+        fail(f"cli completion powershell gave {script.returncode}")
+    print("ok  RunnerDeck.exe cli runs the command line: --version, list, config, completion, exit codes")
+
+
 def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     single = "--single" in sys.argv[1:]
@@ -84,6 +106,7 @@ def main() -> None:
     env = dict(os.environ, RUNNERDECK_DATA_DIR=str(data_dir))
     for name in ("RUNNERDECK_ORG", "RUNNERDECK_REPO", "RUNNERDECK_SCOPE"):
         env.pop(name, None)
+    check_command_line(exe, env, version)
     launcher = subprocess.Popen(
         [str(exe), "--no-browser", "--port", str(PORT)],
         env=env,
@@ -126,7 +149,7 @@ def main() -> None:
     if "Welcome to RunnerDeck" not in output:
         fail(f"the welcome banner was not printed. Output was:\n{output[:800]}")
     print("ok  the welcome banner is printed")
-    for expected in ("[1/4] Preparing RunnerDeck", "[2/4] Checking PHP", "[4/4] Starting the dashboard"):
+    for expected in ("[1/5] Preparing RunnerDeck", "[2/5] Checking PHP", "[5/5] Starting the dashboard"):
         if expected not in output:
             fail(f"the guided steps are missing {expected!r}. Output was:\n{output[:1200]}")
     print("ok  the guided setup steps are printed")

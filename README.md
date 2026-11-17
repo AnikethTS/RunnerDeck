@@ -82,6 +82,31 @@ opens in its own window (no browser tab) and keeps running as a small icon in th
 `sudo apt install ./RunnerDeck-<version>-linux-all.deb`. Then start it with `runnerdeck --open`.
 Your settings and runners are stored in `~/.local/share/runnerdeck`.
 
+## Command line
+
+The same pool can be managed from a terminal, with no dashboard running:
+
+```bash
+runnerdeck --version            # also -v; --help for the list
+runnerdeck setup --repo me/repo # choose what to manage (asks if you leave it out)
+runnerdeck add --label gpu      # add and start a runner (--name, --ephemeral)
+runnerdeck status               # runners here, plus what GitHub reports
+runnerdeck stop runner-1        # asks GitHub first; --force skips the check
+runnerdeck rolling-restart --all  # one at a time, waiting for idle
+runnerdeck maintenance on       # drain everything before a reboot
+runnerdeck logs runner-1 -f     # follow a runner's log (-n for line count)
+runnerdeck config set pool-cap 8  # the Settings screen, as commands
+runnerdeck update               # upgrade the way you installed (--check to look)
+runnerdeck run --open           # start the dashboard (also the default)
+```
+
+The Debian package, Homebrew and the Windows installer put `runnerdeck` on your
+PATH (open a new terminal after installing on Windows) and ship shell
+completion (`runnerdeck completion bash|zsh|fish|powershell`) and `man runnerdeck`.
+From a source checkout use `./runnerdeck`, or `./runnerdeck install` to link it
+onto your PATH. With the portable Windows zip or exe, use
+`RunnerDeck.exe cli list`. Full reference: [Command line](docs/cli.md).
+
 ## Screenshots
 
 | Dashboard | Live log |
@@ -122,6 +147,7 @@ Curious exactly how any of that works under the hood? See
 
 - [Getting started](docs/getting-started.md) — prerequisites, platform
   support, first-time setup, Add to Home Screen
+- [Command line](docs/cli.md) — every `runnerdeck` command, flags, updating and scripting
 - [How it works](docs/how-it-works.md) — the full behavior reference
 - [Docker](docs/docker.md) — running RunnerDeck in a container (or Podman)
 - [Hosting](docs/hosting.md) — php-fpm, TLS, IP allowlist / mTLS

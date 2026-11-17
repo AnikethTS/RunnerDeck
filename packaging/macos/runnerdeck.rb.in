@@ -11,6 +11,7 @@ class Runnerdeck < Formula
   def install
     libexec.install "app", "run.sh", "VERSION", "LICENSE"
     bin.install "packaging/common/runnerdeck"
+    man1.install "packaging/common/runnerdeck.1"
     inreplace bin/"runnerdeck", "@APP_ROOT@", libexec
   end
 

@@ -76,6 +76,8 @@ def collect(version: str) -> list[tuple[str, bytes, int]]:
     for size in ("192", "512"):
         icon = ROOT / "app" / "public" / "assets" / f"icon-{size}.png"
         files.append((f"usr/share/icons/hicolor/{size}x{size}/apps/runnerdeck.png", icon.read_bytes(), 0o644))
+    man = (ROOT / "packaging" / "common" / "runnerdeck.1").read_bytes()
+    files.append(("usr/share/man/man1/runnerdeck.1.gz", gzip.compress(man, mtime=0), 0o644))
     files.append(("usr/share/doc/runnerdeck/copyright", (ROOT / "LICENSE").read_bytes(), 0o644))
     return files
 

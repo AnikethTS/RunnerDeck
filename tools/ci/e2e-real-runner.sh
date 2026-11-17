@@ -172,27 +172,34 @@ if [ "$online" -ne 1 ]; then
 fi
 
 echo "Dispatching the probe workflow"
-dispatched=0
-for _ in $(seq 1 12); do
-  if gh workflow run "$workflow" -R "$repo" -f "tag=${tag}" 2>/dev/null; then
-    dispatched=1
-    break
-  fi
-  sleep 5
-done
-if [ "$dispatched" -ne 1 ]; then
-  echo "could not dispatch ${workflow} on ${repo}" >&2
-  exit 1
-fi
-
+# GitHub sometimes accepts a dispatch and never starts the run (it stays queued
+# with no jobs), so dispatch again if no run shows up within three minutes.
 run_id=""
-for _ in $(seq 1 30); do
-  run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 30 \
-    --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"e2e ${tag}\") | .databaseId" | head -n 1)"
+for attempt in 1 2 3; do
+  dispatched=0
+  for _ in $(seq 1 12); do
+    if gh workflow run "$workflow" -R "$repo" -f "tag=${tag}" 2>/dev/null; then
+      dispatched=1
+      break
+    fi
+    sleep 5
+  done
+  if [ "$dispatched" -ne 1 ]; then
+    echo "could not dispatch ${workflow} on ${repo}" >&2
+    exit 1
+  fi
+  for _ in $(seq 1 45); do
+    run_id="$(gh run list -R "$repo" --workflow "$workflow" --event workflow_dispatch -L 100 \
+      --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"e2e ${tag}\") | .databaseId" | head -n 1)"
+    if [ -n "$run_id" ]; then
+      break
+    fi
+    sleep 4
+  done
   if [ -n "$run_id" ]; then
     break
   fi
-  sleep 4
+  echo "attempt ${attempt}: the dispatched run never started" >&2
 done
 if [ -z "$run_id" ]; then
   echo "dispatched run never showed up" >&2
