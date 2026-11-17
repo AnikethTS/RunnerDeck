@@ -7,6 +7,9 @@
 **One dashboard for every self-hosted GitHub Actions runner on your machine.**
 
 [![CI](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/ci.yml)
+[![Packaging](https://img.shields.io/github/actions/workflow/status/AnikethTS/RunnerDeck/release.yml?label=Packaging)](https://github.com/AnikethTS/RunnerDeck/actions/workflows/release.yml)
+[![codecov](https://codecov.io/gh/AnikethTS/RunnerDeck/graph/badge.svg)](https://codecov.io/gh/AnikethTS/RunnerDeck)
+[![Downloads](https://img.shields.io/github/downloads/AnikethTS/RunnerDeck/total?label=Downloads)](https://github.com/AnikethTS/RunnerDeck/releases)
 [![Release](https://img.shields.io/github/v/release/AnikethTS/RunnerDeck)](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/AnikethTS/RunnerDeck/badge)](https://scorecard.dev/viewer/?uri=github.com/AnikethTS/RunnerDeck)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -81,6 +84,16 @@ opens in its own window (no browser tab) and keeps running as a small icon in th
 [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest) and run
 `sudo apt install ./RunnerDeck-<version>-linux-all.deb`. Then start it with `runnerdeck --open`.
 Your settings and runners are stored in `~/.local/share/runnerdeck`.
+
+## Downloads
+
+[![Total downloads](https://img.shields.io/github/downloads/AnikethTS/RunnerDeck/total?label=all%20releases)](https://github.com/AnikethTS/RunnerDeck/releases)
+[![Latest release downloads](https://img.shields.io/github/downloads/AnikethTS/RunnerDeck/latest/total?label=latest%20release)](https://github.com/AnikethTS/RunnerDeck/releases/latest)
+
+Counts are every release asset downloaded from
+[GitHub Releases](https://github.com/AnikethTS/RunnerDeck/releases): the zip,
+the Debian package and the Windows installer. Homebrew, Docker and `git clone`
+installs are not included.
 
 ## Command line
 
