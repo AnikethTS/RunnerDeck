@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-17
+
+This version adds the `runnerdeck` command line. The dashboard still runs the same pool.
+
 ### Added
 
 - CI tests the command line on every OS: `cli-smoke` runs every `runnerdeck` command against a throwaway pool (and checks that the completion scripts parse and the man page lints), `e2e-cli` drives a real runner through `setup`, `add`, `stop`, `start`, a job, `rolling-restart`, `rename`, `maintenance`, `drain` and `delete`, and the Debian, Windows zip and exe, and Windows installer smoke tests now run the installed command line.
