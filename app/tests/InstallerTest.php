@@ -217,4 +217,40 @@ final class InstallerTest extends TestCase
         $this->assertStringNotContainsString('completion', $result['message']);
         $this->assertFileDoesNotExist($this->home . '/.bashrc');
     }
+
+    public function testNoCompletionIsAttemptedWithoutAHomeFolder(): void
+    {
+        putenv('HOME');
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertTrue($result['ok']);
+        $this->assertStringNotContainsString('completion', $result['message']);
+    }
+
+    public function testACompletionFolderThatCannotBeCreatedIsReportedNotFatal(): void
+    {
+        putenv('SHELL=/bin/zsh');
+        file_put_contents($this->home . '/.zfunc', 'a file, not a folder');
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertTrue($result['ok']);
+        $this->assertStringContainsString('skipped zsh completion', $result['message']);
+        $this->assertTrue(is_link($this->bin . '/runnerdeck'));
+    }
+
+    public function testACompletionFileThatCannotBeWrittenIsReportedNotFatal(): void
+    {
+        putenv('SHELL=/bin/zsh');
+        mkdir($this->home . '/.zfunc/_runnerdeck', 0755, true);
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertTrue($result['ok']);
+        $this->assertStringContainsString('Could not write', $result['message']);
+        $this->assertStringContainsString('skipped zsh completion', $result['message']);
+    }
+
+    public function testABashrcThatCannotBeWrittenIsReportedNotFatal(): void
+    {
+        mkdir($this->home . '/.bashrc');
+        $result = Installer::install($this->root, $this->bin);
+        $this->assertTrue($result['ok']);
+        $this->assertStringContainsString('skipped bash completion', $result['message']);
+    }
 }

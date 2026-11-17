@@ -138,10 +138,6 @@ final class Installer
         if ($home === '' || !in_array($shell, ['fish', 'bash', 'zsh'], true)) {
             return '';
         }
-        $body = Completion::script($shell);
-        if ($body === null) {
-            return '';
-        }
         if ($shell === 'bash') {
             return self::wireBash($home . '/.bashrc');
         }
@@ -154,7 +150,7 @@ final class Installer
         if (!is_dir(dirname($file)) && !@mkdir(dirname($file), 0755, true)) {
             return "\nCould not create " . dirname($file) . "; skipped {$shell} completion.";
         }
-        if (@file_put_contents($file, $body) === false) {
+        if (@file_put_contents($file, (string) Completion::script($shell)) === false) {
             return "\nCould not write {$file}; skipped {$shell} completion.";
         }
         $note = "\nInstalled {$shell} completion: {$file}";
