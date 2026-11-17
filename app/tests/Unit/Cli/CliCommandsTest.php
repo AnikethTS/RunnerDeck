@@ -282,7 +282,7 @@ final class CliCommandsTest extends CliTestCase
             $this->markTestSkipped('symlinks');
         }
         $dir = sys_get_temp_dir() . '/runnerdeck-bin-' . uniqid();
-        [$code, $out] = $this->cli(['install', '--dir', $dir]);
+        [$code, $out] = $this->cli(['install', '--dir', $dir, '--no-completion']);
         $this->assertSame(0, $code);
         $this->assertStringContainsString('Installed:', $out);
         $this->assertStringContainsString('is not on your PATH', $out);

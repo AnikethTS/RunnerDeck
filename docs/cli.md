@@ -14,8 +14,18 @@ GitHub (`stop`, `delete`, `update`).
 | Homebrew | `runnerdeck` | yes, in Homebrew's `bin` |
 | Windows Setup wizard | `runnerdeck` | yes, when the "Add the runnerdeck command to my PATH" task is ticked (it is by default). Open a new terminal afterwards. Uninstalling removes it. |
 | Windows zip or single exe | `RunnerDeck.exe cli <command>` | no |
-| Source checkout | `./runnerdeck <command>` | not until you run `./runnerdeck install`, which links it into `~/.local/bin` |
+| Source checkout or zip | `./runnerdeck <command>` | not until you run `./runnerdeck install`, which links it into `~/.local/bin` |
 | Docker | `docker compose exec runnerdeck php app/bin/runnerdeck.php <command>` | no |
+
+To install the latest release in one step (Linux and macOS; needs `curl`, `unzip` and `php`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh
+```
+
+It checks the zip's SHA-256, unpacks it into `~/.local/share/runnerdeck` and runs
+`./runnerdeck install`. Run it again to upgrade; your data and `.env` are kept.
+Set `RUNNERDECK_DIR` to unpack somewhere else or `RUNNERDECK_TAG` for a specific release.
 
 Check it works:
 
@@ -84,7 +94,7 @@ runnerdeck config get drain-timeout
 |---|---|
 | `runnerdeck` or `runnerdeck run [--open] [PORT]` | Start the dashboard on `127.0.0.1` (default port 8090). `--open` opens your browser. On Windows: `runnerdeck run --port 9000`. |
 | `runnerdeck update [--check] [--yes]` (`upgrade`) | Look for a newer release and upgrade. See [Updating](#updating). |
-| `runnerdeck install [--dir D] [--force]` | From a source checkout, link `runnerdeck` into `~/.local/bin` (or `D`). It tells you if that folder is not on your PATH. |
+| `runnerdeck install [--dir D] [--force] [--no-completion]` | From a source checkout, link `runnerdeck` into `~/.local/bin` (or `D`) and set up tab completion for your shell (see [Shell completion](#shell-completion)). It tells you if that folder is not on your PATH, with the command for your shell (`fish_add_path` for fish, `export PATH=...` otherwise). |
 | `runnerdeck uninstall [--dir D]` | Remove that link. It only removes a link that points at this checkout. |
 | `runnerdeck completion bash\|zsh\|fish\|powershell` | Print a completion script; see [Shell completion](#shell-completion). |
 | `runnerdeck version`, `--version`, `-v` | Print the version. On a terminal it shows the RunnerDeck logo and welcome message, like `run.sh`; in a pipe, with `--json`, `-q` or `RUNNERDECK_NO_BANNER=1` it prints just `RunnerDeck 2.0.0`. |
@@ -147,6 +157,11 @@ variable only controls the dashboard header's automatic check.
 ## Shell completion
 
 Completion fills in commands, runner ids (from your pool) and setting names.
+`runnerdeck install` sets it up for you: fish gets
+`~/.config/fish/completions/runnerdeck.fish`, zsh gets `~/.zfunc/_runnerdeck`
+(add `fpath=(~/.zfunc $fpath)` to `~/.zshrc` before `compinit` if it is not
+there already) and bash gets one line appended to `~/.bashrc`. Pass
+`--no-completion` to skip that. To do it by hand:
 
 ```bash
 # bash: add to ~/.bashrc
