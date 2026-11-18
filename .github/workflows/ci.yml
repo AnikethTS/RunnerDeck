@@ -39,6 +39,7 @@ jobs:
           LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           THIS_REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
         run: |
           has() { echo "$LABELS" | jq -e --arg l "$1" 'index($l) != null' >/dev/null 2>&1; }
           everything=false
@@ -49,10 +50,12 @@ jobs:
             if [ "$everything" = true ] || [ "$full" = true ] || has "ci:$1"; then echo true; else echo false; fi
           }
           live="$(pick live)"
-          # A fork pull request cannot read E2E_RUNNER_TOKEN. The matrix still
-          # starts so the required check names are reported.
+          # A fork pull request cannot read E2E_RUNNER_TOKEN, and neither can a
+          # Dependabot one: its runs only see the Dependabot secrets store. The
+          # matrix still starts so the required check names are reported.
           run_live=false
-          if [ "$live" = true ] && { [ "$EVENT" != "pull_request" ] || [ "$HEAD_REPO" = "$THIS_REPO" ]; }; then
+          if [ "$live" = true ] && [ "$ACTOR" != "dependabot[bot]" ] \
+            && { [ "$EVENT" != "pull_request" ] || [ "$HEAD_REPO" = "$THIS_REPO" ]; }; then
             run_live=true
           fi
           {
@@ -427,7 +430,7 @@ jobs:
       - name: Report the check without registering a runner
         if: needs.plan.outputs.run_live != 'true'
         shell: bash
-        run: echo "A real runner is registered on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+        run: echo "A real runner is registered on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork or Dependabot pull request does not receive the runner token."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.plan.outputs.run_live == 'true'
@@ -487,7 +490,7 @@ jobs:
       - name: Report the check without registering a runner
         if: needs.plan.outputs.run_live != 'true'
         shell: bash
-        run: echo "The command line registers a real runner on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+        run: echo "The command line registers a real runner on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork or Dependabot pull request does not receive the runner token."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.plan.outputs.run_live == 'true'
@@ -547,7 +550,7 @@ jobs:
       - name: Report the check without driving the dashboard
         if: needs.plan.outputs.run_live != 'true'
         shell: bash
-        run: echo "The live dashboard runs on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork pull request does not receive the runner token."
+        run: echo "The live dashboard runs on main, on the nightly build, and on a same-repository pull request labeled ci:full. A fork or Dependabot pull request does not receive the runner token."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.plan.outputs.run_live == 'true'
