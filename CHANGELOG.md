@@ -14,6 +14,7 @@ follows [SemVer](https://semver.org/).
 ### Fixed
 
 - `runnerdeck install` told fish users to run `export PATH=...`. It now suggests `fish_add_path`, and checks fish's own PATH, so it no longer warns that `~/.local/bin` is missing when fish has it in `fish_user_paths`.
+- A Dependabot pull request no longer fails the live dashboard, real-runner and command-line E2E jobs. Dependabot runs cannot read `E2E_RUNNER_TOKEN`, so those jobs now skip with an explanation, like a fork pull request, and run on `main`.
 
 ## [2.0.0] - 2026-11-17
 
