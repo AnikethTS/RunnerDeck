@@ -50,18 +50,19 @@ needed to manage Linux runners from a Windows PC (`.\run.ps1 -Wsl`).
 
 ## Quick start
 
+Linux and macOS, the latest release (needs `curl`, `unzip`, and `php`):
+
 ```bash
-git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
-./run.sh                # binds 127.0.0.1:8090, no .env required
+curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh
+runnerdeck --open
 ```
 
-Open `http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
-`bin/install-service.sh` keeps that process running after a reboot on Linux,
-or after you log in on macOS.
-That's the whole setup. Machine not ready yet? Run `php app/bin/doctor.php` to
-check — or see [Getting started](docs/getting-started.md) for the full
-walkthrough, prerequisites, and platform notes (Linux, macOS and Windows,
-all native).
+That script is the `install.sh` file on the latest release. It checks the
+release zip, unpacks it to `~/.local/share/runnerdeck`, and links `runnerdeck`
+into `~/.local/bin`. Run the same command again to upgrade. Open
+`http://127.0.0.1:8090/`, pick org or repo scope, click **Start All**.
+See [Getting started](docs/getting-started.md) for prerequisites and platform
+notes (Linux, macOS and Windows, all native).
 
 **On Windows without installing PHP:** download `RunnerDeck-<version>-windows-x64-setup.exe`
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)

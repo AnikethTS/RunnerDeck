@@ -411,12 +411,9 @@
   <div class="wrap">
     <h2 class="reveal">Quickstart</h2>
     <p class="section-lede reveal">No <code>.env</code> required to get started. The dashboard walks you through setup on first load.</p>
-    <pre class="quickstart reveal"><span class="cmt"># clone and run, no build step, no composer install needed</span>
-git clone https://github.com/AnikethTS/RunnerDeck.git
-cd RunnerDeck
-./run.sh                    <span class="cmt"># binds 127.0.0.1:8090</span>
-
-<span class="cmt"># open http://127.0.0.1:8090/, pick org or repo scope on the setup screen</span>
+    <pre class="quickstart reveal"><span class="cmt"># Linux and macOS: the installer from the latest release (curl, unzip, and php)</span>
+curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh
+runnerdeck --open           <span class="cmt"># http://127.0.0.1:8090/</span>
 
 <span class="cmt"># or, no PHP install needed:</span>
 docker compose up --build

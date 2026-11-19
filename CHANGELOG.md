@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The one-command installer prints the RunnerDeck logo before it downloads, and afterwards tells you to run `runnerdeck setup`, then `runnerdeck add` and `runnerdeck --open`. It is the `install.sh` asset on the latest release (`curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh`) and always installs that release. The README and website show that command.
+
 ## [2.1.0] - 2026-11-19
 
 ### Added

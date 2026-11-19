@@ -20,12 +20,12 @@ GitHub (`stop`, `delete`, `update`).
 To install the latest release in one step (Linux and macOS; needs `curl`, `unzip` and `php`):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh
+curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh
 ```
 
-It checks the zip's SHA-256, unpacks it into `~/.local/share/runnerdeck` and runs
+That file is published with the latest release. It checks the zip's SHA-256, unpacks it into `~/.local/share/runnerdeck` and runs
 `./runnerdeck install`. Run it again to upgrade; your data and `.env` are kept.
-Set `RUNNERDECK_DIR` to unpack somewhere else or `RUNNERDECK_TAG` for a specific release.
+Set `RUNNERDECK_DIR` to unpack somewhere else. It always installs the latest release.
 
 Check it works:
 
