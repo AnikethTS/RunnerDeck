@@ -1,15 +1,16 @@
 #!/bin/sh
 # One-command install of the latest RunnerDeck release (Linux and macOS):
 #
-#   curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh
+#   curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh
 #
-# Downloads the release zip, checks its SHA-256, unpacks it into
-# ~/.local/share/runnerdeck and runs `./runnerdeck install`, which links the
-# command into ~/.local/bin and sets up tab completion. Run it again to upgrade;
-# your data, runners and .env in that folder are kept.
+# The script itself is the install.sh asset on the latest release, not a file
+# from the main branch. It downloads that same release's zip, checks its
+# SHA-256, unpacks it into ~/.local/share/runnerdeck and runs
+# `./runnerdeck install`, which links the command into ~/.local/bin and sets
+# up tab completion. Run it again to upgrade; your data, runners and .env in
+# that folder are kept.
 #
 # RUNNERDECK_DIR   install folder (default ~/.local/share/runnerdeck)
-# RUNNERDECK_TAG   a specific release, e.g. v2.0.0 (default: the latest)
 set -eu
 
 REPO="AnikethTS/RunnerDeck"
@@ -28,11 +29,8 @@ else
   sha_check() { shasum -a 256 -c "$1" >/dev/null; }
 fi
 
-tag="${RUNNERDECK_TAG:-}"
-if [ -z "$tag" ]; then
-  tag="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-    | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)"
-fi
+tag="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+  | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)"
 [ -n "$tag" ] || { echo "runnerdeck install: could not find the latest release" >&2; exit 1; }
 
 # Same mark as `runnerdeck --version`. A pipe into `sh` still has a terminal

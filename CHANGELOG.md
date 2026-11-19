@@ -8,7 +8,7 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
-- The one-command installer prints the RunnerDeck logo before it downloads, and the README and website show `curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh`.
+- The one-command installer prints the RunnerDeck logo before it downloads. It is the `install.sh` asset on the latest release (`curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh`) and always installs that release. The README and website show that command.
 
 ## [2.1.0] - 2026-11-19
 

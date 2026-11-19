@@ -57,7 +57,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cp bin/install.sh install.sh
           gh release create "${GITHUB_REF_NAME}" \
+            install.sh \
             "runnerdeck-${GITHUB_REF_NAME}.zip" \
             "runnerdeck-${GITHUB_REF_NAME}.zip.sha256" \
             "runnerdeck-${GITHUB_REF_NAME}.zip.sigstore.json" \
