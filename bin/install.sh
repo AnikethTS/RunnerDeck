@@ -100,3 +100,7 @@ cd "$DEST"
 # --force so an upgrade or a move of the folder replaces a stale link.
 ./runnerdeck install --force
 echo "RunnerDeck ${tag} is in ${DEST}"
+echo ""
+echo "Next: runnerdeck setup"
+echo "      That asks for your org or repository. Then add a runner with: runnerdeck add"
+echo "      Open the dashboard with: runnerdeck --open"
