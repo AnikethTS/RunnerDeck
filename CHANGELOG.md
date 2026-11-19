@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-19
+
 ### Added
 
 - `runnerdeck install` now sets up tab completion for your shell: fish gets `~/.config/fish/completions/runnerdeck.fish`, zsh gets `~/.zfunc/_runnerdeck`, and bash gets one marked line appended to `~/.bashrc`. `--no-completion` skips it.
