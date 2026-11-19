@@ -50,6 +50,14 @@ needed to manage Linux runners from a Windows PC (`.\run.ps1 -Wsl`).
 
 ## Quick start
 
+Linux and macOS, latest release (needs `curl`, `unzip`, and `php`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh
+```
+
+Or from a clone:
+
 ```bash
 git clone https://github.com/AnikethTS/RunnerDeck.git && cd RunnerDeck
 ./run.sh                # binds 127.0.0.1:8090, no .env required

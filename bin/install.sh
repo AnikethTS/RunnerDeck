@@ -35,6 +35,47 @@ if [ -z "$tag" ]; then
 fi
 [ -n "$tag" ] || { echo "runnerdeck install: could not find the latest release" >&2; exit 1; }
 
+# Same mark as `runnerdeck --version`. A pipe into `sh` still has a terminal
+# on stdout, so the colour shows there. NO_COLOR and RUNNERDECK_NO_BANNER
+# match the dashboard banner.
+if [ "${RUNNERDECK_NO_BANNER:-}" != 1 ]; then
+  if [ -t 1 ] && [ -z "${NO_COLOR+x}" ]; then
+    printf '%b\n' \
+      '' \
+      '            \033[90m######\033[0m' \
+      '        \033[90m##############\033[0m' \
+      '    \033[90m########\033[0m      \033[90m######\033[0m \033[1;33m@\033[0m' \
+      "  \033[90m#######\033[0m     \033[1;33m@@@\033[0m    \033[90m#\033[0m \033[1;33m@@@@@\033[0m  \033[1mWelcome to RunnerDeck\033[0m \033[33m${tag}\033[0m" \
+      '  \033[90m####\033[0m    \033[1;33m@@@@@@@\033[0m     \033[1;33m@@@@\033[0m \033[90m#\033[0m  One dashboard for every self-hosted' \
+      '  \033[90m####\033[0m    \033[1;33m@@@@@@\033[0m    \033[1;33m@@@@\033[0m  \033[90m##\033[0m  GitHub Actions runner.' \
+      '  \033[90m####\033[0m  \033[1;33m@@@@@\033[0m  \033[1;33m@\033[0m  \033[1;33m@@@@@\033[0m \033[90m####\033[0m' \
+      '  \033[90m###\033[0m\033[1;33m@@@@@@\033[0m \033[1;33m@@@\033[0m \033[1;33m@@@@@\033[0m   \033[90m####\033[0m  \033[90mBuilt by\033[0m Aniketh TS and contributors' \
+      '  \033[90m#\033[0m\033[1;33m@@@@@@\033[0m   \033[1;33m@@@@@@@\033[0m     \033[90m####\033[0m  \033[90mLicense\033[0m  MIT' \
+      '  \033[1;33m@@@@@\033[0m\033[90m#\033[0m      \033[1;33m@@@\033[0m     \033[90m######\033[0m' \
+      '    \033[1;33m@\033[0m\033[90m#######\033[0m      \033[90m########\033[0m    \033[90mDocs and issues\033[0m' \
+      '        \033[90m##############\033[0m        \033[4mhttps://github.com/AnikethTS/RunnerDeck\033[0m' \
+      '            \033[90m######\033[0m' \
+      ''
+  else
+    printf '%s\n' \
+      '' \
+      '            ######' \
+      '        ##############' \
+      '    ########      ###### @' \
+      "  #######     @@@    # @@@@@  Welcome to RunnerDeck ${tag}" \
+      '  ####    @@@@@@@     @@@@ #  One dashboard for every self-hosted' \
+      '  ####    @@@@@@    @@@@  ##  GitHub Actions runner.' \
+      '  ####  @@@@@  @  @@@@@ ####' \
+      '  ###@@@@@@ @@@ @@@@@   ####  Built by Aniketh TS and contributors' \
+      '  #@@@@@@   @@@@@@@     ####  License  MIT' \
+      '  @@@@@#      @@@     ######' \
+      '    @#######      ########    Docs and issues' \
+      '        ##############        https://github.com/AnikethTS/RunnerDeck' \
+      '            ######' \
+      ''
+  fi
+fi
+
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 zip="runnerdeck-${tag}.zip"

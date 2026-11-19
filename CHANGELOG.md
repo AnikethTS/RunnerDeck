@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The one-command installer prints the RunnerDeck logo before it downloads, and the README and website show `curl -fsSL https://raw.githubusercontent.com/AnikethTS/RunnerDeck/main/bin/install.sh | sh`.
+
 ## [2.1.0] - 2026-11-19
 
 ### Added
