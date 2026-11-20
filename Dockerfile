@@ -5,7 +5,7 @@ RUN sh /tmp/build-gh.sh /out/gh
 
 # Debian, not Alpine. GitHub's runner is a glibc .NET program: config.sh
 # fails on Alpine looking for ld-linux-x86-64.so.2 and libicu.
-FROM php:8.5.12-cli-bookworm@sha256:050713ce008e2360ea9dc96e1f9a075690132388d917fc3552806f7a7be6f2a0
+FROM php:8.6.0RC5-cli-bookworm@sha256:106dc527e7befdced3cf7521b655dbaac80067c18173f76afca4e836003273f0
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade linux-libc-dev \
