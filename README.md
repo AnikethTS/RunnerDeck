@@ -64,6 +64,15 @@ into `~/.local/bin`. Run the same command again to upgrade. Open
 See [Getting started](docs/getting-started.md) for prerequisites and platform
 notes (Linux, macOS and Windows, all native).
 
+**On macOS with Homebrew:**
+
+```bash
+brew tap anikethts/runnerdeck
+brew trust anikethts/runnerdeck
+brew install anikethts/runnerdeck/runnerdeck
+runnerdeck --open
+```
+
 **On Windows without installing PHP:** download `RunnerDeck-<version>-windows-x64-setup.exe`
 from the [latest release](https://github.com/AnikethTS/RunnerDeck/releases/latest)
 and run it. It is a normal installer wizard: it installs for your account only (no

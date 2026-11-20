@@ -415,6 +415,12 @@
 curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh
 runnerdeck --open           <span class="cmt"># http://127.0.0.1:8090/</span>
 
+<span class="cmt"># macOS with Homebrew:</span>
+brew tap anikethts/runnerdeck
+brew trust anikethts/runnerdeck
+brew install anikethts/runnerdeck/runnerdeck
+runnerdeck --open
+
 <span class="cmt"># or, no PHP install needed:</span>
 docker compose up --build
 
