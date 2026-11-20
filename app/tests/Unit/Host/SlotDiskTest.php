@@ -81,6 +81,30 @@ final class SlotDiskTest extends TestCase
         $this->assertSame(1, $calls);
     }
 
+    public function testFileCacheServesTheSameSizeWithoutMeasuringAgain(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/a', str_repeat('x', 4096));
+
+        $first = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $cache = new \ReflectionProperty(\RunnerDeck\Host\SlotDisk::class, 'cache');
+        $cache->setValue(null, null);
+        file_put_contents($this->dir . '/_work/b', str_repeat('y', 1024 * 1024));
+        $second = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+
+        $this->assertSame($first['kb'], $second['kb']);
+        $this->assertTrue($second['can_clear']);
+        $this->assertFileExists($storage . '/slot-disk.json');
+
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        $third = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->assertGreaterThan($first['kb'], $third['kb']);
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
     public function testFormatKbUsesGbThenMbThenKb(): void
     {
         $this->assertSame('—', \RunnerDeck\Host\SlotDisk::formatKb(null));

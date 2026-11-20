@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `runnerdeck list` and `status` no longer measure slot disk or read log tails, and `--watch` redraws every 5 seconds (`--interval` still overrides). The dashboard still shows disk, and it reuses those sizes for 30 seconds instead of running `du` on every poll. The status poll no longer repeats the app-log list beside the HTML it already sends, and the page skips redrawing charts, the log, and the orphan list when they have not changed.
+
 ### Added
 
 - The one-command installer prints the RunnerDeck logo before it downloads, and afterwards tells you to run `runnerdeck setup`, then `runnerdeck add` and `runnerdeck --open`. It is the `install.sh` asset on the latest release (`curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh`) and always installs that release. The README and website show that command.

@@ -92,6 +92,7 @@ final class CliTest extends TestCase
         $this->assertTrue($data['ok']);
         $this->assertSame(['runner-1', 'runner-2'], array_column($data['runners'], 'id'));
         $this->assertArrayNotHasKey('log_tail', $data['runners'][0]);
+        $this->assertNull($data['runners'][0]['disk_kb']);
     }
 
     public function testListWithNoRunnersPointsAtAdd(): void

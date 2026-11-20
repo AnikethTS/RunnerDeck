@@ -39,7 +39,7 @@ final class Dashboard
     {
         $runners = [];
         $hasEphemeral = false;
-        foreach (RunnerPool::discover($logLines) as $info) {
+        foreach (RunnerPool::discover($logLines, true) as $info) {
             $row = $info->toArray();
             $row['github'] = null;
             $hasEphemeral = $hasEphemeral || $info->ephemeral;
@@ -94,7 +94,7 @@ final class Dashboard
 
         HostBundleSnapshot::tick();
 
-        $discovered = RunnerPool::discover($logLines);
+        $discovered = RunnerPool::discover($logLines, true);
         $runners = [];
         $localNames = [];
         foreach ($discovered as $info) {

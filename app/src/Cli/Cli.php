@@ -251,7 +251,7 @@ TXT;
         if ($this->json) {
             return $this->fail('--watch does not combine with --json');
         }
-        $interval = max(1, (int) ($flags['interval'] ?? 2));
+        $interval = max(1, (int) ($flags['interval'] ?? 5));
         while ($this->keepFollowing === null || ($this->keepFollowing)()) {
             if ($this->color) {
                 fwrite($this->out, "\033[H\033[2J");
@@ -265,7 +265,10 @@ TXT;
     private function listOnce(bool $withGithub): int
     {
         $github = $withGithub ? $this->githubRunners() : null;
-        $rows = array_map(static fn (RunnerInfo $r): array => $r->toArray(), array_values(RunnerPool::discover(1)));
+        $rows = array_map(
+            static fn (RunnerInfo $r): array => $r->toArray(),
+            array_values(RunnerPool::discover(0))
+        );
         foreach ($rows as &$row) {
             $row['state'] = !$row['configured'] ? 'new' : ($row['local_running'] ? 'running' : 'stopped');
             if ($withGithub) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Host;
 
+use RunnerDeck\Configuration\Settings;
 use RunnerDeck\System\Platform;
 use RunnerDeck\System\Shell;
 
@@ -17,6 +18,7 @@ final class SlotDisk
     /** @param list<string> $dirs */
     public static function prime(array $dirs): void
     {
+        self::hydrate();
         $now = microtime(true);
         $fresh = self::$cache !== null && ($now - self::$cache['at']) < self::CACHE_SECONDS;
         $todo = [];
@@ -61,6 +63,7 @@ final class SlotDisk
         }
         self::$cache = ['at' => $at, 'byDir' => $byDir];
         if ($paths === []) {
+            self::persist();
             return;
         }
 
@@ -86,6 +89,7 @@ final class SlotDisk
             ];
         }
         self::$cache = ['at' => $at, 'byDir' => $byDir];
+        self::persist();
     }
 
     /**
@@ -95,6 +99,7 @@ final class SlotDisk
      */
     public static function inspect(string $dir): array
     {
+        self::hydrate();
         $now = microtime(true);
         if (
             self::$cache !== null
@@ -128,6 +133,7 @@ final class SlotDisk
             self::$cache = ['at' => $now, 'byDir' => []];
         }
         self::$cache['byDir'][$dir] = $info;
+        self::persist();
         return $info;
     }
 
@@ -143,6 +149,7 @@ final class SlotDisk
             return ['ok' => false, 'message' => 'failed to clear work dir'];
         }
         self::$cache = null;
+        self::persist();
         return ['ok' => true, 'message' => 'work directory cleared'];
     }
 
@@ -180,6 +187,85 @@ final class SlotDisk
     public static function resetCache(): void
     {
         self::$cache = null;
+        $path = self::cacheFile();
+        if ($path !== null) {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * The in-memory cache dies with the PHP request. The dashboard polls
+     * every few seconds, so the same sizes are reused from this file.
+     */
+    private static function hydrate(): void
+    {
+        if (self::$cache !== null || Shell::isFaked()) {
+            return;
+        }
+        $path = self::cacheFile();
+        if ($path === null || !is_file($path)) {
+            return;
+        }
+        $decoded = json_decode((string) file_get_contents($path), true);
+        if (
+            !is_array($decoded)
+            || !isset($decoded['at'], $decoded['byDir'])
+            || !is_array($decoded['byDir'])
+        ) {
+            return;
+        }
+        $at = (float) $decoded['at'];
+        if ((microtime(true) - $at) >= self::CACHE_SECONDS) {
+            return;
+        }
+        $byDir = [];
+        foreach ($decoded['byDir'] as $dir => $info) {
+            if (!is_string($dir) || !is_array($info)) {
+                continue;
+            }
+            $kb = $info['kb'] ?? null;
+            $byDir[$dir] = [
+                'kb' => is_numeric($kb) ? (int) $kb : null,
+                'can_clear' => !empty($info['can_clear']),
+            ];
+        }
+        self::$cache = ['at' => $at, 'byDir' => $byDir];
+    }
+
+    private static function persist(): void
+    {
+        if (Shell::isFaked()) {
+            return;
+        }
+        $path = self::cacheFile();
+        if ($path === null) {
+            return;
+        }
+        if (self::$cache === null) {
+            @unlink($path);
+            return;
+        }
+        $json = json_encode(self::$cache);
+        if (!is_string($json)) {
+            return;
+        }
+        $tmp = $path . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+            return;
+        }
+        @chmod($tmp, 0600);
+        if (!@rename($tmp, $path)) {
+            @unlink($tmp);
+        }
+    }
+
+    private static function cacheFile(): ?string
+    {
+        $dir = Settings::storageDir();
+        if (!is_dir($dir)) {
+            return null;
+        }
+        return $dir . '/slot-disk.json';
     }
 
     public static function removeTree(string $path): void

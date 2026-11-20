@@ -1,3 +1,9 @@
+function setHtmlIfChanged(el, html) {
+  if (!el || el._html === html) return;
+  el._html = html;
+  el.innerHTML = html;
+}
+
 function loadClass(percent) {
   if (percent == null) return '';
   if (percent > 85) return 'stat-critical';
@@ -35,8 +41,8 @@ export function renderHistory(snapshot) {
   if (!history) return;
   const cpuChart = document.getElementById('chart-cpu');
   const memChart = document.getElementById('chart-mem');
-  if (cpuChart) cpuChart.innerHTML = history.cpu_svg;
-  if (memChart) memChart.innerHTML = history.mem_svg;
+  setHtmlIfChanged(cpuChart, history.cpu_svg || '');
+  setHtmlIfChanged(memChart, history.mem_svg || '');
   const cpuNow = document.getElementById('chart-cpu-now');
   const cpuSpan = document.getElementById('chart-cpu-span');
   const memNow = document.getElementById('chart-mem-now');

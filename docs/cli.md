@@ -40,7 +40,7 @@ runnerdeck --help          # also: -h, or `runnerdeck help`
 
 | Command | What it does |
 |---|---|
-| `runnerdeck list` (`ls`) | The runners on this machine: id, state, pid, uptime, agent name. `--watch` redraws every 2 seconds (`--interval N` to change). |
+| `runnerdeck list` (`ls`) | The runners on this machine: id, state, pid, uptime, agent name. It does not measure slot disk. `--watch` redraws every 5 seconds (`--interval N` to change). |
 | `runnerdeck status` | Like `list`, plus a GITHUB column: `idle`, `busy`, `offline`, `unregistered`, or `?` when GitHub cannot be reached. |
 | `runnerdeck start <runner...>` or `--all` | Start runners. A runner that is already running is left alone. |
 | `runnerdeck stop <runner...>` or `--all` | Stop runners. Refuses if a runner is running a job. |

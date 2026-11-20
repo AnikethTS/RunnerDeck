@@ -73,6 +73,7 @@ final class StatusActionTest extends TestCase
         $this->assertIsArray($payload);
         $this->assertSame(200, $payload['status']);
         $this->assertArrayNotHasKey('log_tail', $payload['data']['runners'][0]);
+        $this->assertArrayNotHasKey('errors', $payload['data']);
         $this->assertSame('runner-1', $payload['data']['runners'][0]['id']);
         $this->assertStringContainsString('hello from the slot', $payload['data']['view']['rows_html']);
     }
