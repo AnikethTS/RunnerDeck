@@ -169,13 +169,14 @@ final class SlotDiskTest extends TestCase
         putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
         mkdir($this->dir . '/_work', 0755, true);
         file_put_contents($this->dir . '/_work/a', 'x');
-        chmod($storage, 0555);
+        // A directory where the temp file should go. Root ignores a read-only
+        // mode bit, so chmod cannot stand in for a failed write.
+        mkdir($storage . '/slot-disk.json.' . getmypid() . '.tmp', 0700, true);
         try {
             $info = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
             $this->assertGreaterThan(0, $info['kb']);
             $this->assertFileDoesNotExist($storage . '/slot-disk.json');
         } finally {
-            chmod($storage, 0700);
             \RunnerDeck\Host\SlotDisk::resetCache();
             putenv('RUNNERDECK_SETTINGS_FILE');
         }
