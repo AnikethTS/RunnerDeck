@@ -38,6 +38,12 @@ function initDashboard() {
     el.hidden = !narrowed;
   }
 
+  function setHtmlIfChanged(el, html) {
+    if (!el || el._html === html) return;
+    el._html = html;
+    el.innerHTML = html;
+  }
+
   function setBanner(text, hidden) {
     bannerEl.hidden = hidden;
     bannerEl.className = 'banner';
@@ -101,7 +107,7 @@ function initDashboard() {
     applyLastJobs();
     const orphanPanel = document.getElementById('orphan-panel');
     if (orphanPanel && snapshot.view && typeof snapshot.view.orphans_html === 'string') {
-      orphanPanel.innerHTML = snapshot.view.orphans_html;
+      setHtmlIfChanged(orphanPanel, snapshot.view.orphans_html);
       orphanPanel.hidden = snapshot.view.orphans_html === '';
     }
     updateBulkActionsBar(visible);
@@ -1012,8 +1018,11 @@ function initDashboard() {
     const view = snapshot.view;
     if (view && typeof view.errors_html === 'string') {
       countEl.textContent = view.errors_count || '';
-      body.innerHTML = view.errors_html;
-      applyAppLogFilter();
+      if (body._html !== view.errors_html) {
+        body._html = view.errors_html;
+        body.innerHTML = view.errors_html;
+        applyAppLogFilter();
+      }
       return;
     }
     const list = Array.isArray(snapshot.errors) ? snapshot.errors : [];

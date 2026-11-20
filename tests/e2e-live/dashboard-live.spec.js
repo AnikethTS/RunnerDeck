@@ -233,6 +233,7 @@ test('Clear work empties _work on a stopped runner', async () => {
     await confirmIfAsked();
   }
   await expectStopped(BASE);
+  await confirmIfAsked(500);
   await row(BASE).locator('a.runner-more').click();
   await page.waitForURL(/runner\.php/);
   const clear = page.locator('#runner-page [data-action="clear-work"]');

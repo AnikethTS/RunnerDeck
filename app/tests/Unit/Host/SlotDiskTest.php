@@ -81,6 +81,131 @@ final class SlotDiskTest extends TestCase
         $this->assertSame(1, $calls);
     }
 
+    public function testFileCacheServesTheSameSizeWithoutMeasuringAgain(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/a', str_repeat('x', 4096));
+
+        $first = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $cache = new \ReflectionProperty(\RunnerDeck\Host\SlotDisk::class, 'cache');
+        $cache->setValue(null, null);
+        file_put_contents($this->dir . '/_work/b', str_repeat('y', 1024 * 1024));
+        $second = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+
+        $this->assertSame($first['kb'], $second['kb']);
+        $this->assertTrue($second['can_clear']);
+        $this->assertFileExists($storage . '/slot-disk.json');
+
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        $third = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->assertGreaterThan($first['kb'], $third['kb']);
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
+    public function testBrokenStaleAndPartialCacheFilesAreNotTrusted(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/a', str_repeat('x', 2048));
+        $cacheFile = $storage . '/slot-disk.json';
+
+        file_put_contents($cacheFile, 'not-json');
+        $this->forgetMemory();
+        $measured = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->assertGreaterThan(0, $measured['kb']);
+
+        file_put_contents($cacheFile, (string) json_encode([
+            'at' => microtime(true) - 120,
+            'byDir' => [$this->dir => ['kb' => 1, 'can_clear' => false]],
+        ]));
+        $this->forgetMemory();
+        $fresh = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->assertNotSame(1, $fresh['kb']);
+        $this->assertTrue($fresh['can_clear']);
+
+        file_put_contents($cacheFile, (string) json_encode([
+            'at' => microtime(true),
+            'byDir' => [
+                'skip-me' => 'not-a-row',
+                $this->dir => ['kb' => 'nope', 'can_clear' => true],
+            ],
+        ]));
+        $this->forgetMemory();
+        $partial = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->assertNull($partial['kb']);
+        $this->assertTrue($partial['can_clear']);
+
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
+    public function testPersistDropsACacheThatCannotBeEncoded(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        $cache = new \ReflectionProperty(\RunnerDeck\Host\SlotDisk::class, 'cache');
+        $cache->setValue(null, [
+            'at' => microtime(true),
+            'byDir' => ["\xC3\x28" => ['kb' => 1, 'can_clear' => false]],
+        ]);
+        $persist = new \ReflectionMethod(\RunnerDeck\Host\SlotDisk::class, 'persist');
+        $persist->invoke(null);
+
+        $this->assertFileDoesNotExist($storage . '/slot-disk.json');
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
+    public function testPersistKeepsGoingWhenTheCacheFileCannotBeWritten(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/a', 'x');
+        // A directory where the temp file should go. Root ignores a read-only
+        // mode bit, so chmod cannot stand in for a failed write.
+        mkdir($storage . '/slot-disk.json.' . getmypid() . '.tmp', 0700, true);
+        try {
+            $info = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+            $this->assertGreaterThan(0, $info['kb']);
+            $this->assertFileDoesNotExist($storage . '/slot-disk.json');
+        } finally {
+            \RunnerDeck\Host\SlotDisk::resetCache();
+            putenv('RUNNERDECK_SETTINGS_FILE');
+        }
+    }
+
+    public function testPersistRemovesTheTempFileWhenRenameFails(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+        mkdir($storage . '/slot-disk.json/keep', 0700, true);
+        mkdir($this->dir . '/_work', 0755, true);
+        file_put_contents($this->dir . '/_work/a', 'x');
+
+        $info = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+
+        $this->assertGreaterThan(0, $info['kb']);
+        $this->assertSame([], glob($storage . '/slot-disk.json.*.tmp') ?: []);
+        $this->assertDirectoryExists($storage . '/slot-disk.json');
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
+    private function forgetMemory(): void
+    {
+        $cache = new \ReflectionProperty(\RunnerDeck\Host\SlotDisk::class, 'cache');
+        $cache->setValue(null, null);
+    }
+
     public function testFormatKbUsesGbThenMbThenKb(): void
     {
         $this->assertSame('—', \RunnerDeck\Host\SlotDisk::formatKb(null));

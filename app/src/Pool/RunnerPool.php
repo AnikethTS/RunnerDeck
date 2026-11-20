@@ -49,8 +49,12 @@ final class RunnerPool
         self::$checkProcessFake = $handler;
     }
 
-    /** @return array<string, RunnerInfo> keyed by id, base first then numeric order */
-    public static function discover(int $logLines = 15): array
+    /**
+     * @param bool $measureDisk Walk `_work` with du. The dashboard needs sizes.
+     *     Commands leave this off so a large work folder does not stall them.
+     * @return array<string, RunnerInfo> keyed by id, base first then numeric order
+     */
+    public static function discover(int $logLines = 15, bool $measureDisk = false): array
     {
         $poolDir = Config::poolDir();
         $ids = [];
@@ -70,15 +74,17 @@ final class RunnerPool
             return (int) substr($a, 7) <=> (int) substr($b, 7);
         });
 
-        $dirs = [];
-        foreach ($ids as $id) {
-            $dirs[] = $poolDir . '/' . $id;
+        if ($measureDisk) {
+            $dirs = [];
+            foreach ($ids as $id) {
+                $dirs[] = $poolDir . '/' . $id;
+            }
+            SlotDisk::prime($dirs);
         }
-        SlotDisk::prime($dirs);
 
         $result = [];
         foreach ($ids as $id) {
-            $result[$id] = self::inspect($poolDir, $id, $logLines);
+            $result[$id] = self::inspect($poolDir, $id, $logLines, $measureDisk);
         }
         return $result;
     }
@@ -117,7 +123,7 @@ final class RunnerPool
         return $id === 'runner-base' ? Config::label() : Config::label() . '-' . substr($id, 7);
     }
 
-    private static function inspect(string $poolDir, string $id, int $logLines): RunnerInfo
+    private static function inspect(string $poolDir, string $id, int $logLines, bool $measureDisk): RunnerInfo
     {
         $dir = "$poolDir/$id";
         $runnerFile = "$dir/.runner";
@@ -151,7 +157,9 @@ final class RunnerPool
         if (!$running) {
             RunnerLog::rotateIfOversized($dir);
         }
-        $disk = SlotDisk::inspect($dir);
+        $disk = $measureDisk
+            ? SlotDisk::inspect($dir)
+            : ['kb' => null, 'can_clear' => false];
 
         return new RunnerInfo(
             id: $id,

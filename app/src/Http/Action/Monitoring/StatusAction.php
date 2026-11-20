@@ -21,6 +21,7 @@ final class StatusAction
         if (($_GET['view'] ?? '') === '1') {
             $snapshot['view'] = DashboardView::pollView($snapshot);
             $snapshot['runners'] = self::withoutLogTails($snapshot['runners'] ?? null);
+            unset($snapshot['errors']);
         }
         JsonApi::respond($snapshot);
     }
