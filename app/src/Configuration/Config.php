@@ -511,6 +511,10 @@ final class Config
         if ($override) {
             return rtrim($override, '/');
         }
+        $saved = LauncherPaths::readPoolDir();
+        if ($saved !== null) {
+            return rtrim($saved, '/');
+        }
         return dirname(__DIR__, 4) . '/runners';
     }
 

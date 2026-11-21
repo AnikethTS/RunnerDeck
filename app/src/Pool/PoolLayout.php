@@ -21,8 +21,11 @@ final class PoolLayout
     /** One shared externals tree, the size that filled a small disk twice. */
     public const EXTERNALS_KIB = 600 * 1024;
 
-    /** Listener and bin next to that shared tree, per slot. */
-    public const SLOT_KIB = 150 * 1024;
+    /** One shared bin tree (the listener and its libraries). */
+    public const BIN_KIB = 150 * 1024;
+
+    /** Per-slot files that stay private: config, credentials, logs. */
+    public const SLOT_KIB = 20 * 1024;
 
     public static function packageJsonBlockMessage(string $poolDir): ?string
     {
@@ -68,7 +71,7 @@ final class PoolLayout
 
     public static function estimatedKiB(int $slots): int
     {
-        return self::EXTERNALS_KIB + (max(1, $slots) * self::SLOT_KIB);
+        return self::EXTERNALS_KIB + self::BIN_KIB + (max(1, $slots) * self::SLOT_KIB);
     }
 
     public static function spaceSentence(int $slots, ?int $freeKiB): string
@@ -76,7 +79,7 @@ final class PoolLayout
         $slots = max(1, $slots);
         $noun = $slots === 1 ? '1 slot needs' : $slots . ' slots need';
         $sentence = $noun . ' about ' . SlotDisk::formatKb(self::estimatedKiB($slots))
-            . ' once externals are shared';
+            . ' once bin and externals are shared';
         if ($freeKiB === null) {
             return $sentence . '; free space is unknown';
         }
@@ -86,17 +89,62 @@ final class PoolLayout
     /** More than one slot still has its own externals tree. */
     public static function externalsDuplicated(): bool
     {
+        return self::treeDuplicated('externals');
+    }
+
+    /** More than one slot still has its own bin or externals tree. */
+    public static function agentTreesDuplicated(): bool
+    {
+        return self::treeDuplicated('bin') || self::treeDuplicated('externals');
+    }
+
+    /**
+     * Point this slot's bin and externals files at another slot's copy of the
+     * same agent. Hardlinks keep the files if the donor slot is removed.
+     * Each listener is still its own process.
+     */
+    public static function shareExternals(string $dir): void
+    {
+        self::shareTree($dir, 'externals');
+        self::shareTree($dir, 'bin');
+    }
+
+    public static function whitespaceMessage(string $poolDir): ?string
+    {
+        if (preg_match('/\s/', $poolDir) !== 1) {
+            return null;
+        }
+        return 'pool directory ' . $poolDir
+            . ' contains whitespace. GitHub Actions starts each step with an unquoted path,'
+            . ' so the job fails before the script runs.';
+    }
+
+    private static function shareTree(string $dir, string $name): void
+    {
+        $own = $dir . '/' . $name;
+        if (is_link($own) || !is_dir($own)) {
+            return;
+        }
+        $donor = self::treeDonor($dir, $name);
+        if ($donor === null) {
+            return;
+        }
+        self::hardlinkTree($donor, $own);
+    }
+
+    private static function treeDuplicated(string $name): bool
+    {
         $inodes = [];
         $pool = Config::poolDir();
         foreach (glob($pool . '/runner-*') ?: [] as $slot) {
             if (!is_dir($slot)) {
                 continue;
             }
-            $externals = $slot . '/externals';
-            if (!is_dir($externals) || is_link($externals)) {
+            $tree = $slot . '/' . $name;
+            if (!is_dir($tree) || is_link($tree)) {
                 continue;
             }
-            $inode = self::firstFileInode($externals);
+            $inode = self::firstFileInode($tree);
             if ($inode === null) {
                 continue;
             }
@@ -105,46 +153,29 @@ final class PoolLayout
         return count($inodes) > 1;
     }
 
-    /**
-     * Point this slot's externals files at another slot's copy of the same
-     * agent. Hardlinks keep the files if the donor slot is removed.
-     */
-    public static function shareExternals(string $dir): void
-    {
-        $own = $dir . '/externals';
-        if (is_link($own) || !is_dir($own)) {
-            return;
-        }
-        $donor = self::externalsDonor($dir);
-        if ($donor === null) {
-            return;
-        }
-        self::hardlinkTree($donor, $own);
-    }
-
-    private static function externalsDonor(string $dir): ?string
+    private static function treeDonor(string $dir, string $name): ?string
     {
         $ownSize = self::agentBinarySize($dir);
         if ($ownSize === null) {
             return null;
         }
         $pool = dirname($dir);
-        $ownReal = realpath($dir . '/externals');
+        $ownReal = realpath($dir . '/' . $name);
         foreach (glob($pool . '/runner-*') ?: [] as $sibling) {
             if (!is_dir($sibling) || realpath($sibling) === realpath($dir)) {
                 continue;
             }
-            $externals = $sibling . '/externals';
-            if (!is_dir($externals) || is_link($externals)) {
+            $tree = $sibling . '/' . $name;
+            if (!is_dir($tree) || is_link($tree)) {
                 continue;
             }
-            if (realpath($externals) === $ownReal) {
+            if ($ownReal !== false && realpath($tree) === $ownReal) {
                 continue;
             }
             if (self::agentBinarySize($sibling) !== $ownSize) {
                 continue;
             }
-            return $externals;
+            return $tree;
         }
         return null;
     }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -91,11 +92,22 @@ func newLayout(exePath string, getenv func(string) string) layout {
 }
 
 func dataDirFor(exeDir string, getenv func(string) string) string {
+	return dataDirForOS(runtime.GOOS, exeDir, getenv)
+}
+
+func dataDirForOS(goos string, exeDir string, getenv func(string) string) string {
 	if dir := strings.TrimSpace(getenv("RUNNERDECK_DATA_DIR")); dir != "" {
 		return dir
 	}
 	if local := strings.TrimSpace(getenv("LOCALAPPDATA")); local != "" {
 		return filepath.Join(local, "RunnerDeck")
+	}
+	// ~/Library/Application Support has a space. GitHub starts each step
+	// with that path unquoted, so the job fails before the script runs.
+	if goos == "darwin" {
+		if home := strings.TrimSpace(getenv("HOME")); home != "" {
+			return filepath.Join(home, ".runnerdeck")
+		}
 	}
 	if config, err := os.UserConfigDir(); err == nil && config != "" {
 		return filepath.Join(config, "RunnerDeck")

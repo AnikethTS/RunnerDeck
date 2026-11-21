@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RunnerDeck\Cli;
 
+use RunnerDeck\Configuration\LauncherPaths;
 use RunnerDeck\Configuration\Settings;
 use RunnerDeck\Http\Action\Administration\SaveSettingsAction;
 
@@ -28,6 +29,7 @@ final class ConfigCommand
                 $names[] = self::friendly($key);
             }
         }
+        $names[] = 'pool-dir';
         return $names;
     }
 
@@ -45,6 +47,10 @@ final class ConfigCommand
                 $out[self::friendly($key)] = $value;
             }
         }
+        $pool = LauncherPaths::readPoolDir();
+        if ($pool !== null) {
+            $out['pool-dir'] = $pool;
+        }
         ksort($out);
         return $out;
     }
@@ -52,6 +58,9 @@ final class ConfigCommand
     /** @return array{ok: bool, message: string} */
     public static function set(string $name, string $value): array
     {
+        if ($name === 'pool-dir') {
+            return LauncherPaths::savePoolDir($value);
+        }
         if (!in_array($name, self::names(), true)) {
             return ['ok' => false, 'message' => "unknown setting: {$name} (see `runnerdeck config list --all`)"];
         }

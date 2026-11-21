@@ -44,14 +44,14 @@ runnerdeck --help          # also: -h, or `runnerdeck help`
 | `runnerdeck status` | Like `list`, plus a GITHUB column: `idle`, `busy`, `offline`, `unregistered`, or `?` when GitHub cannot be reached. |
 | `runnerdeck start <runner...>` or `--all` | Start runners. A runner that is already running is left alone. |
 | `runnerdeck stop <runner...>` or `--all` | Stop runners. Refuses if a runner is running a job. |
-| `runnerdeck restart <runner...>` | Stop, then start. Same job check as `stop`. |
+| `runnerdeck restart <runner...>` or `--all` | Stop, then start. Same job check as `stop`. |
 | `runnerdeck rolling-restart <runner...>` or `--all` | Restart one runner at a time, waiting for each to be idle first. `--timeout S` bounds each wait. |
 | `runnerdeck drain <runner...>` or `--all` | Wait until the runners are idle, then stop them and clear their work folders. |
 | `runnerdeck add [--name N] [--ephemeral] [--label L]` | Add a runner and start it. `--label` can repeat or be comma-separated (up to 12). |
 | `runnerdeck delete <runner...>` (`rm`) | Stop, deregister from GitHub and remove the runner's files. Same job check. |
 | `runnerdeck rename <runner> <name>` | Re-register a runner under a new name. Refuses while it has a job. |
 | `runnerdeck force-idle <runner>` | Clear a stuck "busy" state on GitHub for a runner that is stopped on this machine. |
-| `runnerdeck resize <count>` | Make the pool `runner-base` plus `<count>` runners (1 to 30). Starts the ones that are missing. |
+| `runnerdeck resize <count>` | Make the pool `<count>` runners in total, including `runner-base` (1 to 30). Starts the missing ones and stops any slot above that count. |
 | `runnerdeck maintenance on\|off\|status` | `on` drains and stops every runner and refuses starts until `off`. |
 | `runnerdeck logs <runner> [-n N] [-f]` | Print the last N lines (default 50, up to 2000). `-f` follows; Ctrl+C stops. |
 
@@ -201,7 +201,10 @@ runnerdeck update --check --json | jq -r .update_available
 ## Where things live
 
 On a packaged install the command stores settings, history and runners in your
-user data directory (`~/.local/share/runnerdeck`, `~/Library/Application
-Support/RunnerDeck`, or `%LOCALAPPDATA%\RunnerDeck`), the same place the
-dashboard uses. `RUNNERDECK_DATA_DIR` moves it. From a source checkout it
+user data directory (`~/.local/share/runnerdeck`, `~/.runnerdeck` on macOS, or
+`%LOCALAPPDATA%\RunnerDeck`), the same place the dashboard uses.
+`RUNNERDECK_DATA_DIR` moves the whole directory. `runnerdeck config set pool-dir /absolute/path`
+remembers just the runner pool for the next launch, with no shell rc file.
+A pool path with a space fails `runnerdeck doctor`: GitHub starts each step
+with that path unquoted. From a source checkout it
 uses the checkout's `storage/` directory, like `./run.sh`.

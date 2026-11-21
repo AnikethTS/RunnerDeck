@@ -565,7 +565,27 @@ final class ProcessControl
 
     public static function resizePool(int $count): array
     {
-        return self::startAll($count);
+        $count = max(1, min(30, $count));
+        $blocked = HostMode::blockStartMessage();
+        if ($blocked !== null) {
+            return ['ok' => false, 'message' => $blocked];
+        }
+
+        $keep = ['runner-base'];
+        for ($i = 1; $i < $count; $i++) {
+            $keep[] = 'runner-' . $i;
+        }
+
+        $messages = [];
+        foreach ($keep as $id) {
+            $messages[] = (string) self::startIndividual(self::infoFor($id))['message'];
+        }
+        foreach (RunnerPool::discover(0) as $info) {
+            if (!in_array($info->id, $keep, true)) {
+                $messages[] = (string) self::stopIndividual($info)['message'];
+            }
+        }
+        return ['ok' => true, 'message' => implode("\n", $messages)];
     }
 
     /** @param RunnerInfo[] $runners */
