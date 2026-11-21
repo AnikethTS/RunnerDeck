@@ -70,7 +70,7 @@ anything runs.
 | `runnerdeck config unset <name>` | Clear a setting back to its default. |
 | `runnerdeck auth status` | Whether `gh` is signed in. |
 | `runnerdeck auth login` | Run `gh auth login` for you. |
-| `runnerdeck auth totp` | Set up the dashboard's TOTP login (needed to bind off localhost). |
+| `runnerdeck auth totp` | Set up the dashboard's TOTP login (needed to bind off localhost). A terminal shows a QR code to scan, plus the key. |
 | `runnerdeck doctor` | Check PHP, `gh`, scope access, directories and, on Linux, whether a new runner's OS libraries can be installed without a sudo password. Same as `php app/bin/doctor.php`. |
 
 Setting names are the `RUNNERDECK_*` variables from

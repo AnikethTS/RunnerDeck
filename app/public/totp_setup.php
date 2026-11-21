@@ -6,6 +6,8 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Security\Auth;
 use RunnerDeck\Security\Csrf;
+use RunnerDeck\Security\QrCode;
+use RunnerDeck\Security\Totp;
 use RunnerDeck\Presentation\Layout;
 
 Auth::requirePageAccess();
@@ -65,9 +67,10 @@ Layout::topbarEnd();
       <?php else : ?>
         <h2>Confirm login setup</h2>
         <p class="muted">
-          Add this secret to your authenticator app (manual/text entry), then
-          enter the code it shows to confirm:
+          Scan the code with your authenticator app, or type the key below.
+          Then enter the 6-digit code the app shows.
         </p>
+        <div class="setup-qr"><?= QrCode::svg(Totp::provisioningUri($secret)) ?></div>
         <p><code><?= htmlspecialchars(implode(' ', str_split($secret, 4))) ?></code></p>
         <form method="post" class="settings-form">
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
