@@ -95,7 +95,7 @@ final class UpdateNotice
             return;
         }
         $tmp = $path . '.' . getmypid() . '.tmp';
-        if (file_put_contents($tmp, json_encode($saved)) === false) {
+        if (@file_put_contents($tmp, json_encode($saved)) === false) {
             return;
         }
         chmod($tmp, 0600);

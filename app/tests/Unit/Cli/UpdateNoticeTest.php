@@ -110,6 +110,94 @@ final class UpdateNoticeTest extends TestCase
         $this->assertNull(UpdateNotice::line(true));
     }
 
+    public function testABrokenCacheFileIsIgnored(): void
+    {
+        file_put_contents(Settings::storageDir() . '/cli-update.json', 'not-json');
+        $this->assertNull(UpdateNotice::line(false));
+
+        file_put_contents(
+            Settings::storageDir() . '/cli-update.json',
+            json_encode(['checked_at' => time(), 'latest' => 12])
+        );
+        $this->assertNull(UpdateNotice::line(false));
+    }
+
+    public function testAnUnusableReleaseNameIsNotAnnounced(): void
+    {
+        UpdateNotice::fakeChecker(fn (): array => [
+            'current' => Config::version(),
+            'latest' => 'not a version',
+            'update_available' => false,
+            'error' => null,
+        ]);
+
+        $this->assertNull(UpdateNotice::line(true));
+        $saved = json_decode((string) file_get_contents(Settings::storageDir() . '/cli-update.json'), true);
+        $this->assertSame('', $saved['latest']);
+    }
+
+    public function testAMissingLatestFromTheCheckerStaysQuiet(): void
+    {
+        UpdateNotice::fakeChecker(fn (): array => [
+            'current' => Config::version(),
+            'latest' => null,
+            'update_available' => false,
+            'error' => null,
+        ]);
+
+        $this->assertNull(UpdateNotice::line(true));
+    }
+
+    public function testTheAnswerIsStillShownWhenTheCacheCannotBeSaved(): void
+    {
+        $blocker = $this->dir . '/not-a-directory';
+        file_put_contents($blocker, 'x');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $blocker . '/settings.json');
+        UpdateNotice::fakeChecker(fn (): array => [
+            'current' => Config::version(),
+            'latest' => '99.4.0',
+            'update_available' => true,
+            'error' => null,
+        ]);
+
+        $line = UpdateNotice::line(true);
+
+        $this->assertStringContainsString('99.4.0', (string) $line);
+        $this->assertFileDoesNotExist($blocker . '/cli-update.json');
+    }
+
+    public function testABlockedTempFileDoesNotHideTheAnswer(): void
+    {
+        mkdir(Settings::storageDir() . '/cli-update.json.' . getmypid() . '.tmp');
+        UpdateNotice::fakeChecker(fn (): array => [
+            'current' => Config::version(),
+            'latest' => '99.5.0',
+            'update_available' => true,
+            'error' => null,
+        ]);
+
+        $line = UpdateNotice::line(true);
+
+        $this->assertStringContainsString('99.5.0', (string) $line);
+        $this->assertFileDoesNotExist(Settings::storageDir() . '/cli-update.json');
+    }
+
+    public function testACoolingGitHubClientKeepsTheSavedAnswer(): void
+    {
+        $this->writeCache(time() - 90000, '97.0.0');
+        file_put_contents(Settings::storageDir() . '/gh_backoff.json', json_encode(['until' => time() + 3600]));
+        $calls = 0;
+        Shell::fake(function () use (&$calls): array {
+            $calls++;
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+
+        $line = UpdateNotice::line(true);
+
+        $this->assertSame(0, $calls);
+        $this->assertStringContainsString('97.0.0', (string) $line);
+    }
+
     private function writeCache(int $checkedAt, string $latest): void
     {
         file_put_contents(Settings::storageDir() . '/cli-update.json', json_encode([
