@@ -37,10 +37,30 @@ const toast = () => page.locator('#toast-container .toast');
 
 async function confirmIfAsked(ms = 3000) {
   const ok = page.locator('#confirm-modal-ok');
-  for (let i = 0; i < 2; i += 1) {
+  const modal = page.locator('#confirm-modal');
+  try {
+    await ok.waitFor({ state: 'visible', timeout: ms });
+  } catch {
+    return;
+  }
+  // GitHub can still report the slot busy after the process has exited, so
+  // the stop POST comes back 409 and a second dialog asks to continue.
+  for (let i = 0; i < 3; i += 1) {
+    const pending = page.waitForResponse(
+      (response) => response.url().includes('api.php') && response.request().method() === 'POST',
+      { timeout: 30_000 },
+    ).catch(() => null);
     try {
-      await ok.waitFor({ state: 'visible', timeout: i === 0 ? ms : 1500 });
       await ok.click();
+      await modal.waitFor({ state: 'hidden', timeout: 5000 });
+    } catch (err) {
+      await pending;
+      throw err;
+    }
+    const response = await pending;
+    if (!response || response.status() !== 409) return;
+    try {
+      await ok.waitFor({ state: 'visible', timeout: 5000 });
     } catch {
       return;
     }
