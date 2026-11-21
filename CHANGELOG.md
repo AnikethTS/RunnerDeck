@@ -22,6 +22,7 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- A terminal command says when a newer RunnerDeck release exists, with an up arrow, the version, `runnerdeck update`, and a link to that release. The dashboard badge uses the same arrow. GitHub is asked at most once a day. `--json`, `--quiet`, and shell completion stay silent. `RUNNERDECK_NO_UPDATE_NOTICE=1` turns the line off.
 - [deploy/apisix.yaml](deploy/apisix.yaml) is an Apache APISIX 3.17+ route in front of `./run.sh`. It limits each client IP (login and TOTP confirm at 10 requests per 5 minutes, other calls at 300 per minute) and forwards the connecting address instead of a visitor-supplied `X-Forwarded-For`.
 - Login setup shows a QR code to scan. The dashboard page draws it next to the key, and `runnerdeck auth totp` prints it when the terminal can show it.
 - The one-command installer prints the RunnerDeck logo before it downloads, and afterwards tells you to run `runnerdeck setup`, then `runnerdeck add` and `runnerdeck --open`. It is the `install.sh` asset on the latest release (`curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh`) and always installs that release. The README and website show that command.

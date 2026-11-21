@@ -73,7 +73,15 @@ final class Layout
         echo '          <span class="version-tag">v' . $version . "</span>\n";
         echo '          <a id="update-available" class="update-badge"'
             . ' href="https://github.com/AnikethTS/RunnerDeck/releases/latest"'
-            . ' target="_blank" rel="noopener noreferrer" hidden></a>' . "\n";
+            . ' target="_blank" rel="noopener noreferrer" hidden>' . "\n";
+        echo '            <svg class="update-badge-icon" width="14" height="14" viewBox="0 0 24 24"'
+            . ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"'
+            . ' stroke-linejoin="round" aria-hidden="true">' . "\n";
+        echo '              <line x1="12" y1="19" x2="12" y2="5"></line>' . "\n";
+        echo '              <polyline points="5 12 12 5 19 12"></polyline>' . "\n";
+        echo "            </svg>\n";
+        echo '            <span class="update-badge-label"></span>' . "\n";
+        echo "          </a>\n";
         echo "        </div>\n";
         echo "      </div>\n";
     }
