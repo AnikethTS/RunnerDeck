@@ -64,6 +64,21 @@ final class QrCodeTest extends TestCase
         QrCode::modules(str_repeat('a', 300));
     }
 
+    public function testAShortTerminatorIsPaddedOutToAByte(): void
+    {
+        $method = new \ReflectionMethod(QrCode::class, 'dataBits');
+        $bits = $method->invoke(null, str_repeat('a', 15), 1);
+        $this->assertIsArray($bits);
+        $this->assertSame(0, count($bits) % 8);
+    }
+
+    public function testMultiplyByZeroStaysZero(): void
+    {
+        $method = new \ReflectionMethod(QrCode::class, 'mul');
+        $this->assertSame(0, $method->invoke(null, 0, 5));
+        $this->assertSame(0, $method->invoke(null, 5, 0));
+    }
+
     private static function matrixHash(string $payload): string
     {
         $bits = '';
