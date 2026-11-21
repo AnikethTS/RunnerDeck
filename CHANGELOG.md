@@ -16,6 +16,10 @@ follows [SemVer](https://semver.org/).
 - `runnerdeck config set pool-dir /absolute/path` saves the pool where the launcher reads it, so a new terminal does not create an empty default pool.
 - Dev tooling, CI actions, and the desktop module move to current releases: PHPStan 2.3.7, ESLint 10.15.0, Playwright 1.65.1, stylelint 18.1.0, Go 1.27.4, and `golang.org/x/sys` 0.50.0. The Docker image is PHP 8.6.0 and rebuilds GitHub CLI 2.105.0 with `golang.org/x/net` v0.63.0. The Alpine smoke image and the PHP 8.5 CI jobs use PHP 8.5.13. PHPUnit stays on 10.5 so the suite still runs on PHP 8.1. `fast-uri` stays on 3.1.9, the newest 3.x release the linters accept.
 
+### Security
+
+- A public hostname is refused when it arrives through a loopback proxy, until the proxy's `X-Forwarded-For` client matches an IP allowlist or mTLS is verified. `http://127.0.0.1` and `localhost` from this machine stay open. A `Host: localhost` request from a public IP is refused too.
+
 ### Added
 
 - Login setup shows a QR code to scan. The dashboard page draws it next to the key, and `runnerdeck auth totp` prints it when the terminal can show it.

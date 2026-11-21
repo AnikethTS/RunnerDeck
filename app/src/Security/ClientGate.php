@@ -7,9 +7,11 @@ namespace RunnerDeck\Security;
 use RunnerDeck\Configuration\Config;
 
 /**
- * Second network gate on public Host / public client IP.
- * Loopback Host or REMOTE_ADDR, Tailscale CGNAT, and IPv6 ULA skip this
- * (TOTP rules still apply). Empty allowlist + mTLS off is fail-closed.
+ * Second network gate on a public Host or a public client IP.
+ * A loopback Host from loopback or a private address skips this, as do
+ * Tailscale CGNAT and IPv6 ULA. A public Host reached through a loopback
+ * proxy does not: the allowlist uses the proxy's X-Forwarded-For client.
+ * Empty allowlist + mTLS off is fail-closed.
  */
 final class ClientGate
 {
@@ -55,15 +57,15 @@ final class ClientGate
     public static function skipExtraGate(): bool
     {
         $host = HostingWarnings::requestHost();
-        if (self::hostIsLoopbackName($host)) {
+        $remote = self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        if (self::ipIsPrivateOverlay($remote)) {
             return true;
         }
-        $remote = self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        if (self::ipIsLoopback($remote)) {
+        if (self::hostIsLoopbackName($host) && self::remoteMayUseLoopbackHost($remote)) {
             return true;
         }
 
-        return self::ipIsPrivateOverlay($remote);
+        return $host === '' && self::ipIsLoopback($remote);
     }
 
     public static function allowlistMatch(): bool
@@ -101,43 +103,26 @@ final class ClientGate
 
     public static function clientIpForAllowlist(): string
     {
-        if (Config::trustProxy()) {
-            $xff = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
-            if ($xff !== '') {
-                $left = trim(explode(',', $xff)[0]);
-                $parsed = self::canonicalIp(self::stripIpBracketsAndPort($left));
-                if (self::isValidIp($parsed)) {
-                    return $parsed;
-                }
-            }
-        }
-
-        return self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-    }
-
-    /**
-     * Public Host arrived from a loopback proxy, and neither allowlist nor
-     * mTLS is configured. The extra gate is skipped, so the page still loads.
-     */
-    public static function proxyHidesExtraGate(): bool
-    {
-        $host = HostingWarnings::requestHost();
-        if ($host === '' || self::hostIsLoopbackName($host)) {
-            return false;
+        $forwarded = self::forwardedIps();
+        if (Config::trustProxy() && $forwarded !== []) {
+            return $forwarded[0];
         }
         $remote = self::canonicalIp((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        if (!self::ipIsLoopback($remote)) {
-            return false;
+        $host = HostingWarnings::requestHost();
+        if (
+            self::ipIsLoopback($remote)
+            && $host !== ''
+            && !self::hostIsLoopbackName($host)
+            && $forwarded !== []
+        ) {
+            return $forwarded[count($forwarded) - 1];
         }
 
-        return Config::ipAllowlistCidrs() === [] && !Config::requireMtls();
+        return $remote;
     }
 
     public static function extraGateFact(): string
     {
-        if (self::proxyHidesExtraGate()) {
-            return 'Not applied (proxy is loopback)';
-        }
         if (self::skipExtraGate()) {
             return 'Skipped (loopback or tailnet)';
         }
@@ -245,6 +230,41 @@ final class ClientGate
     private static function ipIsLoopback(string $ip): bool
     {
         return $ip === '127.0.0.1' || $ip === '::1' || $ip === '::ffff:127.0.0.1';
+    }
+
+    /** Loopback, LAN, link-local, or an empty address. A public IP is not. */
+    private static function remoteMayUseLoopbackHost(string $ip): bool
+    {
+        return $ip === ''
+            || self::ipIsLoopback($ip)
+            || self::ipIsLan($ip);
+    }
+
+    private static function ipIsLan(string $ip): bool
+    {
+        return self::ipInNetwork($ip, '10.0.0.0/8')
+            || self::ipInNetwork($ip, '172.16.0.0/12')
+            || self::ipInNetwork($ip, '192.168.0.0/16')
+            || self::ipInNetwork($ip, '169.254.0.0/16')
+            || self::ipInNetwork($ip, 'fe80::/10');
+    }
+
+    /** @return list<string> */
+    private static function forwardedIps(): array
+    {
+        $xff = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
+        if ($xff === '') {
+            return [];
+        }
+        $out = [];
+        foreach (explode(',', $xff) as $part) {
+            $parsed = self::canonicalIp(self::stripIpBracketsAndPort(trim($part)));
+            if (self::isValidIp($parsed)) {
+                $out[] = $parsed;
+            }
+        }
+
+        return $out;
     }
 
     private static function ipIsPrivateOverlay(string $ip): bool

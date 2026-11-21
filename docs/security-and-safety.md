@@ -34,10 +34,11 @@ supported, but it's opt-in and has two parts, both required together:
    and session cookie both travel the network in the clear, which defeats
    the point of requiring a login at all. PHP 403s a public client unless
    an IP allowlist or verified mTLS is actually on (Settings → Access, or
-   env). A same-machine proxy to `php -S` still serves a public hostname,
-   because PHP only sees `127.0.0.1`; the banner and `php app/bin/doctor.php`
-   warn when no allowlist or mTLS is set. php-fpm applies the gate.
-   Proxy examples remain defense in depth. Skip public 443 when you can
+   env). A same-machine proxy to `php -S` is included: a public Host is
+   refused until `X-Forwarded-For` (the hop the proxy appended) matches
+   the allowlist, or mTLS is verified. `http://127.0.0.1` and `localhost`
+   from this machine stay open. Proxy examples remain defense in depth.
+   Skip public 443 when you can
    ([Beyond TOTP](hosting.md#beyond-totp-on-443)). The UI repeats
    remaining hosting issues as banners when Host is not localhost or the
    request is HTTPS.

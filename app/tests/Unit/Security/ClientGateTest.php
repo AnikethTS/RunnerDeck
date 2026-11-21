@@ -28,19 +28,32 @@ final class ClientGateTest extends TestCase
     }
 
     #[RunInSeparateProcess]
-    public function testLocalhostHostSkips(): void
+    public function testLocalhostHostFromAPublicIpIsBlocked(): void
     {
         $_SERVER['HTTP_HOST'] = 'localhost:8090';
         $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
-        $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
     }
 
     #[RunInSeparateProcess]
-    public function testLoopbackRemoteSkipsPublicHost(): void
+    public function testPublicHostFromALoopbackProxyIsBlocked(): void
     {
         $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::blocked());
+        $this->assertSame('Missing', \RunnerDeck\Security\ClientGate::extraGateFact());
+    }
+
+    #[RunInSeparateProcess]
+    public function testLoopbackProxyUsesTheProxyAppendedClientIp(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '203.0.113.9, 198.51.100.4';
+        putenv('RUNNERDECK_IP_ALLOWLIST=198.51.100.4');
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::allowlistMatch());
         $this->assertFalse(\RunnerDeck\Security\ClientGate::blocked());
+        $this->assertSame('Allowlist', \RunnerDeck\Security\ClientGate::extraGateFact());
     }
 
     #[RunInSeparateProcess]
