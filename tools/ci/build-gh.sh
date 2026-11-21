@@ -1,11 +1,11 @@
 #!/bin/sh
 # Rebuild the pinned GitHub CLI with a patched golang.org/x/net.
-# The newest published gh (2.103.3) still vendors x/net v0.60.0, and Trivy
-# fails the release image on CVE-2026-78661 (fixed in v0.62.0).
+# gh 2.105.0 still vendors x/net v0.62.0. Trivy fails the release image on
+# CVE-2026-78661, which is fixed from v0.62.0; this build uses v0.63.0.
 set -eu
-GH_VERSION=2.103.3
-GH_SRC_SHA256=bb148138a3a2fe023e57c78042fe3b42fc09171c0e8fff4cf983b227b7a2eade
-XNET_VERSION=v0.62.0
+GH_VERSION=2.105.0
+GH_SRC_SHA256=3a8fddd2ca0f7c96983a251d3971a84ef042b230b26ca696e5e6ed811cd0ed8d
+XNET_VERSION=v0.63.0
 DEST="${1:-/usr/local/bin/gh}"
 
 tmp="$(mktemp -d)"
@@ -20,8 +20,8 @@ cd "$tmp/cli-${GH_VERSION}"
 go get "golang.org/x/net@${XNET_VERSION}"
 go mod tidy
 mkdir -p "$(dirname "$DEST")"
-# Tag date of v2.103.3, so the embedded version string stays stable.
-GH_VERSION="v${GH_VERSION}" SOURCE_DATE_EPOCH=1792972800 CGO_ENABLED=0 \
+# Publish time of v2.105.0, so the embedded version string stays stable.
+GH_VERSION="v${GH_VERSION}" SOURCE_DATE_EPOCH=1794961115 CGO_ENABLED=0 \
   go run script/build.go
 cp bin/gh "$DEST"
 chmod 0755 "$DEST"

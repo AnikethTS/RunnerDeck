@@ -19,8 +19,8 @@ Compose uses that image. Building the `Dockerfile` on this machine is
 opt-in: comment in `build:` (that compiles `gh` and the PHP extensions
 and is what filled a small disk).
 
-The image is PHP 8.5.12 on Debian bookworm, with `gh` 2.103.3 built from
-the checksummed source and `golang.org/x/net` v0.62.0. GitHub's runner is
+The image is PHP 8.6.0 on Debian bookworm, with `gh` 2.105.0 built from
+the checksummed source and `golang.org/x/net` v0.63.0. GitHub's runner is
 a glibc program, so the image is not Alpine. It runs `./run.sh` (`php -S`,
 four workers) inside the container — same one-operator limits as a local
 install. `restart` is off: the first start without TOTP prints

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
-GH_VERSION=2.103.3
-GH_SHA256=4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d
+GH_VERSION=2.105.0
+GH_SHA256=79e7ab5db738c48777b696e374f8b428f0647debfb424f44d2f426370407fe2f
 DEST="${1:-/usr/local/bin/gh}"
 
 tmp="$(mktemp -d)"

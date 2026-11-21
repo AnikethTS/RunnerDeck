@@ -36,7 +36,7 @@ npm run e2e       # Playwright — see tests/e2e/dashboard.spec.js
 `npm run e2e:update-shots` regenerates the README/landing PNGs in dark
 mode (and copies them into `docs/screenshots/`). Generate them in the
 same Playwright image CI uses
-(`mcr.microsoft.com/playwright:v1.65.0-noble`); host Fedora/macOS fonts
+(`mcr.microsoft.com/playwright:v1.65.1-noble`); host Fedora/macOS fonts
 will otherwise fail the pixel compare.
 
 CI prints `[1/N]` as each Playwright and PHPUnit test starts, and stops
@@ -160,7 +160,7 @@ on `ubuntu-latest`, `ubuntu-22.04`, `macos-latest`, `macos-15`, and Intel `macos
 PHPUnit on those hosts plus `ubuntu-22.04-arm`, distro-`apt` PHPUnit on
 Ubuntu 22.04 and Debian 12, distro-`dnf` PHPUnit on Fedora, Rocky 9, and
 RHEL UBI 9, a dedicated Alpine (musl)
-container (PHP 8.5.12, same digest as the Dockerfile), and the
+container (PHP 8.5.13), and the
 [Docker image](docker.md) itself (`docker build` + env/lib assertions +
 boot + hit `action=status` through the real port mapping) for every
 push/PR — see [Platform support](getting-started.md#platform-support) —
