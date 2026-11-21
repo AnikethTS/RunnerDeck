@@ -67,7 +67,7 @@ jobs:
             --generate-notes \
             --notes "Verify: \`sha256sum -c runnerdeck-${GITHUB_REF_NAME}.zip.sha256\`. Verify build provenance: \`gh attestation verify runnerdeck-${GITHUB_REF_NAME}.zip -o AnikethTS\` (or via the attached .sigstore.json bundle). Container: \`docker pull ghcr.io/anikethts/runnerdeck:${GITHUB_REF_NAME}\`."
 
-      - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
@@ -116,7 +116,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: desktop/go.mod
           cache: false

@@ -80,7 +80,7 @@ RunnerDeck is a PHP web SAPI (`php -S` or php-fpm). Those CVEs sit in
 PHP itself, not in this app. Update the host packages to **8.5.12**,
 **8.4.27**, **8.3.36**, or **8.2.35**, then restart `run.sh` / php-fpm.
 PHP 8.1 and older have no official upstream fix. The Docker image is
-pinned to 8.5.12. `php app/bin/doctor.php` warns when the running binary is
+PHP 8.6.0. `php app/bin/doctor.php` warns when the running binary is
 still below those floors.
 
 ## Safety notes

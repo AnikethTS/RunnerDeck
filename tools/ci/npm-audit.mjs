@@ -12,8 +12,8 @@
  *
  * GHSA-fc5q-39xc-vjpf (picomatch ReDoS via repeated extglobs) is flagged for
  * every published picomatch, including 4.0.7, so no patched release exists.
- * stylelint 18 still depends on picomatch and stylelint-config-standard does
- * not support it yet. picomatch is only used by the dev-only CSS linter, on
+ * stylelint still depends on picomatch. picomatch is only used by the
+ * dev-only CSS linter, on
  * our own file paths. Drop this entry once a patched picomatch is published.
  *
  * https://github.com/advisories/GHSA-fc5q-39xc-vjpf

@@ -236,15 +236,15 @@ jobs:
           - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.2", label: "8.2" }
           - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.3", label: "8.3" }
           - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.4", label: "8.4" }
-          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.12", label: "8.5" }
-          - { os: macos-latest, platform: "macOS latest", php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.13", label: "8.5" }
+          - { os: macos-latest, platform: "macOS latest", php: "8.5.13", label: "8.5" }
           - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.1", label: "8.1" }
           - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.3.36", label: "8.3" }
-          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.5.12", label: "8.5" }
+          - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.5.13", label: "8.5" }
           - { os: ubuntu-22.04-arm, platform: "Ubuntu 22.04 ARM", php: "8.1", label: "8.1" }
           - { os: macos-15, platform: "macOS 15", php: "8.1", label: "8.1" }
-          - { os: macos-15, platform: "macOS 15", php: "8.5.12", label: "8.5" }
-          - { os: macos-15-intel, platform: "macOS 15 Intel", php: "8.5.12", label: "8.5" }
+          - { os: macos-15, platform: "macOS 15", php: "8.5.13", label: "8.5" }
+          - { os: macos-15-intel, platform: "macOS 15 Intel", php: "8.5.13", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -289,7 +289,7 @@ jobs:
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: posix, pcntl, json, pdo_sqlite, pcov
           tools: composer:v2
           coverage: pcov
@@ -343,7 +343,7 @@ jobs:
 
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: posix, pcntl, json, pdo_sqlite
           tools: composer:v2
           coverage: none
@@ -380,9 +380,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, platform: "Windows latest", php: "8.5.12", label: "8.5" }
+          - { os: windows-latest, platform: "Windows latest", php: "8.5.13", label: "8.5" }
           - { os: windows-2022, platform: "Windows 2022", php: "8.1", label: "8.1" }
-          - { os: windows-2022, platform: "Windows 2022", php: "8.5.12", label: "8.5" }
+          - { os: windows-2022, platform: "Windows 2022", php: "8.5.13", label: "8.5" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -452,7 +452,7 @@ jobs:
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         if: steps.gate.outputs.enabled == 'true'
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: json, pdo_sqlite
           coverage: none
 
@@ -512,7 +512,7 @@ jobs:
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         if: steps.gate.outputs.enabled == 'true'
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: json, pdo_sqlite
           coverage: none
 
@@ -569,7 +569,7 @@ jobs:
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         if: needs.plan.outputs.run_live == 'true'
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: json, pdo_sqlite
           coverage: none
 
@@ -654,7 +654,7 @@ jobs:
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         if: needs.plan.outputs.live_extended == 'true'
         with:
-          php-version: "8.5.12"
+          php-version: "8.5.13"
           extensions: json, pdo_sqlite
           coverage: none
 
@@ -804,7 +804,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: desktop/go.mod
           cache: false
@@ -918,10 +918,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.12" }
+          - { os: ubuntu-latest, platform: "Ubuntu latest", php: "8.5.13" }
           - { os: ubuntu-22.04, platform: "Ubuntu 22.04", php: "8.1" }
-          - { os: macos-latest, platform: "macOS latest", php: "8.5.12" }
-          - { os: windows-latest, platform: "Windows latest", php: "8.5.12" }
+          - { os: macos-latest, platform: "macOS latest", php: "8.5.13" }
+          - { os: windows-latest, platform: "Windows latest", php: "8.5.13" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -954,7 +954,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1050,7 +1050,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: php:8.5.12-cli-alpine@sha256:d0cc453a4a24eb5e2e70c4657cf8bddedce4c4c33a9a348409cdc7d4b9762e94
+      image: php:8.5.13-cli-alpine@sha256:b9d7db51a2b83c41420ba04de0b90e6078d4b6440e5cc480fc4dc51b18e0b6db
     steps:
       - name: Install git, bash, curl, and required PHP extensions
         run: |
@@ -1096,7 +1096,7 @@ jobs:
           php-version: "8.3.36"
           coverage: none
 
-      - uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build the image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0

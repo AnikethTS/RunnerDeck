@@ -1,11 +1,11 @@
-FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS gh
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS gh
 RUN apk add --no-cache git curl ca-certificates
 COPY tools/ci/build-gh.sh /tmp/build-gh.sh
 RUN sh /tmp/build-gh.sh /out/gh
 
 # Debian, not Alpine. GitHub's runner is a glibc .NET program: config.sh
 # fails on Alpine looking for ld-linux-x86-64.so.2 and libicu.
-FROM php:8.6.0RC5-cli-bookworm@sha256:106dc527e7befdced3cf7521b655dbaac80067c18173f76afca4e836003273f0
+FROM php:8.6.0-cli-bookworm@sha256:519fe569bdde71e366206a99e1996519fc12897f6fba1cd70b9815ce18f7639c
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends --only-upgrade linux-libc-dev \

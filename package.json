@@ -13,14 +13,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.65.0",
-    "eslint": "^10.14.0",
-    "stylelint": "^17.16.0",
-    "stylelint-config-standard": "^40.0.0"
+    "@playwright/test": "^1.65.1",
+    "eslint": "^10.15.0",
+    "stylelint": "^18.1.0",
+    "stylelint-config-standard": "^41.1.0"
   },
   "overrides": {
-    "source-map-js": "1.2.2",
+    "source-map-js": "1.2.4",
     "fast-uri": "3.1.9",
-    "minimatch": "11.0.1"
+    "minimatch": "11.0.9"
   }
 }
