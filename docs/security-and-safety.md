@@ -25,8 +25,9 @@ supported, but it's opt-in and has two parts, both required together:
    from other browsers. Hidden dashboard tabs do not poll, so they count
    as idle. Blank idle keeps the cookie until the browser closes. There
    is still one operator secret, not a second user.
-2. **Terminate TLS in front** (Caddy, nginx, Traefik, Tailscale, etc.) —
-   RunnerDeck itself stays plain HTTP. Prefer **php-fpm** on loopback
+2. **Terminate TLS in front** (Caddy, nginx, Traefik, Apache APISIX,
+   Tailscale, etc.) — RunnerDeck itself stays plain HTTP. Prefer **php-fpm**
+   on loopback
    ([deploy/Caddyfile.php-fpm](../deploy/Caddyfile.php-fpm),
    [deploy/nginx-php-fpm.conf.example](../deploy/nginx-php-fpm.conf.example)).
    Proxying `./run.sh` (`php -S`) is the same TLS story with a four-worker

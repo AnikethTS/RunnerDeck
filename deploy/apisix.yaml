@@ -1,0 +1,213 @@
+# Apache APISIX 3.17+ in front of ./run.sh (php -S on 127.0.0.1:8090).
+# php -S is a four-worker dev server; a live log holds one worker.
+# For php-fpm (recommended on a TLS hostname) see
+# deploy/nginx-php-fpm.conf.example.
+#
+# TOTP on a public 443 is not enough. Uncomment the IP allowlist and/or
+# the client certificate below. Same-machine APISIX does not need
+# RUNNERDECK_TRUST_PROXY. If PHP sees a non-loopback APISIX, set that
+# flag. See docs/hosting.md.
+#
+# This file replaces X-Forwarded-For and SSL-Client-Verify with what
+# APISIX observed. A visitor-supplied value does not reach PHP.
+#
+# 1. Enable TOTP (Settings → Login, or php app/bin/setup-totp.php).
+# 2. ./run.sh 8090
+# 3. In conf/config.yaml:
+#      deployment:
+#        role: data_plane
+#        role_data_plane:
+#          config_provider: yaml
+#    Copy this file to conf/apisix.yaml. It must end with #END.
+# 4. Listen on 80 and 443 (node_listen / ssl.listen; the defaults are
+#    9080 and 9443). Uncomment the ssls block and the HTTP→HTTPS route.
+#    Certificates are PEM text, not file paths. $env:// names must be
+#    listed under nginx_config.envs, and the process must have them set.
+#
+# APISIX 3.17 or newer. proxy-buffering, limit-count, proxy-rewrite,
+# redirect, and ip-restriction are in the default plugin list. If you
+# set plugins: yourself, keep those names in the list.
+#
+# Per client IP, on this one node:
+#   POST /api.php?action=login and action=totp_confirm: 10 / 5 minutes
+#   a new live-log stream: 30 / minute, buffering off
+#   other pages and API calls: 300 / minute
+#   /health.php and /metrics.php: not counted
+# The dashboard polls every 5 seconds. PHP still locks every login for
+# 5 minutes after five wrong codes, one counter for the whole install.
+# A drain longer than 35 minutes needs a larger upstream read timeout
+# (RUNNERDECK_DRAIN_TIMEOUT can be up to 3600).
+
+upstreams:
+  - id: runnerdeck
+    type: roundrobin
+    scheme: http
+    # Keep the public Host. "node" would send 127.0.0.1 and look local.
+    pass_host: pass
+    timeout:
+      connect: 5
+      send: 60
+      read: 2100
+    keepalive_pool:
+      size: 8
+      idle_timeout: 60
+      requests: 1000
+    nodes:
+      "127.0.0.1:8090": 1
+
+# Uncomment to require one of these client addresses on every route,
+# including /health.php and /metrics.php. Use your egress, not 0.0.0.0/0.
+# global_rules:
+#   - id: runnerdeck-allowlist
+#     plugins:
+#       ip-restriction:
+#         whitelist:
+#           - 203.0.113.10/32
+#           - 2001:db8::/32
+
+routes:
+  # Uncomment together with the ssls block.
+  # - id: runnerdeck-https-redirect
+  #   uri: "/*"
+  #   priority: 100
+  #   vars:
+  #     - ["scheme", "==", "http"]
+  #   plugins:
+  #     redirect:
+  #       http_to_https: true
+
+  - id: runnerdeck-health
+    uri: /health.php
+    priority: 30
+    plugins:
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+  - id: runnerdeck-metrics
+    uri: /metrics.php
+    priority: 30
+    plugins:
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+  - id: runnerdeck-login
+    uri: /api.php
+    methods: ["POST"]
+    priority: 20
+    vars:
+      - ["arg_action", "==", "login"]
+    plugins:
+      limit-count:
+        count: 10
+        time_window: 300
+        key_type: var
+        key: remote_addr
+        policy: local
+        rejected_code: 429
+        rejected_msg: too many requests
+        show_limit_quota_header: true
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+  - id: runnerdeck-totp-confirm
+    uri: /api.php
+    methods: ["POST"]
+    priority: 20
+    vars:
+      - ["arg_action", "==", "totp_confirm"]
+    plugins:
+      limit-count:
+        count: 10
+        time_window: 300
+        key_type: var
+        key: remote_addr
+        policy: local
+        rejected_code: 429
+        rejected_msg: too many requests
+        show_limit_quota_header: true
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+  - id: runnerdeck-log
+    uri: /log_stream.php
+    priority: 10
+    plugins:
+      proxy-buffering:
+        disable_proxy_buffering: true
+      limit-count:
+        count: 30
+        time_window: 60
+        key_type: var
+        key: remote_addr
+        policy: local
+        rejected_code: 429
+        rejected_msg: too many requests
+        show_limit_quota_header: true
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+  - id: runnerdeck
+    uri: "/*"
+    priority: 0
+    plugins:
+      limit-count:
+        count: 300
+        time_window: 60
+        key_type: var
+        key: remote_addr
+        policy: local
+        rejected_code: 429
+        rejected_msg: too many requests
+        show_limit_quota_header: true
+      proxy-rewrite:
+        headers:
+          set:
+            X-Forwarded-For: "$remote_addr"
+            X-Forwarded-Proto: "$scheme"
+            X-Real-IP: "$remote_addr"
+            SSL-Client-Verify: "$ssl_client_verify"
+    upstream_id: runnerdeck
+
+# ssls:
+#   - id: runnerdeck
+#     snis:
+#       - runnerdeck.example.com
+#     cert: "$env://RUNNERDECK_TLS_CERT"
+#     key: "$env://RUNNERDECK_TLS_KEY"
+#     # Require a client certificate you issued (operator.crt). PHP reads
+#     # SSL-Client-Verify, which this file sets from the handshake.
+#     # client:
+#     #   ca: "$env://RUNNERDECK_CLIENT_CA"
+#     #   depth: 1
+
+#END

@@ -18,6 +18,7 @@ follows [SemVer](https://semver.org/).
 
 ### Added
 
+- [deploy/apisix.yaml](deploy/apisix.yaml) is an Apache APISIX 3.17+ route in front of `./run.sh`. It limits each client IP (login and TOTP confirm at 10 requests per 5 minutes, other calls at 300 per minute) and forwards the connecting address instead of a visitor-supplied `X-Forwarded-For`.
 - Login setup shows a QR code to scan. The dashboard page draws it next to the key, and `runnerdeck auth totp` prints it when the terminal can show it.
 - The one-command installer prints the RunnerDeck logo before it downloads, and afterwards tells you to run `runnerdeck setup`, then `runnerdeck add` and `runnerdeck --open`. It is the `install.sh` asset on the latest release (`curl -fsSL https://github.com/AnikethTS/RunnerDeck/releases/latest/download/install.sh | sh`) and always installs that release. The README and website show that command.
 - The README and website show the macOS Homebrew install: `brew tap anikethts/runnerdeck`, `brew trust anikethts/runnerdeck`, `brew install anikethts/runnerdeck/runnerdeck`, then `runnerdeck --open`.
