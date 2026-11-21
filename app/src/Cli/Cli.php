@@ -126,6 +126,8 @@ TXT;
             return 0;
         }
 
+        $this->mentionUpdate($command);
+
         return match ($command) {
             'version', '--version', '-v' => $this->version(),
             'list', 'ls' => $this->list($flags, false),
@@ -229,6 +231,21 @@ TXT;
             return 0;
         }
         return $this->say('RunnerDeck ' . Config::version());
+    }
+
+    private function mentionUpdate(string $command): void
+    {
+        if ($this->json || $this->quiet || !$this->interactive) {
+            return;
+        }
+        if (in_array($command, ['completion', '__complete', 'update', 'upgrade'], true)) {
+            return;
+        }
+        $text = UpdateNotice::line($this->isTerminal($this->out));
+        if ($text === null || $text === '') {
+            return;
+        }
+        fwrite($this->err, $this->paint('33', $text) . "\n");
     }
 
     /** @param resource $stream */

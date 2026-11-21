@@ -154,6 +154,12 @@ is guessed wrong, set `RUNNERDECK_INSTALL_METHOD` to `brew`, `deb`,
 `update` works whether or not `RUNNERDECK_CHECK_UPDATES` is set; that
 variable only controls the dashboard header's automatic check.
 
+Any other command in a terminal also says so when a newer release is
+already known: the version you have, the new version, `runnerdeck update`,
+and a link to that release. GitHub is asked at most once a day, and a
+failed check prints nothing. `--json`, `--quiet`, and shell completion
+stay silent. Set `RUNNERDECK_NO_UPDATE_NOTICE=1` to turn the line off.
+
 ## Shell completion
 
 Completion fills in commands, runner ids (from your pool) and setting names.

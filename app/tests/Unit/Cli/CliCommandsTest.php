@@ -420,4 +420,32 @@ final class CliCommandsTest extends CliTestCase
         $this->assertSame(1, $code);
         $this->assertStringContainsString('usage: runnerdeck auth', $err);
     }
+
+    public function testAKnownUpdateIsNamedBeforeTheCommand(): void
+    {
+        $version = \RunnerDeck\Configuration\Config::version();
+        $dir = dirname((string) getenv('RUNNERDECK_SETTINGS_FILE'));
+        file_put_contents($dir . '/cli-update.json', json_encode([
+            'checked_at' => time(),
+            'latest' => '99.0.0',
+        ]));
+
+        [$code, $out, $err] = $this->cli(['list', '--color']);
+        $this->assertSame(0, $code);
+        $this->assertStringNotContainsString('99.0.0', $out);
+        $this->assertStringContainsString("RunnerDeck 99.0.0 is available (you have {$version})", $err);
+        $this->assertStringContainsString('Run: runnerdeck update', $err);
+        $this->assertStringContainsString('https://github.com/AnikethTS/RunnerDeck/releases/tag/v99.0.0', $err);
+
+        [, , $quiet] = $this->cli(['list', '--color', '-q']);
+        $this->assertStringNotContainsString('99.0.0', $quiet);
+        [, $jsonOut, $jsonErr] = $this->cli(['list', '--color', '--json']);
+        $this->assertStringNotContainsString('99.0.0', $jsonErr);
+        $this->assertStringNotContainsString('is available', $jsonOut);
+        [, , $plain] = $this->cli(['list']);
+        $this->assertStringNotContainsString('99.0.0', $plain);
+
+        [, , $updateErr] = $this->cli(['completion', 'bash', '--color']);
+        $this->assertStringNotContainsString('99.0.0', $updateErr);
+    }
 }
