@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `runnerdeck update` upgrades a copy installed by `install.sh` in `~/.local/share/runnerdeck`. It downloads the release zip, checks the SHA-256, and copies it over that folder. `.env`, `storage`, and `runners` stay.
+
 ## [2.2.0] - 2026-11-21
 
 ### Changed

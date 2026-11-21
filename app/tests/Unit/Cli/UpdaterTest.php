@@ -228,6 +228,90 @@ final class UpdaterTest extends TestCase
         $this->assertStringContainsString('git exited with', (string) stream_get_contents($err));
     }
 
+    public function testAShareFolderIsTheZipInstall(): void
+    {
+        $home = getenv('HOME');
+        putenv('HOME=/home/someone');
+        try {
+            $this->assertSame(
+                'zip',
+                Updater::detectMethod('/home/someone/.local/share/runnerdeck', self::NO_FACTS)
+            );
+            $this->assertSame(
+                'git',
+                Updater::detectMethod('/home/someone/.local/share/runnerdeck', ['git' => true] + self::NO_FACTS)
+            );
+            $this->assertSame('unknown', Updater::detectMethod('/home/someone/src/RunnerDeck', self::NO_FACTS));
+        } finally {
+            putenv($home === false ? 'HOME' : 'HOME=' . $home);
+        }
+    }
+
+    public function testZipUpdateCopiesTheReleaseAndKeepsLocalData(): void
+    {
+        $root = $this->tmp() . '/share';
+        mkdir($root . '/storage', 0755, true);
+        file_put_contents($root . '/.env', "KEEP=1\n");
+        file_put_contents($root . '/storage/settings.json', '{"ok":true}');
+        file_put_contents($root . '/VERSION', "2.1.0\n");
+
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                $name = 'runnerdeck-v99.0.0.zip';
+                file_put_contents($dir . '/' . $name, 'zip-bytes');
+                file_put_contents(
+                    $dir . '/' . $name . '.sha256',
+                    hash('sha256', 'zip-bytes') . "  {$name}\n"
+                );
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'unzip') {
+                $dest = $cmd[array_search('-d', $cmd, true) + 1] . '/runnerdeck-v99.0.0';
+                mkdir($dest, 0755, true);
+                file_put_contents($dest . '/runnerdeck', "#!/bin/sh\n");
+                file_put_contents($dest . '/VERSION', "99.0.0\n");
+                file_put_contents($dest . '/.env', "FROMZIP=1\n");
+                mkdir($dest . '/storage', 0755, true);
+                file_put_contents($dest . '/storage/settings.json', '{}');
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+
+        [$code, $out] = $this->update(['yes' => true], 'zip', '', 0, $root);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('Checksum matches.', $out);
+        $this->assertSame('99.0.0', trim((string) file_get_contents($root . '/VERSION')));
+        $this->assertSame("KEEP=1\n", (string) file_get_contents($root . '/.env'));
+        $this->assertSame('{"ok":true}', (string) file_get_contents($root . '/storage/settings.json'));
+        $this->assertSame([$root . '/runnerdeck', 'install', '--force'], $this->ran[0]);
+    }
+
+    public function testAZipWithTheWrongLayoutInstallsNothing(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                $name = 'runnerdeck-v99.0.0.zip';
+                file_put_contents($dir . '/' . $name, 'zip-bytes');
+                file_put_contents($dir . '/' . $name . '.sha256', hash('sha256', 'zip-bytes') . "  {$name}\n");
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'unzip') {
+                $dest = $cmd[array_search('-d', $cmd, true) + 1];
+                mkdir($dest . '/other', 0755, true);
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+
+        [$code, , $err] = $this->update(['yes' => true], 'zip');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('unexpected archive layout', $err);
+        $this->assertSame([], $this->ran);
+    }
+
     public function testApplyRefusesInstallTypesWithoutADownload(): void
     {
         $err = fopen('php://memory', 'w+');
@@ -264,8 +348,13 @@ final class UpdaterTest extends TestCase
      * @param array<string, mixed> $flags check, yes, json
      * @return array{0: int, 1: string, 2: string}
      */
-    private function update(array $flags, string $method = 'brew', string $input = '', int $commandCode = 0): array
-    {
+    private function update(
+        array $flags,
+        string $method = 'brew',
+        string $input = '',
+        int $commandCode = 0,
+        string $root = '/srv/rd'
+    ): array {
         $out = fopen('php://memory', 'w+');
         $err = fopen('php://memory', 'w+');
         $in = fopen('php://memory', 'w+');
@@ -280,7 +369,7 @@ final class UpdaterTest extends TestCase
             isset($flags['check']),
             isset($flags['yes']),
             isset($flags['json']),
-            '/srv/rd',
+            $root,
             $method
         );
         rewind($out);

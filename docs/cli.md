@@ -144,12 +144,13 @@ this copy was installed, and upgrades that way:
 | Debian package | Downloads `RunnerDeck-<version>-linux-all.deb` and `SHA256SUMS-linux-all` with `gh release download`, checks the SHA-256, then runs `sudo apt-get install -y <file>`. |
 | Windows Setup wizard | Downloads the Setup wizard and `SHA256SUMS-windows-x64`, checks the SHA-256, then opens the installer. Close RunnerDeck first. |
 | Source checkout | `git pull --ff-only` in the checkout |
+| `install.sh` (`~/.local/share/runnerdeck`) | Downloads `runnerdeck-v<version>.zip` and its `.sha256`, checks the SHA-256, and copies the release over that folder. `.env`, `storage`, and `runners` stay. Then it runs `runnerdeck install --force` so the command link follows the new folder. |
 | Docker, or unknown | Prints what to do. It never changes a container or an install it cannot identify. |
 
 A download whose checksum does not match is deleted and never installed.
 Restart the dashboard afterwards to run the new version. If the install type
 is guessed wrong, set `RUNNERDECK_INSTALL_METHOD` to `brew`, `deb`,
-`windows`, `git`, `docker` or `unknown`.
+`windows`, `git`, `zip`, `docker` or `unknown`. |
 
 `update` works whether or not `RUNNERDECK_CHECK_UPDATES` is set; that
 variable only controls the dashboard header's automatic check.
