@@ -379,14 +379,6 @@ final class UpdaterTest extends TestCase
         file_put_contents($blocked, 'x');
         $this->assertFalse(Updater::copyOver($src, $blocked . '/child'));
 
-        mkdir($src . '/locked', 0755, true);
-        chmod($src . '/locked', 0000);
-        try {
-            $this->assertFalse(Updater::copyOver($src . '/locked', $dest . '/locked'));
-        } finally {
-            chmod($src . '/locked', 0755);
-        }
-
         $destFile = $this->tmp() . '/dest-file';
         mkdir($destFile, 0755, true);
         file_put_contents($destFile . '/app', 'was-a-file');
@@ -399,29 +391,21 @@ final class UpdaterTest extends TestCase
         file_put_contents($src . '/app-file', 'file');
         $this->assertFalse(Updater::copyOver($src, $dest));
 
-        $held = $this->tmp() . '/held';
-        $heldSrc = $this->tmp() . '/held-src';
-        mkdir($held, 0755, true);
-        mkdir($heldSrc, 0755, true);
-        file_put_contents($held . '/a.txt', 'old');
-        file_put_contents($heldSrc . '/a.txt', 'new');
-        chmod($held, 0555);
+        stream_wrapper_register('rdblock', BlockingPath::class);
         try {
-            $this->assertFalse(Updater::copyOver($heldSrc, $held));
-        } finally {
-            chmod($held, 0755);
-        }
+            $this->assertFalse(Updater::copyOver('rdblock://src', $dest));
 
-        $unreadable = $this->tmp() . '/secret-src';
-        $plain = $this->tmp() . '/plain-dest';
-        mkdir($unreadable, 0755, true);
-        mkdir($plain, 0755, true);
-        file_put_contents($unreadable . '/secret', 'x');
-        chmod($unreadable . '/secret', 0000);
-        try {
-            $this->assertFalse(Updater::copyOver($unreadable, $plain));
+            $one = $this->tmp() . '/one';
+            mkdir($one, 0755, true);
+            file_put_contents($one . '/a.txt', 'new');
+            BlockingPath::$mode = 'unlink';
+            $this->assertFalse(Updater::copyOver($one, 'rdblock://dest'));
+
+            BlockingPath::$mode = 'copy';
+            $this->assertFalse(Updater::copyOver($one, 'rdblock://dest'));
         } finally {
-            chmod($unreadable . '/secret', 0644);
+            stream_wrapper_unregister('rdblock');
+            BlockingPath::$mode = 'scandir';
         }
     }
 
@@ -533,5 +517,44 @@ final class UpdaterTest extends TestCase
         rewind($out);
         rewind($err);
         return [$code, (string) stream_get_contents($out), (string) stream_get_contents($err)];
+    }
+}
+
+/** A path whose directory listing, unlink, or copy always fails, including for root. */
+// phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps -- stream-wrapper method names are fixed.
+final class BlockingPath
+{
+    public $context;
+    public static string $mode = 'scandir';
+
+    public function url_stat(string $path, int $flags): array|false
+    {
+        $name = basename(str_replace('\\', '/', $path));
+        $directory = $name === 'src' || $name === 'dest';
+        if (!$directory && self::$mode === 'copy') {
+            return false;
+        }
+        return [
+            'mode' => $directory ? 040755 : 0100644,
+            'size' => 0,
+            'mtime' => 0,
+            'atime' => 0,
+            'ctime' => 0,
+        ];
+    }
+
+    public function dir_opendir(string $path, int $options): bool
+    {
+        return false;
+    }
+
+    public function unlink(string $path): bool
+    {
+        return false;
+    }
+
+    public function stream_open(string $path, string $mode, int $options, ?string &$opened): bool
+    {
+        return false;
     }
 }
