@@ -60,4 +60,28 @@ final class SlotCgroupTest extends TestCase
         \RunnerDeck\Host\SlotCgroup::fakeRoot(null);
         exec('rm -rf ' . escapeshellarg($root));
     }
+
+    #[RunInSeparateProcess]
+    public function testApplyReportsFilesItCannotWrite(): void
+    {
+        $root = sys_get_temp_dir() . '/runnerdeck-cg-ro-' . uniqid();
+        mkdir($root . '/runnerdeck/runner-1', 0755, true);
+        file_put_contents($root . '/cgroup.controllers', "cpu memory\n");
+        foreach (['cpu.max', 'memory.max', 'cgroup.procs'] as $name) {
+            mkdir($root . '/runnerdeck/runner-1/' . $name);
+        }
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT=25');
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=128');
+        \RunnerDeck\Host\SlotCgroup::fakeRoot($root);
+        $this->assertFalse(\RunnerDeck\Host\SlotCgroup::apply('runner-1', getmypid()));
+
+        exec('rm -rf ' . escapeshellarg($root . '/runnerdeck'));
+        file_put_contents($root . '/runnerdeck', 'x');
+        $this->assertFalse(\RunnerDeck\Host\SlotCgroup::apply('runner-2', 1));
+
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT');
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB');
+        \RunnerDeck\Host\SlotCgroup::fakeRoot(null);
+        exec('rm -rf ' . escapeshellarg($root));
+    }
 }

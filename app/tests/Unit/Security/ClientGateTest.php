@@ -188,4 +188,18 @@ final class ClientGateTest extends TestCase
         ));
         $this->assertNull(\RunnerDeck\Configuration\Config::parseIpAllowlist('not-an-ip'));
     }
+
+    #[RunInSeparateProcess]
+    public function testForwardedAddressesAreNormalized(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'runnerdeck.example.com';
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '[2001:db8::1], 203.0.113.9:443, ::ffff:198.51.100.4, [no-end';
+        putenv('RUNNERDECK_IP_ALLOWLIST=198.51.100.4');
+        $this->assertSame('198.51.100.4', \RunnerDeck\Security\ClientGate::clientIpForAllowlist());
+        $this->assertTrue(\RunnerDeck\Security\ClientGate::ipInNetwork('::ffff:203.0.113.9', '203.0.113.9'));
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::ipInNetwork('not-an-ip', '203.0.113.9'));
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::ipInNetwork('203.0.113.9', '203.0.113.0/99'));
+        $this->assertFalse(\RunnerDeck\Security\ClientGate::ipInNetwork('203.0.113.9', '203.0.113.0/nope'));
+    }
 }

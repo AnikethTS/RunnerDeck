@@ -369,4 +369,50 @@ final class ConfigTest extends TestCase
         $this->assertSame(['203.0.113.9', '192.168.0.0/16'], \RunnerDeck\Configuration\Config::ipAllowlistCidrs());
         $this->assertTrue(\RunnerDeck\Configuration\Config::requireMtls());
     }
+
+    #[RunInSeparateProcess]
+    public function testBoundsRejectOutOfRangeValues(): void
+    {
+        $this->assertNull(\RunnerDeck\Configuration\Config::parseLabels(implode(',', array_map(
+            static fn (int $i): string => 'lab' . $i,
+            range(1, 13)
+        ))));
+        putenv('RUNNERDECK_POOL_CAP=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::poolCap());
+        putenv('RUNNERDECK_POOL_CAP=40');
+        $this->assertSame(30, \RunnerDeck\Configuration\Config::poolCap());
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB=nope');
+        $this->assertSame(1, \RunnerDeck\Configuration\Config::minFreeDiskGib());
+        putenv('RUNNERDECK_MIN_FREE_DISK_GIB=0');
+        $this->assertSame(0, \RunnerDeck\Configuration\Config::minFreeDiskGib());
+        putenv('RUNNERDECK_MIN_FREE_RAM_MIB=nope');
+        $this->assertSame(256, \RunnerDeck\Configuration\Config::minFreeRamMib());
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::idleStopMinutes());
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES=2000');
+        $this->assertSame(1440, \RunnerDeck\Configuration\Config::idleStopMinutes());
+        putenv('RUNNERDECK_QUEUE_WAIT_MINUTES=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::queueWaitMinutes());
+        putenv('RUNNERDECK_LONG_JOB_MINUTES=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::longJobMinutes());
+        putenv('RUNNERDECK_DRAIN_TIMEOUT=0');
+        $this->assertSame(600, \RunnerDeck\Configuration\Config::drainTimeoutSeconds());
+        putenv('RUNNERDECK_DRAIN_TIMEOUT=99999');
+        $this->assertSame(3600, \RunnerDeck\Configuration\Config::drainTimeoutSeconds());
+        putenv('RUNNERDECK_DISK_WEBHOOK_THRESHOLD=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::diskWebhookThresholdGb());
+        putenv('RUNNERDECK_SESSION_IDLE_MINUTES=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::sessionIdleMinutes());
+        putenv('RUNNERDECK_SESSION_IDLE_MINUTES=2000');
+        $this->assertSame(1440, \RunnerDeck\Configuration\Config::sessionIdleMinutes());
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT=0');
+        $this->assertNull(\RunnerDeck\Configuration\Config::slotCpuPercent());
+        putenv('RUNNERDECK_SLOT_CPU_PERCENT=150');
+        $this->assertSame(100, \RunnerDeck\Configuration\Config::slotCpuPercent());
+        putenv('RUNNERDECK_SLOT_MEMORY_MAX_MIB=8');
+        $this->assertNull(\RunnerDeck\Configuration\Config::slotMemoryMaxMib());
+        putenv('RUNNERDECK_SCOPE=nope');
+        putenv('RUNNERDECK_ORG=acme');
+        $this->assertFalse(\RunnerDeck\Configuration\Config::isConfigured());
+    }
 }

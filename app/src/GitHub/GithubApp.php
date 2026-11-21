@@ -160,7 +160,7 @@ final class GithubApp
         ], JSON_UNESCAPED_SLASHES) ?: '');
         $signing = $header . '.' . $body;
         $sig = '';
-        $ok = openssl_sign($signing, $sig, $pem, OPENSSL_ALGO_SHA256);
+        $ok = @openssl_sign($signing, $sig, $pem, OPENSSL_ALGO_SHA256);
         if (!$ok || $sig === '') {
             return null;
         }
