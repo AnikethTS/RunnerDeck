@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-21
+
 ### Changed
 
 - `runnerdeck list` and `status` no longer measure slot disk or read log tails, and `--watch` redraws every 5 seconds (`--interval` still overrides). The dashboard still shows disk, and it reuses those sizes for 30 seconds instead of running `du` on every poll. The status poll no longer repeats the app-log list beside the HTML it already sends, and the page skips redrawing charts, the log, and the orphan list when they have not changed.
