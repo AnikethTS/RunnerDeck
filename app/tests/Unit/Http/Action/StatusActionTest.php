@@ -78,6 +78,45 @@ final class StatusActionTest extends TestCase
         $this->assertStringContainsString('hello from the slot', $payload['data']['view']['rows_html']);
     }
 
+    #[RunInSeparateProcess]
+    public function testViewPollOmitsTheChartOnceTheBrowserHasThatSample(): void
+    {
+        \RunnerDeck\System\Shell::fake(fn (): array => ['code' => 1, 'stdout' => '', 'stderr' => 'not logged in']);
+        \RunnerDeck\Pool\RunnerPool::fakeLiveListeners([]);
+        \RunnerDeck\Pool\RunnerPool::fakeCheckProcess(fn () => [false, null]);
+
+        $first = $this->statusPayload(['view' => '1', 'lines' => '5']);
+        $sample = $first['data']['history']['sample_ts'] ?? null;
+        $this->assertNotNull($sample);
+
+        $second = $this->statusPayload(['view' => '1', 'lines' => '5', 'chart' => (string) $sample]);
+        $this->assertArrayNotHasKey('history', $second['data']);
+        $this->assertSame('runner-1', $second['data']['runners'][0]['id']);
+    }
+
+    /**
+     * @param array<string, string> $query
+     * @return array<string, mixed>
+     */
+    private function statusPayload(array $query): array
+    {
+        $_GET = $query;
+        \RunnerDeck\Http\Api::fakeRespond(static function (array $data, int $status): never {
+            throw new \RuntimeException((string) json_encode(['status' => $status, 'data' => $data]));
+        });
+        ob_start();
+        try {
+            \RunnerDeck\Http\Action\Monitoring\StatusAction::handle();
+            $this->fail('the action returns through the response seam');
+        } catch (\RuntimeException $e) {
+            $payload = json_decode($e->getMessage(), true);
+        } finally {
+            ob_end_clean();
+        }
+        $this->assertIsArray($payload);
+        return $payload;
+    }
+
     public function testWithoutLogTailsDropsNonRows(): void
     {
         $method = new ReflectionMethod(\RunnerDeck\Http\Action\Monitoring\StatusAction::class, 'withoutLogTails');
