@@ -37,12 +37,7 @@ final class HostingWarnings
                     . ' (docs/hosting.md).',
             ];
         }
-        if (ClientGate::proxyHidesExtraGate()) {
-            $out[] = [
-                'level' => 'warning',
-                'text' => self::proxyGapText(),
-            ];
-        } elseif (ClientGate::blocked()) {
+        if (ClientGate::blocked()) {
             $out[] = [
                 'level' => 'warning',
                 'text' => 'TOTP is the only gate this process can see. Prefer'
@@ -68,17 +63,12 @@ final class HostingWarnings
         return $out;
     }
 
-    /**
-     * Same sentence for the banner and `php app/bin/doctor.php`. A loopback
-     * reverse proxy still serves the page; this only says the extra gate
-     * is not applied.
-     */
+    /** `php app/bin/doctor.php` when the bind is loopback and no extra gate is set. */
     public static function proxyGapText(): string
     {
-        return 'TOTP is the only gate this process can see. A public hostname'
-            . ' reached from a loopback proxy is not 403’d, because PHP cannot'
-            . ' see the client. Use php-fpm (real client address) or set an IP'
-            . ' allowlist / mTLS (docs/hosting.md).';
+        return 'A public hostname on this loopback bind is refused until the'
+            . ' proxy sends the visitor in X-Forwarded-For and that IP matches'
+            . ' an allowlist, or mTLS is verified. http://127.0.0.1 stays open.';
     }
 
     public static function html(): string
