@@ -105,6 +105,10 @@ Turn colour off. NO_COLOR=1 does the same.
 .SH FILES
 .TP
 .I ~/.local/share/runnerdeck
-Settings, history and runners (macOS: ~/Library/Application Support/RunnerDeck).
+Settings, history and runners. On macOS the default is ~/.runnerdeck.
+.TP
+.I ~/.config/runnerdeck/pool-dir
+Pool directory saved by "runnerdeck config set pool-dir". The launcher reads
+this before it creates the default data directory.
 .SH SEE ALSO
 https://github.com/AnikethTS/RunnerDeck

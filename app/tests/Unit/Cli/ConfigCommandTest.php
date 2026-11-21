@@ -15,11 +15,13 @@ final class ConfigCommandTest extends TestCase
         $dir = sys_get_temp_dir() . '/rd-config-' . uniqid();
         mkdir($dir, 0700, true);
         putenv('RUNNERDECK_SETTINGS_FILE=' . $dir . '/settings.json');
+        putenv('XDG_CONFIG_HOME=' . $dir);
     }
 
     protected function tearDown(): void
     {
         putenv('RUNNERDECK_SETTINGS_FILE');
+        putenv('XDG_CONFIG_HOME');
     }
 
     public function testFriendlyNamesDropThePrefixAndUseHyphens(): void
@@ -60,6 +62,16 @@ final class ConfigCommandTest extends TestCase
         ConfigCommand::set('auto-restart', 'off');
         $this->assertArrayNotHasKey('auto-restart', ConfigCommand::all());
         $this->assertSame('8', ConfigCommand::all()['pool-cap']);
+    }
+
+    public function testPoolDirIsSavedForTheLauncher(): void
+    {
+        $saved = ConfigCommand::set('pool-dir', '/tmp/runnerdeck-pool');
+        $this->assertTrue($saved['ok'], $saved['message']);
+        $this->assertSame('/tmp/runnerdeck-pool', ConfigCommand::all()['pool-dir']);
+        $this->assertFalse(ConfigCommand::set('pool-dir', '/tmp/Application Support/runners')['ok']);
+        $this->assertTrue(ConfigCommand::unset('pool-dir')['ok']);
+        $this->assertArrayNotHasKey('pool-dir', ConfigCommand::all());
     }
 
     public function testUnsetClearsASetting(): void

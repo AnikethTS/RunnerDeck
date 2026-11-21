@@ -54,6 +54,10 @@ func TestDataDirPrefersExplicitOverrideThenLocalAppData(t *testing.T) {
 	if got != filepath.Join("C:/Users/me/AppData/Local", "RunnerDeck") {
 		t.Fatalf("unexpected data dir: %s", got)
 	}
+	mac := dataDirForOS("darwin", exeDir, env(map[string]string{"HOME": "/Users/me"}))
+	if mac != filepath.Join("/Users/me", ".runnerdeck") {
+		t.Fatalf("macOS data dir should have no spaces, got %s", mac)
+	}
 }
 
 func TestDefaultsPointEveryWritablePathIntoTheDataDir(t *testing.T) {

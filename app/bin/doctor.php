@@ -230,6 +230,10 @@ if (is_dir($poolDir) && is_writable($poolDir)) {
 } else {
     $failures += fail('pool directory', "{$poolDir} is not writable", $color);
 }
+$whitespace = PoolLayout::whitespaceMessage($poolDir);
+if ($whitespace !== null) {
+    $failures += fail('pool directory', $whitespace, $color);
+}
 $packageJson = PoolLayout::packageJsonBlockMessage($poolDir);
 if ($packageJson !== null) {
     $failures += fail('pool directory', $packageJson, $color);
@@ -245,10 +249,10 @@ if ($pressure['disk_free_kb'] === null) {
 } else {
     ok('slot disk', $space, $color);
 }
-if (PoolLayout::externalsDuplicated()) {
+if (PoolLayout::agentTreesDuplicated()) {
     $warnings += warn(
-        'externals',
-        'each slot has its own externals tree — the next start hardlinks them onto one copy',
+        'agent files',
+        'each slot has its own bin or externals tree — the next start hardlinks them onto one copy',
         $color
     );
 }

@@ -23,7 +23,7 @@ Runners:
   status [--watch]             Like list, plus what GitHub reports for each
   start <runner...|--all>      Start runners
   stop <runner...|--all>       Stop runners (asks GitHub first; --force skips)
-  restart <runner...>          Stop, then start, runners
+  restart <runner...|--all>   Stop, then start, runners
   rolling-restart <runner...|--all> [--timeout S]
                                Wait for each to be idle, then restart it
   drain <runner...|--all> [--timeout S]
@@ -33,7 +33,7 @@ Runners:
   delete <runner...>           Stop, deregister and remove runners
   rename <runner> <name>       Re-register a runner under a new name
   force-idle <runner>          Clear a stuck "busy" state on GitHub
-  resize <count>               Make the pool runner-base plus <count> runners
+  resize <count>               Make the pool this many runners, including runner-base
   maintenance on|off|status    Drain everything and refuse starts, or lift that
   logs <runner> [-n N] [-f]    Show a runner's log; -f follows it
 
@@ -146,7 +146,7 @@ TXT;
             'install' => $this->install($flags),
             'uninstall' => $this->uninstall($flags),
             'update', 'upgrade' => $this->update($flags),
-            'restart' => $this->restart($args),
+            'restart' => $this->restart($flags, $args),
             'add' => $this->add($flags),
             'delete', 'rm' => $this->delete($args),
             'logs' => $this->logs($flags, $args),
@@ -390,10 +390,13 @@ TXT;
         return $this->report(ProcessControl::bulkStop($runners));
     }
 
-    /** @param list<string> $args */
-    private function restart(array $args): int
+    /**
+     * @param array<string, mixed> $flags
+     * @param list<string> $args
+     */
+    private function restart(array $flags, array $args): int
     {
-        $runners = $this->select([], $args);
+        $runners = $this->select($flags, $args);
         if ($runners === null) {
             return 1;
         }
@@ -538,7 +541,7 @@ TXT;
     {
         $count = $args[0] ?? '';
         if (!ctype_digit($count) || (int) $count < 1 || (int) $count > 30) {
-            return $this->fail('usage: runnerdeck resize <count>  (1 to 30 runners besides runner-base)');
+            return $this->fail('usage: runnerdeck resize <count>  (1 to 30 runners, including runner-base)');
         }
         return $this->report(Ops::resize((int) $count));
     }

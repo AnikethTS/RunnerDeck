@@ -9,6 +9,10 @@ follows [SemVer](https://semver.org/).
 ### Changed
 
 - `runnerdeck list` and `status` no longer measure slot disk or read log tails, and `--watch` redraws every 5 seconds (`--interval` still overrides). The dashboard still shows disk, and it reuses those sizes for 30 seconds instead of running `du` on every poll. The status poll no longer repeats the app-log list beside the HTML it already sends, and the page skips redrawing charts, the log, and the orphan list when they have not changed.
+- The macOS data directory defaults to `~/.runnerdeck`. An existing `~/Library/Application Support/RunnerDeck` directory is still used until you move it. A pool path with whitespace fails `runnerdeck doctor`, because GitHub starts each step with that path unquoted.
+- `runnerdeck restart --all` restarts every runner. `runnerdeck resize N` is the total number of runners, including `runner-base`, and stops any slot above that count.
+- A second slot hardlinks `bin/` and `externals/` from the first extract of the same agent, instead of keeping a full copy of both trees.
+- `runnerdeck config set pool-dir /absolute/path` saves the pool where the launcher reads it, so a new terminal does not create an empty default pool.
 
 ### Added
 

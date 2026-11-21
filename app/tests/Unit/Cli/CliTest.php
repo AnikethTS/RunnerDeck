@@ -364,6 +364,41 @@ final class CliTest extends TestCase
         $this->assertStringContainsString('unknown runner(s): ghost', $err);
     }
 
+    public function testRestartAllSelectsEveryRunner(): void
+    {
+        \RunnerDeck\System\Shell::fake(fn (): array => ['code' => 1, 'stdout' => '', 'stderr' => 'offline']);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
+        try {
+            [$code, $out, $err] = $this->cli(['restart', '--all', '--force']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+            \RunnerDeck\Host\HostPressure::fakeDisk(null);
+            \RunnerDeck\Host\HostPressure::fakeRam(null);
+        }
+        $this->assertSame(1, $code);
+        $this->assertStringNotContainsString('name at least one runner', $err);
+        $this->assertSame(2, substr_count($out . $err, 'failed to list runner downloads'));
+    }
+
+    public function testResizeCountIncludesTheBaseAndStopsTheRest(): void
+    {
+        mkdir($this->pool . '/runner-base', 0755, true);
+        \RunnerDeck\System\Shell::fake(fn (): array => ['code' => 1, 'stdout' => '', 'stderr' => 'offline']);
+        \RunnerDeck\Host\HostPressure::fakeDisk(fn () => [50 * 1024 * 1024 * 1024, 100 * 1024 * 1024 * 1024]);
+        \RunnerDeck\Host\HostPressure::fakeRam(fn () => 8 * 1024 * 1024);
+        try {
+            [$code, $out] = $this->cli(['resize', '2']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+            \RunnerDeck\Host\HostPressure::fakeDisk(null);
+            \RunnerDeck\Host\HostPressure::fakeRam(null);
+        }
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-2 not running', $out);
+        $this->assertSame(2, substr_count($out, 'failed to list runner downloads'));
+    }
+
     public function testRestartWithNoRunnerAsksForOne(): void
     {
         [$code, , $err] = $this->cli(['restart']);

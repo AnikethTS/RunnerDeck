@@ -13,19 +13,42 @@ usage() {
     echo "Commands: list, start, stop, restart, add, delete, logs, doctor."
     echo "Run 'runnerdeck help' for details. The dashboard listens on"
     echo "http://127.0.0.1:PORT (default 8090); --open opens it in your browser."
-    echo "Data lives in \$RUNNERDECK_DATA_DIR (default: your user data directory)."
+    echo "Data lives in \$RUNNERDECK_DATA_DIR (macOS default: ~/.runnerdeck)."
 }
 
+# A saved pool wins over the default, and is read before any directory is
+# created, so a new terminal does not invent an empty pool.
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+pool_file="$config_home/runnerdeck/pool-dir"
+if [ -z "${RUNNERDECK_POOL_DIR:-}" ] && [ -f "$pool_file" ]; then
+    IFS= read -r saved_pool < "$pool_file" || saved_pool=""
+    if [ -n "$saved_pool" ]; then
+        RUNNERDECK_POOL_DIR=$saved_pool
+    fi
+fi
+
 if [ "$(uname -s)" = "Darwin" ]; then
-    default_data="$HOME/Library/Application Support/RunnerDeck"
+    default_data="$HOME/.runnerdeck"
+    # Keep an install that already lives under the old path. A new install
+    # uses ~/.runnerdeck, which has no space for GitHub's unquoted step path.
+    legacy="$HOME/Library/Application Support/RunnerDeck"
+    if [ ! -e "$default_data" ] && [ -d "$legacy" ]; then
+        default_data=$legacy
+    fi
 else
     default_data="${XDG_DATA_HOME:-$HOME/.local/share}/runnerdeck"
 fi
 DATA="${RUNNERDECK_DATA_DIR:-$default_data}"
-mkdir -p "$DATA/db" "$DATA/runners"
+mkdir -p "$DATA/db"
+if [ -n "${RUNNERDECK_POOL_DIR:-}" ]; then
+    mkdir -p "$RUNNERDECK_POOL_DIR"
+else
+    mkdir -p "$DATA/runners"
+    RUNNERDECK_POOL_DIR=$DATA/runners
+fi
 export RUNNERDECK_SETTINGS_FILE="${RUNNERDECK_SETTINGS_FILE:-$DATA/settings.json}"
 export RUNNERDECK_HISTORY_FILE="${RUNNERDECK_HISTORY_FILE:-$DATA/db/history.sqlite}"
-export RUNNERDECK_POOL_DIR="${RUNNERDECK_POOL_DIR:-$DATA/runners}"
+export RUNNERDECK_POOL_DIR
 
 # Anything that is not the dashboard goes to the PHP command line.
 case "${1:-}" in

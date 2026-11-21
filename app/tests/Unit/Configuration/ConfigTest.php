@@ -89,8 +89,19 @@ final class ConfigTest extends TestCase
     #[RunInSeparateProcess]
     public function testPoolDirDefaultsNextToRepoCheckout(): void
     {
+        putenv('XDG_CONFIG_HOME=' . sys_get_temp_dir() . '/runnerdeck-no-launcher-' . uniqid());
         $expected = dirname(__DIR__, 5) . '/runners';
         $this->assertSame($expected, \RunnerDeck\Configuration\Config::poolDir());
+    }
+
+    #[RunInSeparateProcess]
+    public function testPoolDirReadsTheLauncherFileWhenTheEnvIsUnset(): void
+    {
+        $config = sys_get_temp_dir() . '/runnerdeck-launcher-' . uniqid();
+        mkdir($config . '/runnerdeck', 0700, true);
+        file_put_contents($config . '/runnerdeck/pool-dir', "/tmp/saved-pool/\n");
+        putenv('XDG_CONFIG_HOME=' . $config);
+        $this->assertSame('/tmp/saved-pool', \RunnerDeck\Configuration\Config::poolDir());
     }
 
     #[RunInSeparateProcess]
