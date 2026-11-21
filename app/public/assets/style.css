@@ -294,6 +294,7 @@ body {
 .update-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
   color: var(--status-good);
@@ -303,6 +304,7 @@ body {
   padding: 3px 9px;
   text-decoration: none;
 }
+.update-badge-icon { flex: none; }
 .update-badge:hover { text-decoration: underline; }
 .update-badge[hidden] {
   display: none;

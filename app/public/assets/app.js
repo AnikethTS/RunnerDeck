@@ -439,7 +439,9 @@ function initDashboard() {
     const data = await res.json();
     if (!data.ok || !data.update_available) return;
     const badge = document.getElementById('update-available');
-    badge.textContent = `Update available: v${data.latest}`;
+    const label = badge.querySelector('.update-badge-label');
+    if (!label) return;
+    label.textContent = `Update available: v${data.latest}`;
     badge.hidden = false;
   }
 

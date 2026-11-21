@@ -75,6 +75,8 @@ final class LayoutTest extends TestCase
         $this->assertStringContainsString('<h1 class="topbar-name">RunnerDeck</h1>', $html);
         $this->assertStringContainsString('class="edition-tag"', $html);
         $this->assertStringContainsString('id="update-available"', $html);
+        $this->assertStringContainsString('update-badge-icon', $html);
+        $this->assertStringContainsString('update-badge-label', $html);
         $this->assertTrue(\RunnerDeck\Presentation\Layout::hasLogo());
         $this->assertStringContainsString('src="assets/logo.png"', $html);
         $this->assertStringContainsString('class="logo"', $html);

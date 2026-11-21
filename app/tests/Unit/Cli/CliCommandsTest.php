@@ -433,7 +433,7 @@ final class CliCommandsTest extends CliTestCase
         [$code, $out, $err] = $this->cli(['list', '--color']);
         $this->assertSame(0, $code);
         $this->assertStringNotContainsString('99.0.0', $out);
-        $this->assertStringContainsString("RunnerDeck 99.0.0 is available (you have {$version})", $err);
+        $this->assertStringContainsString("↑ RunnerDeck 99.0.0 is available (you have {$version})", $err);
         $this->assertStringContainsString('Run: runnerdeck update', $err);
         $this->assertStringContainsString('https://github.com/AnikethTS/RunnerDeck/releases/tag/v99.0.0', $err);
 

@@ -44,7 +44,7 @@ final class UpdateNoticeTest extends TestCase
         $this->assertSame(0, $calls);
         $this->assertNotNull($line);
         $this->assertStringContainsString(
-            'RunnerDeck 99.0.0 is available (you have ' . Config::version() . ')',
+            '↑ RunnerDeck 99.0.0 is available (you have ' . Config::version() . ')',
             (string) $line
         );
         $this->assertStringContainsString('Run: runnerdeck update', (string) $line);

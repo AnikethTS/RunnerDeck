@@ -45,7 +45,7 @@ final class UpdateNotice
             return null;
         }
 
-        return 'RunnerDeck ' . $saved['latest'] . ' is available (you have ' . Config::version()
+        return '↑ RunnerDeck ' . $saved['latest'] . ' is available (you have ' . Config::version()
             . "). Run: runnerdeck update\n" . self::RELEASE . $saved['latest'];
     }
 
