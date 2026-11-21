@@ -11,7 +11,8 @@
 
 RunnerDeck is still a **single-user operator UI** for runners on **this
 machine**. “Cloud hosting” here means: a VPS or home server where Caddy,
-nginx, or Traefik terminates TLS and PHP serves `public/` on loopback.
+nginx, Traefik, or Apache APISIX terminates TLS and PHP serves `public/`
+on loopback.
 It is not multi-tenant SaaS, not a load-balanced farm, and it is not a
 substitute for `gh` + runner binaries on that same host.
 
@@ -92,10 +93,19 @@ Examples (same four-worker / SSE limits as local `./run.sh`):
 
 - [deploy/Caddyfile](../deploy/Caddyfile) — automatic HTTPS
 - [deploy/nginx.conf.example](../deploy/nginx.conf.example) — bring your own certs
+- [deploy/apisix.yaml](../deploy/apisix.yaml) — APISIX 3.17+, with a per-IP limit
 
 Live logs use Server-Sent Events for about 30 minutes; those examples
 disable proxy buffering / set a long read timeout so the stream is not
 cut off. `run.sh` does not change bind address for this.
+
+The APISIX file is the one that rate-limits. Login and TOTP confirm are
+10 requests per 5 minutes per client IP. Other pages and API calls are
+300 per minute, which leaves room for the dashboard’s 5-second poll.
+`/health.php` and `/metrics.php` are not counted. A new live-log stream
+is 30 per minute, with buffering off. PHP’s own lockout still applies
+on top: five wrong codes lock every login for 5 minutes. Uncomment the
+allowlist in that file so health and metrics are not public.
 
 ## Beyond TOTP on 443
 
@@ -141,6 +151,7 @@ mTLS in the proxy (defense in depth). For mTLS, pass
 
 - [deploy/Caddyfile.restricted](../deploy/Caddyfile.restricted)
 - [deploy/nginx-restricted.conf.example](../deploy/nginx-restricted.conf.example)
+- [deploy/apisix.yaml](../deploy/apisix.yaml) — per-IP limit, allowlist, mTLS
 
 Allowlist your home/office/VPN egress, not `0.0.0.0/0`. mTLS means a
 client cert you issue (one operator):
