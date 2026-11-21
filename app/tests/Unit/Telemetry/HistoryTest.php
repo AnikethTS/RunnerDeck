@@ -23,6 +23,7 @@ final class HistoryTest extends TestCase
         putenv('RUNNERDECK_HISTORY_FILE');
         @unlink($this->dbFile);
         @unlink(dirname($this->dbFile) . '/history_chart.json');
+        @unlink(dirname($this->dbFile) . '/history_sample_ts');
         @rmdir(dirname($this->dbFile));
     }
 
@@ -62,7 +63,9 @@ final class HistoryTest extends TestCase
     {
         \RunnerDeck\Telemetry\History::record(1.0, 1000);
         $db = new PDO('sqlite:' . $this->dbFile);
-        $db->prepare('UPDATE samples SET ts = ?')->execute([time() - \RunnerDeck\Telemetry\History::SAMPLE_SECONDS]);
+        $backdated = time() - \RunnerDeck\Telemetry\History::SAMPLE_SECONDS;
+        $db->prepare('UPDATE samples SET ts = ?')->execute([$backdated]);
+        file_put_contents(dirname($this->dbFile) . '/history_sample_ts', (string) $backdated);
         \RunnerDeck\Telemetry\History::record(9.0, 9000);
 
         $samples = \RunnerDeck\Telemetry\History::recent();

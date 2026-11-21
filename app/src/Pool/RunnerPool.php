@@ -23,6 +23,9 @@ final class RunnerPool
     /** @var array<string, int>|null */
     private static $listenersCache = null;
 
+    /** A pid file is still checked every time. This only skips the fallback scan. */
+    private const LISTENER_CACHE_SECONDS = 8.0;
+
     private static float $listenersCachedAt = 0;
 
     /** @param array<string, int>|null $map */
@@ -248,7 +251,10 @@ final class RunnerPool
             return self::$liveListenersFake;
         }
 
-        if (self::$listenersCache !== null && (microtime(true) - self::$listenersCachedAt) < 2.0) {
+        if (
+            self::$listenersCache !== null
+            && (microtime(true) - self::$listenersCachedAt) < self::LISTENER_CACHE_SECONDS
+        ) {
             return self::$listenersCache;
         }
 

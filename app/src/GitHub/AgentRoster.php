@@ -10,6 +10,11 @@ final class AgentRoster
 {
     private const FILE = 'agent_roster.json';
 
+    private static ?string $loadedKey = null;
+
+    /** @var list<string> */
+    private static array $loaded = [];
+
     public static function remember(string $name): void
     {
         $name = trim($name);
@@ -36,6 +41,19 @@ final class AgentRoster
 
     /** @return list<string> */
     public static function names(): array
+    {
+        $request = (string) ($_SERVER['REQUEST_TIME_FLOAT'] ?? '0');
+        $key = $request . "\n" . self::path();
+        if (self::$loadedKey === $key) {
+            return self::$loaded;
+        }
+        self::$loaded = self::read();
+        self::$loadedKey = $key;
+        return self::$loaded;
+    }
+
+    /** @return list<string> */
+    private static function read(): array
     {
         $path = self::path();
         if (!is_file($path)) {
@@ -104,6 +122,8 @@ final class AgentRoster
         file_put_contents($tmp, json_encode($names, JSON_PRETTY_PRINT));
         chmod($tmp, 0600);
         rename($tmp, self::path());
+        self::$loaded = $names;
+        self::$loadedKey = (string) ($_SERVER['REQUEST_TIME_FLOAT'] ?? '0') . "\n" . self::path();
     }
 
     private static function path(): string

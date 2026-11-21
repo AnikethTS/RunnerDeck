@@ -22,6 +22,11 @@ final class StatusAction
             $snapshot['view'] = DashboardView::pollView($snapshot);
             $snapshot['runners'] = self::withoutLogTails($snapshot['runners'] ?? null);
             unset($snapshot['errors']);
+            $chart = (string) ($_GET['chart'] ?? '');
+            $sample = (string) ($snapshot['history']['sample_ts'] ?? '');
+            if ($chart !== '' && $chart === $sample) {
+                unset($snapshot['history']);
+            }
         }
         JsonApi::respond($snapshot);
     }

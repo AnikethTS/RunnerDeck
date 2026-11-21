@@ -20,6 +20,7 @@ function initDashboard() {
   const exportBtn = document.getElementById('btn-export');
   let lastSnapshot = null;
   let lastRowsKey = '';
+  let chartSample = '';
   let lastLiveJobs = [];
   let lastRecentJobs = [];
 
@@ -75,6 +76,9 @@ function initDashboard() {
       setBanner('', true);
     }
 
+    if (snapshot.history && snapshot.history.sample_ts != null) {
+      chartSample = String(snapshot.history.sample_ts);
+    }
     renderStats(snapshot);
     renderErrors(snapshot);
     snapshot.runners.forEach((r) => {
@@ -324,7 +328,8 @@ function initDashboard() {
       if (prev) {
         await prev.catch(() => {});
       }
-      const res = await fetch('api.php?action=status&lines=5&view=1');
+      const chart = chartSample === '' ? '' : `&chart=${encodeURIComponent(chartSample)}`;
+      const res = await fetch(`api.php?action=status&lines=5&view=1${chart}`);
       if (redirectIfUnauthenticated(res.status)) return;
       render(await res.json());
     })();

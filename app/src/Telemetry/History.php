@@ -65,6 +65,9 @@ final class History
     }
 
     /**
+     * Chart drawn for the current sample. Skips SQLite while that sample is
+     * still inside the window.
+     *
      * @return array{
      *     available: bool,
      *     cpu_svg: string,
@@ -72,40 +75,46 @@ final class History
      *     cpu_now: string,
      *     cpu_span: string,
      *     mem_now: string,
-     *     mem_span: string
+     *     mem_span: string,
+     *     sample_ts: int
      * }|null
      */
-    public static function cachedChart(int $sampleTs): ?array
+    public static function freshChart(): ?array
     {
-        $raw = @file_get_contents(self::chartCachePath());
-        if (!is_string($raw) || $raw === '') {
-            return null;
-        }
-        $decoded = json_decode($raw, true);
-        if (
-            !is_array($decoded)
-            || (int) ($decoded['sample_ts'] ?? -1) !== $sampleTs
-            || !is_array($decoded['view'] ?? null)
-        ) {
+        $decoded = self::readChartFile();
+        if ($decoded === null) {
             return null;
         }
         $builtAt = (int) ($decoded['built_at'] ?? 0);
         if ($builtAt <= 0 || (time() - $builtAt) >= self::SAMPLE_SECONDS) {
             return null;
         }
-        $view = $decoded['view'];
-        if (!is_string($view['cpu_svg'] ?? null) || !is_string($view['mem_svg'] ?? null)) {
+        return self::chartFromDecoded($decoded);
+    }
+
+    /**
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string,
+     *     sample_ts: int
+     * }|null
+     */
+    public static function cachedChart(int $sampleTs): ?array
+    {
+        $decoded = self::readChartFile();
+        if ($decoded === null || (int) ($decoded['sample_ts'] ?? -1) !== $sampleTs) {
             return null;
         }
-        return [
-            'available' => (bool) ($view['available'] ?? false),
-            'cpu_svg' => $view['cpu_svg'],
-            'mem_svg' => $view['mem_svg'],
-            'cpu_now' => is_string($view['cpu_now'] ?? null) ? $view['cpu_now'] : '—',
-            'cpu_span' => is_string($view['cpu_span'] ?? null) ? $view['cpu_span'] : '',
-            'mem_now' => is_string($view['mem_now'] ?? null) ? $view['mem_now'] : '—',
-            'mem_span' => is_string($view['mem_span'] ?? null) ? $view['mem_span'] : '',
-        ];
+        $builtAt = (int) ($decoded['built_at'] ?? 0);
+        if ($builtAt <= 0 || (time() - $builtAt) >= self::SAMPLE_SECONDS) {
+            return null;
+        }
+        return self::chartFromDecoded($decoded);
     }
 
     /**
@@ -146,17 +155,93 @@ final class History
         return dirname(self::path()) . '/history_chart.json';
     }
 
+    private static function sampleStampPath(): string
+    {
+        return dirname(self::path()) . '/history_sample_ts';
+    }
+
+    private static function readSampleStamp(): int
+    {
+        $raw = @file_get_contents(self::sampleStampPath());
+        if (!is_string($raw)) {
+            return 0;
+        }
+        $trimmed = trim($raw);
+        return ctype_digit($trimmed) ? (int) $trimmed : 0;
+    }
+
+    private static function writeSampleStamp(int $ts): void
+    {
+        $path = self::sampleStampPath();
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return;
+        }
+        @file_put_contents($path, (string) $ts, LOCK_EX);
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function readChartFile(): ?array
+    {
+        $raw = @file_get_contents(self::chartCachePath());
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || !is_array($decoded['view'] ?? null)) {
+            return null;
+        }
+        return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $decoded
+     * @return array{
+     *     available: bool,
+     *     cpu_svg: string,
+     *     mem_svg: string,
+     *     cpu_now: string,
+     *     cpu_span: string,
+     *     mem_now: string,
+     *     mem_span: string,
+     *     sample_ts: int
+     * }|null
+     */
+    private static function chartFromDecoded(array $decoded): ?array
+    {
+        $view = $decoded['view'];
+        if (!is_array($view) || !is_string($view['cpu_svg'] ?? null) || !is_string($view['mem_svg'] ?? null)) {
+            return null;
+        }
+        return [
+            'available' => (bool) ($view['available'] ?? false),
+            'cpu_svg' => $view['cpu_svg'],
+            'mem_svg' => $view['mem_svg'],
+            'cpu_now' => is_string($view['cpu_now'] ?? null) ? $view['cpu_now'] : '—',
+            'cpu_span' => is_string($view['cpu_span'] ?? null) ? $view['cpu_span'] : '',
+            'mem_now' => is_string($view['mem_now'] ?? null) ? $view['mem_now'] : '—',
+            'mem_span' => is_string($view['mem_span'] ?? null) ? $view['mem_span'] : '',
+            'sample_ts' => (int) ($decoded['sample_ts'] ?? 0),
+        ];
+    }
+
     public static function record(float $avgCpu, int $totalRssKb, ?int $diskFreeKb = null): void
     {
+        $known = self::readSampleStamp();
+        if ($known > 0 && (time() - $known) < self::SAMPLE_SECONDS) {
+            return;
+        }
         try {
             $db = self::db();
             $lastTs = self::latestSampleTs();
             if ($lastTs > 0 && (time() - $lastTs) < self::SAMPLE_SECONDS) {
+                self::writeSampleStamp($lastTs);
                 return;
             }
             $db->prepare(
                 'INSERT INTO samples (ts, avg_cpu, total_rss_kb, disk_free_kb) VALUES (?, ?, ?, ?)'
             )->execute([time(), $avgCpu, $totalRssKb, $diskFreeKb]);
+            self::writeSampleStamp(time());
             $db->prepare('DELETE FROM samples WHERE ts < ?')
                 ->execute([time() - self::RETENTION_SECONDS]);
         } catch (\Throwable) {

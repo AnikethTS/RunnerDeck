@@ -224,21 +224,23 @@ final class Dashboard
      *     cpu_now: string,
      *     cpu_span: string,
      *     mem_now: string,
-     *     mem_span: string
+     *     mem_span: string,
+     *     sample_ts: int
      * }
      */
     public static function historyView(): array
     {
         if (History::isAvailable()) {
-            $sampleTs = History::latestSampleTs();
-            $cached = History::cachedChart($sampleTs);
-            if ($cached !== null) {
-                return $cached;
+            $fresh = History::freshChart();
+            if ($fresh !== null) {
+                return $fresh;
             }
         }
         $view = self::buildHistoryView();
+        $sampleTs = History::isAvailable() ? History::latestSampleTs() : 0;
+        $view['sample_ts'] = $sampleTs;
         if (History::isAvailable()) {
-            History::rememberChart(History::latestSampleTs(), $view);
+            History::rememberChart($sampleTs, $view);
         }
         return $view;
     }
@@ -251,7 +253,8 @@ final class Dashboard
      *     cpu_now: string,
      *     cpu_span: string,
      *     mem_now: string,
-     *     mem_span: string
+     *     mem_span: string,
+     *     sample_ts: int
      * }
      */
     private static function buildHistoryView(): array
@@ -276,6 +279,7 @@ final class Dashboard
             'cpu_span' => $cpuSummary['span'],
             'mem_now' => $memSummary['now'],
             'mem_span' => $memSummary['span'],
+            'sample_ts' => 0,
         ];
     }
 
