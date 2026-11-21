@@ -11,7 +11,9 @@ use RunnerDeck\System\Shell;
 final class Updater
 {
     private const REPO = 'AnikethTS/RunnerDeck';
-    private const METHODS = ['brew', 'deb', 'windows', 'git', 'docker', 'unknown'];
+    private const METHODS = ['brew', 'deb', 'windows', 'git', 'zip', 'docker', 'unknown'];
+    /** Kept when a release zip is copied over an install.sh folder. */
+    private const ZIP_KEEP = ['.env', 'storage', 'runners'];
 
     /** @var resource */
     private $out;
@@ -51,6 +53,7 @@ final class Updater
             str_contains($path, '/Cellar/') || str_contains($path, '/linuxbrew/') => 'brew',
             str_starts_with($path, '/usr/share/runnerdeck') => 'deb',
             $facts['git'] => 'git',
+            self::isZipInstall($path) => 'zip',
             default => 'unknown',
         };
     }
@@ -85,6 +88,10 @@ final class Updater
             'windows' => [
                 'asset' => "RunnerDeck-{$version}-windows-x64-setup.exe",
                 'sums' => 'SHA256SUMS-windows-x64',
+            ],
+            'zip' => [
+                'asset' => "runnerdeck-v{$version}.zip",
+                'sums' => "runnerdeck-v{$version}.zip.sha256",
             ],
             default => null,
         };
@@ -134,6 +141,8 @@ final class Updater
             'brew' => 'Runs: brew upgrade anikethts/runnerdeck/runnerdeck',
             'deb' => "Downloads and checks RunnerDeck-{$latest}-linux-all.deb, then installs it with sudo apt.",
             'windows' => 'Downloads and checks the Setup wizard, then opens it.',
+            'zip' => 'Downloads and checks the release zip, then copies it over this folder.'
+                . ' Settings, runners, and .env stay.',
             default => 'Runs: git pull --ff-only',
         };
     }
@@ -145,7 +154,7 @@ final class Updater
                 . "Release notes: https://github.com/" . self::REPO . "/releases/tag/v{$latest}"
             : "Could not tell how this copy was installed. Download v{$latest} from\n"
                 . "https://github.com/" . self::REPO . "/releases/latest, or set RUNNERDECK_INSTALL_METHOD\n"
-                . 'to one of: brew, deb, windows, git.';
+                . 'to one of: brew, deb, windows, git, zip.';
     }
 
     private function apply(string $method, string $latest, string $root): int
@@ -155,6 +164,9 @@ final class Updater
         }
         if ($method === 'git') {
             return $this->tty(['git', '-C', $root, 'pull', '--ff-only']);
+        }
+        if ($method === 'zip') {
+            return $this->applyZip($latest, $root);
         }
         $assets = self::assetsFor($method, $latest);
         if ($assets === null) {
@@ -173,6 +185,87 @@ final class Updater
         } finally {
             $this->removeDir($dir);
         }
+    }
+
+    private function applyZip(string $latest, string $root): int
+    {
+        $dir = sys_get_temp_dir() . '/runnerdeck-update-' . bin2hex(random_bytes(6));
+        @mkdir($dir, 0755, true);
+        try {
+            $file = $this->download($dir, $latest, [
+                'asset' => "runnerdeck-v{$latest}.zip",
+                'sums' => "runnerdeck-v{$latest}.zip.sha256",
+            ]);
+            if ($file === null) {
+                return 1;
+            }
+            $unpacked = $dir . '/unpacked';
+            if (!@mkdir($unpacked, 0755, true) && !is_dir($unpacked)) {
+                return $this->problem('could not unpack the release');
+            }
+            $got = Shell::exec(['unzip', '-q', $file, '-d', $unpacked], 120);
+            if ($got['code'] !== 0) {
+                return $this->problem('unzip failed: ' . (trim($got['stderr']) ?: 'unzip failed'));
+            }
+            $src = $unpacked . '/runnerdeck-v' . $latest;
+            if (!is_file($src . '/runnerdeck')) {
+                return $this->problem('unexpected archive layout; nothing was installed');
+            }
+            if (!self::copyOver($src, $root)) {
+                return $this->problem('could not copy the new release into ' . $root);
+            }
+            @chmod($root . '/runnerdeck', 0755);
+
+            return $this->tty([$root . '/runnerdeck', 'install', '--force']);
+        } finally {
+            $this->removeDir($dir);
+        }
+    }
+
+    /** Copy the release onto $dest. Top-level .env, storage, and runners are left alone. */
+    public static function copyOver(string $src, string $dest): bool
+    {
+        if (!is_dir($src)) {
+            return false;
+        }
+        if (!is_dir($dest) && !@mkdir($dest, 0755, true) && !is_dir($dest)) {
+            return false;
+        }
+        $names = @scandir($src);
+        if ($names === false) {
+            return false;
+        }
+        foreach ($names as $name) {
+            if ($name === '.' || $name === '..' || in_array($name, self::ZIP_KEEP, true)) {
+                continue;
+            }
+            $from = $src . '/' . $name;
+            $to = $dest . '/' . $name;
+            if (is_dir($from) && !is_link($from)) {
+                if (!self::copyOver($from, $to)) {
+                    return false;
+                }
+                continue;
+            }
+            if ((is_file($to) || is_link($to)) && !@unlink($to)) {
+                return false;
+            }
+            if (!@copy($from, $to)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function isZipInstall(string $path): bool
+    {
+        $home = rtrim(str_replace('\\', '/', (string) getenv('HOME')), '/');
+        if ($home === '') {
+            return false;
+        }
+
+        return rtrim($path, '/') === $home . '/.local/share/runnerdeck';
     }
 
     /** @param array{asset: string, sums: string} $assets */
@@ -199,7 +292,18 @@ final class Updater
 
     private function removeDir(string $dir): void
     {
-        foreach (glob($dir . '/*') ?: [] as $path) {
+        if (!is_dir($dir)) {
+            return;
+        }
+        foreach (scandir($dir) ?: [] as $name) {
+            if ($name === '.' || $name === '..') {
+                continue;
+            }
+            $path = $dir . '/' . $name;
+            if (is_dir($path) && !is_link($path)) {
+                $this->removeDir($path);
+                continue;
+            }
             @unlink($path);
         }
         @rmdir($dir);
