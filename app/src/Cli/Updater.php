@@ -192,11 +192,10 @@ final class Updater
         $dir = sys_get_temp_dir() . '/runnerdeck-update-' . bin2hex(random_bytes(6));
         @mkdir($dir, 0755, true);
         try {
-            $assets = self::assetsFor('zip', $latest);
-            if ($assets === null) {
-                return $this->problem('cannot update an install of type zip');
-            }
-            $file = $this->download($dir, $latest, $assets);
+            $file = $this->download($dir, $latest, [
+                'asset' => "runnerdeck-v{$latest}.zip",
+                'sums' => "runnerdeck-v{$latest}.zip.sha256",
+            ]);
             if ($file === null) {
                 return 1;
             }
@@ -232,7 +231,7 @@ final class Updater
         if (!is_dir($dest) && !@mkdir($dest, 0755, true) && !is_dir($dest)) {
             return false;
         }
-        $names = scandir($src);
+        $names = @scandir($src);
         if ($names === false) {
             return false;
         }

@@ -59,6 +59,10 @@ final class UpdaterTest extends TestCase
             ['asset' => 'RunnerDeck-1.2.3-windows-x64-setup.exe', 'sums' => 'SHA256SUMS-windows-x64'],
             Updater::assetsFor('windows', '1.2.3')
         );
+        $this->assertSame(
+            ['asset' => 'runnerdeck-v1.2.3.zip', 'sums' => 'runnerdeck-v1.2.3.zip.sha256'],
+            Updater::assetsFor('zip', '1.2.3')
+        );
         $this->assertNull(Updater::assetsFor('brew', '1.2.3'));
     }
 
@@ -286,6 +290,160 @@ final class UpdaterTest extends TestCase
         $this->assertSame("KEEP=1\n", (string) file_get_contents($root . '/.env'));
         $this->assertSame('{"ok":true}', (string) file_get_contents($root . '/storage/settings.json'));
         $this->assertSame([$root . '/runnerdeck', 'install', '--force'], $this->ran[0]);
+    }
+
+    public function testAZipDownloadFailureInstallsNothing(): void
+    {
+        $this->latest('99.0.0', null, 1);
+        [$code, , $err] = $this->update(['yes' => true], 'zip');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('download failed', $err);
+        $this->assertSame([], $this->ran);
+    }
+
+    public function testAFailedUnzipInstallsNothing(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                file_put_contents($dir . '/unpacked', 'not-a-directory');
+                $name = 'runnerdeck-v99.0.0.zip';
+                file_put_contents($dir . '/' . $name, 'zip-bytes');
+                file_put_contents($dir . '/' . $name . '.sha256', hash('sha256', 'zip-bytes') . "  {$name}\n");
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+        [$code, , $err] = $this->update(['yes' => true], 'zip');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('could not unpack the release', $err);
+        $this->assertSame([], $this->ran);
+
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                $name = 'runnerdeck-v99.0.0.zip';
+                file_put_contents($dir . '/' . $name, 'zip-bytes');
+                file_put_contents($dir . '/' . $name . '.sha256', hash('sha256', 'zip-bytes') . "  {$name}\n");
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'unzip') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+        [$code, , $err] = $this->update(['yes' => true], 'zip');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('unzip failed', $err);
+    }
+
+    public function testAZipThatCannotBeCopiedInstallsNothing(): void
+    {
+        $parent = $this->tmp();
+        file_put_contents($parent . '/blocked', 'x');
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                $name = 'runnerdeck-v99.0.0.zip';
+                file_put_contents($dir . '/' . $name, 'zip-bytes');
+                file_put_contents($dir . '/' . $name . '.sha256', hash('sha256', 'zip-bytes') . "  {$name}\n");
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'unzip') {
+                $src = $cmd[array_search('-d', $cmd, true) + 1] . '/runnerdeck-v99.0.0';
+                mkdir($src, 0755, true);
+                file_put_contents($src . '/runnerdeck', "#!/bin/sh\n");
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => '{"tag_name":"v99.0.0"}', 'stderr' => ''];
+        });
+        [$code, , $err] = $this->update(['yes' => true], 'zip', '', 0, $parent . '/blocked/runnerdeck');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('could not copy the new release', $err);
+        $this->assertSame([], $this->ran);
+    }
+
+    public function testCopyOverKeepsNestedFilesAndReportsFailures(): void
+    {
+        $src = $this->tmp() . '/src';
+        $dest = $this->tmp() . '/dest';
+        mkdir($src . '/app', 0755, true);
+        file_put_contents($src . '/app/cli.php', '<?php ');
+        mkdir($dest, 0755, true);
+        $this->assertTrue(Updater::copyOver($src, $dest));
+        $this->assertSame('<?php ', (string) file_get_contents($dest . '/app/cli.php'));
+
+        $this->assertFalse(Updater::copyOver($src . '/app/cli.php', $dest));
+
+        $blocked = $this->tmp() . '/file';
+        file_put_contents($blocked, 'x');
+        $this->assertFalse(Updater::copyOver($src, $blocked . '/child'));
+
+        mkdir($src . '/locked', 0755, true);
+        chmod($src . '/locked', 0000);
+        try {
+            $this->assertFalse(Updater::copyOver($src . '/locked', $dest . '/locked'));
+        } finally {
+            chmod($src . '/locked', 0755);
+        }
+
+        $destFile = $this->tmp() . '/dest-file';
+        mkdir($destFile, 0755, true);
+        file_put_contents($destFile . '/app', 'was-a-file');
+        $nested = $this->tmp() . '/nested-src';
+        mkdir($nested . '/app', 0755, true);
+        file_put_contents($nested . '/app/inside', 'y');
+        $this->assertFalse(Updater::copyOver($nested, $destFile));
+
+        mkdir($dest . '/app-file', 0755, true);
+        file_put_contents($src . '/app-file', 'file');
+        $this->assertFalse(Updater::copyOver($src, $dest));
+
+        $held = $this->tmp() . '/held';
+        $heldSrc = $this->tmp() . '/held-src';
+        mkdir($held, 0755, true);
+        mkdir($heldSrc, 0755, true);
+        file_put_contents($held . '/a.txt', 'old');
+        file_put_contents($heldSrc . '/a.txt', 'new');
+        chmod($held, 0555);
+        try {
+            $this->assertFalse(Updater::copyOver($heldSrc, $held));
+        } finally {
+            chmod($held, 0755);
+        }
+
+        $unreadable = $this->tmp() . '/secret-src';
+        $plain = $this->tmp() . '/plain-dest';
+        mkdir($unreadable, 0755, true);
+        mkdir($plain, 0755, true);
+        file_put_contents($unreadable . '/secret', 'x');
+        chmod($unreadable . '/secret', 0000);
+        try {
+            $this->assertFalse(Updater::copyOver($unreadable, $plain));
+        } finally {
+            chmod($unreadable . '/secret', 0644);
+        }
+    }
+
+    public function testAnEmptyHomeIsNotAZipInstall(): void
+    {
+        $home = getenv('HOME');
+        putenv('HOME=');
+        try {
+            $this->assertSame('unknown', Updater::detectMethod('/.local/share/runnerdeck', self::NO_FACTS));
+        } finally {
+            putenv($home === false ? 'HOME' : 'HOME=' . $home);
+        }
+    }
+
+    public function testRemoveDirIgnoresAMissingPath(): void
+    {
+        $file = $this->tmp() . '/plain-file';
+        file_put_contents($file, 'keep');
+        $updater = new Updater(fopen('php://memory', 'w+'), fopen('php://memory', 'w+'), fopen('php://memory', 'r'));
+        $remove = new \ReflectionMethod($updater, 'removeDir');
+        $remove->invoke($updater, $file);
+        $this->assertSame('keep', (string) file_get_contents($file));
     }
 
     public function testAZipWithTheWrongLayoutInstallsNothing(): void
