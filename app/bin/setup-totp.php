@@ -7,6 +7,7 @@ require __DIR__ . '/../src/bootstrap.php';
 
 use RunnerDeck\Security\Auth;
 use RunnerDeck\Configuration\Config;
+use RunnerDeck\Security\QrCode;
 use RunnerDeck\Security\Totp;
 
 $color = function_exists('stream_isatty') && stream_isatty(STDOUT);
@@ -26,12 +27,18 @@ if (Config::authEnabled()) {
 
 $secret = Totp::generateSecret();
 $groups = implode(' ', str_split($secret, 4));
+$uri = Totp::provisioningUri($secret);
 
-echo "Add this key to your authenticator app (Google Authenticator, Authy,\n";
-echo "1Password, etc.) using manual/text entry — type: Time-based, digits: 6:\n\n";
+if ($color) {
+    echo QrCode::terminal($uri) . "\n\n";
+    echo "Scan the code above, or add this key by hand (time-based, 6 digits):\n\n";
+} else {
+    echo "Add this key to your authenticator app (Google Authenticator, Authy,\n";
+    echo "1Password, etc.) using manual/text entry — type: Time-based, digits: 6:\n\n";
+}
 echo '  ' . paint('1', $groups, $color) . "\n\n";
 echo "Or paste this URI if your app supports it:\n\n";
-echo '  otpauth://totp/RunnerDeck?secret=' . $secret . '&issuer=RunnerDeck' . "\n\n";
+echo '  ' . $uri . "\n\n";
 
 echo 'Enter the 6-digit code your app shows now, to confirm it works: ';
 $code = trim((string) fgets(STDIN));

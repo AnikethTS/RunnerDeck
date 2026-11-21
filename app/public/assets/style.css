@@ -1176,6 +1176,14 @@ main {
 }
 .setup-card h2 { margin: 0 0 6px; font-size: 17px; }
 .setup-card > p.muted { margin: 0 0 18px; font-size: 13px; }
+.setup-qr {
+  width: min(220px, 100%);
+  margin: 0 0 16px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 8px;
+}
+.setup-qr svg { display: block; width: 100%; height: auto; }
 
 .settings-main {
   padding: 16px var(--page-gutter) 72px;

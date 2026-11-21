@@ -15,6 +15,11 @@ final class Totp
         return self::base32Encode(random_bytes(20));
     }
 
+    public static function provisioningUri(string $secret): string
+    {
+        return 'otpauth://totp/RunnerDeck?secret=' . $secret . '&issuer=RunnerDeck';
+    }
+
     public static function code(string $base32Secret, ?int $timestamp = null): string
     {
         $counter = intdiv($timestamp ?? time(), self::PERIOD);
