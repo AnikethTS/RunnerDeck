@@ -179,7 +179,7 @@ final class Api
             self::$respondOverride = null;
             $handler($data, $status);
         }
-        exit;
+        Halt::now();
     }
 
     public static function force(): bool

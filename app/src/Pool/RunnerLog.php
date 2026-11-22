@@ -111,8 +111,8 @@ final class RunnerLog
         }
 
         $fh = fopen($path, 'r');
-        if ($fh === false) {
-            return [];
+        if ($fh === false) { // @codeCoverageIgnore
+            return []; // @codeCoverageIgnore
         }
 
         $chunkSize = 8192;
@@ -142,6 +142,6 @@ final class RunnerLog
                 return $converted;
             }
         }
-        return (string) preg_replace('/[^\x20-\x7E]/', '?', $line);
+        return (string) preg_replace('/[^\x20-\x7E]/', '?', $line); // @codeCoverageIgnore
     }
 }

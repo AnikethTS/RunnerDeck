@@ -23,6 +23,14 @@ final class HostPressure
     /** @var (callable(): ?int)|null available RAM in KiB */
     private static $ramFake = null;
 
+    private static ?string $meminfoFake = null;
+
+    /** Test seam. Null reads /proc/meminfo. */
+    public static function fakeMeminfo(?string $contents): void
+    {
+        self::$meminfoFake = $contents;
+    }
+
     /** @param (callable(): array{0: ?int, 1: ?int})|null $handler */
     public static function fakeDisk(?callable $handler): void
     {
@@ -149,7 +157,7 @@ final class HostPressure
         if (\RunnerDeck\System\Platform::isWindows()) {
             return \RunnerDeck\Pool\WindowsProcess::memoryKb()[1] ?? null;
         }
-        $meminfo = @file_get_contents('/proc/meminfo');
+        $meminfo = self::$meminfoFake ?? @file_get_contents('/proc/meminfo');
         if ($meminfo !== false && preg_match('/^MemAvailable:\s+(\d+)\s+kB/m', $meminfo, $m)) {
             return (int) $m[1];
         }

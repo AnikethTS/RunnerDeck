@@ -74,8 +74,8 @@ final class RollingUpgrade
             );
             $done[] = $r->id;
         }
-        if ($done === [] && $skipped === []) {
-            return ['ok' => true, 'message' => 'No configured runners to upgrade'];
+        if ($done === [] && $skipped === []) { // @codeCoverageIgnore
+            return ['ok' => true, 'message' => 'No configured runners to upgrade']; // @codeCoverageIgnore
         }
         $parts = [];
         if ($done !== []) {

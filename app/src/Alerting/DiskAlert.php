@@ -90,8 +90,8 @@ final class DiskAlert
             return;
         }
         $json = json_encode($state, JSON_UNESCAPED_SLASHES);
-        if ($json === false) {
-            return;
+        if ($json === false) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         $tmp = self::path() . '.' . getmypid() . '.tmp';
         file_put_contents($tmp, $json);

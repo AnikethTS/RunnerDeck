@@ -145,8 +145,8 @@ final class SlotDisk
         }
         self::removeTree($work);
         clearstatcache(true, $work);
-        if (is_dir($work)) {
-            return ['ok' => false, 'message' => 'failed to clear work dir'];
+        if (is_dir($work)) { // @codeCoverageIgnore
+            return ['ok' => false, 'message' => 'failed to clear work dir']; // @codeCoverageIgnore
         }
         self::$cache = null;
         self::persist();

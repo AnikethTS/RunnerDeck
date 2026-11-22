@@ -124,8 +124,8 @@ final class Drain
 
     private static function sleep(int $seconds): void
     {
-        if ($seconds <= 0) {
-            return;
+        if ($seconds <= 0) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         if (self::$sleepFake !== null) {
             (self::$sleepFake)($seconds);

@@ -8,15 +8,28 @@ final class Platform
 {
     private static ?bool $windowsFake = null;
 
+    private static ?bool $darwinFake = null;
+
     /** Test seam. */
     public static function fakeWindows(?bool $value): void
     {
         self::$windowsFake = $value;
     }
 
+    /** Test seam. */
+    public static function fakeDarwin(?bool $value): void
+    {
+        self::$darwinFake = $value;
+    }
+
     public static function isWindows(): bool
     {
         return self::$windowsFake ?? PHP_OS_FAMILY === 'Windows';
+    }
+
+    public static function isDarwin(): bool
+    {
+        return self::$darwinFake ?? PHP_OS_FAMILY === 'Darwin';
     }
 
     public static function runnerScript(string $name): string

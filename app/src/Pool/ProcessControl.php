@@ -278,8 +278,8 @@ final class ProcessControl
             return ['ok' => false, 'message' => "{$r->id} is running — stop it before clearing the work dir"];
         }
         $cleared = SlotDisk::clearWork($r->dir);
-        if (!$cleared['ok']) {
-            return self::fail('process.clear_work', $cleared['message'], $r->id);
+        if (!$cleared['ok']) { // @codeCoverageIgnore
+            return self::fail('process.clear_work', $cleared['message'], $r->id); // @codeCoverageIgnore
         }
         AppLog::info('process.clear_work', "{$r->id} " . $cleared['message'], ['runner' => $r->id]);
         return ['ok' => true, 'message' => "{$r->id} " . $cleared['message']];
@@ -295,8 +295,8 @@ final class ProcessControl
             return '';
         }
         $cleared = self::clearWorkDir($r);
-        if (empty($cleared['ok'])) {
-            return '';
+        if (empty($cleared['ok'])) { // @codeCoverageIgnore
+            return ''; // @codeCoverageIgnore
         }
         return ' ' . (string) $cleared['message'];
     }

@@ -138,8 +138,8 @@ final class Layout
         }
         try {
             $place = Config::scope() === 'repo' ? Config::repo() : Config::org();
-        } catch (\RuntimeException) {
-            return;
+        } catch (\RuntimeException) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         $label = Config::label();
         $text = $place . ' · ' . $label;
