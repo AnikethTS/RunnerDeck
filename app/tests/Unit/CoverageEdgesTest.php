@@ -595,8 +595,8 @@ final class CoverageEdgesTest extends TestCase
         $recent = \RunnerDeck\Logging\AppLog::recent(5);
         $this->assertSame('runner-1', $recent[array_key_last($recent)]['runner'] ?? null);
 
-        putenv('RUNNERDECK_GH_BIN=/bin/true');
-        $this->assertSame('/bin/true', \RunnerDeck\Configuration\Config::ghBinary());
+        putenv('RUNNERDECK_GH_BIN=' . PHP_BINARY);
+        $this->assertSame(PHP_BINARY, \RunnerDeck\Configuration\Config::ghBinary());
         file_put_contents($this->dir . '/hosts.yml', "github.com:\n");
         putenv('GH_CONFIG_DIR=' . $this->dir);
         $this->assertNull(\RunnerDeck\Configuration\Config::ghConfigDir());
