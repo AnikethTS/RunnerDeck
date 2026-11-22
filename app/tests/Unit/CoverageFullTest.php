@@ -119,6 +119,8 @@ final class CoverageFullTest extends TestCase
     #[RunInSeparateProcess]
     public function testMeminfoWithoutAReadableTotal(): void
     {
+        Platform::fakeDarwin(false);
+        Platform::fakeWindows(false);
         \RunnerDeck\Host\SystemStats::fakeMeminfo("MemTotal: nope\n");
         \RunnerDeck\Host\HostPressure::fakeMeminfo("MemTotal: 1 kB\n");
         $this->assertNull(\RunnerDeck\Host\SystemStats::snapshot()['mem_total_kb']);
@@ -367,6 +369,8 @@ final class CoverageFullTest extends TestCase
         file_put_contents($listener, 'x');
         symlink($listener, $root . '/' . $pid . '/exe');
         file_put_contents($root . '/' . $pid . '/cmdline', 'Runner.Listener');
+        Platform::fakeDarwin(false);
+        Platform::fakeWindows(false);
         RunnerPool::fakeProcRoot($root);
         $found = RunnerPool::liveListenersByDir();
         $this->assertSame((int) $pid, $found[dirname($listener, 2)] ?? null);
@@ -468,6 +472,7 @@ final class CoverageFullTest extends TestCase
         $skipped = Provisioner::installOsDependencies($slot);
         $this->assertStringContainsString('no OS libraries', $skipped['message']);
         Platform::fakeWindows(false);
+        Platform::fakeDarwin(false);
         Provisioner::fakeAlpine(true);
         $alpine = Provisioner::installOsDependencies($slot);
         $this->assertStringContainsString('Alpine', $alpine['message']);

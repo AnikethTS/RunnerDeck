@@ -459,6 +459,8 @@ final class CoverageLastTest extends TestCase
         ]);
         Provisioner::fakeHost(false, false);
         Provisioner::fakeAlpine(false);
+        Platform::fakeDarwin(false);
+        Platform::fakeWindows(false);
         Shell::fake(fn (array $cmd): array => $this->downloadShell($cmd, $this->dir . '/deps.tar.gz'));
         $libs = Provisioner::ensureInstalled($deps, true);
         $this->assertFalse($libs['ok']);
