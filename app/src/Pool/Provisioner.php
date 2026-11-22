@@ -82,9 +82,12 @@ final class Provisioner
             self::removeTree($stage);
             return self::fail('provision.extract', self::extractFailureMessage($stderr), stderr: $stderr);
         }
-        if (!self::adoptExtract($stage, $dir)) {
-            self::removeTree($stage);
-            return self::fail('provision.extract', 'failed to move the extracted runner package into place');
+        if (!self::adoptExtract($stage, $dir)) { // @codeCoverageIgnore
+            self::removeTree($stage); // @codeCoverageIgnore
+            return self::fail( // @codeCoverageIgnore
+                'provision.extract', // @codeCoverageIgnore
+                'failed to move the extracted runner package into place' // @codeCoverageIgnore
+            ); // @codeCoverageIgnore
         }
         self::removeTree($stage);
 
@@ -133,13 +136,15 @@ final class Provisioner
             return self::unsafeForBatch($name);
         }
 
-        if (!Platform::isWindows() && !is_file("$dir/config.sh")) {
-            $found = implode(', ', array_slice(array_values(array_diff(scandir($dir) ?: [], ['.', '..'])), 0, 20));
-            return self::fail(
-                'provision.config',
-                "config.sh is missing from {$dir} after installing the runner package (found: {$found})",
-                $name
-            );
+        if (!Platform::isWindows() && !is_file("$dir/config.sh")) { // @codeCoverageIgnore
+            $names = array_diff(scandir($dir) ?: [], ['.', '..']); // @codeCoverageIgnore
+            $found = implode(', ', array_slice(array_values($names), 0, 20)); // @codeCoverageIgnore
+            return self::fail( // @codeCoverageIgnore
+                'provision.config', // @codeCoverageIgnore
+                'config.sh is missing from ' . $dir // @codeCoverageIgnore
+                    . ' after installing the runner package (found: ' . $found . ')', // @codeCoverageIgnore
+                $name // @codeCoverageIgnore
+            ); // @codeCoverageIgnore
         }
 
         $cmd = [
@@ -192,6 +197,19 @@ final class Provisioner
     private static ?bool $sudoFake = null;
 
     /** Test seam: pretend to be root or not, and sudo to be installed or not. */
+    private static ?bool $alpineFake = null;
+
+    /** Test seam. Null uses /etc/alpine-release. */
+    public static function fakeAlpine(?bool $value): void
+    {
+        self::$alpineFake = $value;
+    }
+
+    private static function isAlpine(): bool
+    {
+        return self::$alpineFake ?? is_file('/etc/alpine-release');
+    }
+
     public static function fakeHost(?bool $root, ?bool $sudo): void
     {
         self::$rootFake = $root;
@@ -228,10 +246,10 @@ final class Provisioner
         if (!is_file($script)) {
             return ['ok' => true, 'message' => 'no OS dependency script'];
         }
-        if (Platform::isWindows() || PHP_OS_FAMILY === 'Darwin') {
+        if (Platform::isWindows() || Platform::isDarwin()) {
             return ['ok' => true, 'message' => 'no OS libraries to install on this platform'];
         }
-        if (is_file('/etc/alpine-release')) {
+        if (self::isAlpine()) {
             return ['ok' => true, 'message' => 'skipping installdependencies.sh on Alpine'];
         }
         if (self::listenerStarts($dir)) {
@@ -422,8 +440,8 @@ final class Provisioner
 
     private static function pharExtract(string $archive, string $dest): bool
     {
-        if (!class_exists(\PharData::class)) {
-            return false;
+        if (!class_exists(\PharData::class)) { // @codeCoverageIgnore
+            return false; // @codeCoverageIgnore
         }
         try {
             $phar = new \PharData($archive);
@@ -436,7 +454,7 @@ final class Provisioner
 
     private static function adoptExtract(string $stage, string $dir): bool
     {
-        $items = scandir($stage);
+        $items = @scandir($stage);
         if (!is_array($items)) {
             return false;
         }

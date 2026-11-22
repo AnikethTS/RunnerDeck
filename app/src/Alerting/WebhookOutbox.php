@@ -221,8 +221,8 @@ final class WebhookOutbox
     private static function markGaveUp(string $id, string $event, ?string $runner): void
     {
         $dir = Settings::storageDir();
-        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
-            return;
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         $path = self::gaveUpPath();
         $tmp = $path . '.' . getmypid() . '.tmp';

@@ -28,6 +28,14 @@ final class RunnerPool
 
     private static float $listenersCachedAt = 0;
 
+    /** Test seam for the Linux /proc listener scan. */
+    private static string $procRoot = '/proc';
+
+    public static function fakeProcRoot(?string $root): void
+    {
+        self::$procRoot = $root ?? '/proc';
+    }
+
     /** @param array<string, int>|null $map */
     public static function fakeLiveListeners(?array $map): void
     {
@@ -52,6 +60,17 @@ final class RunnerPool
         self::$checkProcessFake = $handler;
     }
 
+    private static function compareIds(string $a, string $b): int
+    {
+        if ($a === 'runner-base') {
+            return -1;
+        }
+        if ($b === 'runner-base') {
+            return 1;
+        }
+        return (int) substr($a, 7) <=> (int) substr($b, 7);
+    }
+
     /**
      * @param bool $measureDisk Walk `_work` with du. The dashboard needs sizes.
      *     Commands leave this off so a large work folder does not stall them.
@@ -67,15 +86,7 @@ final class RunnerPool
                 $ids[] = $id;
             }
         }
-        usort($ids, function (string $a, string $b) {
-            if ($a === 'runner-base') {
-                return -1;
-            }
-            if ($b === 'runner-base') {
-                return 1;
-            }
-            return (int) substr($a, 7) <=> (int) substr($b, 7);
-        });
+        usort($ids, [self::class, 'compareIds']);
 
         if ($measureDisk) {
             $dirs = [];
@@ -260,7 +271,7 @@ final class RunnerPool
 
         $map = match (true) {
             Platform::isWindows() => self::liveListenersByDirWindows(),
-            PHP_OS_FAMILY === 'Darwin' => self::liveListenersByDirDarwin(),
+            Platform::isDarwin() => self::liveListenersByDirDarwin(),
             default => self::liveListenersByDirLinux(),
         };
 
@@ -288,7 +299,7 @@ final class RunnerPool
     private static function liveListenersByDirLinux(): array
     {
         $map = [];
-        foreach (glob('/proc/[0-9]*', GLOB_ONLYDIR) ?: [] as $procDir) {
+        foreach (glob(self::$procRoot . '/[0-9]*', GLOB_ONLYDIR) ?: [] as $procDir) {
             $exe = @readlink("$procDir/exe");
             if ($exe !== false && str_ends_with($exe, '/bin/Runner.Listener')) {
                 $pid = (int) basename($procDir);
@@ -361,11 +372,11 @@ final class RunnerPool
     /** Best-effort command line for a pid, so a reused pid isn't mistaken for a live runner. */
     private static function processCommand(int $pid): ?string
     {
-        if (PHP_OS_FAMILY === 'Darwin') {
+        if (Platform::isDarwin()) {
             $result = Shell::exec(['ps', '-p', (string) $pid, '-o', 'command='], 3);
             return $result['code'] === 0 && trim($result['stdout']) !== '' ? trim($result['stdout']) : null;
         }
-        $cmdline = @file_get_contents("/proc/$pid/cmdline");
+        $cmdline = @file_get_contents(self::$procRoot . "/$pid/cmdline");
         return $cmdline !== false ? $cmdline : null;
     }
 

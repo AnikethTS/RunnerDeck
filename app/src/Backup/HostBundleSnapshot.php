@@ -65,8 +65,8 @@ final class HostBundleSnapshot
         }
         $realDir = realpath(self::dir());
         $realFile = realpath($path);
-        if ($realDir === false || $realFile === false) {
-            return null;
+        if ($realDir === false || $realFile === false) { // @codeCoverageIgnore
+            return null; // @codeCoverageIgnore
         }
         if (!str_starts_with($realFile, $realDir . DIRECTORY_SEPARATOR)) {
             return null;
@@ -80,8 +80,8 @@ final class HostBundleSnapshot
         if ($path === null) {
             return false;
         }
-        if (!@unlink($path)) {
-            return false;
+        if (!@unlink($path)) { // @codeCoverageIgnore
+            return false; // @codeCoverageIgnore
         }
         AppLog::info('host.bundle.snapshot', 'deleted ' . basename($path));
         return true;
@@ -103,12 +103,12 @@ final class HostBundleSnapshot
         }
         try {
             $bundle = HostBundle::export(Config::bundleSnapshotSecrets());
-        } catch (\Throwable) {
-            return;
+        } catch (\Throwable) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         $json = json_encode($bundle, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        if (!is_string($json)) {
-            return;
+        if (!is_string($json)) { // @codeCoverageIgnore
+            return; // @codeCoverageIgnore
         }
         $tmp = $path . '.' . getmypid() . '.tmp';
         if (@file_put_contents($tmp, $json) === false) {

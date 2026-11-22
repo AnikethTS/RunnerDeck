@@ -8,6 +8,14 @@ use RunnerDeck\Configuration\Config;
 
 final class Banner
 {
+    private static ?bool $ttyFake = null;
+
+    /** Test seam. Null uses the real stdout tty check. */
+    public static function fakeTty(?bool $tty): void
+    {
+        self::$ttyFake = $tty;
+    }
+
     private const REPO_URL = 'https://github.com/AnikethTS/RunnerDeck';
 
     private const LOGO = [
@@ -71,10 +79,11 @@ final class Banner
         if (getenv('NO_COLOR') !== false || !defined('STDOUT') || !function_exists('stream_isatty')) {
             return false;
         }
-        if (!stream_isatty(STDOUT)) {
+        $tty = self::$ttyFake ?? stream_isatty(STDOUT);
+        if (!$tty) {
             return false;
         }
-        if (PHP_OS_FAMILY === 'Windows') {
+        if (\RunnerDeck\System\Platform::isWindows()) {
             return function_exists('sapi_windows_vt100_support') && @sapi_windows_vt100_support(STDOUT, true);
         }
         return true;

@@ -13,6 +13,14 @@ use RunnerDeck\Pool\RunnerPool;
 // just filtered to runner pids elsewhere) rather than a second shell call.
 final class SystemStats
 {
+    private static ?string $meminfoFake = null;
+
+    /** Test seam. Null reads /proc/meminfo. */
+    public static function fakeMeminfo(?string $contents): void
+    {
+        self::$meminfoFake = $contents;
+    }
+
     /** @return array{cpu_percent: ?float, mem_used_kb: int, mem_total_kb: ?int, mem_percent: ?float, cpu_cores: int} */
     public static function snapshot(): array
     {
@@ -43,7 +51,7 @@ final class SystemStats
             return $cores = max(1, (int) getenv('NUMBER_OF_PROCESSORS'));
         }
 
-        $result = PHP_OS_FAMILY === 'Darwin'
+        $result = Platform::isDarwin()
             ? Shell::exec(['sysctl', '-n', 'hw.ncpu'], 3)
             : Shell::exec(['nproc'], 3);
 
@@ -65,14 +73,14 @@ final class SystemStats
             return $mem = $memory[0] ?? null;
         }
 
-        if (PHP_OS_FAMILY === 'Darwin') {
+        if (Platform::isDarwin()) {
             $result = Shell::exec(['sysctl', '-n', 'hw.memsize'], 3);
             return $mem = $result['code'] === 0 && trim($result['stdout']) !== ''
                 ? intdiv((int) trim($result['stdout']), 1024)
                 : null;
         }
 
-        $meminfo = @file_get_contents('/proc/meminfo');
+        $meminfo = self::$meminfoFake ?? @file_get_contents('/proc/meminfo');
         if ($meminfo !== false && preg_match('/^MemTotal:\s+(\d+)\s+kB/m', $meminfo, $m)) {
             return $mem = (int) $m[1];
         }

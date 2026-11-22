@@ -8,6 +8,14 @@ final class SecurityHeaders
 {
     private static ?string $nonce = null;
     private static bool $sent = false;
+    private static ?string $sapiFake = null;
+
+    /** Test seam. Also lets a second send() run. */
+    public static function fakeSapi(?string $sapi): void
+    {
+        self::$sapiFake = $sapi;
+        self::$sent = false;
+    }
 
     public static function nonce(): string
     {
@@ -58,7 +66,7 @@ final class SecurityHeaders
         foreach (self::lines() as $line) {
             header($line);
         }
-        if (PHP_SAPI === 'cli-server') {
+        if ((self::$sapiFake ?? PHP_SAPI) === 'cli-server') {
             header('Connection: close');
         }
     }

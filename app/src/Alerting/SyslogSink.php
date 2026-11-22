@@ -16,6 +16,14 @@ final class SyslogSink
     /** @var (callable(string): bool)|null */
     private static $sendFake = null;
 
+    private static ?string $hostFake = null;
+
+    /** Test seam. Null uses gethostname(). */
+    public static function fakeHost(?string $host): void
+    {
+        self::$hostFake = $host;
+    }
+
     /** @param (callable(string): bool)|null $handler */
     public static function fakeSend(?callable $handler): void
     {
@@ -45,7 +53,7 @@ final class SyslogSink
     public static function format(string $event, string $message): string
     {
         $ts = gmdate('Y-m-d\TH:i:s') . 'Z';
-        $host = gethostname();
+        $host = self::$hostFake ?? gethostname();
         if (!is_string($host) || $host === '') {
             $host = 'localhost';
         }

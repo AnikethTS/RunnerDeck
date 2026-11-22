@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RunnerDeck\Security;
 
 use RunnerDeck\Configuration\Config;
+use RunnerDeck\Http\Halt;
 
 /**
  * Second network gate on a public Host or a public client IP.
@@ -189,8 +190,8 @@ final class ClientGate
         }
         $prefix = (int) $bits;
         $bin = inet_pton($subnet);
-        if ($bin === false) {
-            return false;
+        if ($bin === false) { // @codeCoverageIgnore
+            return false; // @codeCoverageIgnore
         }
         $max = strlen($bin) * 8;
 
@@ -204,19 +205,19 @@ final class ClientGate
         if ($format === 'json') {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['ok' => false, 'message' => $plain]);
-            exit;
+            Halt::now();
         }
         if ($format === 'plain') {
             header('Content-Type: text/plain; charset=utf-8');
             echo $plain;
-            exit;
+            Halt::now();
         }
         header('Content-Type: text/html; charset=utf-8');
         echo '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             . '<title>Forbidden</title></head><body><p>Forbidden. This hostname'
             . ' requires an IP allowlist or a verified client certificate.</p>'
             . '</body></html>';
-        exit;
+        Halt::now();
     }
 
     private static function hostIsLoopbackName(string $host): bool

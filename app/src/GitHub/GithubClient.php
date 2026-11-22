@@ -51,6 +51,29 @@ final class GithubClient
         return ['logged_in' => true, 'message' => 'OK'];
     }
 
+    /** @var (callable(): array<string, array{id: int, status: string, busy: bool, labels: string[], os: string}>)|null */
+    private static $fetchFake = null;
+
+    private static int $cacheMissesLeft = 0;
+
+    /**
+     * Test seam for listRunners() when the shell is not faked.
+     *
+     * @param null|(callable(): array<string, array{
+     *     id: int, status: string, busy: bool, labels: string[], os: string
+     * }>) $fetch
+     */
+    public static function fakeFetch(?callable $fetch): void
+    {
+        self::$fetchFake = $fetch;
+    }
+
+    /** The next $times cache reads miss, then the file is used again. */
+    public static function missCache(int $times): void
+    {
+        self::$cacheMissesLeft = $times;
+    }
+
     /**
      * A standalone login + org/repo-access health check for one-shot callers
      * (app/bin/doctor.php). Dashboard::snapshot() does NOT use this — on the
@@ -125,6 +148,9 @@ final class GithubClient
      */
     private static function fetchRunnerList(): array
     {
+        if (self::$fetchFake !== null) {
+            return (self::$fetchFake)();
+        }
         $path = self::accountBase() . '/actions/runners?per_page=100';
         $result = self::runApi(['--paginate', $path, '-q', '.runners[]'], 30);
         if (!$result['ok']) {
@@ -143,6 +169,10 @@ final class GithubClient
      */
     private static function readRunnerListCache(bool $allowStale): ?array
     {
+        if (self::$cacheMissesLeft > 0) {
+            self::$cacheMissesLeft--;
+            return null;
+        }
         $raw = @file_get_contents(self::runnerListCachePath());
         if (!is_string($raw) || $raw === '') {
             return null;

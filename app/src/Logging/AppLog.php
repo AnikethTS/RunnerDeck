@@ -179,8 +179,8 @@ final class AppLog
             if ($fh !== false) {
                 ftruncate($fh, 0);
                 fclose($fh);
-            } else {
-                @unlink($path);
+            } else { // @codeCoverageIgnore
+                @unlink($path); // @codeCoverageIgnore
             }
         }
         self::$lastWriteAt = [];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RunnerDeck\Security;
 
 use RunnerDeck\Configuration\Config;
+use RunnerDeck\Http\Halt;
 use RunnerDeck\Configuration\Settings;
 use RunnerDeck\Logging\AppLog;
 use RunnerDeck\Presentation\Layout;
@@ -93,7 +94,7 @@ final class Auth
         }
         if (self::isEnabled()) {
             header('Location: login.php');
-            exit;
+            Halt::now();
         }
         self::sendSetupRequired();
     }
@@ -108,7 +109,7 @@ final class Auth
             http_response_code(401);
             header('Content-Type: application/json');
             echo json_encode(['ok' => false, 'message' => 'authentication required']);
-            exit;
+            Halt::now();
         }
         http_response_code(403);
         header('Content-Type: application/json');
@@ -116,7 +117,7 @@ final class Auth
             'ok' => false,
             'message' => 'TOTP login is required off loopback. Run php app/bin/setup-totp.php on the server.',
         ]);
-        exit;
+        Halt::now();
     }
 
     public static function rejectPlainIfProtected(): void
@@ -129,12 +130,12 @@ final class Auth
             http_response_code(401);
             header('Content-Type: text/plain');
             echo 'unauthorized';
-            exit;
+            Halt::now();
         }
         http_response_code(403);
         header('Content-Type: text/plain');
         echo 'TOTP login is required off loopback. Run php app/bin/setup-totp.php on the server.';
-        exit;
+        Halt::now();
     }
 
     public static function sendSetupRequired(): never
@@ -152,7 +153,7 @@ final class Auth
         echo '<p><code>php app/bin/setup-totp.php</code></p>';
         echo '</div></main>';
         Layout::htmlClose(['assets/js/theme.js']);
-        exit;
+        Halt::now();
     }
 
     public static function isLoggedIn(): bool

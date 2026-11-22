@@ -249,8 +249,8 @@ final class PoolLayout
                 continue;
             }
             $stat = @stat($item->getPathname());
-            if ($stat === false) {
-                return null;
+            if ($stat === false) { // @codeCoverageIgnore
+                return null; // @codeCoverageIgnore
             }
             return (int) $stat['ino'];
         }

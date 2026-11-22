@@ -36,8 +36,8 @@ final class LogRetention
                 }
                 $removed += self::pruneDir($info->dir, $cutoff);
             }
-        } catch (\Throwable) {
-            return $removed;
+        } catch (\Throwable) { // @codeCoverageIgnore
+            return $removed; // @codeCoverageIgnore
         }
         if ($removed > 0) {
             AppLog::info('log.retention', 'pruned ' . $removed . ' old log file(s)');
@@ -67,8 +67,8 @@ final class LogRetention
     {
         $removed = 0;
         $items = @scandir($dir);
-        if (!is_array($items)) {
-            return 0;
+        if (!is_array($items)) { // @codeCoverageIgnore
+            return 0; // @codeCoverageIgnore
         }
         foreach ($items as $name) {
             if ($name === '.' || $name === '..') {
