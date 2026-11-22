@@ -568,4 +568,71 @@ final class DashboardViewTest extends TestCase
         $this->assertStringContainsString('(1)', $html);
         $this->assertStringNotContainsString(' open', $html);
     }
+
+    public function testRowHtmlShowsCpuMemoryAndLongUptime(): void
+    {
+        $html = \RunnerDeck\Presentation\DashboardView::rowHtml([
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => false,
+            'local_running' => true,
+            'pid' => 4,
+            'cpu_percent' => 91.2,
+            'rss_kb' => 2048,
+            'uptime_seconds' => 90061,
+            'disk_kb' => 12,
+            'log_tail' => [],
+            'github' => ['status' => 'online', 'busy' => false, 'os' => '', 'labels' => ['', 'linux']],
+            'extra_labels' => ['gpu'],
+        ]);
+        $this->assertStringContainsString('not configured', $html);
+        $this->assertStringContainsString('91.2', $html);
+        $this->assertStringContainsString('2 MB', $html);
+        $this->assertStringContainsString('1d 1h', $html);
+        $this->assertStringContainsString('12 KB disk', $html);
+        $this->assertStringContainsString('label-chip', $html);
+        $this->assertStringContainsString('mini-bar-critical', $html);
+        $base = [
+            'id' => 'runner-1',
+            'agent_name' => 'acme-1',
+            'configured' => true,
+            'local_running' => true,
+            'pid' => 4,
+            'cpu_percent' => 40,
+            'rss_kb' => 512,
+            'log_tail' => [],
+            'github' => null,
+        ];
+        $view = \RunnerDeck\Presentation\DashboardView::class;
+        $this->assertStringContainsString('30s', $view::rowHtml(['uptime_seconds' => 30] + $base));
+        $this->assertStringContainsString('2m', $view::rowHtml(['uptime_seconds' => 120] + $base));
+        $this->assertStringContainsString('1h 1m', $view::rowHtml(['uptime_seconds' => 3660] + $base));
+        $this->assertStringContainsString('mini-bar-warn', $view::rowHtml(['cpu_percent' => 60] + $base));
+        $quiet = $view::rowHtml(['cpu_percent' => null] + $base);
+        $this->assertStringNotContainsString('resource-usage', $quiet);
+    }
+
+    public function testBannerAndStatsCoverTheRemainingBranches(): void
+    {
+        $banner = \RunnerDeck\Presentation\DashboardView::healthBanner([
+            'health' => ['logged_in' => true, 'org_access_ok' => false, 'message' => 'denied'],
+        ]);
+        $this->assertStringContainsString('cannot read runners', $banner['text']);
+        $this->assertSame('', \RunnerDeck\Presentation\DashboardView::lastUpdated(['generated_at' => 0]));
+        $this->assertSame('stat-critical', \RunnerDeck\Presentation\DashboardView::loadClass(90));
+        $view = \RunnerDeck\Presentation\DashboardView::pollView([
+            'generated_at' => time(),
+            'health' => ['logged_in' => true, 'org_access_ok' => true, 'message' => 'OK'],
+            'maintenance' => false,
+            'runners' => [],
+            'stats' => ['running' => 0, 'total' => 0],
+            'errors' => [],
+            'gh_remaining' => 12,
+            'empty_message' => 'No slots yet',
+        ]);
+        $this->assertStringContainsString('12 API left', $view['stats']['github_sub'] ?? $view['rows_html']);
+        $empty = \RunnerDeck\Presentation\DashboardView::emptyRowsHtml('No slots yet');
+        $this->assertStringContainsString('No slots yet', $empty);
+        $this->assertStringContainsString('12 API left', $view['stats']['github_sub']);
+    }
 }
