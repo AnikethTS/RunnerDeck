@@ -11,6 +11,7 @@ use RunnerDeck\Configuration\Config;
 use RunnerDeck\Security\Csrf;
 use RunnerDeck\Security\HostingWarnings;
 use RunnerDeck\Presentation\Layout;
+use RunnerDeck\Security\SecurityHeaders;
 use RunnerDeck\GitHub\GithubApp;
 use RunnerDeck\Backup\HostBundle;
 use RunnerDeck\Configuration\SettingsPortable;
@@ -931,4 +932,35 @@ Layout::stickyHeadEnd();
     </div>
   </main>
 <?php
+echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";
+?>
+    (function () {
+      var form = document.getElementById('settings-form');
+      if (!form) return;
+      var start = new URLSearchParams(new FormData(form)).toString();
+      var dirty = false;
+      function refresh() {
+        dirty = new URLSearchParams(new FormData(form)).toString() !== start;
+      }
+      form.addEventListener('input', refresh);
+      form.addEventListener('change', refresh);
+      form.addEventListener('submit', function () { dirty = false; });
+      window.addEventListener('beforeunload', function (event) {
+        if (!dirty) return;
+        event.preventDefault();
+        event.returnValue = '';
+      });
+      document.querySelectorAll('.page-nav a').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          if (!dirty) return;
+          event.preventDefault();
+          if (window.confirm('Leave settings without saving changes?')) {
+            dirty = false;
+            window.location.href = link.href;
+          }
+        });
+      });
+    })();
+<?php
+echo "  </script>\n";
 Layout::htmlClose(['assets/js/theme.js']);

@@ -9,6 +9,7 @@ use RunnerDeck\Security\Csrf;
 use RunnerDeck\Security\QrCode;
 use RunnerDeck\Security\Totp;
 use RunnerDeck\Presentation\Layout;
+use RunnerDeck\Security\SecurityHeaders;
 
 Auth::requirePageAccess();
 
@@ -71,7 +72,10 @@ Layout::topbarEnd();
           Then enter the 6-digit code the app shows.
         </p>
         <div class="setup-qr"><?= QrCode::svg(Totp::provisioningUri($secret)) ?></div>
-        <p><code><?= htmlspecialchars(implode(' ', str_split($secret, 4))) ?></code></p>
+        <p class="setup-secret">
+          <code id="totp-secret"><?= htmlspecialchars(implode(' ', str_split($secret, 4))) ?></code>
+          <button type="button" id="totp-copy" class="btn btn-sm">Copy</button>
+        </p>
         <form method="post" class="settings-form">
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>" />
           <label for="code">Code</label>
@@ -100,4 +104,20 @@ Layout::topbarEnd();
     </div>
   </main>
 <?php
+if ($secret !== null && $recoveryCodes === []) :
+    $jsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    echo '  <script' . SecurityHeaders::nonceAttr() . ">\n";
+    echo '    (function () {' . "\n";
+    echo '      var raw = ' . json_encode($secret, $jsonFlags) . ";\n";
+    echo '      var button = document.getElementById("totp-copy");' . "\n";
+    echo '      if (!button) return;' . "\n";
+    echo '      button.addEventListener("click", function () {' . "\n";
+    echo '        navigator.clipboard.writeText(raw).then(function () {' . "\n";
+    echo '          button.textContent = "Copied";' . "\n";
+    echo '          window.setTimeout(function () { button.textContent = "Copy"; }, 1500);' . "\n";
+    echo '        });' . "\n";
+    echo '      });' . "\n";
+    echo '    })();' . "\n";
+    echo "  </script>\n";
+endif;
 Layout::htmlClose(['assets/js/theme.js']);
