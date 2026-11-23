@@ -18,6 +18,7 @@ function initDashboard() {
   const bannerEl = document.getElementById('health-banner');
   const lastUpdatedEl = document.getElementById('last-updated');
   const exportBtn = document.getElementById('btn-export');
+  const exportCsvBtn = document.getElementById('btn-export-csv');
   let lastSnapshot = null;
   let lastRowsKey = '';
   let chartSample = '';
@@ -770,18 +771,68 @@ function initDashboard() {
     }
   });
 
-  exportBtn.addEventListener('click', () => {
-    if (!lastSnapshot) return;
-    const blob = new window.Blob([JSON.stringify(lastSnapshot.runners, null, 2)], { type: 'application/json' });
+  function csvCell(value) {
+    const text = value === null || value === undefined ? '' : String(value);
+    if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  }
+
+  function runnersCsv(runners) {
+    const headers = [
+      'id', 'agent_name', 'local_running', 'github_status', 'busy', 'cpu_percent', 'rss_kb', 'uptime_seconds',
+    ];
+    const lines = [headers.join(',')];
+    runners.forEach((runner) => {
+      const github = runner.github && typeof runner.github === 'object' ? runner.github : null;
+      lines.push([
+        runner.id,
+        runner.agent_name,
+        runner.local_running ? 'true' : 'false',
+        github ? (github.status || '') : '',
+        github ? (github.busy ? 'true' : 'false') : '',
+        runner.cpu_percent ?? '',
+        runner.rss_kb ?? '',
+        runner.uptime_seconds ?? '',
+      ].map(csvCell).join(','));
+    });
+    return `${lines.join('\r\n')}\r\n`;
+  }
+
+  function downloadSnapshot(filename, type, body) {
+    const blob = new window.Blob([body], { type });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `runnerdeck-runners-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+  }
+
+  function snapshotStamp() {
+    return new Date().toISOString().replace(/[:.]/g, '-');
+  }
+
+  exportBtn.addEventListener('click', () => {
+    if (!lastSnapshot) return;
+    downloadSnapshot(
+      `runnerdeck-runners-${snapshotStamp()}.json`,
+      'application/json',
+      JSON.stringify(lastSnapshot.runners, null, 2),
+    );
   });
+
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+      if (!lastSnapshot) return;
+      downloadSnapshot(
+        `runnerdeck-runners-${snapshotStamp()}.csv`,
+        'text/csv',
+        runnersCsv(lastSnapshot.runners),
+      );
+    });
+  }
 
   document.getElementById('btn-refresh').addEventListener('click', (e) => {
     withLoading(e.currentTarget, 'Refreshing…', async () => {

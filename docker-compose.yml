@@ -16,7 +16,7 @@ services:
       - ${RUNNERDECK_DATA_DIR:-../runnerdeck-data}:/data:z
       # Host `gh auth login` (read-only). Comment this out to authenticate
       # inside the container instead — `gh auth login` has to write here.
-      - ~/.config/gh:/root/.config/gh:ro,z
+      - ~/.config/gh:/home/runnerdeck/.config/gh:ro,z
     environment:
       RUNNERDECK_SCOPE: org
       RUNNERDECK_ORG: your-org-name

@@ -26,12 +26,16 @@ COPY . .
 ENV RUNNERDECK_POOL_DIR=/data/runners
 ENV RUNNERDECK_SETTINGS_FILE=/data/storage/settings.json
 ENV RUNNERDECK_HISTORY_FILE=/data/storage/db/history.sqlite
-RUN mkdir -p /data/runners /data/storage/db \
+RUN groupadd --system --gid 1000 runnerdeck \
+    && useradd --system --uid 1000 --gid runnerdeck --create-home \
+        --home-dir /home/runnerdeck --shell /usr/sbin/nologin runnerdeck \
+    && mkdir -p /data/runners /data/storage/db /home/runnerdeck/.config \
+    && chown -R runnerdeck:runnerdeck /data /home/runnerdeck \
     && chmod 0755 /app/docker/entrypoint.sh
 
+ENV HOME=/home/runnerdeck
 ENV RUNNERDECK_BIND_HOST=0.0.0.0
-# GitHub's config.sh refuses UID 0 without this.
-ENV RUNNER_ALLOW_RUNASROOT=1
+USER runnerdeck
 
 EXPOSE 8090
 ENTRYPOINT ["/app/docker/entrypoint.sh"]

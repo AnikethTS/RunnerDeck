@@ -65,6 +65,7 @@ $tip = [
     'poolDisk' => Layout::infoIcon('Disk used by runner slot directories on this host, including _work.'),
     'refresh' => Layout::hoverHelp('Reload pool status from this host and GitHub.'),
     'export' => Layout::hoverHelp('Download the current dashboard snapshot as JSON.'),
+    'exportCsv' => Layout::hoverHelp('Download the same snapshot as CSV for a spreadsheet.'),
     'add' => Layout::hoverHelp('Create a new slot and install GitHub’s runner package on this host.'),
     'startAll' => Layout::hoverHelp('Start every stopped slot that is allowed to run.'),
     'stopAll' => Layout::hoverHelp(
@@ -316,6 +317,8 @@ Layout::topbarEnd(!$needsSetup);
           <button id="btn-stop-all" class="btn btn-critical help-hover"<?= $tip['stopAll'] ?>>Stop all</button>
           <button id="btn-refresh" class="btn btn-quiet help-hover"<?= $tip['refresh'] ?>>Refresh</button>
           <button id="btn-export" type="button" class="btn btn-quiet help-hover"<?= $tip['export'] ?>>Export</button>
+          <button id="btn-export-csv" type="button" class="btn btn-quiet help-hover"<?= $tip['exportCsv'] ?>
+            >CSV</button>
           <details class="pool-menu">
             <summary class="btn">Pool</summary>
             <div class="pool-menu-panel">

@@ -6,6 +6,16 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- TOTP setup shows a Copy button that puts the raw secret on the clipboard, without the spaces used in the on-screen grouping.
+- Settings asks before a page-nav link leaves the form with unsaved changes, and the browser warns on close or reload. Saving does not warn.
+- The dashboard downloads the current runner snapshot as CSV next to the existing JSON export.
+
+### Changed
+
+- The Docker image runs as uid 1000 (`runnerdeck`). The host data directory must be writable by that user. `gh` config mounts at `/home/runnerdeck/.config/gh`.
+
 ### Fixed
 
 - `runnerdeck update` upgrades a copy installed by `install.sh` in `~/.local/share/runnerdeck`. It downloads the release zip, checks the SHA-256, and copies it over that folder. `.env`, `storage`, and `runners` stay.

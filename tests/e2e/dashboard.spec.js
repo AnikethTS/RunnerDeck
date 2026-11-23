@@ -420,6 +420,36 @@ test('JSON export includes filtered-out runners and uses the latest snapshot', a
   await expect(page.locator('a[download^="runnerdeck-runners-"]')).toHaveCount(0);
 });
 
+test('CSV export quotes commas and covers an empty pool', async ({ page }) => {
+  const runners = [
+    fixtureRunner({ id: 'runner-base', agent_name: 'ci, "worker"' }),
+  ];
+  await mockStatus(page, runners);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'CSV', exact: true }).click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toMatch(/^runnerdeck-runners-\d{4}-\d{2}-\d{2}T.*\.csv$/);
+  const csv = await readFile(await download.path(), 'utf8');
+  expect(csv.split('\r\n')[0]).toBe(
+    'id,agent_name,local_running,github_status,busy,cpu_percent,rss_kb,uptime_seconds',
+  );
+  expect(csv).toContain('"ci, ""worker"""');
+  expect(csv).toContain('runner-base');
+  expect(csv).toContain('true,online,false,12.5,204800,305');
+
+  await mockStatus(page, []);
+  await page.locator('#btn-refresh').click();
+  const emptyPending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'CSV', exact: true }).click();
+  const empty = await emptyPending;
+  const emptyCsv = await readFile(await empty.path(), 'utf8');
+  expect(emptyCsv.trim()).toBe(
+    'id,agent_name,local_running,github_status,busy,cpu_percent,rss_kb,uptime_seconds',
+  );
+});
+
 test('JSON export supports an empty runner pool', async ({ page }) => {
   await mockStatus(page, []);
   await page.goto('/');
@@ -623,6 +653,35 @@ test('Local process sorts independently by CPU and uptime, including absent valu
   await expect(cpu.locator('.sort-caret')).toBeEmpty();
   await expect(page.locator('th[aria-sort]')).toHaveCount(1);
   await expect(page.locator('thead th')).toHaveCount(6);
+});
+
+test('settings warns before leaving unsaved changes and stays quiet after a save', async ({ page }) => {
+  await page.goto('/settings.php');
+  await page.locator('#settings-label').fill('self-hosted-dirty');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('link', { name: 'Dashboard' }).click();
+  await expect(page).toHaveURL(/settings\.php/);
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('link', { name: 'Dashboard' }).click();
+  await expect(page).toHaveURL(/index\.php/);
+
+  await page.goto('/settings.php');
+  let warned = false;
+  page.once('dialog', () => { warned = true; });
+  await page.locator('#settings-save').click();
+  await expect(page).toHaveURL(/index\.php/);
+  expect(warned).toBe(false);
+});
+
+test('totp setup copies the secret without display spaces', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/totp_setup.php');
+  await page.getByRole('button', { name: /Generate/ }).click();
+  const shown = (await page.locator('#totp-secret').innerText()).replace(/\s+/g, '');
+  await page.getByRole('button', { name: 'Copy' }).click();
+  await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(shown);
 });
 
 test('settings page toggles scope fields and persists a change', async ({ page }) => {

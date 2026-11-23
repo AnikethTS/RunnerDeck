@@ -32,21 +32,27 @@ stays stopped.
   database, and `runnerdeck.log`. It sits next to the checkout, not inside
   it, so Node does not walk up to this repo's `package.json` and treat
   `hashFiles` as an ES module. Delete that directory to reset RunnerDeck.
-  The entrypoint `chown`s `/data` to `RUNNERDECK_DATA_UID` /
-  `RUNNERDECK_DATA_GID` (default `1000`), the user who will also run the
-  dashboard on the host. Set those to `id -u` and `id -g` when 1000 is
-  not you.
+  The image runs as uid `1000` (`runnerdeck`). Create the host data
+  directory so that user can write it before the first start:
+
+  ```bash
+  mkdir -p ../runnerdeck-data
+  sudo chown 1000:1000 ../runnerdeck-data
+  ```
+
+  The entrypoint only `chown`s `/data` when the container itself is root.
+  `RUNNERDECK_DATA_UID` / `RUNNERDECK_DATA_GID` apply in that case.
 - **GitHub CLI auth** — pick **one**:
   1. Run `gh auth login` on the host, then keep the default
-     `~/.config/gh:/root/.config/gh:ro` volume so the container reuses that
-     token read-only.
+     `~/.config/gh:/home/runnerdeck/.config/gh:ro` volume so the container
+     reuses that token read-only.
   2. Comment out that volume line and run
      `docker compose exec runnerdeck gh auth login` once inside the
      container. That command *writes* `~/.config/gh`, so it cannot work
      with the read-only mount still attached.
-- The image runs as root and sets `RUNNER_ALLOW_RUNASROOT=1` because
-  GitHub's `config.sh` otherwise refuses UID 0. It installs the shared
-  libraries the .NET runner needs (`libicu72`, `libkrb5-3`, …).
+- The process is uid 1000, so GitHub's `config.sh` does not need
+  `RUNNER_ALLOW_RUNASROOT`. The image installs the shared libraries the
+  .NET runner needs (`libicu72`, `libkrb5-3`, …).
   `installdependencies.sh` is apt-based; it only runs on this image if the
   runner will not start without it.
 - Edit the `environment:` block in `docker-compose.yml` for your org/repo
