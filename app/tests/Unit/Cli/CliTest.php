@@ -95,6 +95,40 @@ final class CliTest extends TestCase
         $this->assertNull($data['runners'][0]['disk_kb']);
     }
 
+    public function testListLabelKeepsSlotsThatHaveEveryExtraLabel(): void
+    {
+        \RunnerDeck\Pool\SlotFlags::setExtraLabels($this->pool . '/runner-1', ['gpu']);
+        \RunnerDeck\Pool\SlotFlags::setExtraLabels($this->pool . '/runner-2', ['gpu', 'large']);
+        putenv('RUNNERDECK_LABEL=gpu');
+        putenv('RUNNERDECK_EXTRA_LABELS=linux');
+
+        [$code, $out] = $this->cli(['list', '--label', 'gpu']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1', $out);
+        $this->assertStringContainsString('runner-2', $out);
+
+        [$code, $json] = $this->cli(['list', '--label', 'gpu', '--label', 'large', '--json']);
+        $data = json_decode($json, true);
+        $this->assertSame(0, $code);
+        $this->assertSame(['runner-2'], array_column($data['runners'], 'id'));
+
+        [$code, $empty] = $this->cli(['list', '--label', 'linux', '--json']);
+        $data = json_decode($empty, true);
+        $this->assertSame(0, $code);
+        $this->assertSame([], $data['runners']);
+        $this->assertStringNotContainsString('runnerdeck add', $empty);
+
+        [$code, , $err] = $this->cli(['status', '--label', 'bad label!']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('labels must be', $err);
+
+        [, $labels] = $this->cli(['__complete', 'labels']);
+        $this->assertSame("gpu\nlarge\n", $labels);
+
+        putenv('RUNNERDECK_LABEL');
+        putenv('RUNNERDECK_EXTRA_LABELS');
+    }
+
     public function testListWithNoRunnersPointsAtAdd(): void
     {
         putenv('RUNNERDECK_POOL_DIR=' . $this->pool . '/empty');

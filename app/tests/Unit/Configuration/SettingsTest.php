@@ -275,4 +275,73 @@ final class SettingsTest extends TestCase
         $this->expectException(RuntimeException::class);
         \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
     }
+
+    #[RunInSeparateProcess]
+    public function testEnvironmentAndDotEnvOverrideTheSavedFile(): void
+    {
+        $dir = sys_get_temp_dir() . '/runnerdeck-env-override-' . uniqid();
+        mkdir($dir);
+        $settings = $dir . '/settings.json';
+        $envFile = $dir . '/.env';
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $settings);
+        \RunnerDeck\Configuration\Settings::save([
+            'RUNNERDECK_POOL_CAP' => '4',
+            'RUNNERDECK_IDLE_STOP_MINUTES' => '9',
+            'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://saved.example/hook',
+        ]);
+        file_put_contents(
+            $envFile,
+            "# comment\n"
+            . "   \n"
+            . "NOEQUALS\n"
+            . "=novalue\n"
+            . "OTHER_KEY=1\n"
+            . "RUNNERDECK_LABEL=from-dotenv\n"
+            . "RUNNERDECK_POOL_CAP=2\n"
+            . "RUNNERDECK_CRASH_WEBHOOK_URL=https://secret.example/hook\n"
+        );
+        putenv('RUNNERDECK_POOL_CAP');
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_LABEL=from-process');
+
+        \RunnerDeck\Configuration\Config::fakeEnvFile($envFile);
+        \RunnerDeck\Configuration\Config::bootstrapEnv();
+
+        $this->assertSame(2, \RunnerDeck\Configuration\Config::poolCap());
+        $this->assertSame(9, \RunnerDeck\Configuration\Config::idleStopMinutes());
+        $this->assertSame('from-process', \RunnerDeck\Configuration\Config::label());
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_POOL_CAP'));
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_LABEL'));
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_CRASH_WEBHOOK_URL'));
+        $this->assertFalse(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_IDLE_STOP_MINUTES'));
+
+        $note = \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_POOL_CAP');
+        $this->assertStringContainsString('Overridden by the environment', $note);
+        $this->assertStringContainsString('RUNNERDECK_POOL_CAP', $note);
+        $this->assertSame('', \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_IDLE_STOP_MINUTES'));
+        $secret = \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_CRASH_WEBHOOK_URL');
+        $this->assertStringNotContainsString('secret.example', $secret);
+        $shown = \RunnerDeck\Presentation\SettingsOverride::fieldValue(
+            'RUNNERDECK_CRASH_WEBHOOK_URL',
+            'https://hooks.example/secret'
+        );
+        $this->assertSame('', $shown);
+        $this->assertSame('4', \RunnerDeck\Presentation\SettingsOverride::fieldValue('RUNNERDECK_POOL_CAP', '4'));
+        $this->assertSame('', \RunnerDeck\Presentation\SettingsOverride::fieldValue('RUNNERDECK_AUTH_TOTP_SECRET', ''));
+
+        @unlink($settings);
+        @unlink($envFile);
+        @rmdir($dir);
+    }
+
+    #[RunInSeparateProcess]
+    public function testAMissingEnvFileDoesNotOverrideSavedSettings(): void
+    {
+        putenv('RUNNERDECK_POOL_CAP');
+        \RunnerDeck\Configuration\Config::fakeEnvFile($this->settingsFile . '.missing');
+        \RunnerDeck\Configuration\Config::bootstrapEnv();
+        \RunnerDeck\Configuration\Config::bootstrapEnv();
+        $this->assertFalse(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_POOL_CAP'));
+    }
 }

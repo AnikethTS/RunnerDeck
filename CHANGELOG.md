@@ -12,6 +12,9 @@ follows [SemVer](https://semver.org/).
 - Settings asks before a page-nav link leaves the form with unsaved changes, and the browser warns on close or reload. Saving does not warn.
 - The dashboard downloads the current runner snapshot as CSV next to the existing JSON export.
 - `runnerdeck doctor --json` prints `{ok, checks}` for scripts. A warning stays `ok: true` with the warning text in `detail`. `--quiet` still prints the JSON.
+- The dashboard tab title shows `RunnerDeck · N busy · M offline` after each status poll, and drops a count that is zero.
+- `runnerdeck list` and `status` take repeatable `--label`. A runner matches when its extra labels include every one. The shared pool label does not count.
+- Settings shows `Overridden by the environment` and the variable name when the process environment or `.env` supplies a field. The TOTP secret and crash webhook URL are not printed.
 
 ### Changed
 

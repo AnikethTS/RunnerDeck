@@ -1382,6 +1382,12 @@ form:has(select[name="scope"] option[value="org"]:checked) [id$="-repo-field"] {
   color: var(--text-muted);
   line-height: 1.45;
 }
+.settings-override {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--status-warning);
+  line-height: 1.45;
+}
 
 .settings-form { display: flex; flex-direction: column; }
 .settings-form label {

@@ -29,6 +29,26 @@ function initDashboard() {
     return lastSnapshot ? sortRunners(filteredRunners(lastSnapshot.runners)) : [];
   }
 
+  function paintTabTitle(runners) {
+    const list = Array.isArray(runners) ? runners : [];
+    if (list.length === 0) {
+      document.title = 'RunnerDeck';
+      return;
+    }
+    let busy = 0;
+    let offline = 0;
+    list.forEach((runner) => {
+      const github = runner && runner.github;
+      if (!github) return;
+      if (github.busy) busy += 1;
+      if (github.status && github.status !== 'online') offline += 1;
+    });
+    const parts = [];
+    if (busy > 0) parts.push(`${busy} busy`);
+    if (offline > 0) parts.push(`${offline} offline`);
+    document.title = parts.length === 0 ? 'RunnerDeck' : `RunnerDeck · ${parts.join(' · ')}`;
+  }
+
   function paintFilterCount(visible) {
     const el = document.getElementById('runner-filter-count');
     if (!el) return;
@@ -62,6 +82,7 @@ function initDashboard() {
 
   function render(snapshot) {
     lastSnapshot = snapshot;
+    paintTabTitle(snapshot.runners);
     exportBtn.disabled = false;
     const h = snapshot.health;
     if (snapshot.view && typeof snapshot.view.banner_text === 'string') {

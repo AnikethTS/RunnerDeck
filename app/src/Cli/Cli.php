@@ -19,8 +19,9 @@ final class Cli
 Usage: runnerdeck <command> [options]
 
 Runners:
-  list, ls [--watch]           Show the runners on this machine
-  status [--watch]             Like list, plus what GitHub reports for each
+  list, ls [--watch] [--label L]
+                               Show the runners on this machine
+  status [--watch] [--label L] Like list, plus what GitHub reports for each
   start <runner...|--all>      Start runners
   stop <runner...|--all>       Stop runners (asks GitHub first; --force skips)
   restart <runner...|--all>   Stop, then start, runners
@@ -262,8 +263,12 @@ TXT;
     /** @param array<string, mixed> $flags */
     private function list(array $flags, bool $withGithub): int
     {
+        $labels = $this->requestedLabels($flags);
+        if ($labels === null) {
+            return 1;
+        }
         if (!isset($flags['watch'])) {
-            return $this->listOnce($withGithub);
+            return $this->listOnce($withGithub, $labels);
         }
         if ($this->json) {
             return $this->fail('--watch does not combine with --json');
@@ -273,19 +278,65 @@ TXT;
             if ($this->color) {
                 fwrite($this->out, "\033[H\033[2J");
             }
-            $this->listOnce($withGithub);
+            $this->listOnce($withGithub, $labels);
             usleep($this->keepFollowing === null ? $interval * 1000000 : 1000);
         }
         return 0;
     }
 
-    private function listOnce(bool $withGithub): int
+    /**
+     * Extra labels from repeated `--label`. Empty when the flag is absent.
+     * Null after printing the same rejection `add --label` uses.
+     *
+     * @param array<string, mixed> $flags
+     * @return list<string>|null
+     */
+    private function requestedLabels(array $flags): ?array
+    {
+        if (!isset($flags['label'])) {
+            return [];
+        }
+        $labels = Config::parseLabels(implode(',', (array) $flags['label']));
+        if ($labels === null) {
+            $this->fail('labels must be up to 12 names (letters, digits, dot, underscore, hyphen)');
+            return null;
+        }
+        return $labels;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @param list<string> $labels
+     * @return list<array<string, mixed>>
+     */
+    private function matchingExtraLabels(array $rows, array $labels): array
+    {
+        if ($labels === []) {
+            return $rows;
+        }
+        return array_values(array_filter(
+            $rows,
+            static function (array $row) use ($labels): bool {
+                $extra = is_array($row['extra_labels'] ?? null) ? $row['extra_labels'] : [];
+                foreach ($labels as $label) {
+                    if (!in_array($label, $extra, true)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        ));
+    }
+
+    /** @param list<string> $labels */
+    private function listOnce(bool $withGithub, array $labels): int
     {
         $github = $withGithub ? $this->githubRunners() : null;
         $rows = array_map(
             static fn (RunnerInfo $r): array => $r->toArray(),
             array_values(RunnerPool::discover(0))
         );
+        $rows = $this->matchingExtraLabels($rows, $labels);
         foreach ($rows as &$row) {
             $row['state'] = !$row['configured'] ? 'new' : ($row['local_running'] ? 'running' : 'stopped');
             if ($withGithub) {
@@ -300,7 +351,7 @@ TXT;
             }, $rows);
             return $this->say((string) json_encode(['ok' => true, 'runners' => $slim]));
         }
-        if ($rows === []) {
+        if ($rows === [] && $labels === []) {
             return $this->say('No runners yet. Add one with: runnerdeck add');
         }
         $head = sprintf('%-14s %-9s %-7s %-8s', 'RUNNER', 'STATE', 'PID', 'UPTIME')
@@ -446,12 +497,9 @@ TXT;
     /** @param array<string, mixed> $flags */
     private function add(array $flags): int
     {
-        $labels = [];
-        if (isset($flags['label'])) {
-            $labels = Config::parseLabels(implode(',', (array) $flags['label']));
-            if ($labels === null) {
-                return $this->fail('labels must be up to 12 names (letters, digits, dot, underscore, hyphen)');
-            }
+        $labels = $this->requestedLabels($flags);
+        if ($labels === null) {
+            return 1;
         }
         $name = isset($flags['name']) && is_string($flags['name']) ? trim($flags['name']) : '';
         $ephemeral = isset($flags['ephemeral']);
@@ -730,13 +778,32 @@ TXT;
     /** Hidden helper the completion scripts call. @param list<string> $args */
     private function complete(array $args): int
     {
-        $names = ($args[0] ?? '') === 'settings'
-            ? ConfigCommand::names()
-            : array_keys(RunnerPool::discover(0));
+        $kind = $args[0] ?? '';
+        if ($kind === 'settings') {
+            $names = ConfigCommand::names();
+        } elseif ($kind === 'labels') {
+            $names = self::poolExtraLabels();
+        } else {
+            $names = array_keys(RunnerPool::discover(0));
+        }
         foreach ($names as $name) {
             $this->say((string) $name);
         }
         return 0;
+    }
+
+    /** @return list<string> */
+    private static function poolExtraLabels(): array
+    {
+        $labels = [];
+        foreach (RunnerPool::discover(0) as $runner) {
+            foreach ($runner->extraLabels as $label) {
+                $labels[$label] = true;
+            }
+        }
+        $names = array_keys($labels);
+        sort($names);
+        return $names;
     }
 
     /** @param array<string, mixed> $flags */
