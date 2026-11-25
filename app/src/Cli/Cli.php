@@ -42,7 +42,7 @@ Setup:
                                Choose what RunnerDeck manages
   config list|get|set|unset    Read and change settings (see --all for names)
   auth status|login|totp       GitHub sign-in and dashboard TOTP login
-  doctor                       Check this machine's setup
+  doctor [--json]              Check this machine's setup
 
 Program:
   run [--open] [PORT]          Start the dashboard (default port 8090)
