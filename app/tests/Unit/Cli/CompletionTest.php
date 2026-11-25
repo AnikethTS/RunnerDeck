@@ -18,6 +18,7 @@ final class CompletionTest extends TestCase
             }
             $this->assertStringContainsString('__complete runners', $script);
             $this->assertStringContainsString('__complete settings', $script);
+            $this->assertStringContainsString('__complete labels', $script);
         }
     }
 

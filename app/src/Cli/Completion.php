@@ -27,6 +27,8 @@ final class Completion
 
     private const FLAGS = ['--all', '--force', '--json', '--yes', '--quiet', '--no-color', '--timeout', '--help'];
 
+    private const LIST_COMMANDS = ['list', 'ls', 'status'];
+
     public static function script(string $shell): ?string
     {
         return match ($shell) {
@@ -42,6 +44,7 @@ final class Completion
     {
         $commands = implode(' ', self::COMMANDS);
         $runner = implode('|', self::RUNNER_COMMANDS);
+        $list = implode('|', self::LIST_COMMANDS);
         $flags = implode(' ', self::FLAGS);
         $cases = '';
         foreach (self::SUBCOMMANDS as $cmd => $subs) {
@@ -57,7 +60,8 @@ _runnerdeck() {
         return
     fi
     case "\${COMP_WORDS[1]}" in
-{$cases}        {$runner}) words="\$(runnerdeck __complete runners 2>/dev/null) {$flags}" ;;
+{$cases}        {$list}) words="\$(runnerdeck __complete labels 2>/dev/null) --label --watch --json --help" ;;
+        {$runner}) words="\$(runnerdeck __complete runners 2>/dev/null) {$flags}" ;;
         *) words="{$flags}" ;;
     esac
     if [ "\${COMP_WORDS[1]}" = "config" ] && [ "\$COMP_CWORD" -ge 3 ]; then
@@ -74,6 +78,7 @@ BASH;
     {
         $commands = implode(' ', self::COMMANDS);
         $runner = implode('|', self::RUNNER_COMMANDS);
+        $list = implode('|', self::LIST_COMMANDS);
         $flags = implode(' ', self::FLAGS);
         $cases = '';
         foreach (self::SUBCOMMANDS as $cmd => $subs) {
@@ -89,7 +94,10 @@ _runnerdeck() {
         words_out=({$commands} --version --help)
     else
         case "\${words[2]}" in
-{$cases}            {$runner}) words_out=(\${(f)"\$(runnerdeck __complete runners 2>/dev/null)"} {$flags}) ;;
+{$cases}            {$list}) words_out=(
+                \${(f)"\$(runnerdeck __complete labels 2>/dev/null)"} --label --watch --json --help
+            ) ;;
+            {$runner}) words_out=(\${(f)"\$(runnerdeck __complete runners 2>/dev/null)"} {$flags}) ;;
             *) words_out=({$flags}) ;;
         esac
         if [[ "\${words[2]}" == config ]] && (( CURRENT >= 4 )); then
@@ -114,6 +122,10 @@ ZSH;
                 . implode(' ', $subs) . "\"\n";
         }
         $runner = implode(' ', self::RUNNER_COMMANDS);
+        $list = implode(' ', self::LIST_COMMANDS);
+        $out .= "complete -c runnerdeck -n \"__fish_seen_subcommand_from {$list}\" "
+            . "-a \"(runnerdeck __complete labels 2>/dev/null)\"\n";
+        $out .= "complete -c runnerdeck -n \"__fish_seen_subcommand_from {$list}\" -l label\n";
         $out .= "complete -c runnerdeck -n \"__fish_seen_subcommand_from {$runner}\" "
             . "-a \"(runnerdeck __complete runners 2>/dev/null)\"\n";
         $out .= "complete -c runnerdeck -n \"__fish_seen_subcommand_from config\" "
@@ -128,6 +140,7 @@ ZSH;
     {
         $commands = "'" . implode("','", self::COMMANDS) . "'";
         $runner = "'" . implode("','", self::RUNNER_COMMANDS) . "'";
+        $listed = "'" . implode("','", self::LIST_COMMANDS) . "'";
         $flags = "'" . implode("','", self::FLAGS) . "'";
         $subs = '';
         foreach (self::SUBCOMMANDS as $cmd => $list) {
@@ -147,6 +160,8 @@ Register-ArgumentCompleter -Native -CommandName runnerdeck -ScriptBlock {
         \$candidates = @(runnerdeck __complete settings)
     } elseif (\$subs.ContainsKey(\$words[1])) {
         \$candidates = \$subs[\$words[1]]
+    } elseif (@({$listed}) -contains \$words[1]) {
+        \$candidates = @(runnerdeck __complete labels) + @('--label','--watch','--json','--help')
     } elseif (@({$runner}) -contains \$words[1]) {
         \$candidates = @(runnerdeck __complete runners) + @({$flags})
     } else {

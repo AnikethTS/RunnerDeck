@@ -10,6 +10,22 @@ use RunnerDeck\System\Platform;
 
 final class Config
 {
+    /** @var array<string, true> Settings keys whose effective value came from the process environment or .env. */
+    private static array $envOverrides = [];
+
+    private static ?string $envFileFake = null;
+
+    /** Test seam. Null reads the repository .env. */
+    public static function fakeEnvFile(?string $path): void
+    {
+        self::$envFileFake = $path;
+    }
+
+    public static function overriddenByEnv(string $key): bool
+    {
+        return isset(self::$envOverrides[$key]);
+    }
+
     public static function bootstrapEnv(): void
     {
         static $done = false;
@@ -18,12 +34,35 @@ final class Config
         }
         $done = true;
 
-        Settings::applyToEnv();
-
-        $envFile = dirname(__DIR__, 3) . '/.env';
-        if (!is_file($envFile)) {
-            return;
+        // Real environment, then .env, then the saved settings file. A later
+        // layer fills only what the earlier ones left unset.
+        $overrides = [];
+        foreach (Settings::keys() as $key) {
+            if (getenv($key) !== false) {
+                $overrides[$key] = true;
+            }
         }
+        foreach (self::readEnvFile() as $key => $value) {
+            if (getenv($key) !== false) {
+                continue;
+            }
+            putenv($key . '=' . $value);
+            if (in_array($key, Settings::keys(), true)) {
+                $overrides[$key] = true;
+            }
+        }
+        Settings::applyToEnv();
+        self::$envOverrides = $overrides;
+    }
+
+    /** @return array<string, string> */
+    private static function readEnvFile(): array
+    {
+        $envFile = self::$envFileFake ?? dirname(__DIR__, 3) . '/.env';
+        if (!is_file($envFile)) {
+            return [];
+        }
+        $values = [];
         foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
             $line = trim($line);
             if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
@@ -31,11 +70,12 @@ final class Config
             }
             [$key, $value] = explode('=', $line, 2);
             $key = trim($key);
-            if ($key === '' || getenv($key) !== false) {
+            if ($key === '') {
                 continue;
             }
-            putenv($key . '=' . trim($value));
+            $values[$key] = trim($value);
         }
+        return $values;
     }
 
     public static function org(): string

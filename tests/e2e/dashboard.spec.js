@@ -300,6 +300,58 @@ test('the state filter narrows idle, busy, crashed, and mismatch rows', async ({
   await expect(page.locator('tr[data-runner="crash-one"]')).toBeVisible();
 });
 
+test('the tab title counts busy and offline runners from the poll', async ({ page }) => {
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'busy-one',
+      agent_name: 'busy-one',
+      github: { status: 'online', busy: true, labels: [], os: 'Linux' },
+    }),
+  ]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await expect(page).toHaveTitle('RunnerDeck · 1 busy');
+
+  await page.locator('#runner-filter').fill('not-a-runner');
+  await expect(page).toHaveTitle('RunnerDeck · 1 busy');
+
+  await page.unroute('**/api.php*action=status*');
+  await mockStatus(page, [
+    fixtureRunner({
+      id: 'busy-one',
+      agent_name: 'busy-one',
+      github: { status: 'online', busy: true, labels: [], os: 'Linux' },
+    }),
+    fixtureRunner({
+      id: 'off-one',
+      agent_name: 'off-one',
+      github: { status: 'offline', busy: false, labels: [], os: 'Linux' },
+    }),
+  ]);
+  await page.locator('#btn-refresh').click();
+  await expect(page).toHaveTitle('RunnerDeck · 1 busy · 1 offline');
+
+  await page.unroute('**/api.php*action=status*');
+  await mockStatus(page, [fixtureRunner({ id: 'idle-one', agent_name: 'idle-one' })]);
+  await page.locator('#btn-refresh').click();
+  await expect(page).toHaveTitle('RunnerDeck');
+});
+
+test('a filter that hides every runner says so', async ({ page }) => {
+  await mockStatus(page, [fixtureRunner({ id: 'runner-1', agent_name: 'alpha' })]);
+  await page.goto('/');
+  await page.locator('#btn-refresh').click();
+  await page.locator('#runner-filter').fill('zzz-no-match');
+  await expect(page.locator('#runner-rows .empty-row')).toHaveText('No runners match this filter.');
+  await expect(page.locator('#runner-filter-count')).toHaveText('0 of 1');
+  await page.locator('#runner-filter').fill('');
+  await expect(page.locator('tr[data-runner="runner-1"]')).toBeVisible();
+  await expect(page.locator('#runner-rows .empty-row')).toHaveCount(0);
+  await page.locator('#runner-state-filter').selectOption('busy');
+  await expect(page.locator('#runner-rows .empty-row')).toHaveText('No runners match this filter.');
+  await expect(page.locator('#runner-filter-count')).toHaveText('0 of 1');
+});
+
 test('needs attention and the filter count', async ({ page }) => {
   await mockStatus(page, [
     fixtureRunner({ id: 'ok-one', agent_name: 'ok-one' }),

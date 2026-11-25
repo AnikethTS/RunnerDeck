@@ -275,4 +275,54 @@ final class SettingsTest extends TestCase
         $this->expectException(RuntimeException::class);
         \RunnerDeck\Configuration\Settings::save(['RUNNERDECK_SCOPE' => 'org', 'RUNNERDECK_ORG' => 'my-org']);
     }
+
+    #[RunInSeparateProcess]
+    public function testEnvironmentAndDotEnvOverrideTheSavedFile(): void
+    {
+        $dir = sys_get_temp_dir() . '/runnerdeck-env-override-' . uniqid();
+        mkdir($dir);
+        $settings = $dir . '/settings.json';
+        $envFile = $dir . '/.env';
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $settings);
+        \RunnerDeck\Configuration\Settings::save([
+            'RUNNERDECK_POOL_CAP' => '4',
+            'RUNNERDECK_IDLE_STOP_MINUTES' => '9',
+            'RUNNERDECK_CRASH_WEBHOOK_URL' => 'https://saved.example/hook',
+        ]);
+        file_put_contents(
+            $envFile,
+            "RUNNERDECK_POOL_CAP=2\nRUNNERDECK_CRASH_WEBHOOK_URL=https://secret.example/hook\n"
+        );
+        putenv('RUNNERDECK_POOL_CAP');
+        putenv('RUNNERDECK_IDLE_STOP_MINUTES');
+        putenv('RUNNERDECK_CRASH_WEBHOOK_URL');
+        putenv('RUNNERDECK_LABEL=from-process');
+
+        \RunnerDeck\Configuration\Config::fakeEnvFile($envFile);
+        \RunnerDeck\Configuration\Config::bootstrapEnv();
+
+        $this->assertSame(2, \RunnerDeck\Configuration\Config::poolCap());
+        $this->assertSame(9, \RunnerDeck\Configuration\Config::idleStopMinutes());
+        $this->assertSame('from-process', \RunnerDeck\Configuration\Config::label());
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_POOL_CAP'));
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_LABEL'));
+        $this->assertTrue(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_CRASH_WEBHOOK_URL'));
+        $this->assertFalse(\RunnerDeck\Configuration\Config::overriddenByEnv('RUNNERDECK_IDLE_STOP_MINUTES'));
+
+        $note = \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_POOL_CAP');
+        $this->assertStringContainsString('Overridden by the environment', $note);
+        $this->assertStringContainsString('RUNNERDECK_POOL_CAP', $note);
+        $this->assertSame('', \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_IDLE_STOP_MINUTES'));
+        $secret = \RunnerDeck\Presentation\SettingsOverride::note('RUNNERDECK_CRASH_WEBHOOK_URL');
+        $this->assertStringNotContainsString('secret.example', $secret);
+        $shown = \RunnerDeck\Presentation\SettingsOverride::fieldValue(
+            'RUNNERDECK_CRASH_WEBHOOK_URL',
+            'https://hooks.example/secret'
+        );
+        $this->assertSame('', $shown);
+
+        @unlink($settings);
+        @unlink($envFile);
+        @rmdir($dir);
+    }
 }

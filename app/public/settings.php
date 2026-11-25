@@ -11,6 +11,7 @@ use RunnerDeck\Configuration\Config;
 use RunnerDeck\Security\Csrf;
 use RunnerDeck\Security\HostingWarnings;
 use RunnerDeck\Presentation\Layout;
+use RunnerDeck\Presentation\SettingsOverride;
 use RunnerDeck\Security\SecurityHeaders;
 use RunnerDeck\GitHub\GithubApp;
 use RunnerDeck\Backup\HostBundle;
@@ -297,6 +298,7 @@ Layout::stickyHeadEnd();
           <option value="org" <?= $current['scope'] === 'org' ? 'selected' : '' ?>>Organization</option>
           <option value="repo" <?= $current['scope'] === 'repo' ? 'selected' : '' ?>>Single repo</option>
         </select>
+        <?= SettingsOverride::note('RUNNERDECK_SCOPE') ?>
 
         <div id="settings-org-field" class="settings-field">
           <label for="settings-org">GitHub org</label>
@@ -307,6 +309,7 @@ Layout::stickyHeadEnd();
             placeholder="my-org"
             value="<?= htmlspecialchars($current['org']) ?>"
           />
+          <?= SettingsOverride::note('RUNNERDECK_ORG') ?>
         </div>
         <div id="settings-repo-field" class="settings-field">
           <label for="settings-repo">Repo (owner/repo)</label>
@@ -317,6 +320,7 @@ Layout::stickyHeadEnd();
             placeholder="owner/repo"
             value="<?= htmlspecialchars($current['repo']) ?>"
           />
+          <?= SettingsOverride::note('RUNNERDECK_REPO') ?>
         </div>
 
         <label for="settings-label">Runner label (optional)</label>
@@ -327,6 +331,7 @@ Layout::stickyHeadEnd();
           placeholder="self-hosted-runnerdeck"
           value="<?= htmlspecialchars($current['label']) ?>"
         />
+        <?= SettingsOverride::note('RUNNERDECK_LABEL') ?>
 
         <label for="settings-extra-labels">Extra labels (optional)</label>
         <input
@@ -336,6 +341,7 @@ Layout::stickyHeadEnd();
           placeholder="linux,gpu"
           value="<?= htmlspecialchars($current['extraLabels']) ?>"
         />
+        <?= SettingsOverride::note('RUNNERDECK_EXTRA_LABELS') ?>
         <p class="settings-hint">
           Extra labels apply on add and rename. Existing slots keep theirs until then.
         </p>
@@ -361,6 +367,7 @@ Layout::stickyHeadEnd();
             value="<?= htmlspecialchars($current['githubAppId']) ?>"
             placeholder="off"
           />
+          <?= SettingsOverride::note('RUNNERDECK_GITHUB_APP_ID') ?>
         </div>
         <div class="settings-field">
           <label for="settings-github-app-install">Installation ID (optional)</label>
@@ -374,6 +381,7 @@ Layout::stickyHeadEnd();
             value="<?= htmlspecialchars($current['githubAppInstallationId']) ?>"
             placeholder="off"
           />
+          <?= SettingsOverride::note('RUNNERDECK_GITHUB_APP_INSTALLATION_ID') ?>
         </div>
         </div>
         <div class="settings-field">
@@ -414,6 +422,7 @@ Layout::stickyHeadEnd();
           />
           Check GitHub for new RunnerDeck releases
         </label>
+        <?= SettingsOverride::note('RUNNERDECK_CHECK_UPDATES') ?>
 
         <label class="checkbox-label">
           <input
@@ -425,6 +434,7 @@ Layout::stickyHeadEnd();
           Auto-restart crashed runners
           <?= $help['autoRestart'] ?>
         </label>
+        <?= SettingsOverride::note('RUNNERDECK_AUTO_RESTART') ?>
 
         <label class="checkbox-label">
           <input
@@ -436,6 +446,7 @@ Layout::stickyHeadEnd();
           Start stopped slots when jobs are waiting on this label
           <?= $help['scale'] ?>
         </label>
+        <?= SettingsOverride::note('RUNNERDECK_SCALE_TO_QUEUE') ?>
 
         <div class="settings-grid">
         <div class="settings-field">
@@ -452,6 +463,7 @@ Layout::stickyHeadEnd();
             placeholder="no cap"
           />
           <p class="settings-hint">Never start more than this many slots (1–30). Leave blank for no cap.</p>
+          <?= SettingsOverride::note('RUNNERDECK_POOL_CAP') ?>
         </div>
 
         <div class="settings-field">
@@ -471,6 +483,7 @@ Layout::stickyHeadEnd();
             Stop a slot that has been GitHub-idle this long. Off while jobs are queued.
             Needs watch-auto-restart.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_IDLE_STOP_MINUTES') ?>
         </div>
 
         <label class="checkbox-label settings-span">
@@ -482,6 +495,7 @@ Layout::stickyHeadEnd();
           />
           Delete <code>_work</code> after idle-stop or drain-stop (not after a regular Stop)
         </label>
+        <?= SettingsOverride::note('RUNNERDECK_AUTO_CLEAR_WORK') ?>
 
         <div class="settings-field">
           <label for="settings-queue-wait">Queue wait alert (minutes, optional)</label>
@@ -499,6 +513,7 @@ Layout::stickyHeadEnd();
           <p class="settings-hint">
             Fire the crash webhook once when a job waits this long on this label.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_QUEUE_WAIT_MINUTES') ?>
         </div>
 
         <div class="settings-field">
@@ -517,6 +532,7 @@ Layout::stickyHeadEnd();
           <p class="settings-hint">
             Fire the crash webhook once when an in-progress job on this host has run this long.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_LONG_JOB_MINUTES') ?>
         </div>
 
         <div class="settings-field">
@@ -534,6 +550,7 @@ Layout::stickyHeadEnd();
           <p class="settings-hint">
             Refuse starts when the pool filesystem has less than this free. 0 = off. Default 1.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_MIN_FREE_DISK_GIB') ?>
         </div>
 
         <div class="settings-field">
@@ -552,6 +569,7 @@ Layout::stickyHeadEnd();
             Refuse starts when Linux MemAvailable is below this. 0 = off. Default 256.
             Ignored when RAM cannot be read (macOS).
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_MIN_FREE_RAM_MIB') ?>
         </div>
 
         <div class="settings-field">
@@ -571,6 +589,7 @@ Layout::stickyHeadEnd();
             Linux cgroup v2 <code>cpu.max</code> when a slot starts. Off if blank.
             macOS and missing cgroup permissions fail open (the runner still starts).
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_SLOT_CPU_PERCENT') ?>
         </div>
 
         <div class="settings-field">
@@ -587,6 +606,7 @@ Layout::stickyHeadEnd();
             placeholder="off"
           />
           <p class="settings-hint">cgroup v2 <code>memory.max</code> on start. 64–1048576. Blank = off.</p>
+          <?= SettingsOverride::note('RUNNERDECK_SLOT_MEMORY_MAX_MIB') ?>
         </div>
 
         <div class="settings-field">
@@ -602,6 +622,7 @@ Layout::stickyHeadEnd();
             value="<?= htmlspecialchars($current['drainTimeout']) ?>"
           />
           <p class="settings-hint">Wait for GitHub <code>busy=false</code> before stop. 1–3600, default 600.</p>
+          <?= SettingsOverride::note('RUNNERDECK_DRAIN_TIMEOUT') ?>
         </div>
         </div>
 
@@ -618,6 +639,7 @@ Layout::stickyHeadEnd();
           Writes <code>storage/bundles/host-YYYY-MM-DD.json</code> (UTC day), keeps 7 files.
           TOTP is never included. Needs watch-auto-restart or an open dashboard tab.
         </p>
+        <?= SettingsOverride::note('RUNNERDECK_BUNDLE_SNAPSHOT') ?>
         <label class="checkbox-label">
           <input
             type="checkbox"
@@ -627,6 +649,7 @@ Layout::stickyHeadEnd();
           />
           Include crash webhook URL in the daily snapshot
         </label>
+        <?= SettingsOverride::note('RUNNERDECK_BUNDLE_SNAPSHOT_SECRETS') ?>
 
         <div class="settings-field">
           <label for="settings-log-retention">Log retention (days, optional)</label>
@@ -646,6 +669,7 @@ Layout::stickyHeadEnd();
             <code>_diag</code> files older than this on idle slots. Never while
             the process is running. Never deletes <code>_work</code>. Needs watch.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_LOG_RETENTION_DAYS') ?>
         </div>
 
         <div class="settings-field">
@@ -663,6 +687,7 @@ Layout::stickyHeadEnd();
             Add and Upgrade agents only install this tarball. If GitHub omits the
             checksum, the pin is checked on the downloaded file instead.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_AGENT_SHA') ?>
         </div>
       </section>
       </section>
@@ -694,6 +719,7 @@ Layout::stickyHeadEnd();
           RFC5424 datagram to <code>/dev/log</code> (or <code>RUNNERDECK_SYSLOG_SOCKET</code>).
           Fail-open if the socket is missing.
         </p>
+        <?= SettingsOverride::note('RUNNERDECK_SYSLOG') ?>
 
         <div class="settings-field">
           <label for="settings-crash-webhook-url">Crash-loop webhook URL (optional)</label>
@@ -703,7 +729,10 @@ Layout::stickyHeadEnd();
               id="settings-crash-webhook-url"
               name="crash_webhook_url"
               placeholder="https://hooks.slack.com/services/..."
-              value="<?= htmlspecialchars($current['crashWebhookUrl']) ?>"
+              value="<?= htmlspecialchars(SettingsOverride::fieldValue(
+                  'RUNNERDECK_CRASH_WEBHOOK_URL',
+                  $current['crashWebhookUrl']
+              )) ?>"
             />
             <button
               type="submit"
@@ -726,6 +755,7 @@ Layout::stickyHeadEnd();
             Slack and Discord URLs get a native payload; anything else gets JSON.
             Test sends the URL as typed — no need to save first.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_CRASH_WEBHOOK_URL') ?>
         </div>
 
         <div class="settings-grid">
@@ -742,6 +772,7 @@ Layout::stickyHeadEnd();
             value="<?= htmlspecialchars($current['crashWebhookThreshold']) ?>"
           />
           <p class="settings-hint">Same URL. Fires once when the 7-day count first reaches N.</p>
+          <?= SettingsOverride::note('RUNNERDECK_CRASH_WEBHOOK_THRESHOLD') ?>
         </div>
 
         <div class="settings-field">
@@ -757,6 +788,7 @@ Layout::stickyHeadEnd();
             value="<?= htmlspecialchars($current['diskWebhookThreshold']) ?>"
           />
           <p class="settings-hint">Same URL. Fires once when a slot or the pool total first reaches N GiB.</p>
+          <?= SettingsOverride::note('RUNNERDECK_DISK_WEBHOOK_THRESHOLD') ?>
         </div>
         </div>
       </section>
@@ -777,6 +809,7 @@ Layout::stickyHeadEnd();
                 . Auth::recoveryCodesRemaining() . ' recovery code(s) left.'
             : 'Off on loopback. Off-loopback requests are refused until login is set up.' ?>
         </p>
+        <?= SettingsOverride::note('RUNNERDECK_AUTH_TOTP_SECRET') ?>
         <div class="settings-actions-row">
           <a href="totp_setup.php" class="btn btn-sm">
             <?= Auth::isEnabled() ? 'Replace secret' : 'Set up login' ?>
@@ -799,6 +832,7 @@ Layout::stickyHeadEnd();
           <p class="settings-hint">
             Sign out after this many minutes with no requests (1–1440). Hidden tabs count as idle.
           </p>
+          <?= SettingsOverride::note('RUNNERDECK_SESSION_IDLE_MINUTES') ?>
         </div>
       </section>
       <section class="settings-card">
@@ -820,6 +854,7 @@ Layout::stickyHeadEnd();
             placeholder="203.0.113.10&#10;192.168.0.0/16"
           ><?= htmlspecialchars($current['ipAllowlist']) ?></textarea>
           <p class="settings-hint">Comma or newline separated IPs or CIDRs. Not a secret.</p>
+          <?= SettingsOverride::note('RUNNERDECK_IP_ALLOWLIST') ?>
         </div>
         <label class="checkbox-label">
           <input type="checkbox" name="require_mtls" value="1"
@@ -831,6 +866,7 @@ Layout::stickyHeadEnd();
           <a href="https://github.com/AnikethTS/RunnerDeck/blob/main/docs/hosting.md">hosting.md</a>).
           Missing header is fail-closed.
         </p>
+        <?= SettingsOverride::note('RUNNERDECK_REQUIRE_MTLS') ?>
       </section>
       </section>
 
