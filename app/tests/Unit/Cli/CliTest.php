@@ -194,6 +194,60 @@ final class CliTest extends TestCase
         $this->assertStringContainsString('unknown runner: ghost', $err);
     }
 
+    public function testLogsJsonReturnsTheTailAndRejectsFollow(): void
+    {
+        [$code, $out] = $this->cli(['logs', 'runner-1', '--json', '-n', '2']);
+        $data = json_decode($out, true);
+        $this->assertSame(0, $code);
+        $this->assertTrue($data['ok']);
+        $this->assertSame('runner-1', $data['runner']);
+        $this->assertSame(['two', 'three'], $data['lines']);
+
+        file_put_contents($this->pool . '/runner-2/runner.log', '');
+        [$code, $empty] = $this->cli(['logs', 'runner-2', '--json']);
+        $this->assertSame(0, $code);
+        $this->assertSame([], json_decode($empty, true)['lines']);
+
+        [$code, $out] = $this->cli(['logs', 'runner-1', '--json', '--follow']);
+        $data = json_decode($out, true);
+        $this->assertSame(1, $code);
+        $this->assertFalse($data['ok']);
+        $this->assertStringContainsString('does not combine with --json', $data['message']);
+
+        [$code, $out] = $this->cli(['logs', 'ghost', '--json']);
+        $data = json_decode($out, true);
+        $this->assertSame(1, $code);
+        $this->assertFalse($data['ok']);
+        $this->assertStringContainsString('unknown runner: ghost', $data['message']);
+    }
+
+    public function testListAndStatusAppendExtraLabelsInStoredOrder(): void
+    {
+        \RunnerDeck\Pool\SlotFlags::setExtraLabels($this->pool . '/runner-1', ['gpu', 'large']);
+        \RunnerDeck\Pool\SlotFlags::setEphemeral($this->pool . '/runner-2', true);
+        [$code, $out] = $this->cli(['list']);
+        $this->assertSame(0, $code);
+        $this->assertMatchesRegularExpression('/runner-1\s.*\[gpu,large\]/', $out);
+        $this->assertMatchesRegularExpression('/runner-2\s.*\(ephemeral\)/', $out);
+        $this->assertDoesNotMatchRegularExpression('/runner-2\s.*\[/', $out);
+
+        \RunnerDeck\System\Shell::fake(fn (): array => [
+            'code' => 0,
+            'stdout' => json_encode(['runners' => []]),
+            'stderr' => '',
+        ]);
+        try {
+            [, $status] = $this->cli(['status']);
+        } finally {
+            \RunnerDeck\System\Shell::fake(null);
+        }
+        $this->assertMatchesRegularExpression('/runner-1\s.*\[gpu,large\]/', $status);
+
+        $json = json_decode($this->cli(['list', '--json'])[1], true);
+        $this->assertSame(['gpu', 'large'], $json['runners'][0]['extra_labels']);
+        $this->assertStringNotContainsString('[gpu,large]', $json['runners'][0]['agent_name']);
+    }
+
     public function testLogsFollowPrintsOnlyNewLines(): void
     {
         $out = fopen('php://memory', 'w+');

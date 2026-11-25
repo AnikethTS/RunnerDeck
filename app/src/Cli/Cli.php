@@ -23,20 +23,24 @@ Runners:
                                Show the runners on this machine
   status [--watch] [--label L] Like list, plus what GitHub reports for each
   start <runner...|--all>      Start runners
-  stop <runner...|--all>       Stop runners (asks GitHub first; --force skips)
-  restart <runner...|--all>   Stop, then start, runners
+  stop <runner...|--all> [--dry-run]
+                               Stop runners (asks GitHub first; --force skips)
+  restart <runner...|--all> [--dry-run]
+                               Stop, then start, runners
   rolling-restart <runner...|--all> [--timeout S]
                                Wait for each to be idle, then restart it
-  drain <runner...|--all> [--timeout S]
+  drain <runner...|--all> [--dry-run]
                                Wait until idle, then stop and clear work folders
   add [--name N] [--ephemeral] [--label L]
                                Add and start a new runner
-  delete <runner...>           Stop, deregister and remove runners
+  delete <runner...> [--dry-run]
+                               Stop, deregister and remove runners
   rename <runner> <name>       Re-register a runner under a new name
   force-idle <runner>          Clear a stuck "busy" state on GitHub
   resize <count>               Make the pool this many runners, including runner-base
   maintenance on|off|status    Drain everything and refuse starts, or lift that
-  logs <runner> [-n N] [-f]    Show a runner's log; -f follows it
+  logs <runner> [-n N] [-f] [--json]
+                               Show a runner's log; -f follows it
 
 Setup:
   setup [--scope S] [--org O | --repo OWNER/REPO]
@@ -57,6 +61,7 @@ Program:
 
 Options:
   --json         Machine-readable output
+  --dry-run      Show what stop, restart, delete, or drain would do
   --force        Do not check GitHub for a running job first
   --timeout S    How long to wait for a job to finish (seconds)
   --yes, -y      Do not ask before updating
@@ -151,7 +156,7 @@ TXT;
             'update', 'upgrade' => $this->update($flags),
             'restart' => $this->restart($flags, $args),
             'add' => $this->add($flags),
-            'delete', 'rm' => $this->delete($args),
+            'delete', 'rm' => $this->delete($flags, $args),
             'logs' => $this->logs($flags, $args),
             default => $this->fail("unknown command: {$command}\n\n" . self::USAGE),
         };
@@ -370,7 +375,12 @@ TXT;
             if ($withGithub) {
                 $line .= sprintf(' %-9s', $r['github']);
             }
-            $this->say($line . ' ' . $r['agent_name'] . ($r['ephemeral'] ? ' (ephemeral)' : ''));
+            $suffix = $r['ephemeral'] ? ' (ephemeral)' : '';
+            $extra = is_array($r['extra_labels'] ?? null) ? $r['extra_labels'] : [];
+            if ($extra !== []) {
+                $suffix .= ' [' . implode(',', $extra) . ']';
+            }
+            $this->say($line . ' ' . $r['agent_name'] . $suffix);
         }
         return 0;
     }
@@ -450,6 +460,9 @@ TXT;
         if ($runners === null) {
             return 1;
         }
+        if (isset($flags['dry-run'])) {
+            return $this->preview('stop', $runners);
+        }
         $blocked = Api::checkNoneBusy($runners, $this->force);
         if ($blocked !== null) {
             return $this->report($blocked);
@@ -467,6 +480,9 @@ TXT;
         $runners = $this->select($flags, $args);
         if ($runners === null) {
             return 1;
+        }
+        if (isset($flags['dry-run'])) {
+            return $this->preview('restart', $runners);
         }
         $blocked = Api::checkNoneBusy($runners, $this->force);
         if ($blocked !== null) {
@@ -506,12 +522,18 @@ TXT;
         return $this->report(ProcessControl::addRunner($name !== '' ? $name : null, $ephemeral, $labels));
     }
 
-    /** @param list<string> $args */
-    private function delete(array $args): int
+    /**
+     * @param array<string, mixed> $flags
+     * @param list<string> $args
+     */
+    private function delete(array $flags, array $args): int
     {
         $runners = $this->select([], $args);
         if ($runners === null) {
             return 1;
+        }
+        if (isset($flags['dry-run'])) {
+            return $this->preview('delete', $runners);
         }
         $blocked = Api::checkNoneBusy($runners, $this->force);
         if ($blocked !== null) {
@@ -529,11 +551,75 @@ TXT;
     }
 
     /**
+     * One line per runner. Nothing is signalled, deregistered, or deleted.
+     *
+     * @param 'stop'|'restart'|'delete'|'drain' $verb
+     * @param list<RunnerInfo> $runners
+     */
+    private function preview(string $verb, array $runners): int
+    {
+        $reasons = $this->force ? [] : $this->refusalReasons($runners);
+        $actions = [];
+        foreach ($runners as $runner) {
+            $reason = $reasons[$runner->id] ?? null;
+            $action = ['runner' => $runner->id, 'action' => $reason === null ? $verb : 'refuse'];
+            if ($reason !== null) {
+                $action['reason'] = $reason;
+            }
+            $actions[] = $action;
+        }
+        if ($this->json) {
+            $encoded = json_encode(
+                ['ok' => true, 'dry_run' => true, 'actions' => $actions],
+                JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR
+            );
+            return $this->say($encoded);
+        }
+        foreach ($actions as $action) {
+            $line = $action['runner'] . ' would ' . $action['action'];
+            if (isset($action['reason'])) {
+                $line .= ' (' . $action['reason'] . ')';
+            }
+            $this->say($line);
+        }
+        return 0;
+    }
+
+    /**
+     * @param list<RunnerInfo> $runners
+     * @return array<string, string> runner id => why the job check would block it
+     */
+    private function refusalReasons(array $runners): array
+    {
+        try {
+            $github = \RunnerDeck\GitHub\GithubClient::listRunners();
+        } catch (\RuntimeException $e) {
+            $reason = 'could not verify job status via GitHub API (' . $e->getMessage() . ')';
+            $reasons = [];
+            foreach ($runners as $runner) {
+                $reasons[$runner->id] = $reason;
+            }
+            return $reasons;
+        }
+        $reasons = [];
+        foreach ($runners as $runner) {
+            if ($github[$runner->agentName]['busy'] ?? false) {
+                $reasons[$runner->id] = 'currently running a job';
+            }
+        }
+        return $reasons;
+    }
+
+    /**
      * @param array<string, mixed> $flags
      * @param list<string> $args
      */
     private function logs(array $flags, array $args): int
     {
+        $follow = isset($flags['f']) || isset($flags['follow']);
+        if ($this->json && $follow) {
+            return $this->fail('--follow does not combine with --json');
+        }
         $id = $args[0] ?? '';
         if (!RunnerPool::isKnownId($id)) {
             return $this->fail($id === '' ? 'usage: runnerdeck logs <runner> [-n N] [-f]' : "unknown runner: {$id}");
@@ -541,10 +627,17 @@ TXT;
         $lines = max(1, min(2000, (int) ($flags['n'] ?? $flags['lines'] ?? 50)));
         $dir = RunnerPool::dirFor($id);
         $shown = RunnerLog::tail($dir, $lines);
+        if ($this->json) {
+            $encoded = json_encode(
+                ['ok' => true, 'runner' => $id, 'lines' => $shown],
+                JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR
+            );
+            return $this->say($encoded);
+        }
         foreach ($shown as $line) {
             $this->say($line);
         }
-        if (!isset($flags['f']) && !isset($flags['follow'])) {
+        if (!$follow) {
             return 0;
         }
         while ($this->keepFollowing === null || ($this->keepFollowing)()) {
@@ -596,6 +689,9 @@ TXT;
         $runners = $this->select($flags, $args);
         if ($runners === null) {
             return 1;
+        }
+        if (isset($flags['dry-run'])) {
+            return $this->preview('drain', $runners);
         }
         $this->note('Waiting for running jobs to finish...');
         return $this->report(Ops::drain($runners, $this->force, $this->timeout($flags)));

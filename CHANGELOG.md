@@ -15,6 +15,9 @@ follows [SemVer](https://semver.org/).
 - The dashboard tab title shows `RunnerDeck · N busy · M offline` after each status poll, and drops a count that is zero.
 - `runnerdeck list` and `status` take repeatable `--label`. A runner matches when its extra labels include every one. The shared pool label does not count.
 - Settings shows `Overridden by the environment` and the variable name when the process environment or `.env` supplies a field. The TOTP secret and crash webhook URL are not printed.
+- `runnerdeck logs <runner> --json` prints `{ok, runner, lines}`. `-n` stays clamped to 1..2000. `--json` does not combine with `-f`.
+- `runnerdeck list` and `status` append extra labels after the agent name, as `[gpu,large]`. `--json` is unchanged.
+- `--dry-run` on `stop`, `restart`, `delete`, and `drain` prints what each runner would do, including a refusal, and changes nothing. `--json` returns `{ok, dry_run, actions}`.
 
 ### Changed
 
