@@ -11,6 +11,7 @@ follows [SemVer](https://semver.org/).
 - TOTP setup shows a Copy button that puts the raw secret on the clipboard, without the spaces used in the on-screen grouping.
 - Settings asks before a page-nav link leaves the form with unsaved changes, and the browser warns on close or reload. Saving does not warn.
 - The dashboard downloads the current runner snapshot as CSV next to the existing JSON export.
+- `runnerdeck doctor --json` prints `{ok, checks}` for scripts. A warning stays `ok: true` with the warning text in `detail`. `--quiet` still prints the JSON.
 
 ### Changed
 
