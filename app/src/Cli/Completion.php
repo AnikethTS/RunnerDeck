@@ -25,7 +25,9 @@ final class Completion
         'completion' => self::SHELLS,
     ];
 
-    private const FLAGS = ['--all', '--force', '--json', '--yes', '--quiet', '--no-color', '--timeout', '--help'];
+    private const FLAGS = [
+        '--all', '--force', '--dry-run', '--json', '--yes', '--quiet', '--no-color', '--timeout', '--help',
+    ];
 
     private const LIST_COMMANDS = ['list', 'ls', 'status'];
 

@@ -18,7 +18,7 @@ final class CliCommandsTest extends CliTestCase
         [, $out] = $this->cli(['help']);
         foreach (
             ['rolling-restart', 'drain', 'resize', 'rename', 'force-idle', 'maintenance', 'setup', 'config',
-            'auth', 'update', 'install', 'completion', '--watch', '--quiet', '--no-color'] as $word
+            'auth', 'update', 'install', 'completion', '--watch', '--quiet', '--no-color', '--dry-run'] as $word
         ) {
             $this->assertStringContainsString($word, $out);
         }
@@ -246,6 +246,149 @@ final class CliCommandsTest extends CliTestCase
         $cli->run(['list', '--watch', '--color']);
         rewind($out);
         $this->assertSame(2, substr_count((string) stream_get_contents($out), "\033[H\033[2J"));
+    }
+
+    public function testLogsNeedsARunnerAndNamesAnUnknownId(): void
+    {
+        [$code, , $err] = $this->cli(['logs']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('usage: runnerdeck logs', $err);
+
+        [$code, , $err] = $this->cli(['logs', 'runner-9']);
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('runner-9', $err);
+    }
+
+    public function testLogsNPrintsOnlyTheRequestedTail(): void
+    {
+        [$code, $out] = $this->cli(['logs', 'runner-1', '-n', '2']);
+        $this->assertSame(0, $code);
+        $this->assertSame("two\nthree\n", $out);
+    }
+
+    public function testLogsClampsTheLineCount(): void
+    {
+        [$code, $one] = $this->cli(['logs', 'runner-1', '-n', '0']);
+        $this->assertSame(0, $code);
+        $this->assertSame("three\n", $one);
+
+        $lines = [];
+        for ($i = 1; $i <= 2001; $i++) {
+            $lines[] = 'line-' . $i;
+        }
+        file_put_contents($this->pool . '/runner-1/runner.log', implode("\n", $lines) . "\n");
+        [$code, $capped] = $this->cli(['logs', 'runner-1', '-n', '9000']);
+        $this->assertSame(0, $code);
+        $printed = array_values(array_filter(explode("\n", $capped), static fn (string $line): bool => $line !== ''));
+        $this->assertCount(2000, $printed);
+        $this->assertSame('line-2', $printed[0]);
+        $this->assertSame('line-2001', $printed[1999]);
+    }
+
+    public function testLogsOfAnEmptyFilePrintsNothing(): void
+    {
+        file_put_contents($this->pool . '/runner-2/runner.log', '');
+        [$code, $out, $err] = $this->cli(['logs', 'runner-2']);
+        $this->assertSame(0, $code);
+        $this->assertSame('', $out);
+        $this->assertSame('', $err);
+    }
+
+    public function testLogsFollowPrintsALineWrittenAfterTheFirstRead(): void
+    {
+        $out = fopen('php://memory', 'w+');
+        $this->assertIsResource($out);
+        $cli = new Cli($out, fopen('php://memory', 'w+'));
+        $polls = 0;
+        $log = $this->pool . '/runner-1/runner.log';
+        $cli->followWhile(function () use (&$polls, $log): bool {
+            if ($polls === 0) {
+                file_put_contents($log, "four\n", FILE_APPEND);
+            }
+            return ++$polls < 2;
+        });
+        $started = hrtime(true);
+        $this->assertSame(0, $cli->run(['logs', 'runner-1', '-f', '-n', '10']));
+        $this->assertLessThan(1_000_000_000, hrtime(true) - $started);
+        rewind($out);
+        $text = (string) stream_get_contents($out);
+        $this->assertStringContainsString("four\n", $text);
+        $this->assertSame(1, substr_count($text, "four\n"));
+    }
+
+    public function testDryRunReportsTheActionAndDoesNotPerformIt(): void
+    {
+        $killed = [];
+        ProcessControl::fakeKill(static function (int $pid, int $signal) use (&$killed): bool {
+            $killed[] = $pid;
+            return $signal >= 0;
+        });
+        RunnerPool::fakeCheckProcess(static fn (): array => [true, 4242]);
+        $this->githubBusy();
+
+        [$code, $out] = $this->cli(['stop', 'runner-1', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 would stop', $out);
+        $this->assertSame([], $killed);
+        $this->assertDirectoryExists($this->pool . '/runner-1');
+
+        [$code, $json] = $this->cli(['restart', 'runner-1', '--dry-run', '--json']);
+        $data = json_decode($json, true);
+        $this->assertSame(0, $code);
+        $this->assertTrue($data['ok']);
+        $this->assertTrue($data['dry_run']);
+        $this->assertSame('restart', $data['actions'][0]['action']);
+        $this->assertSame([], $killed);
+
+        [$code, $out] = $this->cli(['delete', 'runner-1', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 would delete', $out);
+        $this->assertDirectoryExists($this->pool . '/runner-1');
+
+        [$code, $out] = $this->cli(['drain', '--all', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 would drain', $out);
+        $this->assertStringContainsString('runner-2 would drain', $out);
+        $this->assertStringNotContainsString('Waiting for running jobs', $out);
+    }
+
+    public function testDryRunRefusesABusyRunnerAndForceStillDoesNotAct(): void
+    {
+        $killed = [];
+        ProcessControl::fakeKill(static function (int $pid, int $signal) use (&$killed): bool {
+            $killed[] = $pid;
+            return $signal >= 0;
+        });
+        RunnerPool::fakeCheckProcess(static fn (): array => [true, 4242]);
+        $this->githubBusy(RunnerPool::agentNameFor('runner-1'));
+
+        [$code, $out] = $this->cli(['stop', 'runner-1', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('would refuse', $out);
+        $this->assertStringContainsString('currently running a job', $out);
+        $this->assertSame([], $killed);
+
+        [$code, $out] = $this->cli(['stop', 'runner-1', '--force', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 would stop', $out);
+        $this->assertStringNotContainsString('would refuse', $out);
+        $this->assertSame([], $killed);
+
+        [$code, $json] = $this->cli(['stop', 'runner-1', '--dry-run', '--json']);
+        $data = json_decode($json, true);
+        $this->assertSame(0, $code);
+        $this->assertTrue($data['dry_run']);
+        $this->assertSame('refuse', $data['actions'][0]['action']);
+        $this->assertArrayHasKey('reason', $data['actions'][0]);
+    }
+
+    public function testDryRunRefusesWhenGithubCannotBeReached(): void
+    {
+        $this->githubDown();
+        [$code, $out] = $this->cli(['drain', 'runner-1', '--dry-run']);
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('runner-1 would refuse', $out);
+        $this->assertStringContainsString('could not verify job status', $out);
     }
 
     public function testWatchDoesNotCombineWithJson(): void
