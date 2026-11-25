@@ -518,16 +518,28 @@ final class Config
         return dirname(__DIR__, 4) . '/runners';
     }
 
+    private static ?string $ghBinaryFake = null;
+
+    private static ?string $ghBinaryCached = null;
+
+    /** Test seam. Null uses PATH lookup. An uncached fake wins over a resolved path. */
+    public static function fakeGhBinary(?string $path): void
+    {
+        self::$ghBinaryFake = $path;
+    }
+
     public static function ghBinary(): string
     {
-        static $resolved = null;
-        if ($resolved !== null) {
-            return $resolved;
+        if (self::$ghBinaryFake !== null) {
+            return self::$ghBinaryFake;
+        }
+        if (self::$ghBinaryCached !== null) {
+            return self::$ghBinaryCached;
         }
 
         $override = getenv('RUNNERDECK_GH_BIN');
         if ($override && is_executable($override)) {
-            return $resolved = $override;
+            return self::$ghBinaryCached = $override;
         }
 
         $candidates = [
@@ -544,11 +556,11 @@ final class Config
         }
         foreach ($candidates as $path) {
             if (is_executable($path)) {
-                return $resolved = $path;
+                return self::$ghBinaryCached = $path;
             }
         }
 
-        return $resolved = 'gh';
+        return self::$ghBinaryCached = 'gh';
     }
 
     public static function ghConfigDir(): ?string

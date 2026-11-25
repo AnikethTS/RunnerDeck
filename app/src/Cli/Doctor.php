@@ -51,6 +51,22 @@ final class Doctor
 
     private int $warnings = 0;
 
+    private static ?string $phpVersion = null;
+
+    private static bool $forceBanner = false;
+
+    /** Test seam. Null reads the running PHP version. */
+    public static function fakePhpVersion(?string $version): void
+    {
+        self::$phpVersion = $version;
+    }
+
+    /** Test seam. Banner::show() stays quiet when RUNNERDECK_NO_BANNER=1. */
+    public static function fakeBanner(bool $force): void
+    {
+        self::$forceBanner = $force;
+    }
+
     /** @var resource */
     private $out;
 
@@ -76,7 +92,7 @@ final class Doctor
     public function run(): int
     {
         if (!$this->json) {
-            if ($this->out === STDOUT) {
+            if ($this->out === STDOUT || self::$forceBanner) {
                 Banner::show();
             }
             $this->write("RunnerDeck doctor\n");
@@ -116,27 +132,29 @@ final class Doctor
     private function phpChecks(): void
     {
         $this->section('PHP');
-        if (version_compare(PHP_VERSION, '8.1.0', '<')) {
-            $this->failures += $this->fail('PHP version', PHP_VERSION . ' — RunnerDeck needs 8.1 or newer');
+        $version = $this->phpVersion();
+        if (version_compare($version, '8.1.0', '<')) {
+            $this->failures += $this->fail('PHP version', $version . ' — RunnerDeck needs 8.1 or newer');
         } else {
-            $this->ok('PHP version', PHP_VERSION);
+            $this->ok('PHP version', $version);
             $patched = [
                 '8.2' => '8.2.35',
                 '8.3' => '8.3.36',
                 '8.4' => '8.4.27',
                 '8.5' => '8.5.12',
             ];
-            $branch = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-            if (PHP_VERSION_ID < 80200) {
+            $parts = explode('.', $version);
+            $branch = $parts[0] . '.' . ($parts[1] ?? '0');
+            if ($this->phpVersionId() < 80200) {
                 $this->warnings += $this->warn(
                     'PHP security',
-                    PHP_VERSION . ' is end-of-life — no official fix for'
+                    $version . ' is end-of-life — no official fix for'
                         . ' CVE-2026-109618 / CVE-2026-109619; use a distro backport or move to 8.2.35+'
                 );
-            } elseif (isset($patched[$branch]) && version_compare(PHP_VERSION, $patched[$branch], '<')) {
+            } elseif (isset($patched[$branch]) && version_compare($version, $patched[$branch], '<')) {
                 $this->warnings += $this->warn(
                     'PHP security',
-                    PHP_VERSION . ' is below ' . $patched[$branch]
+                    $version . ' is below ' . $patched[$branch]
                         . ' (CVE-2026-109618 / CVE-2026-109619). Update the host PHP packages'
                         . ' and restart php-fpm / run.sh'
                 );
@@ -145,21 +163,35 @@ final class Doctor
         foreach (Platform::isWindows() ? [] : ['posix', 'pcntl'] as $ext) {
             if (extension_loaded($ext)) {
                 $this->ok("ext-{$ext}", '');
-            } else {
+            } else { // @codeCoverageIgnoreStart
                 $this->failures += $this->fail(
                     "ext-{$ext}",
                     'required for process liveness checks and stopping runners'
                 );
-            }
+            } // @codeCoverageIgnoreEnd
         }
         if (extension_loaded('pdo_sqlite')) {
             $this->ok('ext-pdo_sqlite', '');
-        } else {
+        } else { // @codeCoverageIgnoreStart
             $this->warnings += $this->warn(
                 'ext-pdo_sqlite',
                 'optional — the CPU/RAM history chart stays empty without it'
             );
+        } // @codeCoverageIgnoreEnd
+    }
+
+    private function phpVersion(): string
+    {
+        return self::$phpVersion ?? PHP_VERSION;
+    }
+
+    private function phpVersionId(): int
+    {
+        if (self::$phpVersion === null) {
+            return PHP_VERSION_ID;
         }
+        $parts = array_map('intval', explode('.', self::$phpVersion));
+        return ($parts[0] * 10000) + (($parts[1] ?? 0) * 100) + ($parts[2] ?? 0);
     }
 
     private function toolChecks(): void
