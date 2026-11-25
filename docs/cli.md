@@ -40,20 +40,20 @@ runnerdeck --help          # also: -h, or `runnerdeck help`
 
 | Command | What it does |
 |---|---|
-| `runnerdeck list` (`ls`) | The runners on this machine: id, state, pid, uptime, agent name. It does not measure slot disk. `--watch` redraws every 5 seconds (`--interval N` to change). `--label L` can be repeated; a runner is shown only when its extra labels include every one. The shared pool label does not count. `--json` lists the same runners, and an empty match is an empty list. |
+| `runnerdeck list` (`ls`) | The runners on this machine: id, state, pid, uptime, agent name. Extra labels are appended as `[gpu,large]`. It does not measure slot disk. `--watch` redraws every 5 seconds (`--interval N` to change). `--label L` can be repeated; a runner is shown only when its extra labels include every one. The shared pool label does not count. `--json` lists the same runners, and an empty match is an empty list. |
 | `runnerdeck status` | Like `list`, including `--label`, plus a GITHUB column: `idle`, `busy`, `offline`, `unregistered`, or `?` when GitHub cannot be reached. |
 | `runnerdeck start <runner...>` or `--all` | Start runners. A runner that is already running is left alone. |
-| `runnerdeck stop <runner...>` or `--all` | Stop runners. Refuses if a runner is running a job. |
-| `runnerdeck restart <runner...>` or `--all` | Stop, then start. Same job check as `stop`. |
+| `runnerdeck stop <runner...>` or `--all` | Stop runners. Refuses if a runner is running a job. `--dry-run` prints `would stop` or `would refuse` and changes nothing. |
+| `runnerdeck restart <runner...>` or `--all` | Stop, then start. Same job check as `stop`. `--dry-run` reports the action and does not restart. |
 | `runnerdeck rolling-restart <runner...>` or `--all` | Restart one runner at a time, waiting for each to be idle first. `--timeout S` bounds each wait. |
-| `runnerdeck drain <runner...>` or `--all` | Wait until the runners are idle, then stop them and clear their work folders. |
+| `runnerdeck drain <runner...>` or `--all` | Wait until the runners are idle, then stop them and clear their work folders. `--dry-run` reports that and does not drain. |
 | `runnerdeck add [--name N] [--ephemeral] [--label L]` | Add a runner and start it. `--label` can repeat or be comma-separated (up to 12). |
-| `runnerdeck delete <runner...>` (`rm`) | Stop, deregister from GitHub and remove the runner's files. Same job check. |
+| `runnerdeck delete <runner...>` (`rm`) | Stop, deregister from GitHub and remove the runner's files. Same job check. `--dry-run` reports that and does not delete. |
 | `runnerdeck rename <runner> <name>` | Re-register a runner under a new name. Refuses while it has a job. |
 | `runnerdeck force-idle <runner>` | Clear a stuck "busy" state on GitHub for a runner that is stopped on this machine. |
 | `runnerdeck resize <count>` | Make the pool `<count>` runners in total, including `runner-base` (1 to 30). Starts the missing ones and stops any slot above that count. |
 | `runnerdeck maintenance on\|off\|status` | `on` drains and stops every runner and refuses starts until `off`. |
-| `runnerdeck logs <runner> [-n N] [-f]` | Print the last N lines (default 50, up to 2000). `-f` follows; Ctrl+C stops. |
+| `runnerdeck logs <runner> [-n N] [-f]` | Print the last N lines (default 50, up to 2000). `-f` follows; Ctrl+C stops. `--json` prints `{ok, runner, lines}` and does not combine with `-f`. |
 
 Runners are named by id, as `runnerdeck list` shows them (`runner-base`,
 `runner-1`, ...). Naming one that does not exist stops the command before
