@@ -181,7 +181,7 @@ final class Updater
             }
             return $method === 'deb'
                 ? $this->tty(['sudo', 'apt-get', 'install', '-y', $file])
-                : $this->tty(['cmd.exe', '/c', 'start', '', '/wait', $file]);
+                : $this->tty(self::windowsSetupCommand($file));
         } finally {
             $this->removeDir($dir);
         }
@@ -307,6 +307,31 @@ final class Updater
             @unlink($path);
         }
         @rmdir($dir);
+    }
+
+    /**
+     * Opens the Setup wizard. RUNNERDECK_UPDATE_SILENT=1 adds the Inno Setup
+     * switches that skip every prompt. RUNNERDECK_UPDATE_DIR, when it is a
+     * plain path, is that wizard's /DIR.
+     *
+     * @return list<string>
+     */
+    public static function windowsSetupCommand(string $file): array
+    {
+        $cmd = ['cmd.exe', '/c', 'start', '', '/wait', $file];
+        if (getenv('RUNNERDECK_UPDATE_SILENT') !== '1') {
+            return $cmd;
+        }
+        $cmd[] = '/VERYSILENT';
+        $cmd[] = '/SUPPRESSMSGBOXES';
+        $cmd[] = '/NORESTART';
+        $cmd[] = '/TASKS=';
+        $dir = getenv('RUNNERDECK_UPDATE_DIR');
+        if (is_string($dir) && $dir !== '' && preg_match('/["\r\n&|<>]/', $dir) !== 1) {
+            $cmd[] = '/DIR=' . $dir;
+        }
+
+        return $cmd;
     }
 
     /** @param list<string> $cmd */

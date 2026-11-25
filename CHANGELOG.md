@@ -15,6 +15,7 @@ follows [SemVer](https://semver.org/).
 - The dashboard tab title shows `RunnerDeck · N busy · M offline` after each status poll, and drops a count that is zero.
 - `runnerdeck list` and `status` take repeatable `--label`. A runner matches when its extra labels include every one. The shared pool label does not count.
 - Settings shows `Overridden by the environment` and the variable name when the process environment or `.env` supplies a field. The TOTP secret and crash webhook URL are not printed.
+- On Windows, `RUNNERDECK_UPDATE_SILENT=1` runs the Setup wizard without questions. `RUNNERDECK_UPDATE_DIR` chooses the folder.
 
 ### Changed
 

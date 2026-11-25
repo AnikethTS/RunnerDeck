@@ -148,6 +148,10 @@ this copy was installed, and upgrades that way:
 | Docker, or unknown | Prints what to do. It never changes a container or an install it cannot identify. |
 
 A download whose checksum does not match is deleted and never installed.
+On Windows, `RUNNERDECK_UPDATE_SILENT=1` runs the Setup wizard without
+questions, and `RUNNERDECK_UPDATE_DIR` chooses its folder. A folder path
+that contains quotes or shell characters is ignored, and the wizard uses
+its own default.
 Restart the dashboard afterwards to run the new version. If the install type
 is guessed wrong, set `RUNNERDECK_INSTALL_METHOD` to `brew`, `deb`,
 `windows`, `git`, `zip`, `docker` or `unknown`. |
