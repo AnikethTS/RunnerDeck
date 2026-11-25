@@ -323,6 +323,9 @@ final class DoctorTest extends TestCase
         putenv('RUNNERDECK_IP_ALLOWLIST=127.0.0.1/32');
         GithubClient::fakeFetch(static fn (): array => []);
         $this->fakeShell();
+        // PHP 8.1 always warns that it is end of life. Pin a patched version
+        // so the clean summary does not depend on the job's PHP.
+        Doctor::fakePhpVersion('8.5.13');
         $clean = $this->render(false, true);
         $this->assertSame(0, $clean[0]);
         $this->assertStringContainsString('All checks passed.', $clean[1]);
