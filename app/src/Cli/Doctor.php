@@ -402,8 +402,9 @@ final class Doctor
         }
 
         $storageDir = Settings::storageDir();
+        $storageParent = dirname($storageDir);
         $storageOk = (is_dir($storageDir) && is_writable($storageDir))
-            || (!is_dir($storageDir) && is_writable(dirname($storageDir)));
+            || (!is_dir($storageDir) && is_dir($storageParent) && is_writable($storageParent));
         if ($storageOk) {
             $this->ok('storage directory', $storageDir);
         } else {

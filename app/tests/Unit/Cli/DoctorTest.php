@@ -294,7 +294,11 @@ final class DoctorTest extends TestCase
         $dup = $this->checks();
         $this->assertTrue($dup['agent files']['ok']);
 
-        putenv('RUNNERDECK_SETTINGS_FILE=/no/such/runnerdeck-doctor-storage/settings.json');
+        // A file cannot be the parent of the storage directory, including for root,
+        // which can create /no/such and then reports that directory as writable.
+        $blocked = $this->dir . '/not-a-directory';
+        file_put_contents($blocked, 'x');
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $blocked . '/nested/settings.json');
         $storage = $this->checks();
         $this->assertFalse($storage['storage directory']['ok']);
     }
@@ -314,8 +318,11 @@ final class DoctorTest extends TestCase
         Provisioner::fakeHost(false, false);
         $this->fakeShell(static fn (array $cmd): ?array => ['code' => 1, 'stdout' => '', 'stderr' => '']);
         $libs = $this->checks();
-        $this->assertTrue($libs['runner OS libraries']['ok']);
-        $this->assertStringContainsString('libicu', $libs['runner OS libraries']['detail']);
+        // macOS and Alpine skip this check; Doctor only emits it on other Linux.
+        if (isset($libs['runner OS libraries'])) {
+            $this->assertTrue($libs['runner OS libraries']['ok']);
+            $this->assertStringContainsString('libicu', $libs['runner OS libraries']['detail']);
+        }
         Provisioner::fakeHost(null, null);
 
         putenv('RUNNERDECK_ORG=acme');
