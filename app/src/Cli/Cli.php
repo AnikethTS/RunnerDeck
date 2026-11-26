@@ -54,7 +54,7 @@ Program:
   update [--check] [--yes]     Upgrade to the latest release (--check only looks)
   install [--dir D]            Link ./runnerdeck onto your PATH and set up tab completion
                                (source checkout; --no-completion skips completion)
-  uninstall [--dir D]          Remove that link
+  uninstall [--dir D] [--yes]  Remove that link. Asks first.
   completion bash|zsh|fish|powershell
                                Print a shell completion script
   version                      Print the version
@@ -64,7 +64,7 @@ Options:
   --dry-run      Show what stop, restart, delete, or drain would do
   --force        Do not check GitHub for a running job first
   --timeout S    How long to wait for a job to finish (seconds)
-  --yes, -y      Do not ask before updating
+  --yes, -y      Do not ask before updating or uninstalling
   -q, --quiet    Print only errors
   --no-color     No colour (also NO_COLOR=1)
   -h, --help     Show this help
@@ -918,6 +918,22 @@ TXT;
     /** @param array<string, mixed> $flags */
     private function uninstall(array $flags): int
     {
+        $yes = isset($flags['yes']) || isset($flags['y']);
+        if (!$yes) {
+            if ($this->json) {
+                return $this->fail('pass --yes to uninstall without a prompt');
+            }
+            $this->say('Are you sure you want to uninstall RunnerDeck :( ?');
+            $this->say(
+                'If you have an issue or a bug, you can raise an issue at'
+                    . ' https://github.com/AnikethTS/RunnerDeck/issues'
+            );
+            $answer = strtolower($this->ask('Uninstall now? [y/N] '));
+            if (!in_array($answer, ['y', 'yes'], true)) {
+                $this->say('Not uninstalled :) .');
+                return 0;
+            }
+        }
         $dir = is_string($flags['dir'] ?? null) ? $flags['dir'] : Installer::defaultDir();
         return $this->report(Installer::uninstall(dirname(__DIR__, 3), $dir));
     }

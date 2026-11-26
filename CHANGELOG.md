@@ -19,6 +19,7 @@ follows [SemVer](https://semver.org/).
 - `runnerdeck list` and `status` append extra labels after the agent name, as `[gpu,large]`. `--json` is unchanged.
 - `--dry-run` on `stop`, `restart`, `delete`, and `drain` prints what each runner would do, including a refusal, and changes nothing. `--json` returns `{ok, dry_run, actions}`.
 - On Windows, `RUNNERDECK_UPDATE_SILENT=1` runs the Setup wizard without questions. `RUNNERDECK_UPDATE_DIR` chooses the folder.
+- `runnerdeck uninstall` asks before it removes the command, and points at the issue tracker. `--yes` skips the question.
 
 ### Changed
 
