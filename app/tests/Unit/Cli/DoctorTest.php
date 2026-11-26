@@ -142,6 +142,31 @@ final class DoctorTest extends TestCase
         $this->assertStringContainsString('is not writable', $pool['detail']);
     }
 
+    public function testTextReportNamesEveryCheckAndKeepsAWarningNonFatal(): void
+    {
+        Doctor::fakePhpVersion('8.5.13');
+        $this->fakeShell();
+        [$code, $text] = $this->doctor(['doctor']);
+        $plain = (string) preg_replace('/\033\[[0-9;]*m/', '', $text);
+
+        $this->assertSame(0, $code);
+        $this->assertSame($this->expectedTextCheckNames(), $this->textCheckNames($plain));
+        $this->assertStringContainsString('[WARN] scope — not configured', $plain);
+        $this->assertStringContainsString('All required checks passed', $plain);
+    }
+
+    public function testTextReportFailsWhenGhIsNotLoggedIn(): void
+    {
+        Doctor::fakePhpVersion('8.5.13');
+        $this->fakeShell(fn (array $cmd): ?array => $this->authStatus($cmd, 1, '', 'not logged in'));
+        [$code, $text] = $this->doctor(['doctor']);
+        $plain = (string) preg_replace('/\033\[[0-9;]*m/', '', $text);
+
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('[FAIL] gh auth status — not logged in', $plain);
+        $this->assertStringContainsString('check(s) failed', $plain);
+    }
+
     public function testPhpVersionWarningsAndAnOldInterpreter(): void
     {
         Doctor::fakePhpVersion('8.0.30');
@@ -462,6 +487,53 @@ final class DoctorTest extends TestCase
         putenv('RUNNERDECK_GITHUB_APP_KEY_FILE=' . $this->dir . '/app.pem');
         putenv('RUNNERDECK_GITHUB_APP_ID=1');
         putenv('RUNNERDECK_GITHUB_APP_INSTALLATION_ID=2');
+    }
+
+    /** @return list<string> */
+    private function expectedTextCheckNames(): array
+    {
+        $names = ['PHP version'];
+        if (!Platform::isWindows()) {
+            $names[] = 'ext-posix';
+            $names[] = 'ext-pcntl';
+        }
+        $names[] = 'ext-pdo_sqlite';
+        if (Platform::isWindows()) {
+            $names[] = 'powershell.exe';
+            $names[] = 'taskkill';
+        } else {
+            $names[] = 'bash';
+        }
+        array_push(
+            $names,
+            'curl',
+            'tar',
+            'gh CLI',
+            'gh auth status',
+            'scope',
+            'bind',
+            'extra gate',
+            'TOTP',
+            'TRUST_PROXY',
+            'headroom',
+            'pool directory',
+            'slot disk',
+            'package extract'
+        );
+        if (PHP_OS_FAMILY === 'Linux' && !is_file('/etc/alpine-release')) {
+            $names[] = 'runner OS libraries';
+        }
+        $names[] = 'storage directory';
+
+        return $names;
+    }
+
+    /** @return list<string> */
+    private function textCheckNames(string $plain): array
+    {
+        preg_match_all('/\[(?: OK |WARN|FAIL)\] ([^—\r\n]+)/', $plain, $matches);
+
+        return array_map(static fn (string $name): string => trim($name), $matches[1]);
     }
 
     /** @param list<string> $argv @return array{0: int, 1: string} */

@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { copyFile, readFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 
 // This suite drives the real PHP backend (php -S) and the real app.js in a
 // real browser. It does NOT talk to GitHub: `gh` isn't authenticated in CI,
@@ -1403,4 +1403,31 @@ test('README live-log screenshot stays current', async ({ page }) => {
   await emitLogLine(page, '2026-10-27 Job succeeded');
   await expect(page.locator('#log-modal-body')).toContainText('Listening for Jobs');
   await expectReadmeShot(page, 'live-log');
+});
+
+test('runner page shows the fixture runner and a missing id', async ({ page }) => {
+  const runner = fixtureRunner({
+    id: 'runner-1',
+    agent_name: 'e2e-1',
+    local_running: true,
+    log_tail: ['Listening for Jobs'],
+  });
+  await mockStatus(page, [runner]);
+  const pool = process.env.RUNNERDECK_POOL_DIR;
+  const dir = path.join(pool, runner.id);
+  mkdirSync(dir, { recursive: true });
+  await writeFile(path.join(dir, '.runner'), JSON.stringify({ agentName: runner.agent_name }));
+  await writeFile(path.join(dir, 'runner.log'), `${runner.log_tail[0]}\n`);
+
+  await page.goto(`/runner.php?id=${runner.id}`);
+  await expect(page.locator('#runner-page')).toHaveAttribute('data-agent-name', runner.agent_name);
+  await expect(page.locator('#runner-log')).toContainText(runner.log_tail[0]);
+  await expect(page.locator('#runner-page button[data-action="start"]')).toBeEnabled();
+  await expect(page.locator('#runner-page button[data-action="stop"]')).toBeDisabled();
+
+  const missing = await page.goto('/runner.php?id=missing');
+  expect(missing.status()).toBeLessThan(500);
+  await expect(page.getByRole('heading', { name: 'Runner not on this host' })).toBeVisible();
+  await expect(page.getByText('missing is not a slot on this host.')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText('Fatal error');
 });
