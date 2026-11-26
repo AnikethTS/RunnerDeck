@@ -947,6 +947,42 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./tools/ci/cli-smoke.sh
 
+  update-smoke:
+    name: Smoke · Update · ${{ matrix.platform }}
+    needs: plan
+    if: needs.plan.outputs.smoke == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, platform: "Ubuntu", php: "8.5.13" }
+          - { os: macos-latest, platform: "macOS", php: "8.5.13" }
+          - { os: windows-latest, platform: "Windows", php: "8.5.13" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-posix --ignore-platform-req=ext-pcntl
+
+      - name: Update an older copy from the published release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBIAN_FRONTEND: noninteractive
+        run: ./tools/ci/update-smoke.sh
+
   e2e-test:
     name: E2E · Browser UI (mocked API)
     needs: plan
@@ -1142,7 +1178,7 @@ jobs:
 
   gate:
     name: CI · Merge gate
-    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, cli-smoke, e2e-cli, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
+    needs: [plan, lint-php, lint-js, actionlint, shellcheck, gitleaks, coverage, test, windows-test, apt-php-test, dnf-php-test, random-order, smoke-test, alpine-smoke-test, docker-smoke-test, e2e-test, cli-smoke, update-smoke, e2e-cli, e2e-real-runner, e2e-live, e2e-live-fedora, e2e-live-extended, package-windows, package-linux]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

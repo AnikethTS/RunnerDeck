@@ -211,6 +211,42 @@ final class UpdaterTest extends TestCase
         $this->assertSame([], $this->ran);
     }
 
+    public function testWindowsSetupOpensTheWizardAndCanInstallSilently(): void
+    {
+        $this->latest('99.0.0', function (array $cmd): void {
+            $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+            $name = 'RunnerDeck-99.0.0-windows-x64-setup.exe';
+            file_put_contents("$dir/$name", 'setup-bytes');
+            file_put_contents("$dir/SHA256SUMS-windows-x64", hash('sha256', 'setup-bytes') . "  $name\n");
+        });
+        putenv('RUNNERDECK_UPDATE_SILENT');
+        putenv('RUNNERDECK_UPDATE_DIR');
+        try {
+            [$code] = $this->update(['yes' => true], 'windows');
+            $this->assertSame(0, $code);
+            $this->assertCount(1, $this->ran[0]);
+            $this->assertStringEndsWith('RunnerDeck-99.0.0-windows-x64-setup.exe', $this->ran[0][0]);
+
+            putenv('RUNNERDECK_UPDATE_SILENT=1');
+            putenv('RUNNERDECK_UPDATE_DIR=C:/RunnerDeck');
+            [$code] = $this->update(['yes' => true], 'windows');
+            $this->assertSame(0, $code);
+            $this->assertContains('/VERYSILENT', $this->ran[0]);
+            $this->assertContains('/SUPPRESSMSGBOXES', $this->ran[0]);
+            $this->assertContains('/NORESTART', $this->ran[0]);
+            $this->assertContains('/TASKS=', $this->ran[0]);
+            $this->assertContains('/DIR=C:/RunnerDeck', $this->ran[0]);
+
+            putenv('RUNNERDECK_UPDATE_DIR=C:/bad&dir');
+            [$code] = $this->update(['yes' => true], 'windows');
+            $this->assertSame(0, $code);
+            $this->assertStringNotContainsString('/DIR=', implode(' ', $this->ran[0]));
+        } finally {
+            putenv('RUNNERDECK_UPDATE_SILENT');
+            putenv('RUNNERDECK_UPDATE_DIR');
+        }
+    }
+
     public function testAFailedDownloadIsReported(): void
     {
         $this->latest('99.0.0', null, 1);

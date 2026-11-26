@@ -18,6 +18,7 @@ follows [SemVer](https://semver.org/).
 - `runnerdeck logs <runner> --json` prints `{ok, runner, lines}`. `-n` stays clamped to 1..2000. `--json` does not combine with `-f`.
 - `runnerdeck list` and `status` append extra labels after the agent name, as `[gpu,large]`. `--json` is unchanged.
 - `--dry-run` on `stop`, `restart`, `delete`, and `drain` prints what each runner would do, including a refusal, and changes nothing. `--json` returns `{ok, dry_run, actions}`.
+- On Windows, `RUNNERDECK_UPDATE_SILENT=1` runs the Setup wizard without questions. `RUNNERDECK_UPDATE_DIR` chooses the folder.
 
 ### Changed
 
