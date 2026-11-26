@@ -310,15 +310,17 @@ final class Updater
     }
 
     /**
-     * Opens the Setup wizard. RUNNERDECK_UPDATE_SILENT=1 adds the Inno Setup
-     * switches that skip every prompt. RUNNERDECK_UPDATE_DIR, when it is a
-     * plain path, is that wizard's /DIR.
+     * Runs the Setup wizard and waits until it exits. The wizard is the
+     * command itself: cmd.exe /c start mis-parses the quoted arguments and
+     * looks for a program named "start". RUNNERDECK_UPDATE_SILENT=1 adds the
+     * Inno Setup switches that skip every prompt. RUNNERDECK_UPDATE_DIR, when
+     * it is a plain path, is that wizard's /DIR.
      *
      * @return list<string>
      */
     public static function windowsSetupCommand(string $file): array
     {
-        $cmd = ['cmd.exe', '/c', 'start', '', '/wait', $file];
+        $cmd = [$file];
         if (getenv('RUNNERDECK_UPDATE_SILENT') !== '1') {
             return $cmd;
         }

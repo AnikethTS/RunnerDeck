@@ -224,9 +224,8 @@ final class UpdaterTest extends TestCase
         try {
             [$code] = $this->update(['yes' => true], 'windows');
             $this->assertSame(0, $code);
-            $this->assertSame(['cmd.exe', '/c', 'start', '', '/wait'], array_slice($this->ran[0], 0, 5));
-            $this->assertStringEndsWith('RunnerDeck-99.0.0-windows-x64-setup.exe', $this->ran[0][5]);
-            $this->assertCount(6, $this->ran[0]);
+            $this->assertCount(1, $this->ran[0]);
+            $this->assertStringEndsWith('RunnerDeck-99.0.0-windows-x64-setup.exe', $this->ran[0][0]);
 
             putenv('RUNNERDECK_UPDATE_SILENT=1');
             putenv('RUNNERDECK_UPDATE_DIR=C:/RunnerDeck');
