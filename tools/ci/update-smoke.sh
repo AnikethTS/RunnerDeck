@@ -63,6 +63,11 @@ if [ "$method" = brew ]; then
   export HOMEBREW_NO_AUTO_UPDATE=1
   export HOMEBREW_NO_ENV_HINTS=1
   export HOMEBREW_GITHUB_API_TOKEN="${HOMEBREW_GITHUB_API_TOKEN:-$GH_TOKEN}"
+  # setup-php pours php from shivammathur/php. Homebrew will not install the
+  # formula's php dependency until that copy is gone.
+  if brew info --json=v2 php 2>/dev/null | grep -q 'shivammathur/php'; then
+    brew uninstall --force php
+  fi
   # A fully qualified name trusts that one formula without a prompt.
   brew install anikethts/runnerdeck/runnerdeck
   hash -r || true

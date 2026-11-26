@@ -974,7 +974,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: app
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --ignore-platform-req=ext-posix --ignore-platform-req=ext-pcntl
 
       - name: Update an older copy from the published release
         shell: bash
