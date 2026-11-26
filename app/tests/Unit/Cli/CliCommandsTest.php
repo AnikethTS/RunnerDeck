@@ -431,10 +431,33 @@ final class CliCommandsTest extends CliTestCase
         $this->assertStringContainsString('is not on your PATH', $out);
         $this->assertTrue(is_link($dir . '/runnerdeck'));
 
-        [$code, $out] = $this->cli(['uninstall', '--dir', $dir]);
+        [$code, $out] = $this->cli(['uninstall', '--dir', $dir], "n\n");
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('Are you sure you want to uninstall RunnerDeck :( ?', $out);
+        $this->assertStringContainsString('https://github.com/AnikethTS/RunnerDeck/issues', $out);
+        $this->assertStringContainsString('Not uninstalled :) .', $out);
+        $this->assertTrue(is_link($dir . '/runnerdeck'));
+
+        [$code, $out] = $this->cli(['uninstall', '--dir', $dir], "y\n");
         $this->assertSame(0, $code);
         $this->assertStringContainsString('Removed', $out);
         $this->assertFileDoesNotExist($dir . '/runnerdeck');
+
+        [$code, $out] = $this->cli(['install', '--dir', $dir, '--no-completion']);
+        $this->assertSame(0, $code);
+        [$code, $out] = $this->cli(['uninstall', '--yes', '--dir', $dir]);
+        $this->assertSame(0, $code);
+        $this->assertStringNotContainsString('Are you sure', $out);
+        $this->assertStringContainsString('Removed', $out);
+        $this->assertFileDoesNotExist($dir . '/runnerdeck');
+
+        [$code, $out, $err] = $this->cli(['uninstall', '--json', '--dir', $dir]);
+        $this->assertSame(1, $code);
+        $this->assertSame('', $err);
+        $decoded = json_decode($out, true);
+        $this->assertIsArray($decoded);
+        $this->assertFalse($decoded['ok']);
+        $this->assertSame('pass --yes to uninstall without a prompt', $decoded['message']);
         rmdir($dir);
     }
 

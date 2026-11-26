@@ -184,9 +184,9 @@ else
   [ "$linked" = "RunnerDeck ${version}" ] || fail "the linked command printed '${linked}'"
   expect 0 "install again" install --dir "$bin"
   has "$out" "Already installed" "install twice"
-  expect 0 "uninstall" uninstall --dir "$bin"
+  expect 0 "uninstall" uninstall --yes --dir "$bin"
   [ ! -e "${bin}/runnerdeck" ] || fail "uninstall left the link"
-  expect 1 "uninstall again" uninstall --dir "$bin"
+  expect 1 "uninstall again" uninstall --yes --dir "$bin"
 fi
 pass "install links the checkout's command and uninstall removes it"
 

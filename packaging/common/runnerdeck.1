@@ -75,8 +75,9 @@ An install.sh copy in ~/.local/share/runnerdeck is upgraded from the release zip
 Other commands, in a terminal, also name a newer release and the link to it.
 Set RUNNERDECK_NO_UPDATE_NOTICE=1 to hide that line.
 .TP
-.B install [--dir \fIDIR\fR], uninstall
+.B install [--dir \fIDIR\fR], uninstall [--yes]
 Link the checkout's runnerdeck script onto your PATH, or remove the link.
+uninstall asks first and points at the issue tracker. --yes skips the question.
 Only for a source checkout.
 .TP
 .B completion bash|zsh|fish|powershell
@@ -96,7 +97,7 @@ Do not check GitHub for a running job first. This can interrupt a job.
 How long drain, rolling-restart and maintenance wait for a job to finish.
 .TP
 .B -y, --yes
-Do not ask before updating.
+Do not ask before updating or uninstalling.
 .TP
 .B -q, --quiet
 Print only errors.

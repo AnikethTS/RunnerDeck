@@ -95,7 +95,7 @@ runnerdeck config get drain-timeout
 | `runnerdeck` or `runnerdeck run [--open] [PORT]` | Start the dashboard on `127.0.0.1` (default port 8090). `--open` opens your browser. On Windows: `runnerdeck run --port 9000`. |
 | `runnerdeck update [--check] [--yes]` (`upgrade`) | Look for a newer release and upgrade. See [Updating](#updating). |
 | `runnerdeck install [--dir D] [--force] [--no-completion]` | From a source checkout, link `runnerdeck` into `~/.local/bin` (or `D`) and set up tab completion for your shell (see [Shell completion](#shell-completion)). It tells you if that folder is not on your PATH, with the command for your shell (`fish_add_path` for fish, `export PATH=...` otherwise). |
-| `runnerdeck uninstall [--dir D]` | Remove that link. It only removes a link that points at this checkout. |
+| `runnerdeck uninstall [--dir D] [--yes]` | Ask, then remove that link. It only removes a link that points at this checkout. `--yes` skips the question. |
 | `runnerdeck completion bash\|zsh\|fish\|powershell` | Print a completion script; see [Shell completion](#shell-completion). |
 | `runnerdeck version`, `--version`, `-v` | Print the version. On a terminal it shows the RunnerDeck logo and welcome message, like `run.sh`; in a pipe, with `--json`, `-q` or `RUNNERDECK_NO_BANNER=1` it prints just `RunnerDeck 2.2.0`. |
 
@@ -106,7 +106,7 @@ Flags:
 | `--json` | Machine-readable output for the runner commands, `config`, `maintenance` and `update --check`. Errors are JSON too, with `"ok": false`. |
 | `--force` | Skip the GitHub "is a job running?" check. This can interrupt a job. |
 | `--timeout S` | How long `drain`, `rolling-restart` and `maintenance on` wait for a job to finish. Defaults to the `drain-timeout` setting. |
-| `--yes`, `-y` | Do not ask before `update` installs. |
+| `--yes`, `-y` | Do not ask before `update` installs or `uninstall` removes the link. |
 | `--quiet`, `-q` | Print only errors. |
 | `--no-color` | No colour. `NO_COLOR=1` does the same. `--color` forces it on, for example into `less -R`. |
 | `--all` | Every runner. |
