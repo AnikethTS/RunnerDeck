@@ -81,6 +81,24 @@ final class SlotDiskTest extends TestCase
         $this->assertSame(1, $calls);
     }
 
+    public function testCachedSizeStillNoticesANewWorkDirectory(): void
+    {
+        $storage = $this->dir . '/storage';
+        mkdir($storage, 0700, true);
+        putenv('RUNNERDECK_SETTINGS_FILE=' . $storage . '/settings.json');
+
+        $first = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+        $this->forgetMemory();
+        mkdir($this->dir . '/_work', 0755, true);
+        $second = \RunnerDeck\Host\SlotDisk::inspect($this->dir);
+
+        $this->assertFalse($first['can_clear']);
+        $this->assertTrue($second['can_clear']);
+        $this->assertSame($first['kb'], $second['kb']);
+        \RunnerDeck\Host\SlotDisk::resetCache();
+        putenv('RUNNERDECK_SETTINGS_FILE');
+    }
+
     public function testFileCacheServesTheSameSizeWithoutMeasuringAgain(): void
     {
         $storage = $this->dir . '/storage';
