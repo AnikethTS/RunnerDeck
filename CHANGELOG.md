@@ -6,6 +6,8 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-27
+
 ### Added
 
 - TOTP setup shows a Copy button that puts the raw secret on the clipboard, without the spaces used in the on-screen grouping.
