@@ -69,9 +69,11 @@ Check this machine's setup.
 .B run [--open] [\fIPORT\fR]
 Start the dashboard.
 .TP
-.B update [--check] [--yes]
+.B update [--check] [--yes] [--require-attestation]
 Upgrade to the latest release the way this copy was installed.
 An install.sh copy in ~/.local/share/runnerdeck is upgraded from the release zip.
+After the checksum, gh attestation verify checks the file was built by AnikethTS.
+If gh is missing, that check is skipped unless --require-attestation is set.
 Other commands, in a terminal, also name a newer release and the link to it.
 Set RUNNERDECK_NO_UPDATE_NOTICE=1 to hide that line.
 .TP

@@ -419,17 +419,82 @@ final class Provisioner
                 return ['ok' => false, 'stderr' => "cannot create {$dest}"];
             }
             $result = Shell::exec($cmd, 120);
-            if ($result['code'] === 0) {
+            if ($result['code'] === 0 && self::extractStaysInside($dest)) {
                 return ['ok' => true, 'stderr' => ''];
             }
-            $stderr = $result['stderr'];
+            $stderr = $result['code'] === 0
+                ? 'archive path escapes the slot directory'
+                : $result['stderr'];
         }
         self::removeTree($dest);
         if ((!@mkdir($dest, 0700, true) && !is_dir($dest)) || !self::pharExtract($archive, $dest)) {
             self::removeTree($dest);
             return ['ok' => false, 'stderr' => $stderr];
         }
+        if (!self::extractStaysInside($dest)) {
+            self::removeTree($dest);
+            return ['ok' => false, 'stderr' => 'archive path escapes the slot directory'];
+        }
         return ['ok' => true, 'stderr' => ''];
+    }
+
+    /** A symlink or file whose target leaves $dest is a path escape. */
+    private static function extractStaysInside(string $dest): bool
+    {
+        $root = realpath($dest);
+        if ($root === false) {
+            return false;
+        }
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dest, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($items as $item) {
+            $path = $item->getPathname();
+            if (is_link($path)) {
+                $target = readlink($path);
+                if ($target === false) {
+                    return false;
+                }
+                $resolved = self::normalizePath(
+                    str_starts_with($target, '/') ? $target : dirname($path) . '/' . $target
+                );
+                if (!self::pathInside($root, $resolved)) {
+                    return false;
+                }
+                continue;
+            }
+            $real = realpath($path);
+            if ($real === false || !self::pathInside($root, $real)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function pathInside(string $root, string $path): bool
+    {
+        $root = rtrim(self::normalizePath($root), '/');
+        $path = self::normalizePath($path);
+        return $path === $root || str_starts_with($path, $root . '/');
+    }
+
+    private static function normalizePath(string $path): string
+    {
+        $path = str_replace('\\', '/', $path);
+        $absolute = str_starts_with($path, '/');
+        $parts = [];
+        foreach (explode('/', $path) as $part) {
+            if ($part === '' || $part === '.') {
+                continue;
+            }
+            if ($part === '..') {
+                array_pop($parts);
+                continue;
+            }
+            $parts[] = $part;
+        }
+        return ($absolute ? '/' : '') . implode('/', $parts);
     }
 
     private static function commandOnPath(string $bin): bool
@@ -445,7 +510,10 @@ final class Provisioner
         }
         try {
             $phar = new \PharData($archive);
-            $phar->extractTo($dest, null, true);
+            // A hostile member (a symlink, then a file through it) warns instead of throwing.
+            if (!@$phar->extractTo($dest, null, true)) {
+                return false;
+            }
             return true;
         } catch (\Throwable) {
             return false;

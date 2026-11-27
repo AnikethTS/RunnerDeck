@@ -207,7 +207,11 @@ final class Auth
         }
 
         $secret = Config::authTotpSecret();
-        $ok = $secret !== null && Totp::verify($secret, $code);
+        $step = $secret !== null ? Totp::acceptedStep($secret, $code) : null;
+        $ok = $step !== null && $step > self::lastTotpStep();
+        if ($ok) {
+            self::rememberTotpStep($step);
+        }
         self::recordAttempt($ok);
         if ($ok) {
             self::login();
@@ -292,10 +296,12 @@ final class Auth
     {
         self::ensureSession();
         $secret = $_SESSION[self::PENDING_SECRET_KEY] ?? null;
-        if (!is_string($secret) || !Totp::verify($secret, $code)) {
+        $step = is_string($secret) ? Totp::acceptedStep($secret, $code) : null;
+        if (!is_string($secret) || $step === null) {
             return false;
         }
         self::saveTotpSecret($secret);
+        self::rememberTotpStep($step);
         unset($_SESSION[self::PENDING_SECRET_KEY]);
         self::issueRecoveryCodes();
         self::login();
@@ -395,18 +401,35 @@ final class Auth
         self::writePrivateJson(self::recoveryPath(), ['hashes' => $hashes]);
     }
 
+    private static function lastTotpStep(): int
+    {
+        return (int) (self::readLockoutFile()['totpStep'] ?? -1);
+    }
+
+    private static function rememberTotpStep(int $step): void
+    {
+        self::writeLockoutFile(['totpStep' => $step]);
+    }
+
     private static function recordAttempt(bool $success): void
     {
+        $data = self::readLockoutFile();
         if ($success) {
-            @unlink(self::lockoutPath());
+            if (!array_key_exists('totpStep', $data)) {
+                @unlink(self::lockoutPath());
+                return;
+            }
+            self::writeLockoutFile(['totpStep' => (int) $data['totpStep']]);
             return;
         }
 
-        $data = self::readLockoutFile();
         $lockedUntil = (int) ($data['lockedUntil'] ?? 0);
         $failures = ($lockedUntil > 0 && $lockedUntil <= time()) ? 1 : (int) ($data['failures'] ?? 0) + 1;
 
         $write = ['failures' => $failures];
+        if (array_key_exists('totpStep', $data)) {
+            $write['totpStep'] = (int) $data['totpStep'];
+        }
         if ($failures >= self::MAX_FAILURES) {
             $write['lockedUntil'] = time() + self::LOCKOUT_SECONDS;
         }

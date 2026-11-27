@@ -195,6 +195,104 @@ final class UpdaterTest extends TestCase
         $this->assertStringEndsWith('RunnerDeck-99.0.0-linux-all.deb', $this->ran[0][4]);
     }
 
+    public function testAttestationIsVerifiedBeforeInstall(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                file_put_contents("$dir/RunnerDeck-99.0.0-linux-all.deb", 'deb-bytes');
+                file_put_contents(
+                    "$dir/SHA256SUMS-linux-all",
+                    hash('sha256', 'deb-bytes') . "  RunnerDeck-99.0.0-linux-all.deb\n"
+                );
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 0, 'stdout' => '/usr/bin/gh', 'stderr' => ''];
+            }
+            if (in_array('attestation', $cmd, true)) {
+                return ['code' => 0, 'stdout' => "verified AnikethTS\n", 'stderr' => ''];
+            }
+            return ['code' => 0, 'stdout' => json_encode(['tag_name' => 'v99.0.0']), 'stderr' => ''];
+        });
+        [$code, $out] = $this->update(['yes' => true], 'deb');
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('verified AnikethTS', $out);
+        $this->assertSame(['sudo', 'apt-get', 'install', '-y'], array_slice($this->ran[0], 0, 4));
+    }
+
+    public function testAFailedAttestationInstallsNothing(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                file_put_contents("$dir/RunnerDeck-99.0.0-linux-all.deb", 'deb-bytes');
+                file_put_contents(
+                    "$dir/SHA256SUMS-linux-all",
+                    hash('sha256', 'deb-bytes') . "  RunnerDeck-99.0.0-linux-all.deb\n"
+                );
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 0, 'stdout' => '/usr/bin/gh', 'stderr' => ''];
+            }
+            if (in_array('attestation', $cmd, true)) {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'no attestation'];
+            }
+            return ['code' => 0, 'stdout' => json_encode(['tag_name' => 'v99.0.0']), 'stderr' => ''];
+        });
+        [$code, , $err] = $this->update(['yes' => true], 'deb');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('attestation check failed', $err);
+        $this->assertSame([], $this->ran);
+    }
+
+    public function testMissingGhSkipsTheAttestationCheck(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                file_put_contents("$dir/RunnerDeck-99.0.0-linux-all.deb", 'deb-bytes');
+                file_put_contents(
+                    "$dir/SHA256SUMS-linux-all",
+                    hash('sha256', 'deb-bytes') . "  RunnerDeck-99.0.0-linux-all.deb\n"
+                );
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'not found'];
+            }
+            return ['code' => 0, 'stdout' => json_encode(['tag_name' => 'v99.0.0']), 'stderr' => ''];
+        });
+        [$code, $out] = $this->update(['yes' => true], 'deb');
+        $this->assertSame(0, $code);
+        $this->assertStringContainsString('Attestation was not checked because gh is not installed.', $out);
+        $this->assertCount(1, $this->ran);
+    }
+
+    public function testRequireAttestationFailsWhenGhIsMissing(): void
+    {
+        Shell::fake(function (array $cmd): array {
+            if (in_array('download', $cmd, true)) {
+                $dir = $cmd[array_search('--dir', $cmd, true) + 1];
+                file_put_contents("$dir/RunnerDeck-99.0.0-linux-all.deb", 'deb-bytes');
+                file_put_contents(
+                    "$dir/SHA256SUMS-linux-all",
+                    hash('sha256', 'deb-bytes') . "  RunnerDeck-99.0.0-linux-all.deb\n"
+                );
+                return ['code' => 0, 'stdout' => '', 'stderr' => ''];
+            }
+            if (($cmd[0] ?? '') === 'which') {
+                return ['code' => 1, 'stdout' => '', 'stderr' => 'not found'];
+            }
+            return ['code' => 0, 'stdout' => json_encode(['tag_name' => 'v99.0.0']), 'stderr' => ''];
+        });
+        [$code, , $err] = $this->update(['yes' => true, 'require-attestation' => true], 'deb');
+        $this->assertSame(1, $code);
+        $this->assertStringContainsString('gh is not installed', $err);
+        $this->assertSame([], $this->ran);
+    }
+
     public function testATamperedDownloadIsNeverInstalled(): void
     {
         $this->latest('99.0.0', function (array $cmd): void {
@@ -548,7 +646,8 @@ final class UpdaterTest extends TestCase
             isset($flags['yes']),
             isset($flags['json']),
             $root,
-            $method
+            $method,
+            isset($flags['require-attestation'])
         );
         rewind($out);
         rewind($err);

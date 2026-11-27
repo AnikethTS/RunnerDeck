@@ -334,4 +334,25 @@ final class AuthTest extends TestCase
         $_SERVER['HTTP_USER_AGENT'] = 'other';
         $this->assertFalse(\RunnerDeck\Security\Auth::isLoggedIn());
     }
+
+    #[RunInSeparateProcess]
+    public function testAReplayedTotpCodeIsRejectedUntilTheNextStep(): void
+    {
+        $secret = $this->setSecret();
+        $now = time();
+        $current = \RunnerDeck\Security\Totp::code($secret, $now);
+        $next = \RunnerDeck\Security\Totp::code($secret, $now + 30);
+
+        $this->assertTrue(\RunnerDeck\Security\Auth::attempt($current));
+        \RunnerDeck\Security\Auth::logout();
+        $this->assertFalse(\RunnerDeck\Security\Auth::attempt($current));
+        $this->assertFalse(\RunnerDeck\Security\Auth::isLoggedIn());
+
+        $this->assertFalse(\RunnerDeck\Security\Auth::attempt('000000'));
+        $this->assertFalse(\RunnerDeck\Security\Auth::attempt($current));
+
+        $this->assertNotSame($current, $next);
+        $this->assertTrue(\RunnerDeck\Security\Auth::attempt($next));
+        $this->assertTrue(\RunnerDeck\Security\Auth::isLoggedIn());
+    }
 }

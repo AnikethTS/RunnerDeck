@@ -93,7 +93,7 @@ runnerdeck config get drain-timeout
 | Command | What it does |
 |---|---|
 | `runnerdeck` or `runnerdeck run [--open] [PORT]` | Start the dashboard on `127.0.0.1` (default port 8090). `--open` opens your browser. On Windows: `runnerdeck run --port 9000`. |
-| `runnerdeck update [--check] [--yes]` (`upgrade`) | Look for a newer release and upgrade. See [Updating](#updating). |
+| `runnerdeck update [--check] [--yes] [--require-attestation]` (`upgrade`) | Look for a newer release and upgrade. See [Updating](#updating). |
 | `runnerdeck install [--dir D] [--force] [--no-completion]` | From a source checkout, link `runnerdeck` into `~/.local/bin` (or `D`) and set up tab completion for your shell (see [Shell completion](#shell-completion)). It tells you if that folder is not on your PATH, with the command for your shell (`fish_add_path` for fish, `export PATH=...` otherwise). |
 | `runnerdeck uninstall [--dir D] [--yes]` | Ask, then remove that link. It only removes a link that points at this checkout. `--yes` skips the question. |
 | `runnerdeck completion bash\|zsh\|fish\|powershell` | Print a completion script; see [Shell completion](#shell-completion). |
@@ -148,6 +148,11 @@ this copy was installed, and upgrades that way:
 | Docker, or unknown | Prints what to do. It never changes a container or an install it cannot identify. |
 
 A download whose checksum does not match is deleted and never installed.
+When `gh` is installed and signed in, `update` then runs
+`gh attestation verify <file> -o AnikethTS` and prints the result. A failed
+check stops the update and nothing is installed. If `gh` is missing, the
+checksum-only update continues and one line says the attestation was not
+checked. `--require-attestation` turns that missing-`gh` case into a failure.
 On Windows, `RUNNERDECK_UPDATE_SILENT=1` runs the Setup wizard without
 questions, and `RUNNERDECK_UPDATE_DIR` chooses its folder. A folder path
 that contains quotes or shell characters is ignored, and the wizard uses

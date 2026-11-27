@@ -23,6 +23,7 @@ final class Updater
     private $in;
     /** @var callable(list<string>): int */
     private $interactive;
+    private bool $requireAttestation = false;
 
     /**
      * @param resource $out
@@ -97,8 +98,15 @@ final class Updater
         };
     }
 
-    public function run(bool $checkOnly, bool $assumeYes, bool $json, string $root, ?string $method = null): int
-    {
+    public function run(
+        bool $checkOnly,
+        bool $assumeYes,
+        bool $json,
+        string $root,
+        ?string $method = null,
+        bool $requireAttestation = false,
+    ): int {
+        $this->requireAttestation = $requireAttestation;
         $info = UpdateCheck::check();
         $method ??= self::detectMethod($root, self::factsFor($root), getenv('RUNNERDECK_INSTALL_METHOD') ?: null);
         $info['method'] = $method;
@@ -287,7 +295,34 @@ final class Updater
             return null;
         }
         $this->say('Checksum matches.');
+        if (!$this->attestationOk($file)) {
+            return null;
+        }
         return $file;
+    }
+
+    private function attestationOk(string $file): bool
+    {
+        $gh = Config::ghBinary();
+        $probe = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
+        if (Shell::exec([$probe, $gh], 5)['code'] !== 0) {
+            if ($this->requireAttestation) {
+                $this->problem('attestation was not checked: gh is not installed');
+                return false;
+            }
+            $this->say('Attestation was not checked because gh is not installed.');
+            return true;
+        }
+        $this->say('Verifying the build attestation...');
+        $got = Shell::exec([$gh, 'attestation', 'verify', $file, '-o', 'AnikethTS'], 120);
+        if ($got['code'] !== 0) {
+            $detail = trim($got['stderr']) ?: trim($got['stdout']) ?: 'gh attestation verify failed';
+            $this->problem('attestation check failed: ' . $detail);
+            return false;
+        }
+        $result = trim($got['stdout']);
+        $this->say($result !== '' ? $result : 'Build attestation verified for AnikethTS.');
+        return true;
     }
 
     private function removeDir(string $dir): void
