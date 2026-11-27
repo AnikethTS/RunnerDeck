@@ -8,7 +8,9 @@ RUN sh /tmp/build-gh.sh /out/gh
 FROM php:8.6.0-cli-bookworm@sha256:519fe569bdde71e366206a99e1996519fc12897f6fba1cd70b9815ce18f7639c
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends --only-upgrade linux-libc-dev \
+    && apt-get install -y --no-install-recommends --only-upgrade \
+        linux-libc-dev \
+        libpam0g libpam-modules libpam-modules-bin libpam-runtime \
     && apt-get install -y --no-install-recommends \
         bash ca-certificates curl tar git \
         libicu72 libkrb5-3 libssl3 zlib1g libsqlite3-0 \

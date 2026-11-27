@@ -6,6 +6,10 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- The Docker image upgrades Debian `libpam0g`, `libpam-modules`, `libpam-modules-bin`, and `libpam-runtime` to 1.5.2-6+deb12u3 so the image scan is not blocked by CVE-2025-6020.
+
 ## [2.3.0] - 2026-11-27
 
 ### Added
