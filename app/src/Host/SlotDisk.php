@@ -106,7 +106,11 @@ final class SlotDisk
             && ($now - self::$cache['at']) < self::CACHE_SECONDS
             && isset(self::$cache['byDir'][$dir])
         ) {
-            return self::$cache['byDir'][$dir];
+            $cached = self::$cache['byDir'][$dir];
+            // Sizes stay cached. _work appears as soon as a job checks out,
+            // and Clear work has to follow that without waiting out the cache.
+            $cached['can_clear'] = is_dir($dir . '/_work');
+            return $cached;
         }
 
         $canClear = is_dir($dir . '/_work');

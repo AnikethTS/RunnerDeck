@@ -27,6 +27,7 @@ follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- Clear work enables as soon as a stopped slot has a `_work` directory. A fresh job no longer waits out the disk-size cache.
 - `runnerdeck update` upgrades a copy installed by `install.sh` in `~/.local/share/runnerdeck`. It downloads the release zip, checks the SHA-256, and copies it over that folder. `.env`, `storage`, and `runners` stay.
 
 ## [2.2.0] - 2026-11-21

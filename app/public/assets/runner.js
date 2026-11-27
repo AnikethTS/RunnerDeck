@@ -75,6 +75,12 @@ if (page) {
     const lines = Array.isArray(row.log_tail) ? row.log_tail : [];
     const text = lines.join('\n').trim() || '(no log yet)';
     if (text !== logPlain) paintLog(text);
+    if (typeof row.can_clear_work === 'boolean') {
+      const clear = document.querySelector('#runner-page [data-action="clear-work"]');
+      if (clear && !clear.classList.contains('btn-loading')) {
+        clear.disabled = !row.can_clear_work;
+      }
+    }
   }
 
   function fillJob(host, job) {
