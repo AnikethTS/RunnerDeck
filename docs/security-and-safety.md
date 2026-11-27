@@ -111,6 +111,16 @@ optional Settings pin (`RUNNERDECK_AGENT_SHA`) refuses a GitHub
 checksum that does not match that SHA-256; if GitHub omits the
 checksum, the downloaded file is still hashed against the pin.
 
+Each GitHub release also carries a CycloneDX SBOM.
+`runnerdeck-<version>.cdx.json` lists the PHP and JavaScript packages from
+the release zip (`app/composer.lock` and `package-lock.json`).
+`runnerdeck-<version>-image.cdx.json` lists the container image. Both are
+named in `runnerdeck-v<version>.zip.sha256` and have a build-provenance
+attestation. Read one with `jq` or any CycloneDX tool (Grype,
+Dependency-Track). `runnerdeck update` checks the file's attestation with
+`gh attestation verify <file> -o AnikethTS` after the checksum, unless `gh`
+is not installed. `--require-attestation` refuses to update in that case.
+
 All state-changing API calls (`start`, `stop`, `restart`, `rolling_restart`,
 `rolling_upgrade`, `maintenance`, `pause_auto_restart`, `start_all`,
 `stop_all`, `resize`) require a

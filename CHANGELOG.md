@@ -6,8 +6,15 @@ follows [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Each release includes a CycloneDX SBOM for the zip's PHP and JavaScript dependencies (`runnerdeck-<version>.cdx.json`) and one for the container image (`runnerdeck-<version>-image.cdx.json`), with checksums and build-provenance attestations.
+
 ### Security
 
+- A TOTP code is refused for the rest of its time step, with the same failure as a wrong code. A wrong code does not move the remembered step, and recovery codes still work.
+- `runnerdeck update` runs `gh attestation verify` after the checksum and stops when that check fails. If `gh` is missing, the update continues and says the attestation was not checked. `--require-attestation` fails in that case.
+- Runner tarball extraction refuses an archive whose entries, absolute paths, or symlinks leave the slot, and a truncated or checksum-mismatched archive does not leave the slot half-installed.
 - The Docker image upgrades Debian `libpam0g`, `libpam-modules`, `libpam-modules-bin`, and `libpam-runtime` to 1.5.2-6+deb12u3 so the image scan is not blocked by CVE-2025-6020.
 
 ## [2.3.0] - 2026-11-27

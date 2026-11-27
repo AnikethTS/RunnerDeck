@@ -28,13 +28,23 @@ final class Totp
 
     public static function verify(string $base32Secret, string $code, ?int $timestamp = null): bool
     {
-        $now = $timestamp ?? time();
+        return self::acceptedStep($base32Secret, $code, $timestamp) !== null;
+    }
+
+    /** Time step that matches $code, or null. Prefers the current step over its neighbours. */
+    public static function acceptedStep(string $base32Secret, string $code, ?int $timestamp = null): ?int
+    {
+        if ($code === '') {
+            return null;
+        }
+        $base = intdiv($timestamp ?? time(), self::PERIOD);
         foreach ([0, -1, 1] as $drift) {
-            if (hash_equals(self::code($base32Secret, $now + $drift * self::PERIOD), $code)) {
-                return true;
+            $step = $base + $drift;
+            if ($step >= 0 && hash_equals(self::hotp($base32Secret, $step), $code)) {
+                return $step;
             }
         }
-        return false;
+        return null;
     }
 
     private static function hotp(string $base32Secret, int $counter): string

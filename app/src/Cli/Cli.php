@@ -51,7 +51,8 @@ Setup:
 
 Program:
   run [--open] [PORT]          Start the dashboard (default port 8090)
-  update [--check] [--yes]     Upgrade to the latest release (--check only looks)
+  update [--check] [--yes] [--require-attestation]
+                               Upgrade to the latest release (--check only looks)
   install [--dir D]            Link ./runnerdeck onto your PATH and set up tab completion
                                (source checkout; --no-completion skips completion)
   uninstall [--dir D] [--yes]  Remove that link. Asks first.
@@ -65,6 +66,8 @@ Options:
   --force        Do not check GitHub for a running job first
   --timeout S    How long to wait for a job to finish (seconds)
   --yes, -y      Do not ask before updating or uninstalling
+  --require-attestation
+                 Fail the update when the build attestation cannot be checked
   -q, --quiet    Print only errors
   --no-color     No colour (also NO_COLOR=1)
   -h, --help     Show this help
@@ -506,7 +509,9 @@ TXT;
             isset($flags['check']),
             isset($flags['yes']) || isset($flags['y']),
             $this->json,
-            dirname(__DIR__, 3)
+            dirname(__DIR__, 3),
+            null,
+            isset($flags['require-attestation'])
         );
     }
 
